@@ -1,16 +1,64 @@
 import { ClassInfo, Student, SubjectAssessment, TraitAssessment, StudentTermSummary, DailyAttendance, StarLog } from '@/types';
 
-export const INITIAL_CLASS: ClassInfo = {
-  id: 'class-4a1',
-  name: '4A1',
-  grade: 4,
-  schoolYear: '2025-2026',
-  schoolName: 'Trường Tiểu học Chu Văn An',
-  teacherName: 'Cô Nguyễn Thị Mai',
-  totalStudents: 30,
-  seatingGridRows: 5,
-  seatingGridCols: 8,
-};
+export const INITIAL_SCHOOL_CLASSES: ClassInfo[] = [
+  {
+    id: 'class-1a1',
+    name: '1A1',
+    grade: 1,
+    schoolYear: '2025-2026',
+    schoolName: 'Trường Tiểu học Chu Văn An',
+    teacherName: 'Cô Lê Thị Hà',
+    totalStudents: 32,
+    seatingGridRows: 5,
+    seatingGridCols: 8,
+  },
+  {
+    id: 'class-2a1',
+    name: '2A1',
+    grade: 2,
+    schoolYear: '2025-2026',
+    schoolName: 'Trường Tiểu học Chu Văn An',
+    teacherName: 'Cô Trần Thu Cúc',
+    totalStudents: 31,
+    seatingGridRows: 5,
+    seatingGridCols: 8,
+  },
+  {
+    id: 'class-3a1',
+    name: '3A1',
+    grade: 3,
+    schoolYear: '2025-2026',
+    schoolName: 'Trường Tiểu học Chu Văn An',
+    teacherName: 'Thầy Phạm Văn Nam',
+    totalStudents: 29,
+    seatingGridRows: 5,
+    seatingGridCols: 8,
+  },
+  {
+    id: 'class-4a1',
+    name: '4A1',
+    grade: 4,
+    schoolYear: '2025-2026',
+    schoolName: 'Trường Tiểu học Chu Văn An',
+    teacherName: 'Cô Nguyễn Thị Mai',
+    totalStudents: 30,
+    seatingGridRows: 5,
+    seatingGridCols: 8,
+  },
+  {
+    id: 'class-5a1',
+    name: '5A1',
+    grade: 5,
+    schoolYear: '2025-2026',
+    schoolName: 'Trường Tiểu học Chu Văn An',
+    teacherName: 'Thầy Hoàng Minh Đức',
+    totalStudents: 33,
+    seatingGridRows: 5,
+    seatingGridCols: 8,
+  },
+];
+
+export const INITIAL_CLASS: ClassInfo = INITIAL_SCHOOL_CLASSES[3];
 
 export const INITIAL_STUDENTS: Student[] = [
   {

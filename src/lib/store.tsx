@@ -18,6 +18,7 @@ import {
 } from '@/types';
 import {
   INITIAL_CLASS,
+  INITIAL_SCHOOL_CLASSES,
   INITIAL_STUDENTS,
   INITIAL_DAILY_ATTENDANCE,
   INITIAL_STAR_LOGS,
@@ -26,8 +27,16 @@ import { PRIMARY_SUBJECTS, TRAIT_DEFINITIONS, evaluateStudentTT27 } from './tt27
 import { INITIAL_TIMETABLE } from './timetable-data';
 
 interface AppContextType {
+  // Multi-Class Management
+  schoolClasses: ClassInfo[];
+  activeClassId: string;
   classInfo: ClassInfo;
   setClassInfo: (info: ClassInfo) => void;
+  switchClass: (classId: string) => void;
+  addClass: (newClass: Omit<ClassInfo, 'id'>) => void;
+  updateClass: (updated: ClassInfo) => void;
+  deleteClass: (classId: string) => void;
+
   students: Student[];
   currentTerm: TermType;
   setCurrentTerm: (term: TermType) => void;
@@ -97,7 +106,8 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 const STORAGE_PREFIX = 'gvcn_pro_';
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [classInfo, setClassInfo] = useState<ClassInfo>(INITIAL_CLASS);
+  const [schoolClasses, setSchoolClasses] = useState<ClassInfo[]>(INITIAL_SCHOOL_CLASSES);
+  const [activeClassId, setActiveClassId] = useState<string>('class-4a1');
   const [students, setStudents] = useState<Student[]>(INITIAL_STUDENTS);
   const [currentTerm, setCurrentTerm] = useState<TermType>('CUOI_HK1');
   const [subjectAssessments, setSubjectAssessments] = useState<SubjectAssessment[]>([]);
@@ -109,10 +119,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [apiKey, setApiKey] = useState<string>('');
   const [isLoaded, setIsLoaded] = useState(false);
 
+  // Active Class Info
+  const classInfo = schoolClasses.find((c) => c.id === activeClassId) || schoolClasses[0] || INITIAL_CLASS;
+
   // Khởi tạo và load từ LocalStorage
   useEffect(() => {
     try {
-      const savedClass = localStorage.getItem(STORAGE_PREFIX + 'classInfo');
+      const savedClasses = localStorage.getItem(STORAGE_PREFIX + 'schoolClasses');
+      const savedActiveId = localStorage.getItem(STORAGE_PREFIX + 'activeClassId');
       const savedStudents = localStorage.getItem(STORAGE_PREFIX + 'students');
       const savedTerm = localStorage.getItem(STORAGE_PREFIX + 'currentTerm');
       const savedSubAss = localStorage.getItem(STORAGE_PREFIX + 'subjectAssessments');
@@ -123,7 +137,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const savedTt = localStorage.getItem(STORAGE_PREFIX + 'timetable');
       const savedKey = localStorage.getItem(STORAGE_PREFIX + 'apiKey');
 
-      if (savedClass) setClassInfo(JSON.parse(savedClass));
+      if (savedClasses) setSchoolClasses(JSON.parse(savedClasses));
+      if (savedActiveId) setActiveClassId(savedActiveId);
       if (savedStudents) setStudents(JSON.parse(savedStudents));
       if (savedTerm) setCurrentTerm(savedTerm as TermType);
       if (savedAtt) setAttendances(JSON.parse(savedAtt));
@@ -194,7 +209,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     if (!isLoaded) return;
     try {
-      localStorage.setItem(STORAGE_PREFIX + 'classInfo', JSON.stringify(classInfo));
+      localStorage.setItem(STORAGE_PREFIX + 'schoolClasses', JSON.stringify(schoolClasses));
+      localStorage.setItem(STORAGE_PREFIX + 'activeClassId', activeClassId);
       localStorage.setItem(STORAGE_PREFIX + 'students', JSON.stringify(students));
       localStorage.setItem(STORAGE_PREFIX + 'currentTerm', currentTerm);
       localStorage.setItem(STORAGE_PREFIX + 'subjectAssessments', JSON.stringify(subjectAssessments));
@@ -209,7 +225,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [
     isLoaded,
-    classInfo,
+    schoolClasses,
+    activeClassId,
     students,
     currentTerm,
     subjectAssessments,
@@ -220,6 +237,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     timetable,
     apiKey,
   ]);
+
+  // CLASS ACTIONS
+  const setClassInfo = (info: ClassInfo) => {
+    setSchoolClasses((prev) => prev.map((c) => (c.id === info.id ? info : c)));
+  };
+
+  const switchClass = (classId: string) => {
+    setActiveClassId(classId);
+  };
+
+  const addClass = (newClassData: Omit<ClassInfo, 'id'>) => {
+    const newClass: ClassInfo = {
+      ...newClassData,
+      id: `class-${Date.now()}`,
+    };
+    setSchoolClasses((prev) => [...prev, newClass]);
+    setActiveClassId(newClass.id);
+  };
+
+  const updateClass = (updated: ClassInfo) => {
+    setSchoolClasses((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+  };
+
+  const deleteClass = (classId: string) => {
+    setSchoolClasses((prev) => prev.filter((c) => c.id !== classId));
+    if (activeClassId === classId) {
+      const remaining = schoolClasses.filter((c) => c.id !== classId);
+      if (remaining.length > 0) setActiveClassId(remaining[0].id);
+    }
+  };
 
   // TIMETABLE ACTIONS
   const updateTimetableSlot = (
@@ -286,7 +333,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const importStudents = (imported: Partial<Student>[]) => {
     const newStudents: Student[] = imported.map((st, i) => ({
       id: `hs-${Date.now()}-${i}`,
-      studentCode: st.studentCode || `HS4A1-${String(students.length + i + 1).padStart(3, '0')}`,
+      studentCode: st.studentCode || `HS-${classInfo.name}-${String(students.length + i + 1).padStart(3, '0')}`,
       fullName: st.fullName || 'Học sinh mới',
       gender: st.gender || 'Nam',
       dateOfBirth: st.dateOfBirth || '2016-01-01',
@@ -507,7 +554,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const resetData = () => {
     localStorage.clear();
-    setClassInfo(INITIAL_CLASS);
+    setSchoolClasses(INITIAL_SCHOOL_CLASSES);
+    setActiveClassId('class-4a1');
     setStudents(INITIAL_STUDENTS);
     setAttendances(INITIAL_DAILY_ATTENDANCE);
     setStarLogs(INITIAL_STAR_LOGS);
@@ -518,8 +566,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   return (
     <AppContext.Provider
       value={{
+        schoolClasses,
+        activeClassId,
         classInfo,
         setClassInfo,
+        switchClass,
+        addClass,
+        updateClass,
+        deleteClass,
         students,
         currentTerm,
         setCurrentTerm,
