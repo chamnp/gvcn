@@ -14,6 +14,8 @@ import {
   SubjectLevel,
   TraitLevel,
   AttendanceStatus,
+  TimetableSlot,
+  DayOfWeek,
 } from '@/types';
 import {
   INITIAL_CLASS,
@@ -23,6 +25,7 @@ import {
   INITIAL_FUND_TRANSACTIONS,
 } from '@/data/mock-data';
 import { PRIMARY_SUBJECTS, TRAIT_DEFINITIONS, evaluateStudentTT27 } from './tt27-engine';
+import { INITIAL_TIMETABLE } from './timetable-data';
 
 interface AppContextType {
   classInfo: ClassInfo;
@@ -39,6 +42,12 @@ interface AppContextType {
   apiKey: string;
   setApiKey: (key: string) => void;
   
+  // Timetable
+  timetable: TimetableSlot[];
+  updateTimetableSlot: (day: DayOfWeek, period: number, subjectCode: string, subjectName: string, note?: string) => void;
+  setTimetable: (slots: TimetableSlot[]) => void;
+  resetTimetableToStandard: () => void;
+
   // Student Actions
   addStudent: (student: Omit<Student, 'id' | 'createdAt'>) => void;
   updateStudent: (student: Student) => void;
@@ -104,6 +113,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [attendances, setAttendances] = useState<DailyAttendance[]>(INITIAL_DAILY_ATTENDANCE);
   const [starLogs, setStarLogs] = useState<StarLog[]>(INITIAL_STAR_LOGS);
   const [fundTransactions, setFundTransactions] = useState<ClassFundTransaction[]>(INITIAL_FUND_TRANSACTIONS);
+  const [timetable, setTimetableState] = useState<TimetableSlot[]>(INITIAL_TIMETABLE);
   const [apiKey, setApiKey] = useState<string>('');
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -119,6 +129,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const savedAtt = localStorage.getItem(STORAGE_PREFIX + 'attendances');
       const savedStars = localStorage.getItem(STORAGE_PREFIX + 'starLogs');
       const savedTx = localStorage.getItem(STORAGE_PREFIX + 'fundTransactions');
+      const savedTt = localStorage.getItem(STORAGE_PREFIX + 'timetable');
       const savedKey = localStorage.getItem(STORAGE_PREFIX + 'apiKey');
 
       if (savedClass) setClassInfo(JSON.parse(savedClass));
@@ -127,6 +138,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (savedAtt) setAttendances(JSON.parse(savedAtt));
       if (savedStars) setStarLogs(JSON.parse(savedStars));
       if (savedTx) setFundTransactions(JSON.parse(savedTx));
+      if (savedTt) setTimetableState(JSON.parse(savedTt));
       if (savedKey) setApiKey(savedKey);
 
       // Nếu chưa có bảng đánh giá, tự động sinh dữ liệu mẫu ban đầu cho các môn
@@ -201,6 +213,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem(STORAGE_PREFIX + 'attendances', JSON.stringify(attendances));
       localStorage.setItem(STORAGE_PREFIX + 'starLogs', JSON.stringify(starLogs));
       localStorage.setItem(STORAGE_PREFIX + 'fundTransactions', JSON.stringify(fundTransactions));
+      localStorage.setItem(STORAGE_PREFIX + 'timetable', JSON.stringify(timetable));
       localStorage.setItem(STORAGE_PREFIX + 'apiKey', apiKey);
     } catch (e) {
       console.warn('Error writing to localStorage:', e);
@@ -216,8 +229,53 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     attendances,
     starLogs,
     fundTransactions,
+    timetable,
     apiKey,
   ]);
+
+  // TIMETABLE ACTIONS
+  const updateTimetableSlot = (
+    day: DayOfWeek,
+    period: number,
+    subjectCode: string,
+    subjectName: string,
+    note?: string
+  ) => {
+    setTimetableState((prev) => {
+      const idx = prev.findIndex((s) => s.day === day && s.period === period);
+      const session = period <= 4 ? 'MORNING' : 'AFTERNOON';
+      if (idx >= 0) {
+        const copy = [...prev];
+        copy[idx] = {
+          ...copy[idx],
+          subjectCode,
+          subjectName,
+          note: note !== undefined ? note : copy[idx].note,
+        };
+        return copy;
+      }
+      return [
+        ...prev,
+        {
+          id: `${day.toLowerCase()}-p${period}`,
+          day,
+          period,
+          session,
+          subjectCode,
+          subjectName,
+          note: note || '',
+        },
+      ];
+    });
+  };
+
+  const setTimetable = (slots: TimetableSlot[]) => {
+    setTimetableState(slots);
+  };
+
+  const resetTimetableToStandard = () => {
+    setTimetableState(INITIAL_TIMETABLE);
+  };
 
   // STUDENT ACTIONS
   const addStudent = (studentData: Omit<Student, 'id' | 'createdAt'>) => {
@@ -480,6 +538,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAttendances(INITIAL_DAILY_ATTENDANCE);
     setStarLogs(INITIAL_STAR_LOGS);
     setFundTransactions(INITIAL_FUND_TRANSACTIONS);
+    setTimetableState(INITIAL_TIMETABLE);
     window.location.reload();
   };
 
@@ -497,6 +556,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         attendances,
         starLogs,
         fundTransactions,
+        timetable,
+        updateTimetableSlot,
+        setTimetable,
+        resetTimetableToStandard,
         apiKey,
         setApiKey,
         addStudent,

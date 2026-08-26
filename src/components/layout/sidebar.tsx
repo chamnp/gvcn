@@ -15,7 +15,8 @@ import {
   FileDown,
   Settings,
   GraduationCap,
-  Sparkle
+  Sparkle,
+  Calendar,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useAuth } from '@/lib/auth-context';
@@ -26,6 +27,7 @@ const NAV_ITEMS = [
   { href: '/students', label: 'Hồ sơ Học sinh', icon: Users, badge: null },
   { href: '/seating-chart', label: 'Sơ đồ Lớp học', icon: Grid3X3, badge: null },
   { href: '/attendance', label: 'Điểm danh & Bán trú', icon: CalendarCheck, badge: null },
+  { href: '/timetable', label: 'Thời khóa biểu', icon: Calendar, badge: '2 Buổi' },
   { href: '/behavior', label: 'Nề nếp & Tích sao', icon: Award, badge: 'Mới' },
   { href: '/assessment', label: 'Đánh giá TT 27', icon: FileSpreadsheet, badge: 'Cốt lõi' },
   { href: '/ai-assistant', label: 'Trợ lý Nhận xét AI', icon: Sparkles, badge: 'AI Pro' },

@@ -14,9 +14,13 @@ import {
   Utensils,
   Wallet,
   CalendarCheck,
+  Calendar,
+  Clock,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { TERMS, evaluateStudentTT27, getAwardBadgeClass } from '@/lib/tt27-engine';
+import { DAYS_OF_WEEK, PERIODS, getSubjectTheme } from '@/lib/timetable-data';
+import { DayOfWeek } from '@/types';
 
 export default function DashboardPage() {
   const {
@@ -29,6 +33,7 @@ export default function DashboardPage() {
     attendances,
     starLogs,
     fundTransactions,
+    timetable,
   } = useAppStore();
 
   const termName = TERMS.find((t) => t.id === currentTerm)?.name || currentTerm;
@@ -368,6 +373,47 @@ export default function DashboardPage() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+
+          {/* Today's Timetable Widget */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-blue-600" />
+                <span>Lịch Học Hôm Nay ({DAYS_OF_WEEK.find((d) => d.id === (new Date().getDay() >= 1 && new Date().getDay() <= 5 ? `T${new Date().getDay() + 1}` : 'T2'))?.name})</span>
+              </h2>
+              <Link href="/timetable" className="text-xs text-blue-600 font-semibold hover:underline">
+                Xem cả tuần →
+              </Link>
+            </div>
+
+            <div className="space-y-1.5 text-xs">
+              {PERIODS.slice(0, 5).map((p) => {
+                const dayKey: DayOfWeek = (new Date().getDay() >= 1 && new Date().getDay() <= 5 ? `T${new Date().getDay() + 1}` : 'T2') as DayOfWeek;
+                const slot = timetable.find((s) => s.day === dayKey && s.period === p.period);
+                const theme = slot ? getSubjectTheme(slot.subjectCode) : null;
+
+                return (
+                  <div
+                    key={p.period}
+                    className={`flex items-center justify-between p-2 rounded-xl border transition-colors ${
+                      theme ? `${theme.bgColor} ${theme.borderColor}` : 'bg-slate-50 border-slate-200'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <span className="font-bold text-slate-500 font-mono text-[10px] w-10">
+                        {p.name}
+                      </span>
+                      <span className="text-sm">{theme?.icon || '📚'}</span>
+                      <span className="font-bold text-slate-900 text-xs">
+                        {slot?.subjectName || 'Tự học / Nghỉ'}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-mono text-slate-500">{p.time}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
 

@@ -123,3 +123,17 @@ export interface ClassInfo {
   seatingGridRows: number;
   seatingGridCols: number;
 }
+
+export type DayOfWeek = 'T2' | 'T3' | 'T4' | 'T5' | 'T6';
+
+export interface TimetableSlot {
+  id: string;
+  day: DayOfWeek;
+  period: number; // 1 -> 7 (1-4 Sáng, 5-7 Chiều)
+  session: 'MORNING' | 'AFTERNOON';
+  subjectCode: string;
+  subjectName: string;
+  room?: string;
+  teacherName?: string;
+  note?: string; // Ghi chú: Dụng cụ cần mang, dặn dò học sinh
+}
