@@ -13,13 +13,19 @@ import {
   CheckCircle,
   ExternalLink,
   ShieldCheck,
+  Users,
+  UserPlus,
+  Trash2,
+  Lock,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
-import { GradeLevel } from '@/types';
+import { useAuth } from '@/lib/auth-context';
+import { GradeLevel, UserRole } from '@/types';
 import { toast } from 'sonner';
 
 export default function SettingsPage() {
   const { classInfo, setClassInfo, apiKey, setApiKey, resetData, students } = useAppStore();
+  const { user, profile, teachers, addTeacher, updateTeacher, deleteTeacher } = useAuth();
 
   const [className, setClassName] = useState(classInfo.name);
   const [grade, setGrade] = useState<GradeLevel>(classInfo.grade);
@@ -29,6 +35,13 @@ export default function SettingsPage() {
   const [rows, setRows] = useState(classInfo.seatingGridRows || 5);
   const [cols, setCols] = useState(classInfo.seatingGridCols || 8);
   const [inputApiKey, setInputApiKey] = useState(apiKey);
+
+  // New Teacher Modal Form State
+  const [isAddTeacherOpen, setIsAddTeacherOpen] = useState(false);
+  const [newTeacherEmail, setNewTeacherEmail] = useState('');
+  const [newTeacherName, setNewTeacherName] = useState('');
+  const [newTeacherRole, setNewTeacherRole] = useState<UserRole>('TEACHER');
+  const [newTeacherClass, setNewTeacherClass] = useState('Lớp 4A1');
 
   const handleSaveClass = (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,13 +55,26 @@ export default function SettingsPage() {
       seatingGridRows: Number(rows),
       seatingGridCols: Number(cols),
     });
-    toast.success('Đã lưu thông tin lớp học!');
+    toast.success(`Đã lưu cấu hình Lớp ${className}!`);
   };
 
   const handleSaveApiKey = (e: React.FormEvent) => {
     e.preventDefault();
     setApiKey(inputApiKey);
     toast.success('Đã lưu khóa Gemini API!');
+  };
+
+  const handleCreateTeacher = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTeacherEmail.trim() || !newTeacherName.trim()) {
+      toast.error('Vui lòng điền đầy đủ email và họ tên');
+      return;
+    }
+
+    await addTeacher(newTeacherEmail, newTeacherName, newTeacherRole, newTeacherClass);
+    setIsAddTeacherOpen(false);
+    setNewTeacherEmail('');
+    setNewTeacherName('');
   };
 
   const handleExportBackup = () => {
@@ -81,27 +107,27 @@ export default function SettingsPage() {
           <span>Cài Đặt & Cấu Hình Hệ Thống</span>
         </h1>
         <p className="text-xs text-slate-500 mt-1">
-          Quản lý thông tin lớp chủ nhiệm, kết nối Supabase, khóa AI và sao lưu dữ liệu.
+          Quản lý thông tin lớp chủ nhiệm, phân quyền giáo viên, kết nối Supabase và khóa AI.
         </p>
       </div>
 
-      {/* Section 1: Class Information */}
+      {/* Section 1: Class Configuration */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
         <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
           <School className="w-5 h-5 text-blue-600" />
-          <span>Thông Tin Lớp Chủ Nhiệm</span>
+          <span>Cấu Hình Lớp Học Phụ Trách</span>
         </h2>
 
         <form onSubmit={handleSaveClass} className="space-y-4 text-xs">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Tên Lớp</label>
+              <label className="block font-semibold text-slate-700 mb-1">Tên Lớp Chủ Nhiệm</label>
               <input
                 type="text"
                 required
                 value={className}
                 onChange={(e) => setClassName(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold text-slate-900"
               />
             </div>
             <div>
@@ -109,7 +135,7 @@ export default function SettingsPage() {
               <select
                 value={grade}
                 onChange={(e) => setGrade(Number(e.target.value) as GradeLevel)}
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold text-slate-900"
               >
                 <option value={1}>Khối 1</option>
                 <option value={2}>Khối 2</option>
@@ -125,7 +151,7 @@ export default function SettingsPage() {
                 required
                 value={schoolYear}
                 onChange={(e) => setSchoolYear(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
             </div>
           </div>
@@ -138,42 +164,42 @@ export default function SettingsPage() {
                 required
                 value={schoolName}
                 onChange={(e) => setSchoolName(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
             </div>
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Họ Tên Giáo Viên Chủ Nhiệm</label>
+              <label className="block font-semibold text-slate-700 mb-1">Giáo Viên Chủ Nhiệm (Hiển thị trên Học bạ)</label>
               <input
                 type="text"
                 required
                 value={teacherName}
                 onChange={(e) => setTeacherName(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none font-semibold"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Số Hàng Bàn Sơ Đồ Lớp</label>
+              <label className="block font-semibold text-slate-700 mb-1">Số Hàng Ghế (Sơ đồ lớp)</label>
               <input
                 type="number"
-                min="3"
-                max="10"
+                min={3}
+                max={10}
                 value={rows}
                 onChange={(e) => setRows(Number(e.target.value))}
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
             </div>
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Số Cột Bàn Sơ Đồ Lớp</label>
+              <label className="block font-semibold text-slate-700 mb-1">Số Cột Ghế (Sơ đồ lớp)</label>
               <input
                 type="number"
-                min="4"
-                max="12"
+                min={4}
+                max={12}
                 value={cols}
                 onChange={(e) => setCols(Number(e.target.value))}
-                className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
             </div>
           </div>
@@ -181,96 +207,264 @@ export default function SettingsPage() {
           <div className="flex justify-end pt-2">
             <button
               type="submit"
-              className="inline-flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-xl font-bold shadow-xs transition-colors"
+              className="inline-flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-xl shadow-xs transition-colors"
             >
               <Save className="w-4 h-4" />
-              <span>Lưu Thông Tin Lớp</span>
+              <span>Lưu Cấu Hình Lớp</span>
             </button>
           </div>
         </form>
       </div>
 
-      {/* Section 2: Supabase Database Status */}
+      {/* Section 2: Teacher Whitelist & RBAC Management */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-            <Database className="w-5 h-5 text-emerald-600" />
-            <span>Cơ Sở Dữ Liệu Supabase (PostgreSQL)</span>
-          </h2>
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold border border-emerald-300">
-            <CheckCircle className="w-3.5 h-3.5" />
-            <span>Đã Cấu Hình</span>
-          </span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-emerald-600" />
+              <span>Quản Lý Giáo Viên & Phân Quyền Lớp Học</span>
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Chỉ các tài khoản email được cấp quyền mới có thể truy cập và chỉnh sửa lớp học tương ứng.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsAddTeacherOpen(true)}
+            className="inline-flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs transition-colors self-start sm:self-auto"
+          >
+            <UserPlus className="w-4 h-4" />
+            <span>Thêm Giáo Viên Mới</span>
+          </button>
         </div>
 
-        <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs space-y-2 font-mono">
-          <p className="text-slate-600">
-            <strong>Project URL:</strong> https://lgyoekaaefzpymfxfggf.supabase.co
-          </p>
-          <p className="text-slate-600 truncate">
-            <strong>Database Host:</strong> db.lgyoekaaefzpymfxfggf.supabase.co:5432
-          </p>
-          <p className="text-slate-500 font-sans pt-1">
-            File khởi tạo bảng <code>prisma/init.sql</code> đã sẵn sàng để bạn chạy trực tiếp trên Supabase SQL Editor.
-          </p>
+        {/* Current Active Account Status */}
+        {user && (
+          <div className="bg-blue-50/70 p-3 rounded-xl border border-blue-200 flex items-center justify-between text-xs">
+            <div>
+              <span className="font-semibold text-blue-900">Tài khoản đang đăng nhập: </span>
+              <strong className="text-blue-950">{user.email}</strong>
+              <span className="ml-2 bg-blue-600 text-white px-2 py-0.5 rounded-full text-[10px] font-bold">
+                {profile?.role === 'ADMIN' ? 'Admin' : 'Giáo viên'}
+              </span>
+            </div>
+            <span className="text-blue-800 font-semibold">{profile?.assignedClassName || 'Lớp 4A1'}</span>
+          </div>
+        )}
+
+        {/* Teachers Whitelist Table */}
+        <div className="overflow-x-auto border border-slate-200 rounded-xl">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
+              <tr>
+                <th className="py-2.5 px-3">Họ và Tên</th>
+                <th className="py-2.5 px-3">Email Xác Thực</th>
+                <th className="py-2.5 px-3 text-center">Vai Trò</th>
+                <th className="py-2.5 px-3 text-center">Lớp Phân Công</th>
+                <th className="py-2.5 px-3 text-center">Trạng Thái</th>
+                <th className="py-2.5 px-3 text-right">Thao Tác</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {teachers.map((t) => (
+                <tr key={t.id} className="hover:bg-slate-50 transition-colors">
+                  <td className="py-2.5 px-3 font-bold text-slate-900">{t.fullName}</td>
+                  <td className="py-2.5 px-3 font-mono text-slate-600">{t.email}</td>
+                  <td className="py-2.5 px-3 text-center">
+                    <span
+                      className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        t.role === 'ADMIN'
+                          ? 'bg-purple-100 text-purple-800 border border-purple-300'
+                          : 'bg-blue-100 text-blue-800 border border-blue-300'
+                      }`}
+                    >
+                      {t.role === 'ADMIN' ? 'Quản trị viên' : 'Giáo viên'}
+                    </span>
+                  </td>
+                  <td className="py-2.5 px-3 text-center font-semibold text-slate-800">
+                    {t.assignedClassName || 'Lớp 4A1'}
+                  </td>
+                  <td className="py-2.5 px-3 text-center">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                      <CheckCircle className="w-3 h-3" />
+                      <span>Được phép</span>
+                    </span>
+                  </td>
+                  <td className="py-2.5 px-3 text-right">
+                    {t.email !== 'anhnnh4@gmail.com' && (
+                      <button
+                        onClick={() => deleteTeacher(t.id)}
+                        className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
+                        title="Xóa quyền"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      {/* Section 3: Gemini AI API Key */}
+      {/* Section 3: Supabase Database Info */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
+        <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+          <Database className="w-5 h-5 text-emerald-600" />
+          <span>Cơ Sở Dữ Liệu Supabase PostgreSQL</span>
+        </h2>
+
+        <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 text-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-slate-500">Supabase Project Ref:</span>
+            <span className="font-mono font-bold text-slate-900">lgyoekaaefzpymfxfggf</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-slate-500">API Endpoint:</span>
+            <span className="font-mono text-slate-700">https://lgyoekaaefzpymfxfggf.supabase.co</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-slate-500">Trạng Thái Kết Nối:</span>
+            <span className="inline-flex items-center gap-1 text-emerald-600 font-bold">
+              <CheckCircle className="w-3.5 h-3.5" />
+              <span>Đang hoạt động (8 Bảng đã sẵn sàng)</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Section 4: Gemini AI Key */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
         <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
           <Key className="w-5 h-5 text-purple-600" />
-          <span>Khóa Google Gemini AI</span>
+          <span>Khóa Gemini AI (Tùy chọn)</span>
         </h2>
+        <p className="text-xs text-slate-500">
+          Mặc định hệ thống sử dụng kho từ vựng sư phạm ngoại tuyến 200+ mẫu câu. Bạn có thể thêm Gemini API Key nếu muốn AI tạo nhận xét phong phú hơn.
+        </p>
 
         <form onSubmit={handleSaveApiKey} className="space-y-3 text-xs">
-          <p className="text-slate-500 leading-relaxed">
-            Hệ thống tích hợp sẵn <strong>Ngân hàng Sư phạm Thông minh Offline</strong> (hoạt động 100% không cần mạng). Bạn có thể cấu hình thêm Gemini API Key để sinh nhận xét nâng cao cá nhân hóa từng học sinh.
-          </p>
-
-          <div className="flex space-x-2">
+          <div>
             <input
               type="password"
-              placeholder="Nhập Gemini API Key của bạn (AIzaSy...)"
+              placeholder="AIzaSy..."
               value={inputApiKey}
               onChange={(e) => setInputApiKey(e.target.value)}
-              className="flex-1 px-3 py-2 border border-slate-200 rounded-lg font-mono focus:ring-2 focus:ring-purple-500 focus:outline-none"
+              className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-purple-500 focus:outline-none font-mono"
             />
+          </div>
+          <div className="flex justify-end">
             <button
               type="submit"
-              className="px-5 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-bold shadow-xs transition-colors"
+              className="inline-flex items-center space-x-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold px-4 py-2 rounded-xl shadow-xs transition-colors"
             >
-              Lưu Key
+              <Save className="w-4 h-4" />
+              <span>Lưu API Key</span>
             </button>
           </div>
         </form>
       </div>
 
-      {/* Section 4: Backup & Reset */}
+      {/* Section 5: Backup & Reset */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
-        <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-          <ShieldCheck className="w-5 h-5 text-indigo-600" />
-          <span>Sao Lưu & Quản Trị Dữ Liệu</span>
-        </h2>
+        <h2 className="text-base font-bold text-slate-900">Sao Lưu & Quản Lý Dữ Liệu</h2>
 
-        <div className="flex flex-wrap items-center gap-3 pt-1">
+        <div className="flex flex-wrap gap-3">
           <button
             onClick={handleExportBackup}
-            className="inline-flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-xl text-xs font-bold border border-slate-300 transition-colors"
+            className="inline-flex items-center space-x-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-4 py-2.5 rounded-xl border border-slate-300 transition-colors"
           >
             <Download className="w-4 h-4" />
-            <span>Tải Bản Sao Lưu JSON</span>
+            <span>Sao Lưu Dữ Liệu Ra File JSON</span>
           </button>
 
           <button
             onClick={handleReset}
-            className="inline-flex items-center space-x-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 px-4 py-2 rounded-xl text-xs font-bold border border-rose-300 transition-colors"
+            className="inline-flex items-center space-x-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs px-4 py-2.5 rounded-xl border border-rose-200 transition-colors"
           >
             <RotateCcw className="w-4 h-4" />
             <span>Khôi Phục Dữ Liệu Mẫu Ban Đầu</span>
           </button>
         </div>
       </div>
+
+      {/* Modal Add Teacher */}
+      {isAddTeacherOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <h3 className="text-base font-bold text-slate-900">Thêm & Cấp Quyền Cho Giáo Viên</h3>
+
+            <form onSubmit={handleCreateTeacher} className="space-y-3 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Họ và Tên Giáo Viên</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Cô Trần Thu Hà"
+                  value={newTeacherName}
+                  onChange={(e) => setNewTeacherName(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Email Google / Đăng Nhập</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="giaovien@gmail.com"
+                  value={newTeacherEmail}
+                  onChange={(e) => setNewTeacherEmail(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Vai Trò</label>
+                  <select
+                    value={newTeacherRole}
+                    onChange={(e) => setNewTeacherRole(e.target.value as UserRole)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold"
+                  >
+                    <option value="TEACHER">Giáo Viên</option>
+                    <option value="ADMIN">Quản Trị Viên (Admin)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Lớp Phụ Trách</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Lớp 4A1"
+                    value={newTeacherClass}
+                    onChange={(e) => setNewTeacherClass(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsAddTeacherOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 font-semibold"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs"
+                >
+                  Cấp Quyền Ngay
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

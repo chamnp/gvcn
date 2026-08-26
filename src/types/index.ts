@@ -19,6 +19,21 @@ export type AwardTitle =
   | 'Hoàn thành chương trình lớp học'
   | 'Chưa hoàn thành';
 
+export type UserRole = 'ADMIN' | 'TEACHER' | 'PENDING';
+
+export interface TeacherProfile {
+  id: string;
+  email: string;
+  fullName: string;
+  role: UserRole;
+  assignedClassId?: string;
+  assignedClassName?: string;
+  phone?: string;
+  avatarUrl?: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
 export interface Student {
   id: string;
   studentCode: string;
