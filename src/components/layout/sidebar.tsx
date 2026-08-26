@@ -18,6 +18,8 @@ import {
   Sparkle
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
+import { useAuth } from '@/lib/auth-context';
+import { LogIn, LogOut, UserCircle } from 'lucide-react';
 
 const NAV_ITEMS = [
   { href: '/', label: 'Tổng quan', icon: LayoutDashboard, badge: null },
@@ -35,6 +37,7 @@ const NAV_ITEMS = [
 export const Sidebar: React.FC = () => {
   const pathname = usePathname();
   const { classInfo, students } = useAppStore();
+  const { user, signOut } = useAuth();
 
   return (
     <aside className="w-64 bg-slate-900 text-slate-200 min-h-screen flex flex-col border-r border-slate-800 shrink-0">
@@ -107,10 +110,42 @@ export const Sidebar: React.FC = () => {
         })}
       </nav>
 
+      {/* User Auth Footer */}
+      <div className="p-3 mx-2 mb-2 rounded-xl bg-slate-800/60 border border-slate-800">
+        {user ? (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2 overflow-hidden">
+              <UserCircle className="w-6 h-6 text-blue-400 shrink-0" />
+              <div className="overflow-hidden">
+                <p className="text-xs font-bold text-white truncate">
+                  {user.user_metadata?.full_name || 'Giáo viên'}
+                </p>
+                <p className="text-[10px] text-slate-400 truncate">{user.email}</p>
+              </div>
+            </div>
+            <button
+              onClick={() => signOut()}
+              title="Đăng xuất"
+              className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-700/60 rounded-lg transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
+        ) : (
+          <Link
+            href="/login"
+            className="flex items-center justify-center space-x-2 bg-blue-600/30 hover:bg-blue-600 text-blue-300 hover:text-white py-2 px-3 rounded-lg text-xs font-bold transition-all border border-blue-500/30"
+          >
+            <LogIn className="w-3.5 h-3.5" />
+            <span>Đăng Nhập Email</span>
+          </Link>
+        )}
+      </div>
+
       {/* Footer Info */}
-      <div className="p-4 border-t border-slate-800 text-xs text-slate-500 flex items-center justify-between">
+      <div className="px-4 py-3 border-t border-slate-800 text-[11px] text-slate-500 flex items-center justify-between">
         <span className="flex items-center gap-1">
-          <Sparkle className="w-3.5 h-3.5 text-blue-400" />
+          <Sparkle className="w-3 h-3 text-blue-400" />
           <span>Vercel + Supabase</span>
         </span>
         <span>v1.0.0</span>
