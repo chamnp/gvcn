@@ -1,0 +1,140 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Class {
+  id               String    @id @default(uuid())
+  name             String    // '4A1'
+  grade            Int       // 1, 2, 3, 4, 5
+  schoolYear       String    // '2025-2026'
+  schoolName       String    @default("Trường Tiểu học Chu Văn An")
+  teacherName      String    @default("Nguyễn Thị Mai")
+  seatingGridRows  Int       @default(5)
+  seatingGridCols  Int       @default(8)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  students         Student[]
+  transactions     ClassFundTransaction[]
+}
+
+model Student {
+  id                 String              @id @default(uuid())
+  classId            String
+  class              Class               @relation(fields: [classId], references: [id], onDelete: Cascade)
+  studentCode        String              @unique
+  fullName           String
+  gender             String              // 'Nam', 'Nữ'
+  dateOfBirth        String              // YYYY-MM-DD
+  birthPlace         String?
+  ethnicity          String?             @default("Kinh")
+  address            String?
+  parentName         String?
+  parentPhone        String?
+  isBoarding         Boolean             @default(true)
+  seatRow            Int                 @default(0)
+  seatCol            Int                 @default(0)
+  healthNotes        String?
+  tags               String?             // JSON array as string
+  avatarUrl          String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  subjectAssessments SubjectAssessment[]
+  traitAssessments   TraitAssessment[]
+  termSummaries      TermSummary[]
+  attendances        DailyAttendance[]
+  starLogs           StarLog[]
+  transactions       ClassFundTransaction[]
+}
+
+model SubjectAssessment {
+  id          String   @id @default(uuid())
+  studentId   String
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subjectCode String   // 'TOAN', 'TIENG_VIET', 'NGOAI_NGU', ...
+  term        String   // 'GIUA_HK1', 'CUOI_HK1', 'GIUA_HK2', 'CUOI_NAM'
+  level       String   // 'T', 'H', 'C'
+  score       Float?   // 1.0 - 10.0
+  comment     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([studentId, subjectCode, term])
+}
+
+model TraitAssessment {
+  id        String   @id @default(uuid())
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  traitCode String   // 'CHAM_CHI', 'TRUNG_THUC', 'TU_CHU_TU_HOC', ...
+  category  String   // 'PHAM_CHAT', 'NL_CHUNG', 'NL_DAC_THU'
+  term      String   // 'GIUA_HK1', 'CUOI_HK1', 'GIUA_HK2', 'CUOI_NAM'
+  level     String   // 'T', 'Đ', 'C'
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentId, traitCode, term])
+}
+
+model TermSummary {
+  id                   String   @id @default(uuid())
+  studentId            String
+  student              Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  term                 String   // 'GIUA_HK1', 'CUOI_HK1', 'GIUA_HK2', 'CUOI_NAM'
+  overallLearningLevel String?  // 'T', 'H', 'C'
+  overallTraitsLevel   String?  // 'T', 'Đ', 'C'
+  awardTitle           String?  // 'Học sinh Xuất sắc', 'Học sinh Tiêu biểu...'
+  awardDetail          String?
+  teacherComment       String?
+  promotedToNextGrade  Boolean? @default(true)
+  summerRemediation    Boolean? @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@unique([studentId, term])
+}
+
+model DailyAttendance {
+  id             String   @id @default(uuid())
+  studentId      String
+  student        Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  date           String   // YYYY-MM-DD
+  status         String   // 'CO_MAT', 'VANG_CO_PHEP', 'VANG_KHONG_PHEP'
+  hasBoardingMeal Boolean  @default(true)
+  reason         String?
+  createdAt      DateTime @default(now())
+
+  @@unique([studentId, date])
+}
+
+model StarLog {
+  id        String   @id @default(uuid())
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  points    Int      @default(1)
+  category  String   // 'Phát biểu', 'Chăm chỉ', 'Nề nếp', 'Giúp bạn'
+  reason    String
+  createdAt DateTime @default(now())
+}
+
+model ClassFundTransaction {
+  id          String   @id @default(uuid())
+  classId     String
+  class       Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  studentId   String?
+  student     Student? @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  type        String   // 'INCOME', 'EXPENSE'
+  category    String
+  title       String
+  amount      Float
+  date        String   // YYYY-MM-DD
+  payerName   String?
+  notes       String?
+  receiptUrl  String?
+  createdAt   DateTime @default(now())
+}
