@@ -1,4 +1,4 @@
-import { ClassInfo, Student, SubjectAssessment, TraitAssessment, StudentTermSummary, DailyAttendance, StarLog, ClassFundTransaction } from '@/types';
+import { ClassInfo, Student, SubjectAssessment, TraitAssessment, StudentTermSummary, DailyAttendance, StarLog } from '@/types';
 
 export const INITIAL_CLASS: ClassInfo = {
   id: 'class-4a1',
@@ -209,43 +209,4 @@ export const INITIAL_STAR_LOGS: StarLog[] = [
   { id: 'star-2', studentId: 'hs-02', points: 3, category: 'Vở sạch chữ đẹp', reason: 'Bài viết đạt điểm 10 sạch đẹp', createdAt: new Date().toISOString() },
   { id: 'star-3', studentId: 'hs-03', points: 1, category: 'Giúp bạn', reason: 'Hỗ trợ bạn cùng bàn giải bài khó', createdAt: new Date().toISOString() },
   { id: 'star-4', studentId: 'hs-05', points: 2, category: 'Nề nếp', reason: 'Xếp hàng ngay ngắn, giữ vệ sinh chung', createdAt: new Date().toISOString() },
-];
-
-export const INITIAL_FUND_TRANSACTIONS: ClassFundTransaction[] = [
-  {
-    id: 'fund-1',
-    type: 'INCOME',
-    category: 'Quỹ phụ huynh',
-    title: 'Thu Quỹ Hội Cha Mẹ Học Sinh Học kỳ 1 (30 HS x 300.000đ)',
-    amount: 9000000,
-    date: '2025-09-15',
-    notes: 'Trưởng ban phụ huynh đã thu và bàn giao',
-  },
-  {
-    id: 'fund-2',
-    type: 'EXPENSE',
-    category: 'Cơ sở vật chất',
-    title: 'Mua khăn lau bảng, phấn không bụi, bình nước nóng lạnh',
-    amount: 1450000,
-    date: '2025-09-18',
-    notes: 'Có hóa đơn đỏ siêu thị Metro',
-  },
-  {
-    id: 'fund-3',
-    type: 'EXPENSE',
-    category: 'Hoạt động trải nghiệm',
-    title: 'Tổ chức tiệc Trung Thu và quà tặng lồng đèn cho các em',
-    amount: 2200000,
-    date: '2025-09-28',
-    notes: 'Mua bánh kẹo và đèn ông sao',
-  },
-  {
-    id: 'fund-4',
-    type: 'EXPENSE',
-    category: 'Khen thưởng',
-    title: 'Khen thưởng sao thi đua tháng 9 & 10',
-    amount: 850000,
-    date: '2025-10-30',
-    notes: 'Mua tập vở và bút màu làm quà thưởng',
-  },
 ];

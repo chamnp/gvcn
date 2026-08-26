@@ -9,7 +9,6 @@ import {
   StudentTermSummary,
   DailyAttendance,
   StarLog,
-  ClassFundTransaction,
   TermType,
   SubjectLevel,
   TraitLevel,
@@ -22,7 +21,6 @@ import {
   INITIAL_STUDENTS,
   INITIAL_DAILY_ATTENDANCE,
   INITIAL_STAR_LOGS,
-  INITIAL_FUND_TRANSACTIONS,
 } from '@/data/mock-data';
 import { PRIMARY_SUBJECTS, TRAIT_DEFINITIONS, evaluateStudentTT27 } from './tt27-engine';
 import { INITIAL_TIMETABLE } from './timetable-data';
@@ -38,7 +36,6 @@ interface AppContextType {
   termSummaries: StudentTermSummary[];
   attendances: DailyAttendance[];
   starLogs: StarLog[];
-  fundTransactions: ClassFundTransaction[];
   apiKey: string;
   setApiKey: (key: string) => void;
   
@@ -91,10 +88,6 @@ interface AppContextType {
   addStarLog: (studentId: string, points: number, category: string, reason: string) => void;
   getStudentStars: (studentId: string) => number;
 
-  // Finance Actions
-  addTransaction: (tx: Omit<ClassFundTransaction, 'id' | 'createdAt'>) => void;
-  deleteTransaction: (id: string) => void;
-
   // Reset
   resetData: () => void;
 }
@@ -112,7 +105,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [termSummaries, setTermSummaries] = useState<StudentTermSummary[]>([]);
   const [attendances, setAttendances] = useState<DailyAttendance[]>(INITIAL_DAILY_ATTENDANCE);
   const [starLogs, setStarLogs] = useState<StarLog[]>(INITIAL_STAR_LOGS);
-  const [fundTransactions, setFundTransactions] = useState<ClassFundTransaction[]>(INITIAL_FUND_TRANSACTIONS);
   const [timetable, setTimetableState] = useState<TimetableSlot[]>(INITIAL_TIMETABLE);
   const [apiKey, setApiKey] = useState<string>('');
   const [isLoaded, setIsLoaded] = useState(false);
@@ -128,7 +120,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const savedSummaries = localStorage.getItem(STORAGE_PREFIX + 'termSummaries');
       const savedAtt = localStorage.getItem(STORAGE_PREFIX + 'attendances');
       const savedStars = localStorage.getItem(STORAGE_PREFIX + 'starLogs');
-      const savedTx = localStorage.getItem(STORAGE_PREFIX + 'fundTransactions');
       const savedTt = localStorage.getItem(STORAGE_PREFIX + 'timetable');
       const savedKey = localStorage.getItem(STORAGE_PREFIX + 'apiKey');
 
@@ -137,7 +128,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (savedTerm) setCurrentTerm(savedTerm as TermType);
       if (savedAtt) setAttendances(JSON.parse(savedAtt));
       if (savedStars) setStarLogs(JSON.parse(savedStars));
-      if (savedTx) setFundTransactions(JSON.parse(savedTx));
       if (savedTt) setTimetableState(JSON.parse(savedTt));
       if (savedKey) setApiKey(savedKey);
 
@@ -212,7 +202,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem(STORAGE_PREFIX + 'termSummaries', JSON.stringify(termSummaries));
       localStorage.setItem(STORAGE_PREFIX + 'attendances', JSON.stringify(attendances));
       localStorage.setItem(STORAGE_PREFIX + 'starLogs', JSON.stringify(starLogs));
-      localStorage.setItem(STORAGE_PREFIX + 'fundTransactions', JSON.stringify(fundTransactions));
       localStorage.setItem(STORAGE_PREFIX + 'timetable', JSON.stringify(timetable));
       localStorage.setItem(STORAGE_PREFIX + 'apiKey', apiKey);
     } catch (e) {
@@ -228,7 +217,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     termSummaries,
     attendances,
     starLogs,
-    fundTransactions,
     timetable,
     apiKey,
   ]);
@@ -320,7 +308,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (s.id === studentId) {
           return { ...s, seatRow: row, seatCol: col };
         }
-        // Nếu đã có bạn khác ở vị trí này, hoán đổi
         if (s.seatRow === row && s.seatCol === col) {
           const current = prev.find((item) => item.id === studentId);
           return { ...s, seatRow: current?.seatRow || 0, seatCol: current?.seatCol || 0 };
@@ -518,26 +505,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .reduce((sum, s) => sum + s.points, 0);
   };
 
-  // FINANCE ACTIONS
-  const addTransaction = (txData: Omit<ClassFundTransaction, 'id' | 'createdAt'>) => {
-    const newTx: ClassFundTransaction = {
-      ...txData,
-      id: `fund-${Date.now()}`,
-    };
-    setFundTransactions((prev) => [newTx, ...prev]);
-  };
-
-  const deleteTransaction = (id: string) => {
-    setFundTransactions((prev) => prev.filter((t) => t.id !== id));
-  };
-
   const resetData = () => {
     localStorage.clear();
     setClassInfo(INITIAL_CLASS);
     setStudents(INITIAL_STUDENTS);
     setAttendances(INITIAL_DAILY_ATTENDANCE);
     setStarLogs(INITIAL_STAR_LOGS);
-    setFundTransactions(INITIAL_FUND_TRANSACTIONS);
     setTimetableState(INITIAL_TIMETABLE);
     window.location.reload();
   };
@@ -555,7 +528,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         termSummaries,
         attendances,
         starLogs,
-        fundTransactions,
         timetable,
         updateTimetableSlot,
         setTimetable,
@@ -577,8 +549,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         batchSetAttendance,
         addStarLog,
         getStudentStars,
-        addTransaction,
-        deleteTransaction,
         resetData,
       }}
     >

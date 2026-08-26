@@ -12,7 +12,6 @@ import {
   TrendingUp,
   ArrowRight,
   Utensils,
-  Wallet,
   CalendarCheck,
   Calendar,
   Clock,
@@ -32,7 +31,6 @@ export default function DashboardPage() {
     termSummaries,
     attendances,
     starLogs,
-    fundTransactions,
     timetable,
   } = useAppStore();
 
@@ -65,18 +63,12 @@ export default function DashboardPage() {
 
     if (award === 'Học sinh Xuất sắc') xuatSacCount++;
     else if (award === 'Học sinh Tiêu biểu hoàn thành tốt') tieuBieuCount++;
-    else if (award === 'Hoàn thành chương trình lớp học') hoanThanhCount++;
+    else if (award === 'Hoàn thành chương trình lớp học' || award === 'Khen thưởng từng mặt') hoanThanhCount++;
     else canCoGangCount++;
   });
 
-  // Số dư quỹ lớp
-  const totalIncome = fundTransactions
-    .filter((t) => t.type === 'INCOME')
-    .reduce((sum, t) => sum + t.amount, 0);
-  const totalExpense = fundTransactions
-    .filter((t) => t.type === 'EXPENSE')
-    .reduce((sum, t) => sum + t.amount, 0);
-  const fundBalance = totalIncome - totalExpense;
+  // Tổng số sao thi đua
+  const totalClassStars = starLogs.reduce((sum, log) => sum + log.points, 0);
 
   // Top 5 sao nề nếp
   const studentStarMap: { [id: string]: number } = {};
@@ -186,19 +178,21 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Quỹ Lớp */}
+        {/* Sao Thi Đua Lớp */}
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase">Số Dư Quỹ Lớp</p>
-            <h3 className="text-2xl font-black text-slate-900 mt-1">
-              {fundBalance.toLocaleString('vi-VN')} <span className="text-xs font-normal text-slate-500">đ</span>
+            <p className="text-xs font-semibold text-slate-500 uppercase">Sao Nề Nếp Lớp</p>
+            <h3 className="text-2xl font-black text-amber-600 mt-1 flex items-center gap-1.5">
+              <span>⭐</span>
+              <span>{totalClassStars}</span>
+              <span className="text-sm font-normal text-slate-500">sao</span>
             </h3>
             <p className="text-xs text-slate-500 mt-1">
-              Đã thu: {totalIncome.toLocaleString('vi-VN')} đ
+              Dẫn đầu: <strong className="text-slate-800">{topStudents[0]?.fullName || 'Lớp 4A1'}</strong>
             </p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
-            <Wallet className="w-6 h-6" />
+          <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
+            <Sparkles className="w-6 h-6 text-amber-500" />
           </div>
         </div>
       </div>

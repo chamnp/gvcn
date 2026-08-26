@@ -11,7 +11,6 @@ import {
   Award,
   FileSpreadsheet,
   Sparkles,
-  Wallet,
   FileDown,
   Settings,
   GraduationCap,
@@ -31,7 +30,6 @@ const NAV_ITEMS = [
   { href: '/behavior', label: 'Nề nếp & Tích sao', icon: Award, badge: 'Mới' },
   { href: '/assessment', label: 'Đánh giá TT 27', icon: FileSpreadsheet, badge: 'Cốt lõi' },
   { href: '/ai-assistant', label: 'Trợ lý Nhận xét AI', icon: Sparkles, badge: 'AI Pro' },
-  { href: '/finance', label: 'Quỹ lớp & Thu chi', icon: Wallet, badge: null },
   { href: '/reports', label: 'Báo cáo & Xuất Excel', icon: FileDown, badge: null },
   { href: '/settings', label: 'Cài đặt & Supabase', icon: Settings, badge: null },
 ];

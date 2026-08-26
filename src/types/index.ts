@@ -99,19 +99,6 @@ export interface StarLog {
   createdAt: string;
 }
 
-export interface ClassFundTransaction {
-  id: string;
-  type: 'INCOME' | 'EXPENSE';
-  category: string;
-  title: string;
-  amount: number;
-  date: string;
-  studentId?: string; // Nếu là học sinh đóng tiền
-  payerName?: string;
-  notes?: string;
-  receiptUrl?: string;
-}
-
 export interface ClassInfo {
   id: string;
   name: string; // Ví dụ: '4A1'
