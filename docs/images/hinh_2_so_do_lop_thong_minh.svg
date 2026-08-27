@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 650" width="100%" height="100%" style="background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <defs>
+    <linearGradient id="bgBar" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#1e40af"/><stop offset="100%" stop-color="#3b82f6"/></linearGradient>
+    <filter id="cardShadow" x="-5%" y="-5%" width="110%" height="110%"><feDropShadow dx="0" dy="2" stdDeviation="4" flood-opacity="0.06"/></filter>
+  </defs>
+
+  <!-- Top App Navigation Bar -->
+  <rect x="0" y="0" width="1100" height="60" fill="url(#bgBar)"/>
+  <text x="30" y="37" fill="#ffffff" font-size="18" font-weight="bold">GVCN PRO</text>
+  <rect x="140" y="16" width="130" height="28" rx="6" fill="#3b82f6"/>
+  <text x="205" y="35" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="bold">Lớp 4A1 (45 HS)</text>
+  <text x="920" y="36" fill="#bfdbfe" font-size="13">GVCN: Cô Nguyễn Thị Minh Hằng</text>
+
+  <!-- Header Action Bar -->
+  <rect x="30" y="80" width="1040" height="60" rx="10" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="50" y="116" fill="#0f172a" font-size="16" font-weight="bold">🪑 Sơ Đồ Lớp Thông Minh &amp; Tích Sao Khen Thưởng</text>
+  <rect x="740" y="93" width="150" height="34" rx="8" fill="#eff6ff" stroke="#3b82f6"/>
+  <text x="815" y="115" text-anchor="middle" fill="#1d4ed8" font-size="13" font-weight="bold">🔀 Xáo trộn chỗ ngồi</text>
+  <rect x="905" y="93" width="145" height="34" rx="8" fill="#10b981"/>
+  <text x="977" y="115" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="bold">⭐ Thưởng Sao Cả Lớp</text>
+
+  <!-- Blackboard Indicator -->
+  <rect x="250" y="155" width="600" height="28" rx="6" fill="#334155"/>
+  <text x="550" y="174" text-anchor="middle" fill="#94a3b8" font-size="13" font-weight="bold">━━ BẢNG TỪ LỚP HỌC &amp; BÀN GIÁO VIÊN ━━</text>
+
+  <!-- Seating Grid (Rows & Desks) -->
+  <!-- Row 1 (Vision priority) -->
+  <g transform="translate(50, 205)">
+    <!-- Desk 1 -->
+    <rect x="0" y="0" width="220" height="90" rx="10" fill="#ffffff" stroke="#3b82f6" stroke-width="1.5" filter="url(#cardShadow)"/>
+    <circle cx="35" cy="45" r="20" fill="#dbeafe"/>
+    <text x="35" y="51" text-anchor="middle" fill="#1d4ed8" font-size="12" font-weight="bold">01</text>
+    <text x="65" y="36" fill="#0f172a" font-size="14" font-weight="bold">Nguyễn Bảo An</text>
+    <rect x="65" y="44" width="70" height="18" rx="4" fill="#fee2e2"/>
+    <text x="100" y="57" text-anchor="middle" fill="#b91c1c" font-size="10" font-weight="bold">👓 Cận 2.5 độ</text>
+    <rect x="140" y="44" width="65" height="18" rx="4" fill="#fef3c7"/>
+    <text x="172" y="57" text-anchor="middle" fill="#b45309" font-size="10" font-weight="bold">⭐ 18 Sao</text>
+    <text x="65" y="77" fill="#16a34a" font-size="11">✓ Đã ăn bán trú</text>
+
+    <!-- Desk 2 -->
+    <rect x="260" y="0" width="220" height="90" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" filter="url(#cardShadow)"/>
+    <circle cx="295" cy="45" r="20" fill="#fce7f3"/>
+    <text x="295" y="51" text-anchor="middle" fill="#be185d" font-size="12" font-weight="bold">02</text>
+    <text x="325" y="36" fill="#0f172a" font-size="14" font-weight="bold">Trần Bảo Nam</text>
+    <rect x="325" y="44" width="75" height="18" rx="4" fill="#dcfce7"/>
+    <text x="362" y="57" text-anchor="middle" fill="#15803d" font-size="10" font-weight="bold">Lớp trưởng</text>
+    <rect x="405" y="44" width="65" height="18" rx="4" fill="#fef3c7"/>
+    <text x="437" y="57" text-anchor="middle" fill="#b45309" font-size="10" font-weight="bold">⭐ 24 Sao</text>
+    <text x="325" y="77" fill="#16a34a" font-size="11">✓ Đã ăn bán trú</text>
+
+    <!-- Desk 3 -->
+    <rect x="520" y="0" width="220" height="90" rx="10" fill="#ffffff" stroke="#3b82f6" stroke-width="1.5" filter="url(#cardShadow)"/>
+    <circle cx="555" cy="45" r="20" fill="#fef3c7"/>
+    <text x="555" y="51" text-anchor="middle" fill="#b45309" font-size="12" font-weight="bold">03</text>
+    <text x="585" y="36" fill="#0f172a" font-size="14" font-weight="bold">Lê Quỳnh Chi</text>
+    <rect x="585" y="44" width="70" height="18" rx="4" fill="#fee2e2"/>
+    <text x="620" y="57" text-anchor="middle" fill="#b91c1c" font-size="10" font-weight="bold">👓 Cận 1.5 độ</text>
+    <rect x="660" y="44" width="65" height="18" rx="4" fill="#fef3c7"/>
+    <text x="692" y="57" text-anchor="middle" fill="#b45309" font-size="10" font-weight="bold">⭐ 21 Sao</text>
+    <text x="585" y="77" fill="#16a34a" font-size="11">✓ Đã ăn bán trú</text>
+
+    <!-- Desk 4 -->
+    <rect x="780" y="0" width="220" height="90" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" filter="url(#cardShadow)"/>
+    <circle cx="815" cy="45" r="20" fill="#dbeafe"/>
+    <text x="815" y="51" text-anchor="middle" fill="#1d4ed8" font-size="12" font-weight="bold">04</text>
+    <text x="845" y="36" fill="#0f172a" font-size="14" font-weight="bold">Phạm Tuấn Kiệt</text>
+    <rect x="845" y="44" width="65" height="18" rx="4" fill="#fef3c7"/>
+    <text x="877" y="57" text-anchor="middle" fill="#b45309" font-size="10" font-weight="bold">⭐ 15 Sao</text>
+    <text x="845" y="77" fill="#16a34a" font-size="11">✓ Đã ăn bán trú</text>
+  </g>
+
+  <!-- Row 2 -->
+  <g transform="translate(50, 310)">
+    <!-- Desk 5 -->
+    <rect x="0" y="0" width="220" height="90" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" filter="url(#cardShadow)"/>
+    <circle cx="35" cy="45" r="20" fill="#dbeafe"/>
+    <text x="35" y="51" text-anchor="middle" fill="#1d4ed8" font-size="12" font-weight="bold">05</text>
+    <text x="65" y="36" fill="#0f172a" font-size="14" font-weight="bold">Vũ Hoàng Long</text>
+    <rect x="65" y="44" width="65" height="18" rx="4" fill="#fef3c7"/>
+    <text x="97" y="57" text-anchor="middle" fill="#b45309" font-size="10" font-weight="bold">⭐ 19 Sao</text>
+    <text x="65" y="77" fill="#16a34a" font-size="11">✓ Đã ăn bán trú</text>
+
+    <!-- Desk 6 (Active / Selected) -->
+    <rect x="260" y="0" width="220" height="90" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="2" filter="url(#cardShadow)"/>
+    <circle cx="295" cy="45" r="20" fill="#dcfce7"/>
+    <text x="295" y="51" text-anchor="middle" fill="#15803d" font-size="12" font-weight="bold">06</text>
+    <text x="325" y="36" fill="#0f172a" font-size="14" font-weight="bold">Nguyễn Thảo My</text>
+    <rect x="325" y="44" width="80" height="18" rx="4" fill="#e0e7ff"/>
+    <text x="365" y="57" text-anchor="middle" fill="#4338ca" font-size="10" font-weight="bold">+1 Phát biểu 🌟</text>
+    <text x="325" y="77" fill="#16a34a" font-size="11 font-weight:bold">🎉 Vừa cộng sao!</text>
+
+    <!-- Desk 7 -->
+    <rect x="520" y="0" width="220" height="90" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" filter="url(#cardShadow)"/>
+    <circle cx="555" cy="45" r="20" fill="#fce7f3"/>
+    <text x="555" y="51" text-anchor="middle" fill="#be185d" font-size="12" font-weight="bold">07</text>
+    <text x="585" y="36" fill="#0f172a" font-size="14" font-weight="bold">Đỗ Mai Linh</text>
+    <rect x="585" y="44" width="65" height="18" rx="4" fill="#fef3c7"/>
+    <text x="617" y="57" text-anchor="middle" fill="#b45309" font-size="10" font-weight="bold">⭐ 17 Sao</text>
+    <text x="585" y="77" fill="#16a34a" font-size="11">✓ Đã ăn bán trú</text>
+
+    <!-- Desk 8 -->
+    <rect x="780" y="0" width="220" height="90" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1" filter="url(#cardShadow)"/>
+    <circle cx="815" cy="45" r="20" fill="#dbeafe"/>
+    <text x="815" y="51" text-anchor="middle" fill="#1d4ed8" font-size="12" font-weight="bold">08</text>
+    <text x="845" y="36" fill="#0f172a" font-size="14" font-weight="bold">Bùi Đức Minh</text>
+    <rect x="845" y="44" width="65" height="18" rx="4" fill="#fef3c7"/>
+    <text x="877" y="57" text-anchor="middle" fill="#b45309" font-size="10" font-weight="bold">⭐ 14 Sao</text>
+    <text x="845" y="77" fill="#dc2626" font-size="11">✗ Nghỉ có phép</text>
+  </g>
+
+  <!-- Bottom Legend Bar -->
+  <rect x="30" y="570" width="1040" height="50" rx="8" fill="#f1f5f9"/>
+  <text x="50" y="600" fill="#475569" font-size="13" font-weight="bold">Ghi chú:</text>
+  <rect x="120" y="588" width="16" height="16" rx="4" fill="#fee2e2"/>
+  <text x="145" y="601" fill="#475569" font-size="12">Ưu tiên cận thị (Bàn đầu)</text>
+  <circle cx="340" cy="596" r="8" fill="#fef3c7"/>
+  <text x="355" y="601" fill="#475569" font-size="12">Huy hiệu Sao nề nếp</text>
+  <rect x="520" y="588" width="16" height="16" rx="4" fill="#dcfce7"/>
+  <text x="545" y="601" fill="#475569" font-size="12">Có mặt ăn bán trú</text>
+  <rect x="700" y="588" width="16" height="16" rx="4" fill="#fee2e2"/>
+  <text x="725" y="601" fill="#475569" font-size="12">Vắng có phép</text>
+</svg>

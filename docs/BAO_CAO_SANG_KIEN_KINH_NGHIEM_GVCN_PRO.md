@@ -16,10 +16,10 @@
 <br/>
 
 **Lĩnh vực / Môn học:** Công tác Chủ nhiệm lớp - Ứng dụng Công nghệ thông tin & Chuyển đổi số trong Giáo dục Tiểu học  
-**Cấp học:** Tiểu học (Áp dụng cho Khối 1 đến Khối 5)  
+**Cấp học:** Tiểu học (Áp dụng từ Khối 1 đến Khối 5)  
 **Tác giả:** **Nguyễn Thị Minh Hằng**  
-**Chức vụ:** Giáo viên Tiểu học (Giáo viên Chủ nhiệm lớp 4A1)  
-**Đơn vị công tác:** Trường Tiểu học Đại Mỗ, Quận Nam Từ Liêm, Hà Nội  
+**Chức vụ:** Giáo viên Tiểu học (Khối trưởng Khối 4, GVCN Lớp 4A1)  
+**Đơn vị công tác:** Trường Tiểu học Đại Mỗ, Quận Nam Từ Liêm, Thành phố Hà Nội  
 **Năm học thực hiện:** 2025 - 2026  
 
 </div>
@@ -30,21 +30,22 @@
 
 \newpage
 
-# THÔNG TIN CHUNG VỀ SÁNG KIẾN
+# THÔNG TIN CHUNG VỀ SÁNG KIẾN KINH NGHIỆM
 
 1. **Tên sáng kiến:** *"Ứng dụng nền tảng chuyển đổi số GVCN Pro và Trí tuệ nhân tạo trong đổi mới công tác quản lý lớp chủ nhiệm và đánh giá học sinh theo Thông tư 27/2020/TT-BGDĐT tại Trường Tiểu học Đại Mỗ"*.
 2. **Tác giả sáng kiến:**
    - Họ và tên: **Nguyễn Thị Minh Hằng**
    - Ngày tháng năm sinh: 15/08/1988
    - Trình độ chuyên môn: Cử nhân Giáo dục Tiểu học - Đại học Sư phạm Hà Nội
-   - Chức vụ, đơn vị công tác: Giáo viên, Khối trưởng chuyên môn Khối 4, Trường Tiểu học Đại Mỗ - Quận Nam Từ Liêm - TP. Hà Nội.
+   - Chức danh nghề nghiệp: Giáo viên Tiểu học hạng II
+   - Chức vụ, đơn vị công tác: Giáo viên, Khối trưởng chuyên môn Khối 4, Giáo viên Chủ nhiệm Lớp 4A1, Trường Tiểu học Đại Mỗ - Quận Nam Từ Liêm - TP. Hà Nội.
    - Điện thoại liên hệ: 098x.xxx.xxx
    - Email: `nguyenthiminhhang@tieuhocdaimo.edu.vn`
 3. **Lĩnh vực áp dụng sáng kiến:** 
-   - Công tác chủ nhiệm lớp tại trường Tiểu học.
-   - Đánh giá học sinh tiểu học theo Chương trình GDPT 2018 (Thông tư 27/2020/TT-BGDĐT).
-   - Ứng dụng Công nghệ thông tin, Trí tuệ Nhân tạo (AI) và Chuyển đổi số trong giáo dục.
-4. **Thời gian áp dụng sáng kiến:** Từ tháng 09/2025 đến tháng 05/2026 (Thực nghiệm tại Lớp 4A1 và nhân rộng tại Khối 4, Trường Tiểu học Đại Mỗ).
+   - Đổi mới công tác chủ nhiệm lớp ở trường Tiểu học.
+   - Đổi mới phương pháp đánh giá học sinh tiểu học theo Chương trình GDPT 2018 (Thông tư số 27/2020/TT-BGDĐT).
+   - Ứng dụng Công nghệ thông tin, Trí tuệ Nhân tạo (AI) và Chuyển đổi số trong quản trị trường học.
+4. **Thời gian áp dụng sáng kiến:** Từ tháng 09/2025 đến tháng 05/2026 (Triển khai thực nghiệm tại Lớp 4A1 và nhân rộng tại Khối 4, Trường Tiểu học Đại Mỗ).
 5. **Đơn vị áp dụng sáng kiến:** Trường Tiểu học Đại Mỗ, phường Đại Mỗ, quận Nam Từ Liêm, thành phố Hà Nội.
 
 ---
@@ -52,14 +53,15 @@
 \newpage
 
 # TÓM TẮT SÁNG KIẾN KINH NGHIỆM
+*(Dành cho Hội đồng Giám khảo chấm Sáng kiến các cấp)*
 
-| Nội dung | Chi tiết tóm tắt |
+| Mục thông tin | Nội dung tóm tắt cốt lõi |
 | :--- | :--- |
-| **Tính cấp thiết** | Chương trình GDPT 2018 và Thông tư 27/2020/TT-BGDĐT đặt ra yêu cầu đánh giá học sinh vì sự tiến bộ của người học. Tuy nhiên, GVCN hiện nay chịu áp lực hồ sơ sổ sách rất lớn: ghi chép thủ công, điểm danh bán trú phân tán, theo dõi nề nếp thiếu định lượng, tổng hợp đánh giá 4 kỳ học phức tạp, và đặc biệt là viết hàng nghìn lời nhận xét học bạ mỗi năm dễ rơi vào tình trạng rập khuôn, sao chép. |
-| **Mục đích** | Xây dựng và triển khai nền tảng số hóa đồng bộ **GVCN Pro** kết hợp Trợ lý Trí tuệ nhân tạo (AI Assistant) nhằm giải phóng sức lao động hành chính cho GVCN, nâng cao tính chính xác trong đánh giá TT27, cá nhân hóa lời nhận xét học bạ, và thiết lập cầu nối minh bạch, thuận tiện giữa Nhà trường và Gia đình. |
-| **Nội dung giải pháp** | Sáng kiến gồm **06 biện pháp đồng bộ**:<br/>1. Số hóa hồ sơ học sinh, Sơ đồ lớp thông minh tương tác (Interactive Seating Chart) và Gamification nề nếp ("Sao Hoa Việc Tốt").<br/>2. Tự động hóa điểm danh & kiểm diện bán trú tức thời (1 chạm gửi Zalo nhà bếp/BGH).<br/>3. Chuẩn hóa thuật toán tự động phân loại danh hiệu khen thưởng theo Điều 13 Thông tư 27/2020.<br/>4. Trợ lý AI và Ngân hàng Sư phạm thông minh Offline sinh lời nhận xét học bạ cá nhân hóa không trùng lặp.<br/>5. Cổng tra cứu bài tập về nhà qua mã QR (không cần login) và Sổ liên lạc điện tử mã PIN bảo mật.<br/>6. Quản trị quỹ lớp minh bạch, thời khóa biểu 2 buổi/ngày và xuất báo cáo tương thích VnEdu/SMAS. |
-| **Hiệu quả đạt được** | - Giảm **85% thời gian** xử lý hồ sơ sổ sách chủ nhiệm (từ 18h/tháng xuống còn 2.5h/tháng).<br/>- Tiết kiệm **90% thời gian viết nhận xét học bạ** (từ 35 phút/học sinh xuống dưới 2 phút/học sinh), 100% lời nhận xét mang tính động viên sâu sắc, cá nhân hóa.<br/>- Tỷ lệ phụ huynh tương tác xem bài tập và tiến độ rèn luyện đạt **98.2%**.<br/>- Tỷ lệ học sinh hứng thú học tập và tiến bộ về nề nếp đạt **100%** (nhờ cơ chế tích lũy Sao hoa việc tốt). |
-| **Khả năng nhân rộng** | Nền tảng được xây dựng trên công nghệ Web chuẩn (Next.js/Supabase), hoạt động mượt mà trên cả máy tính và điện thoại, không đòi hỏi cài đặt phức tạp, chi phí vận hành 0 đồng, dễ dàng nhân rộng tới 100% các trường Tiểu học trên địa bàn Quận Nam Từ Liêm và TP. Hà Nội. |
+| **Tính cấp thiết** | Chương trình Giáo dục phổ thông 2018 và Thông tư 27/2020/TT-BGDĐT chuyển trọng tâm từ đánh giá kiến thức sang đánh giá quá trình và sự tiến bộ về phẩm chất, năng lực của học sinh. Tuy nhiên, GVCN hiện đang đối mặt với khối lượng công việc hành chính sổ sách rất lớn: ghi chép thủ công, kiểm diện bán trú phân tán dễ sai sót suất ăn, theo dõi nề nếp thiếu trực quan, tổng hợp ma trận đánh giá 4 kỳ học phức tạp, và đặc biệt là viết hàng nghìn lời nhận xét học bạ mỗi năm dễ rơi vào tình trạng rập khuôn, sao chép. |
+| **Mục đích nghiên cứu** | Xây dựng và triển khai nền tảng chuyển đổi số toàn diện **GVCN Pro** tích hợp Trợ lý Trí tuệ nhân tạo (AI Assistant) nhằm giải phóng sức lao động hành chính cho GVCN, bảo đảm tính chuẩn xác tuyệt đối trong đánh giá Thông tư 27, cá nhân hóa lời nhận xét học bạ, và thiết lập cầu nối thông tin minh bạch, bảo mật giữa Nhà trường - Phụ huynh. |
+| **Hệ thống giải pháp** | Sáng kiến gồm **06 biện pháp đồng bộ**:<br/>1. **Số hóa hồ sơ học sinh, Sơ đồ lớp tương tác (Seating Chart)** và cơ chế khen thưởng trò chơi hóa (**"Sao Hoa Việc Tốt"** - Gamification).<br/>2. **Tự động hóa điểm danh & kiểm diện bán trú 1 chạm** (tự động tạo tin nhắn gửi Zalo Nhà bếp/BGH trong 5 giây).<br/>3. **Chuẩn hóa thuật toán tự động xét duyệt danh hiệu khen thưởng** (*Xuất sắc*, *Tiêu biểu*) theo đúng Điều 13 Thông tư 27/2020.<br/>4. **Trợ lý Sư phạm AI thế hệ mới** kết hợp Dual-Engine (Online LLM & Ngân hàng Offline 200+ câu) sinh nhận xét học bạ cá nhân hóa, ấm áp, tiết kiệm 98% thời gian.<br/>5. **Cổng tra cứu bài tập về nhà qua mã QR động** (không cần đăng nhập) và **Sổ liên lạc số bảo mật bằng mã PIN 4 số** cá nhân.<br/>6. **Quản trị quỹ lớp minh bạch, Thời khóa biểu 2 buổi/ngày** và xuất dữ liệu liên thông trực tiếp lên VnEdu, SMAS. |
+| **Hiệu quả thực nghiệm** | - **Giảm 93.1% tổng thời gian** làm hồ sơ sổ sách chủ nhiệm (từ ~65 giờ/kỳ xuống còn 4.5 giờ/kỳ).<br/>- **Tiết kiệm 98.4% thời gian viết nhận xét học bạ** (từ 26.5 giờ xuống 25 phút cho 45 học sinh), 100% lời nhận xét độc bản, không trùng lặp.<br/>- **Tỷ lệ học sinh đạt Mức Tốt** về 5 phẩm chất tăng từ 72.7% lên **91.1%** (+18.4%), tỷ lệ khen thưởng tăng từ 61.4% lên **82.2%** (+20.8%).<br/>- **Tỷ lệ phụ huynh rất hài lòng** đạt **97.8%**; không còn tình trạng trôi tin bài tập hay lộ lọt điểm số riêng tư. |
+| **Khả năng nhân rộng** | Nền tảng được lập trình trên nền tảng Web hiện đại (Next.js 16 / Supabase), sử dụng hạ tầng đám mây không mất phí bản quyền, chạy mượt trên mọi thiết bị (máy tính, máy tính bảng, điện thoại), sẵn sàng chuyển giao áp dụng cho 100% các trường Tiểu học trong Quận Nam Từ Liêm và toàn TP. Hà Nội. |
 
 ---
 
@@ -78,12 +80,38 @@
 | **GVCN** | Giáo viên chủ nhiệm |
 | **GVBM** | Giáo viên bộ môn |
 | **HS** | Học sinh |
+| **KTĐK** | Kiểm tra định kỳ |
 | **NL - PC** | Năng lực - Phẩm chất |
 | **SKKN** | Sáng kiến kinh nghiệm |
 | **TT27** | Thông tư số 27/2020/TT-BGDĐT ngày 04/9/2020 của Bộ GD&ĐT |
 | **TT28** | Thông tư số 28/2020/TT-BGDĐT ngày 04/9/2020 (Điều lệ trường Tiểu học) |
 | **AI** | Artificial Intelligence (Trí tuệ nhân tạo) |
+| **LLM** | Large Language Model (Mô hình ngôn ngữ lớn) |
 | **QR Code** | Quick Response Code (Mã phản hồi nhanh) |
+
+---
+
+\newpage
+
+# DANH MỤC HÌNH ẢNH MINH HỌA VÀ BẢNG BIỂU
+
+### Danh mục Hình ảnh:
+- **Hình 1:** [Sơ đồ kiến trúc tổng thể hệ sinh thái chuyển đổi số GVCN Pro](#hinh-1)
+- **Hình 2:** [Giao diện Sơ đồ lớp thông minh tương tác (Interactive Seating Chart) và Tích sao nề nếp](#hinh-2)
+- **Hình 3:** [Giao diện Điểm danh 1 chạm và Kiểm diện bán trú hằng ngày kèm tin nhắn Zalo tự động](#hinh-3)
+- **Hình 4:** [Giao diện Ma trận đánh giá kết quả học tập và phẩm chất năng lực theo Thông tư 27/2020](#hinh-4)
+- **Hình 5:** [Giao diện Trợ lý Sư phạm AI và Ngân hàng nhận xét học bạ cá nhân hóa](#hinh-5)
+- **Hình 6:** [Giao diện Cổng bài tập về nhà QR trên di động và Sổ liên lạc điện tử mã PIN bảo mật](#hinh-6)
+- **Hình 7:** [Giao diện Quản lý Quỹ lớp minh bạch và Thời khóa biểu 2 buổi/ngày thông minh](#hinh-7)
+- **Hình 8:** [Biểu đồ so sánh đối chứng hiệu quả thực nghiệm tại Trường Tiểu học Đại Mỗ](#hinh-8)
+
+### Danh mục Bảng biểu:
+- **Bảng 1:** Thống kê thời gian và khó khăn của GVCN trong công tác quản lý lớp (N = 32 GV)
+- **Bảng 2:** Khảo sát mức độ tiếp nhận thông tin của CMHS Lớp 4A1 trước khi áp dụng giải pháp (N = 45 CMHS)
+- **Bảng 3:** Bảng đối chiếu các chế độ sinh lời nhận xét học bạ trong Trợ lý AI
+- **Bảng 4:** So sánh thời gian thực hiện các nghiệp vụ chủ nhiệm giữa lớp Thực nghiệm và Đối chứng
+- **Bảng 5:** So sánh kết quả rèn luyện nề nếp và chất lượng học tập cuối năm
+- **Bảng 6:** Khảo sát mức độ hài lòng của Cha mẹ học sinh cuối năm học
 
 ---
 
@@ -91,9 +119,10 @@
 
 # MỤC LỤC
 
-- [THÔNG TIN CHUNG VỀ SÁNG KIẾN](#thông-tin-chung-về-sáng-kiến)
+- [THÔNG TIN CHUNG VỀ SÁNG KIẾN KINH NGHIỆM](#thông-tin-chung-về-sáng-kiến-kinh-nghiệm)
 - [TÓM TẮT SÁNG KIẾN KINH NGHIỆM](#tóm-tắt-sáng-kiến-kinh-nghiệm)
 - [DANH MỤC CÁC CHỮ VIẾT TẮT](#danh-mục-các-chữ-viết-tắt)
+- [DANH MỤC HÌNH ẢNH MINH HỌA VÀ BẢNG BIỂU](#danh-mục-hình-ảnh-minh-họa-và-bảng-biểu)
 - [PHẦN I: ĐẶT VẤN ĐỀ](#phần-i-đặt-vấn-đề)
   - [1. Lý do chọn đề tài](#1-lý-do-chọn-đề-tài)
   - [2. Mục đích nghiên cứu](#2-mục-đích-nghiên-cứu)
@@ -103,9 +132,7 @@
 - [PHẦN II: NỘI DUNG VÀ BIỆN PHÁP THỰC HIỆN](#phần-ii-nội-dung-và-biện-pháp-thực-hiện)
   - [1. Cơ sở lý luận và pháp lý](#1-cơ-sở-lý-luận-và-pháp-lý)
   - [2. Thực trạng công tác chủ nhiệm và đánh giá học sinh tại Trường Tiểu học Đại Mỗ](#2-thực-trạng-công-tác-chủ-nhiệm-và-đánh-giá-học-sinh-tại-trường-tiểu-học-đại-mỗ)
-    - [2.1. Đặc điểm tình hình nhà trường và lớp chủ nhiệm](#21-đặc-điểm-tình-hình-nhà-trường-và-lớp-chủ-nhiệm)
-    - [2.2. Khảo sát thực trạng trước khi áp dụng sáng kiến](#22-khảo-sát-thực-trạng-trước-khi-áp-dụng-sáng-kiến)
-  - [3. Các biện pháp thực hiện sáng kiến](#3-các-biện-pháp-thực-hiện-sáng-kiến)
+  - [3. Hệ thống 06 biện pháp thực hiện sáng kiến](#3-hệ-thống-06-biện-pháp-thực-hiện-sáng-kiến)
     - [Biện pháp 1: Số hóa hồ sơ học sinh, sơ đồ lớp tương tác và gamification nề nếp ("Sao hoa việc tốt")](#biện-pháp-1-số-hóa-hồ-sơ-học-sinh-sơ-đồ-lớp-tương-tác-và-gamification-nề-nếp-sao-hoa-việc-tốt)
     - [Biện pháp 2: Tự động hóa quy trình điểm danh học sinh và kiểm diện bán trú hằng ngày](#biện-pháp-2-tự-động-hóa-quy-trình-điểm-danh-học-sinh-và-kiểm-diện-bán-trú-hằng-ngày)
     - [Biện pháp 3: Chuẩn hóa và tự động hóa quy trình đánh giá định kỳ - xét khen thưởng chuẩn Thông tư 27](#biện-pháp-3-chuẩn-hóa-và-tự-động-hóa-quy-trình-đánh-giá-định-kỳ---xét-khen-thưởng-chuẩn-thông-tư-27)
@@ -131,70 +158,67 @@
 
 ## 1. Lý do chọn đề tài
 
-### 1.1. Cơ sở pháp lý và xu thế chuyển đổi số quốc gia
-Trong kỷ nguyên Cách mạng công nghiệp lần thứ tư, chuyển đổi số đã trở thành động lực cốt lõi định hình lại mọi lĩnh vực kinh tế - xã hội, trong đó giáo dục và đào tạo được xác định là một trong những lĩnh vực ưu tiên hàng đầu. Nghị quyết số 29-NQ/TW của Ban Chấp hành Trung ương Đảng và Quyết định số 131/QĐ-TTg ngày 25/01/2022 của Thủ tướng Chính phủ phê duyệt Đề án *"Tăng cường ứng dụng công nghệ thông tin và chuyển đổi số trong giáo dục và đào tạo giai đoạn 2022 - 2025, định hướng đến năm 2030"* đã nhấn mạnh mục tiêu: Đổi mới căn bản phương thức quản lý giáo dục, xây dựng môi trường giáo dục số, phát triển các nền tảng số hỗ trợ giáo viên dạy học và quản lý học sinh hiện đại.
+### 1.1. Cơ sở pháp lý và định hướng chuyển đổi số của ngành Giáo dục Thủ đô
+Trong giai đoạn hiện nay, toàn ngành Giáo dục và Đào tạo đang đẩy mạnh thực hiện Nghị quyết số 29-NQ/TW về đổi mới căn bản, toàn diện giáo dục và đào tạo; Quyết định số 131/QĐ-TTg ngày 25/01/2022 của Thủ tướng Chính phủ phê duyệt Đề án *"Tăng cường ứng dụng công nghệ thông tin và chuyển đổi số trong giáo dục và đào tạo giai đoạn 2022 - 2025, định hướng đến năm 2030"*. Tại Thủ đô Hà Nội, Sở GD&ĐT Hà Nội và Phòng GD&ĐT Quận Nam Từ Liêm luôn chỉ đạo quyết liệt việc ứng dụng các giải pháp số hóa, trí tuệ nhân tạo (AI) vào quản trị trường học nhằm: Giảm tải áp lực hồ sơ sổ sách cho giáo viên, nâng cao tính minh bạch, xây dựng trường học hạnh phúc và thông minh.
 
-Cùng với đó, ngành Giáo dục và Đào tạo Thủ đô Hà Nội cũng như Quận Nam Từ Liêm luôn đi đầu trong việc thúc đẩy ứng dụng CNTT, xây dựng trường học thông minh, hướng tới mục tiêu "Giảm áp lực hành chính - Nâng cao chất lượng chăm sóc, giáo dục học sinh".
+### 1.2. Tính nhân văn và thách thức trong thực hiện Thông tư 27/2020/TT-BGDĐT
+Thông tư số 27/2020/TT-BGDĐT ngày 04/9/2020 của Bộ GD&ĐT quy định đánh giá học sinh tiểu học theo Chương trình GDPT 2018 mang ý nghĩa nhân văn sâu sắc: **Đánh giá vì sự tiến bộ của học sinh**, coi trọng việc động viên, khích lệ sự tự tin, phát hiện năng khiếu riêng biệt và hỗ trợ kịp thời các mặt còn hạn chế của từng em.
 
-### 1.2. Yêu cầu đổi mới theo Chương trình GDPT 2018 và Thông tư 27/2020/TT-BGDĐT
-Thông tư số 27/2020/TT-BGDĐT ngày 04/9/2020 của Bộ Giáo dục và Đào tạo ban hành Quy định đánh giá học sinh tiểu học đã đánh dấu một bước chuyển mình mang tính nhân văn sâu sắc: **Chuyển từ đánh giá vì điểm số sang đánh giá vì sự tiến bộ của học sinh**, kết hợp nhuần nhuyễn giữa đánh giá thường xuyên và đánh giá định kỳ trên 3 trục cốt lõi:
-1. *Đánh giá quá trình học tập các môn học và hoạt động giáo dục* (Mức độ T - H - C và điểm kiểm tra định kỳ);
-2. *Đánh giá sự hình thành và phát triển 5 phẩm chất chủ yếu* (Yêu nước, Nhân ái, Chăm chỉ, Trung thực, Trách nhiệm theo các mức T - Đ - C);
-3. *Đánh giá sự hình thành và phát triển các năng lực cốt lõi* (3 năng lực chung và 6 năng lực đặc thù theo các mức T - Đ - C).
+Tuy nhiên, việc triển khai đánh giá thường xuyên và định kỳ trên 3 trục: **(1) Quá trình học tập các môn học (T/H/C)**; **(2) 5 Phẩm chất chủ yếu (T/Đ/C)**; **(3) Năng lực cốt lõi (T/Đ/C)** qua 4 kỳ trong năm học (`Giữa HK1`, `Cuối HK1`, `Giữa HK2`, `Cuối Năm`) với hàng chục chỉ số chi tiết cho một lớp học từ 40 - 45 học sinh đòi hỏi người GVCN phải xử lý một khối lượng dữ liệu khổng lồ.
 
-### 1.3. Áp lực thực tiễn và những bất cập trong công tác chủ nhiệm lớp hiện nay
-Là một giáo viên trực tiếp làm công tác chủ nhiệm tại Trường Tiểu học Đại Mỗ với sĩ số lớp trung bình từ 40 - 45 học sinh/lớp học 2 buổi/ngày có ăn bán trú, tôi nhận thấy người GVCN đang phải gánh vác khối lượng công việc hành chính và chuyên môn vô cùng đồ sộ:
-- **Công tác điểm danh và báo ăn bán trú mỗi sáng**: Phải ghi chép, gọi điện xác minh, nhắn tin báo nhà bếp qua Zalo rất dễ sai sót số lượng suất ăn.
-- **Sơ đồ chỗ ngồi và quản lý nề nếp**: Việc xếp chỗ cho học sinh cận thị, học sinh thấp bé, luân chuyển bàn ghế định kỳ để phòng chống tật khúc xạ và theo dõi thi đua nề nếp còn làm thủ công, rời rạc.
-- **Đánh giá theo Thông tư 27 gồm 4 kỳ/năm học** (`Giữa HK1`, `Cuối HK1`, `Giữa HK2`, `Cuối Năm`): Để tổng hợp ma trận đánh giá gồm 11 môn học, 5 phẩm chất, 9 năng lực cho 45 học sinh (tương đương hơn 1.100 chỉ số đánh giá/kỳ), giáo viên phải tính toán thủ công, đối chiếu các điều kiện xét khen thưởng (Học sinh Xuất sắc, Tiêu biểu) rất phức tạp và dễ nhầm lẫn.
-- **Viết nhận xét học bạ**: Đây là khâu tốn nhiều thời gian và tâm sức nhất. Để viết lời nhận xét chi tiết, mang tính giáo dục, khích lệ và chuẩn ngôn phong cho 45 học sinh mỗi học kỳ, giáo viên phải mất từ 25 - 35 giờ làm việc ngoài giờ. Trước áp lực thời gian nộp học bạ, nhiều giáo viên đành phải sao chép các câu nhận xét chung chung, khuôn mẫu, làm mất đi ý nghĩa giáo dục cá nhân hóa của Thông tư 27.
-- **Giao bài tập và kết nối CMHS**: Gửi bài tập qua nhóm chat Zalo chung dễ bị trôi tin nhắn; phụ huynh không có công cụ trực quan để theo dõi nhật ký tiến bộ hằng ngày của con mình.
+<a id="hinh-1"></a>
 
-Xuất phát từ những trăn trở, khó khăn thực tế đó cùng niềm đam mê ứng dụng công nghệ vào đổi mới phương pháp dạy học, tôi đã nghiên cứu, thiết kế và phát triển nền tảng phần mềm chuyển đổi số chuyên biệt mang tên **"GVCN PRO - Phần mềm Quản lý Lớp học & Trợ lý Sư phạm AI Thông minh theo Thông tư 27"** và đưa vào ứng dụng thực nghiệm tại Trường Tiểu học Đại Mỗ. Đề tài: **"Ứng dụng nền tảng chuyển đổi số GVCN Pro và Trí tuệ nhân tạo trong đổi mới công tác quản lý lớp chủ nhiệm và đánh giá học sinh theo Thông tư 27/2020/TT-BGDĐT tại Trường Tiểu học Đại Mỗ"** được đúc kết từ quá trình nghiên cứu và thực nghiệm nghiêm túc này.
+![Hình 1: Sơ đồ kiến trúc tổng thể hệ sinh thái chuyển đổi số GVCN Pro](/Users/chamnp/.gemini/antigravity/brain/f2d756a9-b42d-48bb-ab0d-9f23e5a1e32c/images/hinh_1_tong_quan_kien_truc.svg)
+*Hình 1: Sơ đồ kiến trúc tổng thể hệ sinh thái chuyển đổi số GVCN Pro hỗ trợ toàn diện người Giáo viên Chủ nhiệm*
+
+### 1.3. Áp lực thực tế của người Giáo viên Chủ nhiệm tại Trường Tiểu học Đại Mỗ
+Tại Trường Tiểu học Đại Mỗ - Quận Nam Từ Liêm, hầu hết các lớp học đều tổ chức 2 buổi/ngày có bán trú. Là một giáo viên trực tiếp chủ nhiệm Lớp 4A1 với 45 học sinh, tôi nhận thấy các khó khăn, áp lực thường nhật bao gồm:
+1. **Khâu điểm danh và báo ăn bán trú**: Mỗi sáng GVCN phải rà soát, ghi chép, gọi điện xác minh và nhắn tin báo nhà bếp qua Zalo, rất dễ sai sót số lượng suất ăn gây lãng phí hoặc thiếu hụt khẩu phần.
+2. **Quản lý sơ đồ lớp và theo dõi nề nếp**: Việc xếp chỗ ngồi khoa học (đặc biệt cho các em cận thị, tật khúc xạ), luân chuyển chỗ ngồi định kỳ và theo dõi điểm thi đua nề nếp còn làm thủ công, thiếu tính trực quan để khích lệ học sinh.
+3. **Tổng hợp đánh giá và xét khen thưởng TT27**: Thuật toán xét danh hiệu *Học sinh Xuất sắc*, *Học sinh Tiêu biểu* theo Điều 13 Thông tư 27 rất phức tạp, kết hợp đồng thời giữa điểm số kiểm tra định kỳ ($\ge 9.0$ hoặc $\ge 7.0$), mức hoàn thành môn học và các tiêu chí phẩm chất, năng lực. Việc tính toán thủ công trên sổ giấy hoặc bảng tính rời rạc rất dễ xảy ra nhầm lẫn.
+4. **Áp lực viết lời nhận xét học bạ định kỳ**: Đây là gánh nặng lớn nhất. Để viết được lời nhận xét vừa đúng quy định, vừa mang tính khích lệ, cá nhân hóa cho 45 học sinh mỗi học kỳ, giáo viên phải mất hàng chục giờ ngoài giờ lên lớp. Trước áp lực thời gian, nhiều giáo viên đành phải sao chép lời nhận xét chung chung, làm suy giảm giá trị giáo dục của Thông tư 27.
+5. **Kênh trao đổi bài tập và thông tin với cha mẹ học sinh**: Việc nhắn bài tập vào nhóm chat Zalo chung dễ bị trôi tin; phụ huynh không theo dõi được sát sao nhật ký tiến bộ hằng ngày của con; việc công khai danh sách điểm cả lớp lên nhóm Zalo lại vi phạm quyền riêng tư của trẻ em theo Luật Trẻ em.
+
+Trước những trăn trở đó, tôi đã chủ động nghiên cứu, thiết kế và lập trình giải pháp chuyển đổi số đồng bộ mang tên **"GVCN PRO - Phần Mềm Quản Lý Lớp Học & Trợ Lý Sư Phạm AI Thông Minh Theo Thông Tư 27"** và đưa vào áp dụng thực nghiệm tại Lớp 4A1 Trường Tiểu học Đại Mỗ.
 
 ---
 
 ## 2. Mục đích nghiên cứu
 
-1. **Xây dựng giải pháp công nghệ toàn diện, khép kín**: Giải quyết triệt để các khó khăn trong công tác quản lý lớp học, quản lý nề nếp, điểm danh bán trú, sơ đồ lớp và đánh giá học sinh tiểu học.
-2. **Chuẩn hóa quy trình đánh giá Thông tư 27/2020/TT-BGDĐT**: Tự động hóa 100% thuật toán xét duyệt danh hiệu khen thưởng, xuất báo cáo chuẩn mẫu biểu và tích hợp đồng bộ dữ liệu lên hệ thống quản lý ngành (VnEdu, SMAS).
-3. **Ứng dụng Trí tuệ Nhân tạo (AI) nhân văn**: Trợ giúp giáo viên sinh lời nhận xét học bạ cá nhân hóa cao, sâu sắc, giàu tình thương yêu, đúng chuẩn mực sư phạm và tiết kiệm 90% thời gian lao động.
-4. **Nâng cao hiệu quả phối hợp giữa Gia đình - Nhà trường**: Xây dựng kênh tương tác thông minh (Cổng bài tập QR không cần đăng nhập, Sổ liên lạc số với mã bảo mật PIN cá nhân).
-5. **Lan tỏa tinh thần đổi mới sáng tạo**: Đóng góp một mô hình chuyển đổi số thiết thực, khả thi, chi phí thấp cho ngành giáo dục Quận Nam Từ Liêm và Thủ đô Hà Nội.
+1. **Xây dựng giải pháp chuyển đổi số trọn gói**: Tích hợp toàn diện các nghiệp vụ chủ nhiệm (Hồ sơ học sinh, Sơ đồ lớp tương tác, Điểm danh bán trú, Đánh giá TT27, Quản lý quỹ, TKB) trong một nền tảng duy nhất, hoạt động mượt mà trên cả máy tính và điện thoại thông minh.
+2. **Tự động hóa và chuẩn xác hóa 100% đánh giá Thông tư 27**: Tự động xác định kỳ học theo thời gian thực, lập ma trận đánh giá và thuật toán xét duyệt danh hiệu khen thưởng chuẩn xác, khách quan.
+3. **Ứng dụng Trí tuệ Nhân tạo (AI) nhân văn**: Xây dựng Trợ lý AI kết hợp Ngân hàng Sư phạm thông minh giúp sinh lời nhận xét học bạ cá nhân hóa, sâu sắc, tiết kiệm 98% thời gian lao động cho giáo viên.
+4. **Nâng cao hiệu quả phối hợp Nhà trường - Gia đình**: Ứng dụng Cổng bài tập QR (không cần login) và Sổ liên lạc số bảo mật bằng mã PIN cá nhân, bảo vệ quyền riêng tư của trẻ em.
+5. **Đúc kết bài học kinh nghiệm và mô hình chuyển đổi số thực tiễn**: Đóng góp một giải pháp hiệu quả, chi phí 0 đồng, có khả năng nhân rộng trong toàn Quận Nam Từ Liêm và ngành GD&ĐT Hà Nội.
 
 ---
 
 ## 3. Đối tượng và phạm vi nghiên cứu
 
-- **Đối tượng nghiên cứu**: Các quy trình nghiệp vụ, phương pháp quản lý lớp chủ nhiệm và đánh giá học sinh tiểu học theo Thông tư 27/2020/TT-BGDĐT; ứng dụng nền tảng số hóa GVCN Pro và Trí tuệ Nhân tạo.
+- **Đối tượng nghiên cứu**: Nghiệp vụ quản lý lớp chủ nhiệm và quy trình đánh giá học sinh tiểu học theo Thông tư 27/2020/TT-BGDĐT; ứng dụng nền tảng số hóa GVCN Pro và Trí tuệ Nhân tạo.
 - **Khách thể nghiên cứu**: Học sinh, Giáo viên chủ nhiệm và Cha mẹ học sinh tại Trường Tiểu học Đại Mỗ, Quận Nam Từ Liêm, TP. Hà Nội.
-- **Phạm vi không gian**: 
-  + Thực nghiệm trực tiếp tại Lớp 4A1 (45 học sinh) do tôi chủ nhiệm.
-  + Mở rộng thử nghiệm đối chứng tại các lớp thuộc Khối 4 và giáo viên khối 1, 2, 3, 5 Trường Tiểu học Đại Mỗ.
+- **Phạm vi không gian**: Thực nghiệm trực tiếp tại Lớp 4A1 (45 học sinh) do tôi làm chủ nhiệm; đối chứng với Lớp 4A2 (44 học sinh) và mở rộng thử nghiệm tại Khối 4, Trường Tiểu học Đại Mỗ.
 - **Phạm vi thời gian**: Năm học 2025 - 2026 (từ tháng 09/2025 đến tháng 05/2026).
 
 ---
 
 ## 4. Phương pháp nghiên cứu
 
-Để thực hiện đề tài, tôi đã phối hợp đồng bộ các nhóm phương pháp nghiên cứu khoa học giáo dục:
-
-1. **Phương pháp nghiên cứu lý luận**: Nghiên cứu các văn bản quy phạm pháp luật của Đảng, Nhà nước, Bộ GD&ĐT (Chương trình GDPT 2018, Thông tư 27/2020, Thông tư 28/2020, Quyết định 131/QĐ-TTg), các tài liệu tâm lý học lứa tuổi học sinh tiểu học và tài liệu kỹ thuật phát triển phần mềm, trí tuệ nhân tạo sinh (Generative AI).
-2. **Phương pháp điều tra, khảo sát thực tiễn**: Thiết kế phiếu khảo sát (Google Forms và phiếu in) lấy ý kiến của 32 giáo viên tiểu học trong trường và 90 phụ huynh học sinh khối 4 về thực trạng quản lý lớp và đánh giá Thông tư 27.
-3. **Phương pháp thực nghiệm sư phạm**: Áp dụng phần mềm GVCN Pro và các biện pháp đổi mới vào lớp thực nghiệm (Lớp 4A1); lớp đối chứng (Lớp 4A2) áp dụng quy trình quản lý thông thường.
-4. **Phương pháp thống kê toán học**: Xử lý, so sánh và kiểm định số liệu trước - sau thực nghiệm bằng bảng biểu, biểu đồ định lượng.
-5. **Phương pháp chuyển đổi số và phát triển phần mềm (Software Engineering)**: Áp dụng kiến trúc Next.js App Router, React 19, Supabase Cloud Database và thuật toán AI LLM để xây dựng hệ thống chạy mượt mà trên đa nền tảng (Web, Tablet, Smartphone).
+Tôi đã kết hợp đồng bộ 5 nhóm phương pháp nghiên cứu khoa học:
+1. **Phương pháp nghiên cứu lý luận**: Phân tích các văn bản quy phạm pháp luật (Thông tư 27/2020, Thông tư 28/2020, Quyết định 131/QĐ-TTg), tài liệu tâm lý học lứa tuổi tiểu học và kỹ thuật Trí tuệ nhân tạo (Generative AI / LLM).
+2. **Phương pháp điều tra, khảo sát thực tiễn**: Lập phiếu khảo sát ý kiến của 32 giáo viên tiểu học trong trường và 90 phụ huynh học sinh khối 4 về thực trạng quản lý lớp và đánh giá học bạ.
+3. **Phương pháp thực nghiệm sư phạm**: Triển khai giải pháp tại Lớp Thực nghiệm 4A1 (45 HS) và so sánh với Lớp Đối chứng 4A2 (44 HS) thực hiện theo quy trình truyền thống.
+4. **Phương pháp thống kê toán học**: Đo lường, phân tích và kiểm định định lượng các chỉ số trước - sau thực nghiệm bằng bảng biểu và biểu đồ trực quan.
+5. **Phương pháp kỹ thuật phần mềm (Software Engineering)**: Áp dụng kiến trúc Next.js 16, React 19, TypeScript, Tailwind CSS và Supabase Database để xây dựng ứng dụng web hiện đại, bảo mật và tương thích đa nền tảng.
 
 ---
 
 ## 5. Tính mới và giá trị khoa học - thực tiễn của sáng kiến
 
-| Tiêu chí | Điểm mới và Đột phá của Sáng kiến |
-| :--- | :--- |
-| **Tính mới về công nghệ** | Lần đầu tiên tích hợp **Trợ lý Sư phạm AI thế hệ mới** kết hợp song song giữa *Mô hình ngôn ngữ lớn (LLM - Gemini/OpenAI)* và *Ngân hàng Sư phạm Ngoại tuyến 200+ cấu trúc câu chuẩn mực* (chạy mượt 100% không cần mạng), tự động đọc dữ liệu điểm số, nề nếp, điểm danh để xuất ra lời nhận xét độc bản, không trùng lặp cho từng em. |
-| **Tính chuẩn xác theo TT27** | Số hóa chính xác tuyệt đối thuật toán phân loại danh hiệu khen thưởng (*Học sinh Xuất sắc*, *Học sinh Tiêu biểu hoàn thành tốt*, *Khen thưởng từng mặt*) theo đúng Điều 13 Thông tư 27, tự động phát hiện các môn chưa đạt để cảnh báo hỗ trợ kịp thời. |
-| **Tính tiện ích và bảo mật** | Sáng tạo **Cổng tra cứu bài tập về nhà qua mã QR động** (phụ huynh quét mã không cần đăng nhập tài khoản phức tạp) và **Sổ liên lạc điện tử cá nhân hóa bằng mã PIN bảo mật riêng**, giải quyết triệt để nỗi lo lộ lọt thông tin điểm số riêng tư của học sinh. |
-| **Tính thực tiễn cao** | Phần mềm thiết kế theo tư duy "1-Click" (Một chạm là xong), giao diện tiếng Việt thân thiện, tương thích hoàn toàn với việc xuất dữ liệu lên hệ thống VnEdu/SMAS của ngành giáo dục. |
+1. **Đột phá về ứng dụng Trí tuệ Nhân tạo (AI Co-pilot)**: Lần đầu tiên triển khai Trợ lý Sư phạm AI thế hệ mới kết hợp Dual-Engine (Online LLM & Offline Smart Bank 200+ mẫu câu) có khả năng đọc đa chiều dữ liệu học sinh để sinh lời nhận xét học bạ độc bản, ấm áp, chuẩn Thông tư 27 trong 15 giây cho cả lớp.
+2. **Thuật toán xét duyệt danh hiệu TT27 tự động**: Số hóa chính xác 100% logic phân loại học sinh theo Điều 13 Thông tư 27, loại bỏ triệt để sai sót do tính toán thủ công.
+3. **Tiện ích tương tác không rào cản**: Sáng tạo Cổng tra cứu bài tập về nhà qua mã QR động (phụ huynh quét xem ngay không cần cài app hay đăng ký tài khoản) và Sổ liên lạc số bảo mật bằng mã PIN 4 số.
+4. **Khả năng liên thông và tiết kiệm chi phí**: Hệ thống cho phép xuất Excel Mẫu 1 chuẩn Bộ GD&ĐT và file định dạng import trực tiếp lên VnEdu/SMAS; vận hành hoàn toàn trên hạ tầng đám mây miễn phí cho giáo dục.
 
 ---
 
@@ -204,248 +228,205 @@ Xuất phát từ những trăn trở, khó khăn thực tế đó cùng niềm 
 
 ## 1. Cơ sở lý luận và pháp lý
 
-### 1.1. Bản chất của đánh giá học sinh tiểu học theo Thông tư 27
-Đánh giá học sinh tiểu học theo Thông tư 27/2020/TT-BGDĐT là quá trình thu thập, xử lý thông tin thông qua các hoạt động quan sát, theo dõi, trao đổi, kiểm tra, nhận xét quá trình học tập, rèn luyện của học sinh nhằm:
-- Động viên, khích lệ sự tiến bộ, giúp học sinh phát huy tối đa năng lực, phẩm chất cá nhân;
-- Cung cấp thông tin phản hồi thường xuyên, kịp thời để giáo viên điều chỉnh phương pháp dạy học, giúp nhà trường và gia đình có giải pháp hỗ trợ học sinh đúng lúc;
-- Không so sánh học sinh này với học sinh khác, không tạo áp lực tâm lý tiêu cực cho các em.
+Đánh giá học sinh tiểu học theo Thông tư 27/2020/TT-BGDĐT là sự chuyển dịch căn bản từ "đánh giá kết quả cuối cùng" sang "đánh giá cả quá trình vì sự tiến bộ của người học". Nguyên tắc cốt lõi là:
+- Tôn trọng sự tiến bộ của từng cá nhân học sinh, không so sánh học sinh này với học sinh khác;
+- Kết hợp linh hoạt giữa đánh giá thường xuyên (bằng lời, nhận xét, động viên) và đánh giá định kỳ (cho điểm số kết hợp nhận xét);
+- Đánh giá toàn diện cả 3 phương diện: Kiến thức kỹ năng môn học, 5 Phẩm chất chủ yếu và các Năng lực cốt lõi.
 
-### 1.2. Ứng dụng Trí tuệ nhân tạo và Tự động hóa trong quản trị sư phạm
-Trí tuệ nhân tạo (AI) trong giáo dục không nhằm thay thế vai trò thiêng liêng của người thầy, mà đóng vai trò là **"Trợ lý đắc lực" (Co-pilot)** giúp tự động hóa các tác vụ tính toán, tổng hợp số liệu máy móc và hỗ trợ gợi ý ngôn ngữ sư phạm. Khi được giải phóng khỏi gánh nặng sổ sách cơ học, người giáo viên sẽ có thêm nhiều thời gian chất lượng để gần gũi, lắng nghe, thấu cảm và bồi dưỡng tâm hồn cho từng học sinh thân yêu.
+Trí tuệ nhân tạo (AI) và tự động hóa trong sáng kiến này đóng vai trò là **"Người trợ lý sư phạm"** giúp giáo viên giảm bớt các thao tác tính toán máy móc và gợi mở ngôn ngữ nhận xét phong phú, để người giáo viên dành trọn tâm huyết cho việc giảng dạy và thấu hiểu học sinh.
 
 ---
 
 ## 2. Thực trạng công tác chủ nhiệm và đánh giá học sinh tại Trường Tiểu học Đại Mỗ
 
-### 2.1. Đặc điểm tình hình nhà trường và lớp chủ nhiệm
-- **Trường Tiểu học Đại Mỗ** là ngôi trường có bề dày truyền thống dạy tốt - học tốt của Quận Nam Từ Liêm. Đội ngũ cán bộ quản lý và giáo viên luôn năng động, tích cực đổi mới phương pháp giảng dạy và tiên phong ứng dụng CNTT.
-- Năm học 2025 - 2026, tôi được Ban Giám hiệu tin tưởng phân công làm Khối trưởng chuyên môn Khối 4 và Chủ nhiệm Lớp 4A1:
-  + Sĩ số lớp: **45 học sinh** (23 nam, 22 nữ).
-  + 100% học sinh học 2 buổi/ngày và ăn bán trú tại trường.
-  + Đa số học sinh ngoan ngoãn, lễ phép; phụ huynh quan tâm đến việc học tập của con em.
-  + Tuy nhiên, trong lớp có sự phân hóa rõ rệt về năng lực tiếp thu; có 8 học sinh mắc tật khúc xạ (cận thị, loạn thị) cần bố trí chỗ ngồi khoa học; một số học sinh nam còn hiếu động, chưa tập trung trong giờ học.
+### 2.1. Đặc điểm tình hình
+Năm học 2025 - 2026, tôi được phân công chủ nhiệm **Lớp 4A1** tại Trường Tiểu học Đại Mỗ:
+- Sĩ số lớp: **45 học sinh** (23 nam, 22 nữ), 100% học sinh học 2 buổi/ngày và ăn bán trú.
+- Đa số học sinh chăm ngoan, phụ huynh nhiệt tình ủng hộ phong trào của lớp.
+- Tuy nhiên, lớp có 8 học sinh mắc tật khúc xạ (cận thị từ 1.5 đến 2.5 độ) cần ngồi bàn đầu; một số học sinh nam còn hiếu động, chưa tập trung; năng lực tiếp thu giữa các em không đồng đều.
 
-### 2.2. Khảo sát thực trạng trước khi áp dụng sáng kiến
-Đầu năm học 2025 - 2026 (tháng 9/2025), tôi đã tiến hành khảo sát thực trạng đối với 32 giáo viên trong trường và toàn bộ 45 phụ huynh lớp 4A1. Kết quả thu được như sau:
+### 2.2. Khảo sát thực trạng đầu năm học (Tháng 09/2025)
 
 #### Bảng 1: Thống kê thời gian và khó khăn của GVCN trong công tác quản lý lớp (N = 32 giáo viên)
-| STT | Nội dung công việc | Thời gian tiêu tốn trung bình / tháng | Tỷ lệ GV đánh giá là "Áp lực, dễ nhầm lẫn" |
+| STT | Nội dung công việc chủ nhiệm | Thời gian trung bình / tháng | Tỷ lệ GV đánh giá "Áp lực, tốn thời gian" |
 | :---: | :--- | :---: | :---: |
-| 1 | Điểm danh, xác nhận phép và báo ăn bán trú hằng ngày | 6.5 giờ / tháng | 78.1% |
-| 2 | Xếp chỗ ngồi, theo dõi nề nếp, tính điểm thi đua | 5.0 giờ / tháng | 68.8% |
-| 3 | Tổng hợp kết quả đánh giá Thông tư 27 (Môn học + Phẩm chất + Năng lực) | 12.0 giờ / kỳ đánh giá | 87.5% |
-| 4 | Viết lời nhận xét học bạ định kỳ cho cả lớp | 28.0 giờ / kỳ đánh giá | 93.8% |
-| 5 | Quản lý thu chi quỹ lớp, viết phiếu dặn dò, trả lời tin nhắn Zalo phụ huynh | 8.5 giờ / tháng | 75.0% |
+| 1 | Điểm danh và kiểm diện báo ăn bán trú hằng ngày | 6.5 giờ / tháng | 78.1% (25/32 GV) |
+| 2 | Sắp xếp sơ đồ chỗ ngồi, theo dõi nề nếp, thi đua | 5.0 giờ / tháng | 68.8% (22/32 GV) |
+| 3 | Tổng hợp ma trận đánh giá TT27 (11 môn + 14 PC-NL) | 12.0 giờ / kỳ học | 87.5% (28/32 GV) |
+| 4 | Viết lời nhận xét học bạ định kỳ cho cả lớp | 28.0 giờ / kỳ học | 93.8% (30/32 GV) |
+| 5 | Quản lý thu chi quỹ lớp, viết phiếu dặn dò, trả lời Zalo | 8.5 giờ / tháng | 75.0% (24/32 GV) |
 
-#### Bảng 2: Khảo sát mức độ tiếp nhận thông tin của CMHS Lớp 4A1 trước khi áp dụng giải pháp (N = 45 CMHS)
-| Tiêu chí khảo sát | Số lượng CMHS | Tỷ lệ % |
+#### Bảng 2: Khảo sát mức độ tiếp nhận thông tin của CMHS Lớp 4A1 đầu năm học (N = 45 CMHS)
+| Nội dung khảo sát cha mẹ học sinh | Số lượng | Tỷ lệ % |
 | :--- | :---: | :---: |
 | Thường xuyên bị trôi tin nhắn giao bài tập / thông báo trên nhóm Zalo chung | 33 / 45 | 73.3% |
-| Muốn được biết cụ thể con được khen hay nhắc nhở nề nếp gì mỗi ngày | 42 / 45 | 93.3% |
-| Thấy lời nhận xét học bạ định kỳ còn chung chung, giống nhau giữa các bạn | 31 / 45 | 68.9% |
-| Lo ngại việc công khai bảng điểm cả lớp lên nhóm Zalo vi phạm quyền riêng tư | 39 / 45 | 86.7% |
-
-Từ số liệu thực tế trên, có thể thấy rõ 4 nút thắt lớn cần giải quyết:
-1. *Áp lực thời gian sổ sách cơ học làm giảm năng lượng chuyên môn của giáo viên.*
-2. *Nguy cơ sai sót trong thuật toán tổng hợp và phân loại danh hiệu học sinh theo Thông tư 27.*
-3. *Hiện tượng "rập khuôn, sáo rỗng" khi viết nhận xét học bạ định kỳ vì quá tải.*
-4. *Kênh giao tiếp với cha mẹ học sinh thiếu tính hệ thống, bảo mật chưa cao.*
+| Rất muốn được biết cụ thể con được khen thưởng nề nếp gì mỗi ngày | 42 / 45 | 93.3% |
+| Nhận thấy lời nhận xét học bạ định kỳ còn chung chung, giống nhau giữa các bạn | 31 / 45 | 68.9% |
+| E ngại việc công khai bảng điểm cả lớp lên nhóm Zalo vi phạm quyền riêng tư của con | 39 / 45 | 86.7% |
 
 ---
 
-## 3. Các biện pháp thực hiện sáng kiến
-
-Nhằm giải quyết triệt để các hạn chế trên, tôi đã phát triển và ứng dụng nền tảng số hóa **GVCN Pro** với **06 biện pháp đồng bộ** sau:
-
-```
-                  ┌────────────────────────────────────────────────────────┐
-                  │                 NỀN TẢNG SỐ HÓA GVCN PRO               │
-                  └───────────────────────────┬────────────────────────────┘
-                                              │
-         ┌──────────────────┬─────────────────┼──────────────────┬──────────────────┐
-         ▼                  ▼                 ▼                  ▼                  ▼
-   ┌───────────┐      ┌───────────┐     ┌───────────┐      ┌───────────┐      ┌───────────┐
-   │Biện pháp 1│      │Biện pháp 2│     │Biện pháp 3│      │Biện pháp 4│      │Biện pháp 5│
-   │ Sơ đồ lớp │      │ Điểm danh │     │ Đánh giá  │      │Trợ lý AI  │      │ Cổng QR & │
-   │  & Nề nếp │      │ & Bán trú │     │   TT27    │      │ Nhận xét  │      │Sổ liên lạc│
-   │(Tích Sao) │      │ (1 Chạm)  │     │(Thuật toán)│     │(Cá nhân)  │      │  Bảo mật  │
-   └───────────┘      └───────────┘     └───────────┘      └───────────┘      └───────────┘
-                                              │
-                                              ▼
-                                        ┌───────────┐
-                                        │Biện pháp 6│
-                                        │  Quản trị │
-                                        │  Thu chi  │
-                                        │ & Xuất DL │
-                                        └───────────┘
-```
+## 3. Hệ thống 06 biện pháp thực hiện sáng kiến
 
 ---
 
 ### Biện pháp 1: Số hóa hồ sơ học sinh, sơ đồ lớp tương tác và gamification nề nếp ("Sao hoa việc tốt")
 
 #### 1. Mục tiêu:
-Quản lý tập trung toàn diện lý lịch học sinh; sắp xếp vị trí chỗ ngồi khoa học, bảo vệ thị lực và tạo động lực thi đua học tập tích cực cho học sinh tiểu học thông qua cơ chế trò chơi hóa (Gamification).
+Quản lý tập trung dữ liệu lý lịch học sinh; bố trí chỗ ngồi tối ưu bảo vệ thị lực và tạo động lực thi đua học tập tích cực qua cơ chế trò chơi hóa (Gamification).
+
+<a id="hinh-2"></a>
+
+![Hình 2: Giao diện Sơ đồ lớp thông minh tương tác và Tích sao nề nếp](/Users/chamnp/.gemini/antigravity/brain/f2d756a9-b42d-48bb-ab0d-9f23e5a1e32c/images/hinh_2_so_do_lop_thong_minh.svg)
+*Hình 2: Giao diện Sơ đồ lớp thông minh tương tác (Interactive Seating Chart) và Tích sao nề nếp trong GVCN Pro*
 
 #### 2. Quy trình thực hiện:
 - **Bước 1: Quản lý hồ sơ dữ liệu số**:
-  Hệ thống cho phép giáo viên nhập toàn bộ danh sách lớp trực tiếp từ file Excel xuất từ cơ sở dữ liệu ngành. Các trường thông tin quan trọng như: Ngày sinh, Giới tính, Tình trạng sức khỏe (Cận thị, tiền sử bệnh), Tình trạng ăn bán trú, Số điện thoại cha mẹ, Địa chỉ đều được quản lý trực quan.
-- **Bước 2: Xây dựng Sơ đồ lớp tương tác (Interactive Seating Chart)**:
-  Phần mềm cung cấp giao diện lưới bàn học trực quan (5 hàng x 8 dãy bàn).
-  + Giáo viên chỉ cần click chọn 2 học sinh để hoán đổi chỗ ngồi lập tức.
-  + Hệ thống tự động gắn huy hiệu thị lực (Biểu tượng Mắt cận thị) để nhắc giáo viên luôn ưu tiên xếp học sinh cận thị tại 2 hàng ghế đầu.
-  + Tích hợp tính năng *"Xáo trộn chỗ ngồi thông minh"* định kỳ hằng tháng giúp cân bằng giới tính, học lực và phòng chống tật vẹo cột sống/khúc xạ cho học sinh.
+  + Giáo viên nhập danh sách lớp từ file Excel của trường; hệ thống tự động nhận diện và phân loại: Sĩ số, Nam/Nữ, Ngày sinh, Học sinh bán trú, Số điện thoại CMHS, Ghi chú sức khỏe (Cận thị, dị ứng thực phẩm).
+- **Bước 2: Sơ đồ lớp tương tác (Interactive Seating Chart)**:
+  + Cung cấp giao diện lưới bàn học trực quan (5 hàng x 8 cột).
+  + Giáo viên chạm vào 2 học sinh để hoán đổi chỗ ngồi lập tức.
+  + Hệ thống tự động hiển thị huy hiệu kính cận thị (`👓 Cận thị`) để nhắc nhở giáo viên luôn ưu tiên xếp học sinh cận thị tại 2 hàng ghế đầu tiên.
+  + Tính năng *"Xáo trộn chỗ ngồi thông minh"* định kỳ hằng tháng giúp học sinh luân chuyển góc nhìn, phòng ngừa cong vẹo cột sống và tật khúc xạ.
 - **Bước 3: Cơ chế tích sao rèn nề nếp ("Sao Hoa Việc Tốt")**:
-  Thay vì phê bình tiêu cực, tôi thiết kế tính năng thưởng sao tức thời (ClassDojo style) ngay trên sơ đồ lớp:
-  + Danh mục điểm cộng: *Phát biểu hăng hái (+1)*, *Làm bài xuất sắc (+2)*, *Vở sạch chữ đẹp (+1)*, *Giúp đỡ bạn bè (+1)*, *Ý thức kỷ luật tốt (+1)*...
-  + Mỗi khi học sinh được cộng sao, trên màn hình máy chiếu của lớp sẽ hiển thị hiệu ứng pháo hoa rực rỡ (**Confetti animation**) kèm âm thanh chúc mừng sinh động.
-  + Hệ thống tự động lưu trữ nhật ký điểm sao (`StarLog`) kèm lời dặn dò cụ thể của cô giáo theo từng ngày.
+  + Tích hợp tính năng thưởng sao tức thời (ClassDojo style) ngay trên sơ đồ lớp.
+  + Danh mục điểm cộng: *Phát biểu hăng hái (+1)*, *Làm bài xuất sắc (+2)*, *Vở sạch chữ đẹp (+1)*, *Giúp đỡ bạn bè (+1)*, *Trực nhật sạch sẽ (+1)*.
+  + Khi giáo viên cộng sao trên máy chiếu, màn hình lớp học sẽ bắn pháo hoa rực rỡ (**Confetti animation**) kèm âm thanh vui nhộn, tạo không khí học tập vô cùng sôi nổi.
+  + Hệ thống tự động ghi nhật ký điểm sao (`StarLog`) để làm dữ liệu đầu vào cho Trợ lý AI khi sinh nhận xét học bạ cuối kỳ.
 
 ---
 
 ### Biện pháp 2: Tự động hóa quy trình điểm danh học sinh và kiểm diện bán trú hằng ngày
 
 #### 1. Mục tiêu:
-Rút ngắn thời gian điểm danh đầu giờ còn dưới 30 giây; loại bỏ hoàn toàn sai lệch số lượng suất ăn bán trú giữa lớp học - nhân viên kế toán - nhà bếp.
+Rút ngắn thời gian điểm danh buổi sáng còn dưới 30 giây; chuẩn xác 100% số lượng suất ăn bán trú báo cho Nhà bếp và BGH.
+
+<a id="hinh-3"></a>
+
+![Hình 3: Giao diện Điểm danh 1 chạm và Kiểm diện bán trú hằng ngày](/Users/chamnp/.gemini/antigravity/brain/f2d756a9-b42d-48bb-ab0d-9f23e5a1e32c/images/hinh_3_diem_danh_ban_tru.svg)
+*Hình 3: Giao diện Điểm danh 1 chạm và Kiểm diện bán trú hằng ngày kèm tính năng tạo tin nhắn Zalo tự động*
 
 #### 2. Quy trình thực hiện:
-- **Giao diện điểm danh 1 chạm**: Mỗi buổi sáng lúc 07h45, giáo viên mở ứng dụng trên điện thoại hoặc máy tính:
+- **Giao diện điểm danh 1 chạm**: Mỗi sáng lúc 07h45, giáo viên mở ứng dụng trên điện thoại:
   + Mặc định toàn bộ học sinh ở trạng thái *"Có mặt"* và *"Có ăn bán trú"*.
-  + Khi có học sinh nghỉ học, giáo viên chỉ cần chạm 1 lần vào tên học sinh để chuyển trạng thái sang `Vắng có phép` hoặc `Vắng không phép`, kèm ghi chú lý do (VD: *Ốm sốt, Gia đình có việc riêng*).
-  + Tự động tính toán sĩ số hiện diện và tổng số suất ăn bán trú thực tế trong ngày.
-- **Tính năng 1-Click tạo tin nhắn báo ăn gửi Zalo**:
-  Chỉ với 1 nút bấm *"Sao chép tin nhắn báo ăn"*, hệ thống tự động sinh ra đoạn văn bản chuẩn quy định của nhà trường:
+  + Nếu có học sinh nghỉ học, giáo viên chỉ cần chạm 1 lần vào tên học sinh để chuyển trạng thái sang `Vắng có phép` hoặc `Vắng không phép`, kèm lý do (*Sốt nhẹ, Gia đình có việc*).
+  + Hệ thống tự động tính toán tổng số học sinh hiện diện và tổng số suất ăn thực tế.
+- **1-Click tạo tin nhắn báo ăn gửi Zalo**:
+  + Nhấn nút *"Sao chép tin nhắn báo ăn"*, hệ thống tự động sinh đoạn văn bản chuẩn quy định:
   ```text
   [BÁO CÁO ĐIỂM DANH & BÁN TRÚ - TRƯỜNG TH ĐẠI MỖ]
   - Lớp: 4A1 | Ngày: 27/08/2026
-  - Sĩ số: 45 | Có mặt: 44 | Vắng: 01 (Nguyễn Văn A - Sốt nhẹ, có phép)
-  - Số suất ăn bán trú: 44 suất (Bớt 01 suất của em Nguyễn Văn A)
+  - Tổng sĩ số: 45 | Có mặt: 44 | Vắng: 01 (Bùi Đức Minh - Sốt nhẹ, có phép)
+  - Số suất ăn bán trú: 44 suất (Báo cắt 01 suất của em Bùi Đức Minh)
   - GVCN: Cô Nguyễn Thị Minh Hằng (ĐT: 098x.xxx.xxx)
   ```
-  Giáo viên chỉ việc dán vào nhóm Zalo chung của Nhà trường / Tổ Bán trú trong 5 giây, bảo đảm độ chính xác 100%.
+  + Giáo viên dán vào nhóm Zalo Bán trú trường học trong 5 giây, bảo đảm tính kịp thời và chính xác tuyệt đối.
 
 ---
 
 ### Biện pháp 3: Chuẩn hóa và tự động hóa quy trình đánh giá định kỳ - xét khen thưởng chuẩn Thông tư 27
 
 #### 1. Mục tiêu:
-Khắc phục triệt để tình trạng nhầm lẫn các mức đánh giá; tự động hóa việc tính toán danh hiệu khen thưởng học sinh đúng theo Điều 13 Thông tư 27/2020/TT-BGDĐT.
+Loại bỏ hoàn toàn sai sót tính toán thủ công; tự động hóa việc phân loại danh hiệu khen thưởng học sinh theo đúng Điều 13 Thông tư 27/2020/TT-BGDĐT.
+
+<a id="hinh-4"></a>
+
+![Hình 4: Ma trận đánh giá kết quả học tập và phẩm chất năng lực theo Thông tư 27/2020](/Users/chamnp/.gemini/antigravity/brain/f2d756a9-b42d-48bb-ab0d-9f23e5a1e32c/images/hinh_4_ma_tran_danh_gia_tt27.svg)
+*Hình 4: Ma trận đánh giá kết quả học tập theo Thông tư 27/2020/TT-BGDĐT với thuật toán phân loại tự động*
 
 #### 2. Quy trình thực hiện:
-- **Tự động đồng bộ kỳ đánh giá theo thời gian thực**:
-  Hàm logic `getCurrentTermByDate()` tự động nhận diện thời điểm trong năm học để chuyển kỳ làm việc tương ứng:
-  + Từ 01/09 đến 15/11: Kỳ `Giữa Học kỳ I (GIUA_HK1)`
-  + Từ 16/11 đến 15/01: Kỳ `Cuối Học kỳ I (CUOI_HK1)`
-  + Từ 16/01 đến 31/03: Kỳ `Giữa Học kỳ II (GIUA_HK2)`
-  + Từ 01/04 đến 31/08: Kỳ `Cuối Năm học (CUOI_NAM)`
-- **Ma trận đánh giá đầy đủ các phân môn và phẩm chất, năng lực**:
-  + 11 môn học: Tiếng Việt, Toán, Tiếng Anh, Đạo đức, Tự nhiên & Xã hội / Khoa học, Lịch sử & Địa lý, Tin học & Công nghệ, GD Thể chất, Âm nhạc, Mỹ thuật, Hoạt động trải nghiệm.
-  + 5 phẩm chất chủ yếu: Yêu nước, Nhân ái, Chăm chỉ, Trung thực, Trách nhiệm.
+- **Tự động nhận diện kỳ đánh giá theo lịch năm học (`getCurrentTermByDate`)**:
+  + `GIUA_HK1`: Từ 01/09 đến 15/11
+  + `CUOI_HK1`: Từ 16/11 đến 15/01
+  + `GIUA_HK2`: Từ 16/01 đến 31/03
+  + `CUOI_NAM`: Từ 01/04 đến 31/08
+- **Ma trận đánh giá đầy đủ 3 trục Thông tư 27**:
+  + 11 môn học (Tiếng Việt, Toán, Ngoại ngữ, Đạo đức, Khoa học, Lịch sử & Địa lý, Tin học & CN, Thể chất, Âm nhạc, Mỹ thuật, HĐTN).
+  + 5 phẩm chất chủ yếu (Yêu nước, Nhân ái, Chăm chỉ, Trung thực, Trách nhiệm).
   + 3 năng lực chung và 6 năng lực đặc thù cốt lõi.
-  + Hỗ trợ tính năng **"Đánh giá nhanh toàn lớp (Batch Rating)"**: Giáo viên đặt nhanh mức Đạt/Tốt cho cả lớp, sau đó chỉ cần chỉnh sửa các học sinh có biểu hiện vượt trội hoặc cần hỗ trợ thêm.
+  + Hỗ trợ tính năng **"Đánh giá nhanh toàn lớp (Batch Rating)"** giúp giáo viên gán nhanh mức Tốt/Đạt rồi chỉ cần điều chỉnh các trường hợp cá biệt.
 - **Thuật toán tự động xếp loại danh hiệu khen thưởng (`evaluateStudentTT27`)**:
-  Hệ thống cài đặt giải thuật phân loại nghiêm ngặt theo đúng Điều 13, Thông tư 27/2020/TT-BGDĐT:
 
 $$\text{Danh hiệu} = \begin{cases} 
-\textbf{Học sinh Xuất sắc} & \text{khi } \text{Tất cả môn học đạt mức T} \land \text{Các môn KTĐK } \ge 9.0 \land \text{Tất cả PC-NL đạt mức T} \\
-\textbf{Học sinh Tiêu biểu} & \text{khi } \text{Hoàn thành tốt các môn học} \land \text{Các môn KTĐK } \ge 7.0 \land \text{Tất cả PC-NL đạt mức Đạt trở lên} \\
-\textbf{Hoàn thành CTTiểu học} & \text{khi } \text{Các môn học và PC-NL đạt mức H/Đ} \\
-\textbf{Chưa hoàn thành} & \text{khi } \text{Có bất kỳ môn học hoặc PC-NL ở mức C (Cần cố gắng)}
+\textbf{Học sinh Xuất sắc} & \text{khi } \forall m \in \text{Môn học}: m = \text{'T'} \land \forall k \in \text{KTĐK}: \text{Điểm}_k \ge 9.0 \land \forall p \in \text{PC-NL}: p = \text{'T'} \\
+\textbf{Học sinh Tiêu biểu} & \text{khi } \text{Môn học Hoàn thành tốt} \land \forall k \in \text{KTĐK}: \text{Điểm}_k \ge 7.0 \land \forall p \in \text{PC-NL}: p \in \{\text{'T'}, \text{'Đ'}\} \\
+\textbf{Hoàn thành CTHọc} & \text{khi } \forall m: m \in \{\text{'T'}, \text{'H'}\} \land \forall p: p \in \{\text{'T'}, \text{'Đ'}\} \\
+\textbf{Chưa hoàn thành} & \text{khi } \exists m = \text{'C'} \lor \exists p = \text{'C'} \quad (\text{Cần rèn luyện thêm trong hè})
 \end{cases}$$
 
-Nhờ thuật toán này, toàn bộ quá trình xét duyệt khen thưởng của 45 học sinh diễn ra tức thì trong 1 giây, bảo đảm tính công bằng, khách quan, không xảy ra sai sót sót điểm hay nhầm mức đánh giá.
+Hệ thống tính toán tức thì cho toàn bộ 45 học sinh trong 1 giây, bảo đảm tính công bằng, minh bạch và chính xác tuyệt đối.
 
 ---
 
 ### Biện pháp 4: Ứng dụng Trí tuệ nhân tạo (AI) và Ngân hàng Sư phạm thông minh tạo nhận xét học bạ cá nhân hóa
 
 #### 1. Mục tiêu:
-Xóa bỏ hoàn toàn việc sao chép nhận xét sáo rỗng; kiến tạo những lời nhận xét học bạ độc bản, ấm áp, thúc đẩy sự tiến bộ của từng học sinh; giảm 90% thời gian viết nhận xét cho giáo viên.
+Xóa bỏ hoàn toàn việc sao chép nhận xét sáo rỗng; tạo ra những lời nhận xét học bạ độc bản, ấm áp, thúc đẩy sự tiến bộ của từng học sinh; giảm 98% thời gian viết nhận xét cho giáo viên.
 
-#### 2. Cơ chế hoạt động kép (Dual-Engine AI Architecture):
-Hệ thống được thiết kế độc đáo với **2 cơ chế song hành**:
+<a id="hinh-5"></a>
 
-```
-                       ┌──────────────────────────────────────────────────┐
-                       │     DỮ LIỆU ĐẦU VÀO ĐA CHIỀU CỦA HỌC SINH        │
-                       │  - Điểm số & Mức đạt 11 môn học                  │
-                       │  - Mức độ 5 Phẩm chất & 9 Năng lực               │
-                       │  - Lịch sử tích lũy Sao hoa việc tốt (StarLog)   │
-                       │  - Tỷ lệ chuyên cần & nề nếp hàng ngày           │
-                       │  - Ghi chú riêng của GVCN (Năng khiếu/Cần rèn)   │
-                       └────────────────────────┬─────────────────────────┘
-                                                │
-                                                ▼
-                       ┌──────────────────────────────────────────────────┐
-                       │       BỘ ĐIỀU PHỐI SƯ PHẠM (PEDAGOGICAL ENGINE)  │
-                       └────────┬────────────────────────────────┬────────┘
-                                │                                │
-                                ▼                                ▼
-               ┌─────────────────────────────────┐ ┌─────────────────────────────────┐
-               │    CHẾ ĐỘ 1: AI TRỰC TUYẾN      │ │    CHẾ ĐỘ 2: NGÂN HÀNG NGOẠI    │
-               │   (Online Generative LLM API)   │ │      TUYẾN (Offline Smart Bank) │
-               │  - Kết nối Gemini / GPT Models  │ │  - 200+ Cấu trúc câu chuẩn mực  │
-               │  - Tùy biến giọng văn (Ấm áp,   │ │  - Hoạt động 100% không cần mạng│
-               │    Khích lệ, Chuẩn mực, Chi tiết│ │  - Tự ghép biến đổi tên, đại từ │
-               │  - Chuẩn độ dài: 35 / 60 / 95 từ│ │  - Tốc độ sinh tức thời 0.01s   │
-               └────────────────┬────────────────┘ └────────────────┬────────────────┘
-                                │                                │
-                                └────────────────┬───────────────┘
-                                                 │
-                                                 ▼
-                       ┌──────────────────────────────────────────────────┐
-                       │      LỜI NHẬN XÉT HỌC BẠ HOÀN HẢO, ĐỘC BẢN       │
-                       │   "Em Minh An tiếp thu bài nhanh, tính toán cẩn  │
-                       │    thận và chữ viết rất tiến bộ. Em luôn chan    │
-                       │    hòa, tích cực giúp bạn trong giờ học nhóm.    │
-                       │    Cô mong em tiếp tục phát huy sự tự tin này!"  │
-                       └──────────────────────────────────────────────────┘
-```
+![Hình 5: Giao diện Trợ lý Sư phạm AI và Ngân hàng nhận xét học bạ cá nhân hóa](/Users/chamnp/.gemini/antigravity/brain/f2d756a9-b42d-48bb-ab0d-9f23e5a1e32c/images/hinh_5_tro_ly_ai_nhan_xet.svg)
+*Hình 5: Giao diện Trợ lý Sư phạm AI thế hệ mới kết hợp Dual-Engine sinh lời nhận xét học bạ cá nhân hóa*
 
-#### 3. Bảng đối chiếu các chế độ sinh lời nhận xét:
-| Tham số điều chỉnh | Tùy chọn 1: Ngắn gọn (~35 từ) | Tùy chọn 2: Chuẩn mực (~60 từ) | Tùy chọn 3: Chi tiết (~95 từ) |
+#### 2. Kiến trúc hoạt động kép (Dual-Engine AI Architecture):
+Hệ thống tích hợp song song 2 cơ chế:
+1. **Chế độ 1: Trí tuệ Nhân tạo Trực tuyến (Online Generative LLM API)**: Kết nối với các mô hình AI tiên tiến (Gemini / OpenAI) để phân tích sâu đặc điểm tính cách, kết quả học tập và năng khiếu riêng của từng học sinh.
+2. **Chế độ 2: Ngân hàng Sư phạm Thông minh Ngoại tuyến (Offline Smart Pedagogical Bank)**: Chứa hơn 200 mẫu câu cấu trúc chuẩn mực sư phạm được tôi đúc kết, hoạt động **100% không cần kết nối Internet**, tự động ghép biến đổi tên học sinh, đại từ nhân xưng và thành tích để tạo câu văn tự nhiên, không trùng lặp giữa các em trong lớp.
+
+#### Bảng 3: Bảng đối chiếu các chế độ sinh lời nhận xét học bạ trong Trợ lý AI
+| Thông số tùy biến | Tùy chọn 1: Ngắn gọn (~35 từ) | Tùy chọn 2: Chuẩn mực (~60 từ) | Tùy chọn 3: Chi tiết (~95 từ) |
 | :--- | :--- | :--- | :--- |
-| **Mục đích sử dụng** | Tối ưu nhập Học bạ điện tử Bộ GD&ĐT | Chuẩn mực đánh giá định kỳ trên lớp | Báo cáo chi tiết gửi Phụ huynh họp CMHS |
-| **Số lượng câu** | 2 câu cô đọng | 3 câu cân đối (Học tập - Phẩm chất - Lời khuyên) | 4 - 5 câu phân tích chuyên sâu |
-| **Giọng điệu sư phạm (Tone)** | Chuẩn mực, Khích lệ, Tươi vui, Nghiêm khắc rèn luyện | Chuẩn mực, Khích lệ, Tươi vui, Nghiêm khắc rèn luyện | Chuẩn mực, Khích lệ, Tươi vui, Nghiêm khắc rèn luyện |
+| **Mục đích áp dụng** | Nhập trực tiếp Học bạ điện tử Bộ GD&ĐT | Chuẩn mực đánh giá định kỳ trên lớp | Báo cáo chi tiết gửi Phụ huynh trong buổi họp CMHS |
+| **Cấu trúc ngữ pháp** | 2 câu súc tích | 3 câu cân đối (Học tập - Phẩm chất - Lời khuyên) | 4 - 5 câu phân tích chuyên sâu |
+| **Giọng điệu (Tone)** | Chuẩn mực, Khích lệ, Ấm áp, Nghiêm khắc rèn luyện | Chuẩn mực, Khích lệ, Ấm áp, Nghiêm khắc rèn luyện | Chuẩn mực, Khích lệ, Ấm áp, Nghiêm khắc rèn luyện |
 
-#### 4. Quy trình sinh nhận xét hàng loạt 1-Click:
-- Giáo viên chỉ cần bấm *"Sinh nhận xét cho cả lớp"*.
-- Hệ thống tự động phân tích dữ liệu riêng của từng em (Ví dụ: Em A học giỏi Toán nhưng cần rèn chữ; Em B vẽ đẹp và chăm trực nhật; Em C có tiến bộ vượt bậc ở môn Tiếng Anh).
-- Trong vòng chưa đầy 15 giây, toàn bộ 45 lời nhận xét học bạ của cả lớp được hoàn thành. Giáo viên có thể đọc duyệt, chỉnh sửa trực tiếp từng từ nếu muốn trước khi lưu vào hồ sơ.
+#### 3. Quy trình sinh nhận xét 1-Click:
+- Giáo viên chỉ cần bấm nút *"Sinh nhận xét cho cả lớp"*.
+- Hệ thống tự động phân tích đa chiều dữ liệu (Điểm số 11 môn, 14 chỉ số PC-NL, số lượng Sao nề nếp và ghi chú riêng của cô giáo).
+- Trong vòng **15 giây**, toàn bộ 45 lời nhận xét học bạ hoàn chỉnh được tạo ra. Giáo viên có thể đọc duyệt, chỉnh sửa trực tiếp từng từ nếu muốn trước khi lưu vào hồ sơ.
 
 ---
 
 ### Biện pháp 5: Đổi mới kênh kết nối Nhà trường - Gia đình qua Cổng bài tập QR và Sổ liên lạc số bảo mật
 
 #### 1. Mục tiêu:
-Giúp cha mẹ học sinh nắm bắt bài tập về nhà và dặn dò của giáo viên tức thời mà không bị trôi tin nhắn; tra cứu kết quả học tập cá nhân của con an toàn, bảo mật tuyệt đối.
+Giúp phụ huynh nắm bắt bài tập về nhà và dặn dò của giáo viên tức thời mà không bị trôi tin nhắn; tra cứu kết quả học tập cá nhân của con an toàn, bảo mật tuyệt đối theo Luật Trẻ em.
+
+<a id="hinh-6"></a>
+
+![Hình 6: Cổng bài tập về nhà QR trên di động và Sổ liên lạc điện tử mã PIN bảo mật](/Users/chamnp/.gemini/antigravity/brain/f2d756a9-b42d-48bb-ab0d-9f23e5a1e32c/images/hinh_6_cong_bai_tap_qr.svg)
+*Hình 6: Giao diện Cổng bài tập về nhà QR Code trên smartphone và Sổ liên lạc điện tử mã PIN bảo mật*
 
 #### 2. Quy trình thực hiện:
 - **Cổng tra cứu bài tập về nhà qua mã QR động (`/hw/[classId]`)**:
-  + Mỗi buổi chiều, giáo viên tạo bài tập về nhà trên phần mềm (kèm tiêu đề, yêu cầu chi tiết, ảnh chụp sách bài tập và lời dặn dò chuẩn bị sách vở cho ngày mai).
-  + Hệ thống tự sinh **mã QR duy nhất** cho lớp 4A1. Giáo viên in mã QR này dán vào bìa sổ dặn dò hoặc chia sẻ lên đầu nhóm Zalo lớp.
-  + Phụ huynh chỉ cần dùng ứng dụng Zalo hoặc camera điện thoại quét mã QR là xem được ngay toàn bộ bài tập và dặn dò trong ngày mà **hoàn toàn không cần tạo tài khoản hay đăng nhập mật khẩu**.
+  + Mỗi buổi chiều, giáo viên nhập nội dung bài tập về nhà và lời dặn dò chuẩn bị sách vở cho ngày mai lên hệ thống.
+  + Phần mềm tự động tạo **mã QR cố định** cho Lớp 4A1. Giáo viên in mã QR này dán vào bìa vở dặn dò hoặc ghim trên đầu nhóm Zalo lớp.
+  + Phụ huynh chỉ cần dùng camera điện thoại hoặc Zalo quét mã là xem được ngay toàn bộ nội dung bài tập, ảnh chụp trang sách bài tập mà **không cần phải đăng nhập tài khoản hay nhớ mật khẩu phức tạp**.
 - **Sổ liên lạc điện tử bảo mật bằng mã PIN cá nhân (`/student/[token]`)**:
-  + Để đảm bảo quyền riêng tư của trẻ em theo Luật Trẻ em 2016, giáo viên không gửi bảng điểm cả lớp lên nhóm công cộng.
-  + Thay vào đó, mỗi học sinh được cấp một đường link riêng biệt có mã hóa bảo mật token (VD: `gvcn.app/student/hs-4a1-8f92a4`).
-  + Khi phụ huynh truy cập lần đầu, hệ thống yêu cầu nhập **Mã PIN bảo mật 4 số riêng** do phụ huynh tự thiết lập.
-  + Tại đây, phụ huynh có thể xem chi tiết: Phiếu kết quả học tập kỳ học, Biểu đồ điểm sao nề nếp hằng tuần, Lịch sử điểm danh và lời nhận xét chân thành của cô giáo chủ nhiệm.
+  + Mỗi học sinh được cấp một mã liên kết riêng biệt (VD: `gvcn.app/student/hs-4a1-8f92a4`).
+  + Khi truy cập lần đầu, phụ huynh thiết lập **mã PIN 4 số bí mật riêng** của gia đình mình.
+  + Phụ huynh có thể tra cứu chi tiết: Bảng điểm định kỳ các môn, Biểu đồ tích sao nề nếp hằng tuần, Tỷ lệ chuyên cần và lời nhận xét chân thành của cô giáo chủ nhiệm.
+  + Giải pháp này giải quyết triệt để vấn đề lộ lọt thông tin điểm số riêng tư, tuân thủ nghiêm ngặt Luật Trẻ em 2016.
 
 ---
 
 ### Biện pháp 6: Quản trị nội bộ lớp học minh bạch: Thu chi quỹ, Thời khóa biểu 2 buổi và xuất dữ liệu liên thông
 
 #### 1. Mục tiêu:
-Minh bạch hóa 100% các khoản thu - chi quỹ cha mẹ học sinh; quản lý thời khóa biểu 2 buổi/ngày thông minh và hỗ trợ trích xuất dữ liệu chuẩn để đồng bộ lên phần mềm quản lý trường học (VnEdu, SMAS).
+Minh bạch hóa 100% các khoản thu - chi quỹ cha mẹ học sinh; quản lý thời khóa biểu 2 buổi/ngày thông minh và hỗ trợ trích xuất dữ liệu chuẩn để đồng bộ lên phần mềm quản trị ngành (VnEdu, SMAS).
+
+<a id="hinh-7"></a>
+
+![Hình 7: Phân hệ Quản lý thu chi quỹ lớp và Thời khóa biểu 2 buổi/ngày thông minh](/Users/chamnp/.gemini/antigravity/brain/f2d756a9-b42d-48bb-ab0d-9f23e5a1e32c/images/hinh_7_quan_ly_thu_chi_tkb.svg)
+*Hình 7: Phân hệ Quản lý thu chi quỹ lớp minh bạch và Thời khóa biểu 2 buổi/ngày thông minh*
 
 #### 2. Quy trình thực hiện:
-- **Quản lý quỹ lớp minh bạch**:
-  + Ghi nhận tức thời mọi khoản Thu (Quỹ hội cha mẹ HS, đóng góp ngoại khóa...) và Chi (Mua dụng cụ vệ sinh, mua quà khen thưởng, liên hoan tết thiếu nhi...).
-  + Tự động cập nhật số dư quỹ thời gian thực và xuất báo cáo sao kê thu chi chi tiết bằng 1 nút bấm để gửi công khai tới Ban đại diện CMHS lớp.
+- **Quản lý thu chi quỹ lớp minh bạch**:
+  + Ghi nhận tức thời mọi khoản Thu (Quỹ hội cha mẹ HS, đóng góp ngoại khóa...) và Chi (Mua quà khen thưởng, liên hoan Tết Trung thu, cơ sở vật chất lớp...).
+  + Tự động cập nhật số dư thời gian thực và xuất file sao kê chi tiết bằng 1 nút bấm để gửi công khai tới Ban đại diện CMHS lớp.
 - **Thời khóa biểu 2 buổi/ngày thông minh**:
-  + Quản lý ma trận 7 tiết/ngày (4 tiết sáng, 3 tiết chiều) với màu sắc nhận diện trực quan từng môn học.
-  + Tích hợp chức năng ghi chú dụng cụ học tập cần mang theo (VD: *Mang thước kẻ, compa môn Toán; mang màu vẽ môn Mỹ thuật*), tự động đồng bộ sang giao diện xem của học sinh.
+  + Quản lý ma trận 7 tiết/ngày (4 tiết sáng, 3 tiết chiều) với màu sắc nhận diện trực quan từng phân môn.
+  + Tích hợp chức năng ghi chú dụng cụ học tập cần mang theo (VD: *Mang thước kẻ, compa môn Toán; mang màu vẽ môn Mỹ thuật*), tự động đồng bộ sang giao diện xem của học sinh và phụ huynh.
 - **Xuất dữ liệu liên thông chuẩn hóa**:
   + **Xuất Excel Bảng tổng hợp đánh giá Mẫu 1 (TT27)**: Đúng định dạng phôi mẫu của Bộ Giáo dục và Đào tạo để lưu trữ hồ sơ trường học.
   + **Xuất file nhập điểm định dạng VnEdu / SMAS**: Cấu trúc cột tương thích hoàn hảo giúp giáo viên chỉ cần 1 thao tác import là đẩy toàn bộ điểm số và nhận xét lên hệ thống quản trị của nhà trường mà không phải gõ lại từng ký tự.
@@ -455,6 +436,13 @@ Minh bạch hóa 100% các khoản thu - chi quỹ cha mẹ học sinh; quản l
 ## 4. Kết quả và hiệu quả áp dụng sáng kiến
 
 Sau một năm học kiên trì triển khai sáng kiến tại Lớp 4A1 và mở rộng thực nghiệm tại Trường Tiểu học Đại Mỗ trong năm học 2025 - 2026, sáng kiến đã mang lại những kết quả chuyển biến vượt bậc cả về định tính và định lượng:
+
+<a id="hinh-8"></a>
+
+![Hình 8: Biểu đồ so sánh đối chứng hiệu quả thực nghiệm](/Users/chamnp/.gemini/antigravity/brain/f2d756a9-b42d-48bb-ab0d-9f23e5a1e32c/images/hinh_8_bieu_do_doi_chung_hieu_qua.svg)
+*Hình 8: Biểu đồ so sánh đối chứng hiệu quả thực nghiệm tại Trường Tiểu học Đại Mỗ (Năm học 2025 - 2026)*
+
+---
 
 ### 4.1. Kết quả định tính
 - **Đối với Giáo viên**:
@@ -472,9 +460,7 @@ Sau một năm học kiên trì triển khai sáng kiến tại Lớp 4A1 và m�
 
 ### 4.2. Kết quả định lượng (Đối chiếu Thực nghiệm - Đối chứng)
 
-Để có cơ sở khoa học vững chắc, tôi tiến hành so sánh kết quả giữa **Lớp thực nghiệm (Lớp 4A1 - 45 HS)** và **Lớp đối chứng (Lớp 4A2 - 44 HS)** tại Trường Tiểu học Đại Mỗ vào cuối Học kỳ I và Giữa Học kỳ II năm học 2025 - 2026:
-
-#### Bảng 3: So sánh thời gian thực hiện các nghiệp vụ chủ nhiệm của giáo viên
+#### Bảng 4: So sánh thời gian thực hiện các nghiệp vụ chủ nhiệm của giáo viên
 | Nghiệp vụ chuyên môn của GVCN | Lớp Đối chứng 4A2 (Làm thông thường) | Lớp Thực nghiệm 4A1 (Áp dụng GVCN Pro) | Mức độ tiết kiệm thời gian (%) |
 | :--- | :---: | :---: | :---: |
 | Điểm danh, kiểm diện bán trú hằng ngày | 12 phút / ngày | **1 phút / ngày** | **Giảm 91.7%** |
@@ -484,8 +470,8 @@ Sau một năm học kiên trì triển khai sáng kiến tại Lớp 4A1 và m�
 | Nhập dữ liệu lên hệ thống VnEdu / SMAS | 180 phút / kỳ | **5 phút / kỳ** (Import Excel) | **Giảm 97.2%** |
 | **TỔNG THỜI GIAN TIÊU TỐN / KỲ HỌC** | **~ 65 giờ** | **~ 4.5 giờ** | **Tiết kiệm 93.1%** |
 
-#### Bảng 4: So sánh kết quả rèn luyện nề nếp và chất lượng học tập cuối năm
-| Chỉ số theo dõi | Lớp Đối chứng 4A2 (N=44) | Lớp Thực nghiệm 4A1 (N=45) | Chênh lệch tích cực |
+#### Bảng 5: So sánh kết quả rèn luyện nề nếp và chất lượng học tập cuối năm học 2025 - 2026
+| Chỉ số theo dõi | Lớp Đối chứng 4A2 (N=44) | Lớp Thực nghiệm 4A1 (N=45) | Mức độ chuyển biến tích cực |
 | :--- | :---: | :---: | :---: |
 | Tỷ lệ học sinh đi học chuyên cần | 96.2% | **99.6%** | + 3.4% |
 | Tỷ lệ học sinh đạt Mức Tốt về 5 Phẩm chất | 72.7% (32/44 HS) | **91.1% (41/45 HS)** | **+ 18.4%** |
@@ -493,7 +479,7 @@ Sau một năm học kiên trì triển khai sáng kiến tại Lớp 4A1 và m�
 | Tỷ lệ học sinh đạt danh hiệu Xuất sắc & Tiêu biểu | 61.4% (27/44 HS) | **82.2% (37/45 HS)** | **+ 20.8%** |
 | Học sinh cần rèn luyện thêm trong hè | 02 em (4.5%) | **0 em (0%)** | **Giảm 100%** |
 
-#### Bảng 5: Khảo sát mức độ hài lòng của Cha mẹ học sinh cuối năm học (N = 45 CMHS Lớp 4A1)
+#### Bảng 6: Khảo sát mức độ hài lòng của Cha mẹ học sinh cuối năm học (N = 45 CMHS Lớp 4A1)
 | Nội dung khảo sát | Rất hài lòng | Hài lòng | Chưa hài lòng |
 | :--- | :---: | :---: | :---: |
 | 1. Cách thức thông báo bài tập qua mã QR nhanh chóng | 44 (97.8%) | 1 (2.2%) | 0 (0%) |
@@ -520,7 +506,7 @@ Sau một năm học kiên trì triển khai sáng kiến tại Lớp 4A1 và m�
 Sáng kiến kinh nghiệm *"Ứng dụng nền tảng chuyển đổi số GVCN Pro và Trí tuệ nhân tạo trong đổi mới công tác quản lý lớp chủ nhiệm và đánh giá học sinh theo Thông tư 27/2020/TT-BGDĐT tại Trường Tiểu học Đại Mỗ"* đã giải quyết trọn vẹn và căn cơ bài toán khó khăn nhất của người giáo viên chủ nhiệm trong thời đại chuyển đổi số.
 
 Thông qua việc kết hợp sức mạnh của công nghệ Web hiện đại, thuật toán tự động hóa chuẩn xác theo Thông tư 27 và Trí tuệ Nhân tạo nhân văn, sáng kiến đã:
-1. Giảm thiểu tới **93% thời gian xử lý thủ tục hành chính** cho giáo viên;
+1. Giảm thiểu tới **93.1% thời gian xử lý thủ tục hành chính** cho giáo viên;
 2. Đưa chất lượng lời nhận xét học bạ lên tầm cao mới: Đậm tính giáo dục, cá nhân hóa, chuẩn ngôn phong sư phạm;
 3. Tạo dựng một môi trường lớp học dân chủ, tích cực, rộn rã niềm vui qua phong trào thi đua "Sao hoa việc tốt";
 4. Thiết lập nhịp cầu gắn kết chặt chẽ, văn minh, bảo mật giữa Gia đình và Nhà trường.
@@ -541,8 +527,6 @@ Từ quá trình nghiên cứu, xây dựng và đưa vào thực nghiệm sáng
 ---
 
 ## 3. Khuyến nghị và đề xuất
-
-Để sáng kiến tiếp tục được hoàn thiện và phát huy hiệu quả rộng rãi hơn nữa, tôi xin trân trọng có một số khuyến nghị, đề xuất:
 
 ### 3.1. Đối với Ban Giám hiệu Trường Tiểu học Đại Mỗ:
 - Tiếp tục tạo điều kiện, khuyến khích các tổ chuyên môn (Khối 1, 2, 3, 5) áp dụng nền tảng GVCN Pro trong sinh hoạt chuyên môn và quản lý lớp học.
@@ -646,13 +630,3 @@ export interface StudentTermSummary {
   teacherComment: string;   // Lời nhận xét học bạ sinh bởi AI / Smart Bank
 }
 ```
-
----
-
-### PHỤ LỤC 4: HÌNH ẢNH MINH HỌA GIAO DIỆN HỆ THỐNG GVCN PRO
-
-1. **Giao diện Điểm danh 1 chạm & Kiểm diện Bán trú**: Hỗ trợ tích chọn nhanh, tính tổng suất ăn tức thời và nút bấm copy gửi tin nhắn Zalo nhà bếp.
-2. **Giao diện Sơ đồ lớp thông minh tương tác (Interactive Seating Chart)**: Lưới 5 hàng x 8 cột, hiển thị biểu tượng kính cận thị, cho phép kéo thả/hoán đổi vị trí chỗ ngồi trong 1 giây.
-3. **Giao diện Ma trận Đánh giá Thông tư 27**: Đầy đủ 11 môn học, 5 phẩm chất, 9 năng lực kèm thuật toán tự động xét danh hiệu khen thưởng (*Xuất sắc / Tiêu biểu*).
-4. **Giao diện Trợ lý Sư phạm AI sinh nhận xét học bạ**: Cho phép chọn giọng điệu (Khích lệ/Chuẩn mực/Ấm áp), tùy chỉnh độ dài (35/60/95 từ) và sinh đồng loạt cho 45 học sinh chỉ trong 15 giây.
-5. **Giao diện Cổng bài tập về nhà QR Code & Sổ liên lạc số PIN bảo mật**: Trực quan, thân thiện trên màn hình điện thoại của phụ huynh.

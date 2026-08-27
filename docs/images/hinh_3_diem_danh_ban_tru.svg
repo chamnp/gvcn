@@ -1,0 +1,105 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 620" width="100%" height="100%" style="background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <defs>
+    <linearGradient id="bgDiemDanh" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#059669"/><stop offset="100%" stop-color="#10b981"/></linearGradient>
+    <filter id="fShadow" x="-5%" y="-5%" width="110%" height="110%"><feDropShadow dx="0" dy="3" stdDeviation="5" flood-opacity="0.08"/></filter>
+  </defs>
+
+  <!-- Top Navigation -->
+  <rect x="0" y="0" width="1100" height="60" fill="url(#bgDiemDanh)"/>
+  <text x="30" y="37" fill="#ffffff" font-size="18" font-weight="bold">GVCN PRO - Phân Hệ Điểm Danh &amp; Kiểm Diện Bán Trú</text>
+  <text x="930" y="37" fill="#d1fae5" font-size="13">Ngày: 27/08/2026</text>
+
+  <!-- Stats Cards -->
+  <g transform="translate(30, 80)">
+    <!-- Card Sĩ số -->
+    <rect x="0" y="0" width="240" height="90" rx="12" fill="#eff6ff" stroke="#bfdbfe" filter="url(#fShadow)"/>
+    <text x="20" y="32" fill="#1e40af" font-size="13" font-weight="bold">TỔNG SĨ SỐ</text>
+    <text x="20" y="70" fill="#1e3a8a" font-size="32" font-weight="bold">45 <tspan font-size="16" font-weight="normal">Học sinh</tspan></text>
+
+    <!-- Card Có mặt -->
+    <rect x="265" y="0" width="240" height="90" rx="12" fill="#ecfdf5" stroke="#a7f3d0" filter="url(#fShadow)"/>
+    <text x="285" y="32" fill="#065f46" font-size="13" font-weight="bold">CÓ MẶT TẠI LỚP</text>
+    <text x="285" y="70" fill="#047857" font-size="32" font-weight="bold">44 <tspan font-size="16" font-weight="normal">(97.8%)</tspan></text>
+
+    <!-- Card Vắng -->
+    <rect x="530" y="0" width="240" height="90" rx="12" fill="#fff1f2" stroke="#fecdd3" filter="url(#fShadow)"/>
+    <text x="550" y="32" fill="#9f1239" font-size="13" font-weight="bold">VẮNG NGHỈ HỌC</text>
+    <text x="550" y="70" fill="#e11d48" font-size="32" font-weight="bold">01 <tspan font-size="16" font-weight="normal">(Có phép)</tspan></text>
+
+    <!-- Card Suất ăn -->
+    <rect x="795" y="0" width="245" height="90" rx="12" fill="#fefce8" stroke="#fef08a" filter="url(#fShadow)"/>
+    <text x="815" y="32" fill="#854d0e" font-size="13" font-weight="bold">SUẤT ĂN BÁN TRÚ</text>
+    <text x="815" y="70" fill="#ca8a04" font-size="32" font-weight="bold">44 <tspan font-size="16" font-weight="normal">Suất báo bếp</tspan></text>
+  </g>
+
+  <!-- Main Content Split -->
+  <!-- Left: Attendance Table -->
+  <g transform="translate(30, 195)" filter="url(#fShadow)">
+    <rect width="650" height="400" rx="12" fill="#ffffff" stroke="#e2e8f0"/>
+    <rect width="650" height="45" rx="12" fill="#f8fafc"/>
+    <text x="20" y="28" fill="#334155" font-size="13" font-weight="bold">STT</text>
+    <text x="70" y="28" fill="#334155" font-size="13" font-weight="bold">Họ và Tên Học Sinh</text>
+    <text x="280" y="28" fill="#334155" font-size="13" font-weight="bold">Trạng Thái Điểm Danh</text>
+    <text x="490" y="28" fill="#334155" font-size="13" font-weight="bold">Ăn Bán Trú</text>
+
+    <!-- Row 1 -->
+    <line x1="0" y1="45" x2="650" y2="45" stroke="#f1f5f9"/>
+    <text x="25" y="80" fill="#64748b" font-size="13">01</text>
+    <text x="70" y="80" fill="#0f172a" font-size="13" font-weight="bold">Nguyễn Bảo An</text>
+    <rect x="280" y="62" width="90" height="26" rx="6" fill="#dcfce7"/>
+    <text x="325" y="79" text-anchor="middle" fill="#15803d" font-size="11" font-weight="bold">✓ Có mặt</text>
+    <text x="495" y="80" fill="#16a34a" font-size="13 font-weight:bold">✓ Có ăn (1 suất)</text>
+
+    <!-- Row 2 -->
+    <line x1="0" y1="100" x2="650" y2="100" stroke="#f1f5f9"/>
+    <text x="25" y="135" fill="#64748b" font-size="13">02</text>
+    <text x="70" y="135" fill="#0f172a" font-size="13" font-weight="bold">Trần Bảo Nam</text>
+    <rect x="280" y="117" width="90" height="26" rx="6" fill="#dcfce7"/>
+    <text x="325" y="134" text-anchor="middle" fill="#15803d" font-size="11" font-weight="bold">✓ Có mặt</text>
+    <text x="495" y="135" fill="#16a34a" font-size="13 font-weight:bold">✓ Có ăn (1 suất)</text>
+
+    <!-- Row 3 (Absent) -->
+    <line x1="0" y1="155" x2="650" y2="155" stroke="#f1f5f9"/>
+    <rect x="0" y="156" width="650" height="55" fill="#fff1f2"/>
+    <text x="25" y="190" fill="#e11d48" font-size="13" font-weight="bold">03</text>
+    <text x="70" y="190" fill="#e11d48" font-size="13" font-weight="bold">Bùi Đức Minh</text>
+    <rect x="280" y="172" width="140" height="26" rx="6" fill="#fee2e2"/>
+    <text x="350" y="189" text-anchor="middle" fill="#b91c1c" font-size="11" font-weight="bold">✗ Vắng có phép (Sốt)</text>
+    <text x="495" y="190" fill="#dc2626" font-size="13 font-weight:bold">✗ Báo cắt cơm</text>
+
+    <!-- Row 4 -->
+    <line x1="0" y1="210" x2="650" y2="210" stroke="#f1f5f9"/>
+    <text x="25" y="245" fill="#64748b" font-size="13">04</text>
+    <text x="70" y="245" fill="#0f172a" font-size="13" font-weight="bold">Lê Quỳnh Chi</text>
+    <rect x="280" y="227" width="90" height="26" rx="6" fill="#dcfce7"/>
+    <text x="325" y="244" text-anchor="middle" fill="#15803d" font-size="11" font-weight="bold">✓ Có mặt</text>
+    <text x="495" y="245" fill="#16a34a" font-size="13 font-weight:bold">✓ Có ăn (1 suất)</text>
+
+    <!-- Row 5 -->
+    <line x1="0" y1="265" x2="650" y2="265" stroke="#f1f5f9"/>
+    <text x="25" y="300" fill="#64748b" font-size="13">05</text>
+    <text x="70" y="300" fill="#0f172a" font-size="13" font-weight="bold">Phạm Tuấn Kiệt</text>
+    <rect x="280" y="282" width="90" height="26" rx="6" fill="#dcfce7"/>
+    <text x="325" y="299" text-anchor="middle" fill="#15803d" font-size="11" font-weight="bold">✓ Có mặt</text>
+    <text x="495" y="300" fill="#16a34a" font-size="13 font-weight:bold">✓ Có ăn (1 suất)</text>
+  </g>
+
+  <!-- Right: 1-Click Zalo Message Generator -->
+  <g transform="translate(710, 195)" filter="url(#fShadow)">
+    <rect width="360" height="400" rx="12" fill="#ffffff" stroke="#e2e8f0"/>
+    <rect width="360" height="45" rx="12" fill="#059669"/>
+    <text x="20" y="28" fill="#ffffff" font-size="14" font-weight="bold">📲 Báo Cáo Zalo Bán Trú (1-Click)</text>
+    
+    <rect x="20" y="65" width="320" height="230" rx="8" fill="#f8fafc" stroke="#cbd5e1"/>
+    <text x="35" y="95" fill="#0f172a" font-size="12" font-weight="bold">[BÁO CÁO BÁN TRÚ TRƯỜNG TH ĐẠI MỖ]</text>
+    <text x="35" y="125" fill="#334155" font-size="12">• Lớp: 4A1 | Ngày: 27/08/2026</text>
+    <text x="35" y="150" fill="#334155" font-size="12">• Tổng sĩ số: 45 học sinh</text>
+    <text x="35" y="175" fill="#334155" font-size="12">• Có mặt: 44 | Vắng: 01 (Bùi Đức Minh - Sốt)</text>
+    <text x="35" y="200" fill="#047857" font-size="12" font-weight="bold">• Số suất ăn bán trú: 44 suất (Bớt 01)</text>
+    <text x="35" y="235" fill="#475569" font-size="12">GVCN: Cô Nguyễn Thị Minh Hằng (4A1)</text>
+
+    <!-- Copy Button -->
+    <rect x="20" y="315" width="320" height="50" rx="10" fill="#059669"/>
+    <text x="180" y="346" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="bold">📋 SAO CHÉP GỬI ZALO NHÀ BẾP</text>
+  </g>
+</svg>

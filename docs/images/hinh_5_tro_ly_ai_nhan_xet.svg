@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 660" width="100%" height="100%" style="background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <defs>
+    <linearGradient id="bgAI" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#7c3aed"/><stop offset="100%" stop-color="#9333ea"/></linearGradient>
+    <filter id="aiShadow" x="-5%" y="-5%" width="110%" height="110%"><feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.08"/></filter>
+  </defs>
+
+  <rect x="0" y="0" width="1100" height="60" fill="url(#bgAI)"/>
+  <text x="30" y="37" fill="#ffffff" font-size="18" font-weight="bold">GVCN PRO - Trợ Lý Sư Phạm AI &amp; Ngân Hàng Nhận Xét Học Bạ</text>
+  <rect x="910" y="16" width="160" height="28" rx="6" fill="#6d28d9"/>
+  <text x="990" y="35" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="bold">Chế độ: AI Song Hành</text>
+
+  <!-- Configuration Bar -->
+  <g transform="translate(30, 80)">
+    <rect width="1040" height="60" rx="10" fill="#faf5ff" stroke="#e9d5ff"/>
+    <text x="25" y="36" fill="#581c87" font-size="13" font-weight="bold">⚙️ Tùy Chỉnh Giọng Văn:</text>
+    
+    <rect x="180" y="15" width="110" height="30" rx="6" fill="#7c3aed"/>
+    <text x="235" y="35" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="bold">🌟 Khích lệ</text>
+
+    <rect x="300" y="15" width="110" height="30" rx="6" fill="#ffffff" stroke="#c084fc"/>
+    <text x="355" y="35" text-anchor="middle" fill="#7c3aed" font-size="12">📚 Chuẩn mực</text>
+
+    <rect x="420" y="15" width="110" height="30" rx="6" fill="#ffffff" stroke="#c084fc"/>
+    <text x="475" y="35" text-anchor="middle" fill="#7c3aed" font-size="12">💖 Ấm áp</text>
+
+    <text x="560" y="36" fill="#581c87" font-size="13" font-weight="bold">Độ dài:</text>
+    <rect x="620" y="15" width="120" height="30" rx="6" fill="#7c3aed"/>
+    <text x="680" y="35" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="bold">~60 từ (3 câu)</text>
+
+    <rect x="840" y="12" width="180" height="36" rx="8" fill="#10b981"/>
+    <text x="930" y="35" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="bold">⚡ SINH CHO CẢ LỚP (15s)</text>
+  </g>
+
+  <!-- Main AI Generation Showcase Cards -->
+  <g transform="translate(30, 160)">
+    <!-- Card 1: Học sinh Xuất sắc (Bảo Nam) -->
+    <rect x="0" y="0" width="505" height="220" rx="12" fill="#ffffff" stroke="#e9d5ff" stroke-width="1.5" filter="url(#aiShadow)"/>
+    <rect x="0" y="0" width="505" height="42" rx="12" fill="#faf5ff"/>
+    <text x="20" y="27" fill="#6b21a8" font-size="14" font-weight="bold">1. Trần Bảo Nam - Lớp 4A1</text>
+    <rect x="360" y="8" width="130" height="26" rx="6" fill="#fef3c7"/>
+    <text x="425" y="25" text-anchor="middle" fill="#b45309" font-size="11" font-weight="bold">👑 HS Xuất Sắc</text>
+    
+    <text x="20" y="70" fill="#334155" font-size="13" font-weight="500">
+      <tspan x="20" dy="0">"Em Bảo Nam có tư duy Toán học nhanh nhẹn, tiếp thu bài tốt và chữ</tspan>
+      <tspan x="20" dy="22">viết rất sạch đẹp. Trong giờ học, em luôn hăng hái phát biểu và thể hiện</tspan>
+      <tspan x="20" dy="22">năng khiếu Mỹ thuật nổi trội. Em luôn lễ phép, nhiệt tình giúp đỡ bạn bè.</tspan>
+      <tspan x="20" dy="22">Cô chúc em tiếp tục giữ vững phong độ xuất sắc này nhé!"</tspan>
+    </text>
+
+    <rect x="20" y="165" width="150" height="32" rx="6" fill="#ecfdf5" stroke="#a7f3d0"/>
+    <text x="95" y="185" text-anchor="middle" fill="#065f46" font-size="11" font-weight="bold">✓ 58 từ • Chuẩn TT27</text>
+    <rect x="375" y="165" width="115" height="32" rx="6" fill="#7c3aed"/>
+    <text x="432" y="185" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="bold">📋 Sao Chép</text>
+
+    <!-- Card 2: Học sinh Cần Khích lệ (Quỳnh Chi) -->
+    <rect x="535" y="0" width="505" height="220" rx="12" fill="#ffffff" stroke="#e9d5ff" stroke-width="1.5" filter="url(#aiShadow)"/>
+    <rect x="535" y="0" width="505" height="42" rx="12" fill="#faf5ff"/>
+    <text x="555" y="27" fill="#6b21a8" font-size="14" font-weight="bold">2. Lê Quỳnh Chi - Lớp 4A1</text>
+    <rect x="895" y="8" width="130" height="26" rx="6" fill="#e0e7ff"/>
+    <text x="960" y="25" text-anchor="middle" fill="#4338ca" font-size="11" font-weight="bold">🌟 HS Tiêu Biểu</text>
+
+    <text x="555" y="70" fill="#334155" font-size="13" font-weight="500">
+      <tspan x="555" dy="0">"Em Quỳnh Chi nắm chắc kiến thức các môn học, giải Toán cẩn thận</tspan>
+      <tspan x="555" dy="22">và viết văn giàu cảm xúc. Em chấp hành tốt nội quy trường lớp, có ý</tspan>
+      <tspan x="555" dy="22">thức giữ gìn vệ sinh chung. Tuy nhiên, em còn hơi rụt rè khi thảo luận.</tspan>
+      <tspan x="555" dy="22">Cô mong em tự tin hơn, tích cực giơ tay phát biểu nhé!"</tspan>
+    </text>
+
+    <rect x="555" y="165" width="150" height="32" rx="6" fill="#ecfdf5" stroke="#a7f3d0"/>
+    <text x="630" y="185" text-anchor="middle" fill="#065f46" font-size="11" font-weight="bold">✓ 55 từ • Khích lệ nhẹ nhàng</text>
+    <rect x="910" y="165" width="115" height="32" rx="6" fill="#7c3aed"/>
+    <text x="967" y="185" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="bold">📋 Sao Chép</text>
+  </g>
+
+  <!-- Bottom Comparison Card -->
+  <g transform="translate(30, 400)" filter="url(#aiShadow)">
+    <rect width="1040" height="220" rx="12" fill="#1e1b4b"/>
+    <text x="40" y="40" fill="#c084fc" font-size="16" font-weight="bold">💎 ĐỘT PHÁ CỦA TRỢ LÝ SƯ PHẠM AI TRONG GVCN PRO:</text>
+    
+    <rect x="40" y="65" width="300" height="120" rx="8" fill="#2e1065"/>
+    <text x="60" y="95" fill="#fbcfe8" font-size="14" font-weight="bold">1. Độc Bản &amp; Không Trùng Lặp</text>
+    <text x="60" y="125" fill="#e9d5ff" font-size="12">• Đọc đa chiều dữ liệu điểm số, nề nếp</text>
+    <text x="60" y="145" fill="#e9d5ff" font-size="12">• Tự ghép tên, đại từ và nhận xét riêng</text>
+
+    <rect x="370" y="65" width="300" height="120" rx="8" fill="#2e1065"/>
+    <text x="390" y="95" fill="#fbcfe8" font-size="14" font-weight="bold">2. Dual-Engine Hoạt Động Kép</text>
+    <text x="390" y="125" fill="#e9d5ff" font-size="12">• Online LLM (Gemini / OpenAI API)</text>
+    <text x="390" y="145" fill="#e9d5ff" font-size="12">• Offline Smart Bank (100% không mạng)</text>
+
+    <rect x="700" y="65" width="300" height="120" rx="8" fill="#2e1065"/>
+    <text x="720" y="95" fill="#fbcfe8" font-size="14" font-weight="bold">3. Tiết Kiệm 98.4% Thời Gian</text>
+    <text x="720" y="125" fill="#e9d5ff" font-size="12">• Từ 26.5 giờ viết tay xuống 25 phút</text>
+    <text x="720" y="145" fill="#e9d5ff" font-size="12">• Xuất trực tiếp sang VnEdu / SMAS</text>
+  </g>
+</svg>

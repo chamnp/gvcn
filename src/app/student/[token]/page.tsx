@@ -282,44 +282,44 @@ export default function StudentPrivateReportPage({
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-16">
       {/* 1. BRAND HEADER BAR */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-3 min-w-0">
+        <div className="max-w-5xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2">
+          <div className="flex items-center space-x-2.5 sm:space-x-3 min-w-0 flex-1">
             {schoolInfo.logoUrl ? (
               <img
                 src={schoolInfo.logoUrl}
                 alt="Logo"
-                className="w-10 h-10 rounded-2xl object-cover border border-slate-200 shrink-0"
+                className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl object-cover border border-slate-200 shrink-0"
               />
             ) : (
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white text-xl shrink-0">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white text-base sm:text-xl shrink-0">
                 🎒
               </div>
             )}
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <h2 className="font-bold text-xs sm:text-sm text-slate-900 truncate">
                 {schoolInfo.name}
               </h2>
-              <p className="text-[11px] text-slate-500 truncate">
+              <p className="text-[10px] sm:text-[11px] text-slate-500 truncate">
                 Lớp {studentClass.name} • GVCN: {studentClass.teacherName}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1.5 shrink-0">
             <button
               type="button"
               onClick={handleCopyLink}
-              className="inline-flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+              className="inline-flex items-center space-x-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer"
               title="Sao chép link"
             >
               <Copy className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Lưu Link Con</span>
+              <span className="hidden sm:inline">Lưu Link</span>
             </button>
 
             <button
               type="button"
               onClick={() => window.print()}
-              className="inline-flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+              className="inline-flex items-center space-x-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer"
             >
               <Printer className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">In Phiếu</span>
@@ -329,15 +329,15 @@ export default function StudentPrivateReportPage({
       </header>
 
       {/* 2. MAIN CONTAINER */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 pt-5 space-y-5">
+      <main className="max-w-5xl mx-auto px-3 sm:px-6 pt-4 sm:pt-6 space-y-4 sm:space-y-5">
         {/* FIRST TIME ACTIVATION WELCOME BANNER */}
         {!student.isActivated ? (
-          <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-3xl p-5 text-white shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in">
-            <div className="space-y-1">
+          <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-3xl p-4 sm:p-5 text-white shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in">
+            <div className="space-y-1 min-w-0">
               <span className="bg-white/20 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">
                 🌟 Kích Hoạt Lần Đầu
               </span>
-              <h3 className="text-base sm:text-lg font-black">
+              <h3 className="text-sm sm:text-base font-black truncate">
                 Chào mừng Quý Phụ huynh của em {student.fullName}!
               </h3>
               <p className="text-xs text-white/90 leading-relaxed">
@@ -348,45 +348,45 @@ export default function StudentPrivateReportPage({
             <button
               type="button"
               onClick={() => setIsPinModalOpen(true)}
-              className="inline-flex items-center justify-center space-x-2 bg-white text-orange-800 hover:bg-orange-50 font-black text-xs px-5 py-2.5 rounded-2xl shadow-md transition-all shrink-0 cursor-pointer"
+              className="inline-flex items-center justify-center space-x-1.5 bg-white text-orange-800 hover:bg-orange-50 font-black text-xs px-4 py-2.5 rounded-2xl shadow-md transition-all shrink-0 cursor-pointer"
             >
               <Key className="w-4 h-4 text-orange-600" />
               <span>Đổi Mã PIN Riêng Ngay</span>
             </button>
           </div>
         ) : (
-          <div className="bg-emerald-50 rounded-2xl p-3 border border-emerald-200 flex items-center justify-between text-xs text-emerald-900">
-            <div className="flex items-center space-x-2">
+          <div className="bg-emerald-50 rounded-2xl p-3 border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-emerald-900">
+            <div className="flex items-center space-x-2 min-w-0">
               <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>
-                Hồ sơ học tập của <strong>{student.fullName}</strong> được bảo vệ riêng tư bằng mã PIN của bố mẹ.
+              <span className="truncate">
+                Hồ sơ học tập của <strong>{student.fullName}</strong> được bảo vệ riêng tư bằng mã PIN.
               </span>
             </div>
             <button
               type="button"
               onClick={() => setIsPinModalOpen(true)}
-              className="text-emerald-700 hover:underline font-bold text-[11px] shrink-0 cursor-pointer"
+              className="text-emerald-700 hover:underline font-bold text-[11px] shrink-0 text-left sm:text-right cursor-pointer"
             >
-              Đổi lại mã PIN
+              Đổi lại mã PIN →
             </button>
           </div>
         )}
 
         {/* 3. BIRTHDAY SPECIAL GREETING CARD (ONLY FOR THIS CHILD) */}
         {birthdayInfo && (birthdayInfo.isToday || birthdayInfo.isThisMonth) && (
-          <div className="bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 rounded-3xl p-5 text-white shadow-lg flex items-center space-x-4 animate-in fade-in">
-            <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-3xl shadow-inner shrink-0 animate-bounce">
+          <div className="bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 rounded-3xl p-4 sm:p-5 text-white shadow-lg flex items-center space-x-3.5 animate-in fade-in">
+            <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl shadow-inner shrink-0">
               🎂
             </div>
-            <div className="space-y-1 min-w-0">
+            <div className="space-y-0.5 min-w-0 flex-1">
               <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-rose-100">
                 <PartyPopper className="w-3.5 h-3.5" />
-                <span>{birthdayInfo.isToday ? '🎉 Chúc Mừng Sinh Nhật Hôm Nay!' : '🎁 Tháng Sinh Nhật Của Con'}</span>
+                <span>{birthdayInfo.isToday ? '🎉 Sinh Nhật Hôm Nay!' : '🎁 Tháng Sinh Nhật Của Con'}</span>
               </div>
-              <h3 className="font-black text-base sm:text-lg">
+              <h3 className="font-black text-sm sm:text-base truncate">
                 Chúc Mừng Sinh Nhật Em {student.fullName}!
               </h3>
-              <p className="text-xs text-rose-100 leading-relaxed">
+              <p className="text-xs text-rose-100 leading-snug break-words">
                 {birthdayInfo.isToday
                   ? `Chúc em bước sang tuổi ${birthdayInfo.turningAge} luôn mạnh khỏe, chăm ngoan, học giỏi và ngập tràn niềm vui!`
                   : `Ngày sinh: ${birthdayInfo.formattedDate} (còn ${birthdayInfo.daysRemaining} ngày nữa là đến sinh nhật tròn ${birthdayInfo.turningAge} tuổi của con).`}
@@ -396,52 +396,52 @@ export default function StudentPrivateReportPage({
         )}
 
         {/* 4. STUDENT HERO PROFILE CARD */}
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-5 sm:p-7 relative overflow-hidden">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
-            <div className="flex items-center space-x-4 sm:space-x-5">
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-4 sm:p-6 relative overflow-hidden">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center space-x-3.5 sm:space-x-5 min-w-0 flex-1">
               {student.avatarUrl ? (
                 <img
                   src={student.avatarUrl}
                   alt={student.fullName}
-                  className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl object-cover border-4 border-blue-500 shadow-md shrink-0"
+                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl object-cover border-2 sm:border-4 border-blue-500 shadow-md shrink-0"
                 />
               ) : (
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-black text-2xl sm:text-3xl flex items-center justify-center shadow-md shrink-0">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white font-black text-xl sm:text-2xl flex items-center justify-center shadow-md shrink-0">
                   {student.fullName.split(' ').pop()?.substring(0, 1) || 'E'}
                 </div>
               )}
 
-              <div className="space-y-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="bg-blue-100 text-blue-800 text-xs font-black px-3 py-0.5 rounded-full uppercase">
+              <div className="space-y-1 min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="bg-blue-100 text-blue-800 text-[10px] sm:text-xs font-black px-2.5 py-0.5 rounded-full uppercase">
                     Lớp {studentClass.name}
                   </span>
-                  <span className="bg-slate-100 text-slate-700 text-xs font-semibold px-2.5 py-0.5 rounded-full">
-                    Mã HS: {student.studentCode}
+                  <span className="bg-slate-100 text-slate-700 text-[10px] sm:text-xs font-semibold px-2 py-0.5 rounded-full">
+                    Mã: {student.studentCode}
                   </span>
                 </div>
 
-                <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+                <h1 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight break-words">
                   {student.fullName}
                 </h1>
 
-                <p className="text-xs text-slate-500">
-                  Ngày sinh: <strong className="text-slate-700">{student.dateOfBirth}</strong> • Giới tính: <strong className="text-slate-700">{student.gender}</strong>
+                <p className="text-[11px] sm:text-xs text-slate-500 truncate">
+                  Sinh: <strong className="text-slate-700">{student.dateOfBirth}</strong> • Giới tính: <strong className="text-slate-700">{student.gender}</strong>
                 </p>
               </div>
             </div>
 
             {/* Badges / Honors */}
-            <div className="flex flex-wrap md:flex-col items-start md:items-end gap-2">
+            <div className="flex flex-wrap sm:flex-col items-start sm:items-end gap-1.5 shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-slate-100">
               {studentSummary?.awardTitle && (
-                <div className="inline-flex items-center space-x-1.5 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-300 text-amber-900 px-3.5 py-1.5 rounded-2xl shadow-xs">
-                  <Award className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span className="font-black text-xs">{studentSummary.awardTitle}</span>
+                <div className="inline-flex items-center space-x-1.5 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-300 text-amber-900 px-3 py-1 rounded-xl shadow-xs text-xs font-black">
+                  <Award className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span className="truncate max-w-[180px]">{studentSummary.awardTitle}</span>
                 </div>
               )}
 
-              <div className="inline-flex items-center space-x-1.5 bg-purple-50 border border-purple-200 text-purple-800 px-3.5 py-1.5 rounded-2xl text-xs font-bold">
-                <Star className="w-4 h-4 text-purple-600 fill-purple-600" />
+              <div className="inline-flex items-center space-x-1.5 bg-purple-50 border border-purple-200 text-purple-800 px-3 py-1 rounded-xl text-xs font-bold">
+                <Star className="w-3.5 h-3.5 text-purple-600 fill-purple-600" />
                 <span>{studentStars} Ngôi Sao Thi Đua</span>
               </div>
             </div>
@@ -449,19 +449,19 @@ export default function StudentPrivateReportPage({
         </div>
 
         {/* 5. MAIN NAVIGATION TABS FOR THIS CHILD */}
-        <div className="flex overflow-x-auto no-scrollbar gap-1.5 bg-white p-1.5 rounded-2xl border border-slate-200 shadow-xs text-xs font-bold">
+        <div className="flex overflow-x-auto no-scrollbar gap-1.5 bg-white p-1 rounded-2xl border border-slate-200 shadow-xs text-xs font-bold scroll-smooth">
           {[
-            { id: 'REPORT', label: '📊 Bảng Điểm & Nhận Xét TT27' },
-            { id: 'HOMEWORK', label: `📝 Bài Tập Về Nhà (${classHomeworks.length})` },
-            { id: 'BACKPACK', label: '🎒 Soạn Sách Vở Ngày Mai' },
+            { id: 'REPORT', label: '📊 Điểm & Nhận Xét TT27' },
+            { id: 'HOMEWORK', label: `📝 Bài Tập (${classHomeworks.length})` },
+            { id: 'BACKPACK', label: '🎒 Soạn Sách Vở' },
             { id: 'TIMETABLE', label: '🗓️ Thời Khóa Biểu' },
-            { id: 'EVENTS', label: `📅 Sự Kiện Lớp (${classEvents.length})` },
+            { id: 'EVENTS', label: `📅 Sự Kiện (${classEvents.length})` },
           ].map((tab) => (
             <button
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center justify-center space-x-1.5 px-3.5 py-2 rounded-xl transition-all whitespace-nowrap cursor-pointer shrink-0 ${
+              className={`flex items-center justify-center px-3 py-2 rounded-xl transition-all whitespace-nowrap cursor-pointer shrink-0 ${
                 activeTab === tab.id
                   ? 'bg-blue-600 text-white shadow-xs font-black'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -474,19 +474,19 @@ export default function StudentPrivateReportPage({
 
         {/* 6. TAB 1: ACADEMIC & TT27 EVALUATION */}
         {activeTab === 'REPORT' && (
-          <div className="space-y-5">
+          <div className="space-y-4">
             {/* Term Selector */}
             <div className="bg-white rounded-2xl p-3 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
-              <span className="font-bold text-slate-600 uppercase tracking-wider">
-                Chọn Kỳ Đánh Giá Thông Tư 27:
+              <span className="font-bold text-slate-600 uppercase tracking-wider text-[11px] sm:text-xs">
+                Kỳ Đánh Giá Thông Tư 27:
               </span>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-1.5">
                 {TERMS.map((t) => (
                   <button
                     key={t.id}
                     type="button"
                     onClick={() => setSelectedTerm(t.id)}
-                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                    className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all text-center cursor-pointer ${
                       selectedTerm === t.id
                         ? 'bg-blue-600 text-white shadow-xs'
                         : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -499,22 +499,22 @@ export default function StudentPrivateReportPage({
             </div>
 
             {/* Teacher Comments */}
-            <div className="bg-gradient-to-br from-blue-50 via-indigo-50/60 to-purple-50 rounded-3xl border border-blue-200/80 p-6 space-y-3.5 shadow-xs">
-              <div className="flex items-center space-x-2 text-blue-950 font-bold text-sm">
-                <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+            <div className="bg-gradient-to-br from-blue-50 via-indigo-50/60 to-purple-50 rounded-3xl border border-blue-200/80 p-4 sm:p-6 space-y-3 shadow-xs">
+              <div className="flex items-center space-x-2.5 text-blue-950 font-bold text-sm">
+                <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
                   ✍️
                 </div>
-                <div>
-                  <h3 className="font-black text-slate-900">
+                <div className="min-w-0 flex-1">
+                  <h3 className="font-black text-slate-900 text-xs sm:text-sm truncate">
                     Lời Nhận Xét Của Giáo Viên Chủ Nhiệm ({TERMS.find((t) => t.id === selectedTerm)?.name})
                   </h3>
-                  <p className="text-[11px] text-slate-500">
+                  <p className="text-[11px] text-slate-500 truncate">
                     Giáo viên: {studentClass.teacherName}
                   </p>
                 </div>
               </div>
 
-              <div className="bg-white/90 backdrop-blur-xs p-5 rounded-2xl border border-blue-100 text-slate-800 text-xs sm:text-sm leading-relaxed italic shadow-2xs">
+              <div className="bg-white/90 backdrop-blur-xs p-4 rounded-2xl border border-blue-100 text-slate-800 text-xs sm:text-sm leading-relaxed italic shadow-2xs break-words">
                 {studentSummary?.teacherComment ? (
                   <p className="whitespace-pre-line font-medium text-slate-800">
                     &ldquo;{studentSummary.teacherComment}&rdquo;
@@ -528,18 +528,18 @@ export default function StudentPrivateReportPage({
             </div>
 
             {/* Subject Assessments */}
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-4">
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-4 sm:p-6 space-y-3">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <BookOpen className="w-4 h-4 text-blue-600" />
-                  <span>Kết Quả Đánh Giá Các Môn Học & Hoạt Động Giáo Dục</span>
+                <h3 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-1.5 truncate">
+                  <BookOpen className="w-4 h-4 text-blue-600 shrink-0" />
+                  <span className="truncate">Kết Quả Đánh Giá Môn Học</span>
                 </h3>
-                <span className="text-xs text-slate-400 font-medium hidden sm:inline">
+                <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
                   T: Hoàn thành tốt • H: Hoàn thành • C: Chưa hoàn thành
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
                 {studentSubjectAss.length > 0 ? (
                   studentSubjectAss.map((ass) => {
                     const subjectObj = PRIMARY_SUBJECTS.find((s) => s.code === ass.subjectCode);
@@ -548,14 +548,14 @@ export default function StudentPrivateReportPage({
                     return (
                       <div
                         key={ass.subjectCode}
-                        className="p-4 rounded-2xl border border-slate-200 hover:border-blue-300 transition-all bg-slate-50/50 space-y-2"
+                        className="p-3.5 rounded-2xl border border-slate-200 hover:border-blue-300 transition-all bg-slate-50/50 space-y-2"
                       >
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-xs text-slate-900">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-bold text-xs text-slate-900 break-words flex-1">
                             {subjDisplayName}
                           </span>
                           <span
-                            className={`px-2 py-0.5 rounded-lg text-xs font-black ${
+                            className={`px-2 py-0.5 rounded-lg text-xs font-black shrink-0 ${
                               ass.level === 'T'
                                 ? 'bg-emerald-100 text-emerald-800'
                                 : ass.level === 'H'
@@ -577,7 +577,7 @@ export default function StudentPrivateReportPage({
                         )}
 
                         {ass.comment && (
-                          <p className="text-[11px] text-slate-600 bg-white p-2 rounded-xl border border-slate-100 leading-snug">
+                          <p className="text-[11px] text-slate-600 bg-white p-2 rounded-xl border border-slate-100 leading-snug break-words">
                             {ass.comment}
                           </p>
                         )}
@@ -593,18 +593,18 @@ export default function StudentPrivateReportPage({
             </div>
 
             {/* Traits & Competencies */}
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-4">
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-4 sm:p-6 space-y-3">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <Heart className="w-4 h-4 text-rose-500" />
-                  <span>Đánh Giá Năng Lực Cốt Lõi & Phẩm Chất Chủ Yếu</span>
+                <h3 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-1.5 truncate">
+                  <Heart className="w-4 h-4 text-rose-500 shrink-0" />
+                  <span className="truncate">Năng Lực & Phẩm Chất</span>
                 </h3>
-                <span className="text-xs text-slate-400 font-medium hidden sm:inline">
+                <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">
                   T: Tốt • Đ: Đạt • C: Cần cố gắng
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 {studentTraitAss.length > 0 ? (
                   studentTraitAss.map((trait) => {
                     const traitObj = TRAIT_DEFINITIONS.find((t) => t.code === trait.traitCode);
@@ -613,16 +613,16 @@ export default function StudentPrivateReportPage({
                     return (
                       <div
                         key={trait.traitCode}
-                        className="p-3.5 rounded-2xl border border-slate-200 flex items-center justify-between bg-slate-50/50"
+                        className="p-3 rounded-2xl border border-slate-200 flex items-center justify-between gap-2 bg-slate-50/50"
                       >
-                        <div>
-                          <h4 className="font-bold text-xs text-slate-800">{traitDisplayName}</h4>
-                          <p className="text-[10px] text-slate-400">
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-bold text-xs text-slate-800 break-words">{traitDisplayName}</h4>
+                          <p className="text-[10px] text-slate-400 truncate">
                             {trait.category === 'PHAM_CHAT' ? 'Phẩm chất chủ yếu' : 'Năng lực cốt lõi'}
                           </p>
                         </div>
                         <span
-                          className={`px-2.5 py-1 rounded-xl text-xs font-black ${
+                          className={`px-2 py-0.5 rounded-lg text-xs font-black shrink-0 ${
                             trait.level === 'T'
                               ? 'bg-emerald-100 text-emerald-800'
                               : trait.level === 'Đ'
@@ -644,26 +644,26 @@ export default function StudentPrivateReportPage({
             </div>
 
             {/* Attendance & Boarding Summary */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs space-y-1">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-xs space-y-1">
                 <span className="text-[10px] font-bold text-slate-400 uppercase">Chuyên Cần</span>
-                <p className="text-xl font-black text-slate-900">
+                <p className="text-lg sm:text-xl font-black text-slate-900">
                   {studentAtt.length - absentCount} / {studentAtt.length || 0} Buổi
                 </p>
                 <p className="text-[11px] text-slate-500">Nghỉ có phép / không phép: {absentCount}</p>
               </div>
 
-              <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs space-y-1">
+              <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-xs space-y-1">
                 <span className="text-[10px] font-bold text-slate-400 uppercase">Bán Trú</span>
-                <p className="text-xl font-black text-slate-900">
+                <p className="text-lg sm:text-xl font-black text-slate-900">
                   {student.isBoarding ? `${boardingCount} Suất Ăn` : 'Không Bán Trú'}
                 </p>
-                <p className="text-[11px] text-slate-500">{student.isBoarding ? 'Đăng ký ăn trưa tại trường' : 'Ăn trưa tại nhà'}</p>
+                <p className="text-[11px] text-slate-500">{student.isBoarding ? 'Ăn trưa tại trường' : 'Ăn trưa tại nhà'}</p>
               </div>
 
-              <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs space-y-1">
+              <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-xs space-y-1">
                 <span className="text-[10px] font-bold text-slate-400 uppercase">Vị Trí Chỗ Ngồi</span>
-                <p className="text-xl font-black text-slate-900">
+                <p className="text-lg sm:text-xl font-black text-slate-900">
                   Hàng {student.seatRow + 1} - Bàn {student.seatCol + 1}
                 </p>
                 <p className="text-[11px] text-slate-500">Sơ đồ lớp {studentClass.name}</p>
@@ -674,18 +674,18 @@ export default function StudentPrivateReportPage({
 
         {/* 7. TAB 2: HOMEWORK FOR THIS CHILD */}
         {activeTab === 'HOMEWORK' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between bg-white p-4 rounded-2xl border border-slate-200 text-xs">
-              <span className="font-bold text-slate-700">
-                Tiến độ bài tập của {student.fullName}:
+          <div className="space-y-3">
+            <div className="flex items-center justify-between bg-white p-3.5 rounded-2xl border border-slate-200 text-xs">
+              <span className="font-bold text-slate-700 truncate">
+                Bài tập của {student.fullName}:
               </span>
-              <span className="font-bold text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full">
-                {classHomeworks.filter((h) => completedHwIds.includes(h.id)).length} / {classHomeworks.length} bài hoàn thành
+              <span className="font-bold text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full text-[11px] shrink-0">
+                {classHomeworks.filter((h) => completedHwIds.includes(h.id)).length} / {classHomeworks.length} bài xong
               </span>
             </div>
 
             {classHomeworks.length === 0 ? (
-              <div className="bg-white rounded-3xl border border-slate-200 p-10 text-center space-y-2">
+              <div className="bg-white rounded-3xl border border-slate-200 p-8 text-center space-y-2">
                 <p className="text-3xl">✨</p>
                 <h3 className="font-bold text-sm text-slate-800">Hôm nay không có bài tập về nhà!</h3>
                 <p className="text-xs text-slate-500">Chúc con có một buổi tối nghỉ ngơi vui vẻ bên gia đình.</p>
@@ -698,36 +698,36 @@ export default function StudentPrivateReportPage({
                 return (
                   <div
                     key={hw.id}
-                    className={`bg-white rounded-3xl border transition-all p-5 shadow-xs ${
+                    className={`bg-white rounded-3xl border transition-all p-4 sm:p-5 shadow-xs space-y-3 ${
                       isDone ? 'border-emerald-200 bg-emerald-50/20' : 'border-slate-200'
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-3 mb-3">
-                      <div className="flex items-center space-x-2.5">
-                        <span className="text-2xl">{theme.icon}</span>
-                        <div>
+                    <div className="flex items-start justify-between gap-2.5">
+                      <div className="flex items-start space-x-2.5 min-w-0 flex-1">
+                        <span className="text-2xl shrink-0 mt-0.5">{theme.icon}</span>
+                        <div className="min-w-0 flex-1">
                           <span className={`inline-block text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${theme.bgColor} ${theme.textColor}`}>
                             {hw.subjectName}
                           </span>
-                          <h4 className="font-bold text-sm text-slate-900 mt-0.5">{hw.title}</h4>
+                          <h4 className="font-bold text-xs sm:text-sm text-slate-900 mt-0.5 break-words">{hw.title}</h4>
                         </div>
                       </div>
 
                       <button
                         type="button"
                         onClick={() => toggleCompleteHw(hw.id)}
-                        className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                        className={`flex items-center space-x-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
                           isDone
                             ? 'bg-emerald-600 text-white shadow-xs'
                             : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
                         }`}
                       >
-                        {isDone ? <Check className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+                        {isDone ? <Check className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}
                         <span>{isDone ? 'Đã Xong' : 'Chưa Xong'}</span>
                       </button>
                     </div>
 
-                    <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-100 text-xs text-slate-700 leading-relaxed whitespace-pre-line">
+                    <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 text-xs text-slate-700 leading-relaxed whitespace-pre-line break-words">
                       {hw.description}
                     </div>
                   </div>
@@ -739,18 +739,16 @@ export default function StudentPrivateReportPage({
 
         {/* 8. TAB 3: BACKPACK PACKING */}
         {activeTab === 'BACKPACK' && (
-          <div className="bg-white rounded-3xl border border-slate-200 p-5 space-y-4 shadow-xs">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div>
-                <h3 className="font-bold text-sm sm:text-base text-slate-900 flex items-center gap-2">
-                  <Backpack className="w-5 h-5 text-indigo-600" />
-                  <span>Soạn Sách Vở Ngày Mai ({tomorrowDayInfo?.name})</span>
-                </h3>
-                <p className="text-xs text-slate-500">Giúp {student.fullName} chuẩn bị đúng và đủ đồ dùng học tập trước khi đến lớp.</p>
-              </div>
+          <div className="bg-white rounded-3xl border border-slate-200 p-4 sm:p-5 space-y-3 shadow-xs">
+            <div className="border-b border-slate-100 pb-3">
+              <h3 className="font-bold text-xs sm:text-base text-slate-900 flex items-center gap-2">
+                <Backpack className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600 shrink-0" />
+                <span>Soạn Sách Vở Ngày Mai ({tomorrowDayInfo?.name})</span>
+              </h3>
+              <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">Giúp {student.fullName} chuẩn bị đúng và đủ đồ dùng học tập trước khi đến lớp.</p>
             </div>
 
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               {tomorrowSlots.length === 0 ? (
                 <p className="text-xs text-slate-400 py-6 text-center">Ngày mai không có tiết học trên thời khóa biểu.</p>
               ) : (
@@ -761,20 +759,20 @@ export default function StudentPrivateReportPage({
                   return (
                     <div
                       key={slot.id}
-                      className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
+                      className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-2.5 ${
                         isPacked ? 'bg-emerald-50/40 border-emerald-200' : 'bg-slate-50 border-slate-200'
                       }`}
                     >
-                      <div className="flex items-center space-x-3 min-w-0">
-                        <span className="text-2xl">{theme.icon}</span>
-                        <div className="min-w-0">
+                      <div className="flex items-center space-x-2.5 min-w-0 flex-1">
+                        <span className="text-xl shrink-0">{theme.icon}</span>
+                        <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5">
-                            <span className="font-bold text-xs text-slate-900">{slot.subjectName}</span>
-                            <span className="text-[10px] font-mono text-slate-500 bg-white px-1.5 py-0.2 rounded border border-slate-200">
+                            <span className="font-bold text-xs text-slate-900 truncate">{slot.subjectName}</span>
+                            <span className="text-[10px] font-mono text-slate-500 bg-white px-1.5 py-0.2 rounded border border-slate-200 shrink-0">
                               Tiết {slot.period}
                             </span>
                           </div>
-                          <p className="text-xs text-slate-500 mt-0.5">
+                          <p className="text-[11px] text-slate-500 mt-0.5 truncate">
                             {slot.note ? `Mang theo: ${slot.note}` : `Sách giáo khoa & Vở bài tập ${slot.subjectName}`}
                           </p>
                         </div>
@@ -783,13 +781,13 @@ export default function StudentPrivateReportPage({
                       <button
                         type="button"
                         onClick={() => togglePackSubject(slot.subjectCode)}
-                        className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                        className={`flex items-center space-x-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
                           isPacked
                             ? 'bg-emerald-600 text-white shadow-xs'
                             : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
                         }`}
                       >
-                        {isPacked ? <Check className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+                        {isPacked ? <Check className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}
                         <span>{isPacked ? 'Đã Xếp' : 'Chưa Xếp'}</span>
                       </button>
                     </div>
@@ -802,23 +800,23 @@ export default function StudentPrivateReportPage({
 
         {/* 9. TAB 4: TIMETABLE */}
         {activeTab === 'TIMETABLE' && (
-          <div className="bg-white rounded-3xl border border-slate-200 p-5 space-y-4 shadow-xs">
+          <div className="bg-white rounded-3xl border border-slate-200 p-4 sm:p-5 space-y-3 shadow-xs">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
               <div>
-                <h3 className="font-bold text-sm sm:text-base text-slate-900 flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-blue-600" />
+                <h3 className="font-bold text-xs sm:text-base text-slate-900 flex items-center gap-2">
+                  <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 shrink-0" />
                   <span>Thời Khóa Biểu Lớp {studentClass.name}</span>
                 </h3>
-                <p className="text-xs text-slate-500">Chương trình học chuẩn 2 buổi/ngày kèm ăn bán trú.</p>
+                <p className="text-[11px] sm:text-xs text-slate-500">Chương trình học chuẩn 2 buổi/ngày kèm ăn bán trú.</p>
               </div>
 
-              <div className="flex flex-wrap gap-1">
+              <div className="flex overflow-x-auto no-scrollbar gap-1 pt-1 sm:pt-0">
                 {DAYS_OF_WEEK.map((d) => (
                   <button
                     key={d.id}
                     type="button"
                     onClick={() => setSelectedTimetableDay(d.id)}
-                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0 ${
                       selectedTimetableDay === d.id
                         ? 'bg-blue-600 text-white shadow-xs'
                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -840,25 +838,25 @@ export default function StudentPrivateReportPage({
                 return (
                   <div
                     key={p.period}
-                    className={`flex items-center justify-between p-3 rounded-2xl border transition-colors ${
+                    className={`flex items-center justify-between p-2.5 sm:p-3 rounded-2xl border transition-colors gap-2 ${
                       theme ? `${theme.bgColor} ${theme.borderColor}` : 'bg-slate-50 border-slate-200'
                     }`}
                   >
-                    <div className="flex items-center space-x-3">
-                      <span className="font-mono text-xs font-bold text-slate-500 w-12 shrink-0">
+                    <div className="flex items-center space-x-2.5 min-w-0 flex-1">
+                      <span className="font-mono text-[11px] font-bold text-slate-500 w-10 shrink-0">
                         {p.name}
                       </span>
-                      <span className="text-xl">{theme?.icon || '📚'}</span>
-                      <div>
-                        <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+                      <span className="text-lg shrink-0">{theme?.icon || '📚'}</span>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-bold text-xs sm:text-sm text-slate-900 truncate">
                           {slot?.subjectName || 'Tự học / Nghỉ'}
                         </h4>
                         {slot?.note && (
-                          <p className="text-[11px] text-slate-600 mt-0.5">{slot.note}</p>
+                          <p className="text-[10px] sm:text-[11px] text-slate-600 truncate">{slot.note}</p>
                         )}
                       </div>
                     </div>
-                    <span className="text-xs font-mono text-slate-500 font-semibold">{p.time}</span>
+                    <span className="text-[10px] sm:text-xs font-mono text-slate-500 font-semibold shrink-0">{p.time}</span>
                   </div>
                 );
               })}
@@ -868,29 +866,29 @@ export default function StudentPrivateReportPage({
 
         {/* 10. TAB 5: CLASS EVENTS */}
         {activeTab === 'EVENTS' && (
-          <div className="bg-white rounded-3xl border border-slate-200 p-5 space-y-4 shadow-xs">
+          <div className="bg-white rounded-3xl border border-slate-200 p-4 sm:p-5 space-y-3 shadow-xs">
             <div className="border-b border-slate-100 pb-3">
-              <h3 className="font-bold text-sm sm:text-base text-slate-900 flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-indigo-600" />
-                <span>Lịch Hoạt Động & Sự Kiện Của Lớp {studentClass.name}</span>
+              <h3 className="font-bold text-xs sm:text-base text-slate-900 flex items-center gap-2">
+                <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600 shrink-0" />
+                <span>Lịch Sự Kiện Của Lớp {studentClass.name}</span>
               </h3>
-              <p className="text-xs text-slate-500">Các hoạt động giáo dục, dã ngoại, thi đua và kiểm tra định kỳ.</p>
+              <p className="text-[11px] sm:text-xs text-slate-500">Các hoạt động giáo dục, dã ngoại và kiểm tra định kỳ.</p>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {classEvents.length === 0 ? (
                 <p className="text-xs text-slate-400 py-6 text-center">Chưa có sự kiện nào được lên lịch trong thời gian tới.</p>
               ) : (
                 classEvents.map((evt) => (
-                  <div key={evt.id} className="p-4 rounded-2xl border border-slate-200 bg-slate-50/60 space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-xs text-slate-900">{evt.title}</span>
-                      <span className="text-[11px] font-mono text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md font-bold">
+                  <div key={evt.id} className="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/60 space-y-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-bold text-xs text-slate-900 break-words flex-1">{evt.title}</span>
+                      <span className="text-[10px] sm:text-[11px] font-mono text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md font-bold shrink-0">
                         {evt.date}
                       </span>
                     </div>
                     {evt.description && (
-                      <p className="text-xs text-slate-600 leading-relaxed">{evt.description}</p>
+                      <p className="text-xs text-slate-600 leading-relaxed break-words">{evt.description}</p>
                     )}
                   </div>
                 ))
@@ -904,27 +902,27 @@ export default function StudentPrivateReportPage({
       {isPinModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white max-w-md w-full rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50">
-              <div className="flex items-center space-x-2.5">
-                <div className="w-9 h-9 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-bold">
+            <div className="p-4 sm:p-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-blue-50 to-indigo-50">
+              <div className="flex items-center space-x-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold shrink-0">
                   <Lock className="w-4 h-4" />
                 </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-900">Thiết Lập Mã PIN Bí Mật</h3>
-                  <p className="text-xs text-slate-500">{student.fullName}</p>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-sm sm:text-base font-bold text-slate-900 truncate">Thiết Lập Mã PIN Bí Mật</h3>
+                  <p className="text-[11px] text-slate-500 truncate">{student.fullName}</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setIsPinModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer"
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer shrink-0"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSavePin} className="p-6 space-y-4 text-xs">
-              <p className="text-slate-600">
+            <form onSubmit={handleSavePin} className="p-5 sm:p-6 space-y-3.5 text-xs">
+              <p className="text-slate-600 leading-relaxed">
                 Đặt mã PIN riêng (4-6 chữ số) để bảo vệ quyền riêng tư của con khi tra cứu trên hệ thống:
               </p>
 
@@ -937,7 +935,7 @@ export default function StudentPrivateReportPage({
                   placeholder="VD: 2026"
                   value={newPin}
                   onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
-                  className="w-full p-3 rounded-xl border border-slate-200 text-slate-900 font-mono text-center font-bold tracking-widest text-base focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-2.5 sm:p-3 rounded-xl border border-slate-200 text-slate-900 font-mono text-center font-bold tracking-widest text-base focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
@@ -950,12 +948,12 @@ export default function StudentPrivateReportPage({
                   placeholder="Nhập lại mã PIN..."
                   value={confirmPin}
                   onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ''))}
-                  className="w-full p-3 rounded-xl border border-slate-200 text-slate-900 font-mono text-center font-bold tracking-widest text-base focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-2.5 sm:p-3 rounded-xl border border-slate-200 text-slate-900 font-mono text-center font-bold tracking-widest text-base focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">Số Điện Thoại Phụ Huynh (Để khôi phục nếu quên)</label>
+                <label className="block font-bold text-slate-700 mb-1">Số Điện Thoại Phụ Huynh (Để khôi phục)</label>
                 <input
                   type="tel"
                   placeholder="0912 345 678"
@@ -965,17 +963,17 @@ export default function StudentPrivateReportPage({
                 />
               </div>
 
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-end space-x-2">
                 <button
                   type="button"
                   onClick={() => setIsPinModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 cursor-pointer"
+                  className="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 cursor-pointer"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md cursor-pointer"
+                  className="px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md cursor-pointer"
                 >
                   Lưu Mã PIN
                 </button>

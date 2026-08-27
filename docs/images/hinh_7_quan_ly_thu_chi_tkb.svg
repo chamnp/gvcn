@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 620" width="100%" height="100%" style="background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <defs>
+    <linearGradient id="bgFund" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#0284c7"/><stop offset="100%" stop-color="#0ea5e9"/></linearGradient>
+    <filter id="fCard" x="-5%" y="-5%" width="110%" height="110%"><feDropShadow dx="0" dy="3" stdDeviation="5" flood-opacity="0.08"/></filter>
+  </defs>
+
+  <rect x="0" y="0" width="1100" height="60" fill="url(#bgFund)"/>
+  <text x="30" y="37" fill="#ffffff" font-size="18" font-weight="bold">GVCN PRO - Quản Lý Quỹ Lớp Minh Bạch &amp; Thời Khóa Biểu 2 Buổi/Ngày</text>
+
+  <!-- Left: Fund Management Table -->
+  <g transform="translate(30, 80)" filter="url(#fCard)">
+    <rect width="520" height="500" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+    <rect width="520" height="50" rx="14" fill="#f0f9ff"/>
+    <text x="20" y="32" fill="#0369a1" font-size="15" font-weight="bold">💰 Sổ Thu Chi Quỹ Lớp (Ban Đại Diện CMHS)</text>
+    
+    <!-- Balance Summary -->
+    <g transform="translate(20, 65)">
+      <rect width="480" height="65" rx="8" fill="#0284c7"/>
+      <text x="20" y="28" fill="#bae6fd" font-size="12">SỐ DƯ QUỸ HIỆN TẠI</text>
+      <text x="20" y="52" fill="#ffffff" font-size="22" font-weight="bold">4.850.000 VNĐ</text>
+      <text x="300" y="40" fill="#e0f2fe" font-size="12">Thu: 13.500.000đ | Chi: 8.650.000đ</text>
+    </g>
+
+    <!-- Fund Entries -->
+    <g transform="translate(20, 145)">
+      <!-- Entry 1 -->
+      <rect width="480" height="50" rx="6" fill="#f8fafc"/>
+      <text x="15" y="25" fill="#0f172a" font-size="12" font-weight="bold">Thu quỹ hội cha mẹ HS kỳ 1 (45 HS)</text>
+      <text x="15" y="42" fill="#64748b" font-size="11">Ngày: 15/09/2025 • Trưởng ban đại diện nộp</text>
+      <text x="465" y="32" text-anchor="end" fill="#16a34a" font-size="13" font-weight="bold">+ 13.500.000đ</text>
+
+      <!-- Entry 2 -->
+      <line x1="0" y1="58" x2="480" y2="58" stroke="#f1f5f9"/>
+      <rect y="65" width="480" height="50" rx="6" fill="#fff1f2"/>
+      <text x="15" y="90" fill="#0f172a" font-size="12" font-weight="bold">Chi mua quạt &amp; bổ sung khăn lau bảng</text>
+      <text x="15" y="107" fill="#64748b" font-size="11">Ngày: 20/09/2025 • Có hóa đơn kèm theo</text>
+      <text x="465" y="97" text-anchor="end" fill="#dc2626" font-size="13" font-weight="bold">- 1.250.000đ</text>
+
+      <!-- Entry 3 -->
+      <line x1="0" y1="123" x2="480" y2="123" stroke="#f1f5f9"/>
+      <rect y="130" width="480" height="50" rx="6" fill="#fff1f2"/>
+      <text x="15" y="155" fill="#0f172a" font-size="12" font-weight="bold">Chi liên hoan Tết Trung thu cho cả lớp</text>
+      <text x="15" y="172" fill="#64748b" font-size="11">Ngày: 05/10/2025 • Mua bánh kẹo hoa quả</text>
+      <text x="465" y="162" text-anchor="end" fill="#dc2626" font-size="13" font-weight="bold">- 3.400.000đ</text>
+
+      <!-- Entry 4 -->
+      <line x1="0" y1="188" x2="480" y2="188" stroke="#f1f5f9"/>
+      <rect y="195" width="480" height="50" rx="6" fill="#fff1f2"/>
+      <text x="15" y="220" fill="#0f172a" font-size="12" font-weight="bold">Chi quà khen thưởng Sao hoa việc tốt đợt 1</text>
+      <text x="15" y="237" fill="#64748b" font-size="11">Ngày: 15/11/2025 • Vở viết và bút chì</text>
+      <text x="465" y="227" text-anchor="end" fill="#dc2626" font-size="13" font-weight="bold">- 4.000.000đ</text>
+    </g>
+
+    <rect x="20" y="420" width="480" height="45" rx="8" fill="#0284c7"/>
+    <text x="260" y="448" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="bold">📊 XUẤT BÁO CÁO SAO KÊ GỬI PHỤ HUYNH</text>
+  </g>
+
+  <!-- Right: Timetable 2 Sessions Matrix -->
+  <g transform="translate(580, 80)" filter="url(#fCard)">
+    <rect width="490" height="500" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+    <rect width="490" height="50" rx="14" fill="#f8fafc"/>
+    <text x="20" y="32" fill="#1e293b" font-size="15" font-weight="bold">📅 Thời Khóa Biểu 2 Buổi/Ngày (Lớp 4A1)</text>
+
+    <!-- Mini Timetable Display -->
+    <g transform="translate(20, 70)">
+      <!-- Day Headers -->
+      <rect width="450" height="30" rx="6" fill="#e2e8f0"/>
+      <text x="45" y="20" fill="#334155" font-size="11" font-weight="bold">Tiết</text>
+      <text x="110" y="20" fill="#334155" font-size="11" font-weight="bold">Thứ Hai</text>
+      <text x="190" y="20" fill="#334155" font-size="11" font-weight="bold">Thứ Ba</text>
+      <text x="270" y="20" fill="#334155" font-size="11" font-weight="bold">Thứ Tư</text>
+      <text x="350" y="20" fill="#334155" font-size="11" font-weight="bold">Thứ Năm</text>
+      <text x="420" y="20" fill="#334155" font-size="11" font-weight="bold">Thứ Sáu</text>
+
+      <!-- Morning Rows -->
+      <!-- T1 -->
+      <rect y="38" width="450" height="32" rx="4" fill="#f8fafc"/>
+      <text x="45" y="58" fill="#64748b" font-size="11">T1</text>
+      <text x="110" y="58" fill="#dc2626" font-size="11" font-weight="bold">Chào cờ</text>
+      <text x="190" y="58" fill="#2563eb" font-size="11" font-weight="bold">Toán</text>
+      <text x="270" y="58" fill="#d97706" font-size="11" font-weight="bold">T.Việt</text>
+      <text x="350" y="58" fill="#2563eb" font-size="11" font-weight="bold">Toán</text>
+      <text x="420" y="58" fill="#d97706" font-size="11" font-weight="bold">T.Việt</text>
+
+      <!-- T2 -->
+      <rect y="75" width="450" height="32" rx="4" fill="#f8fafc"/>
+      <text x="45" y="95" fill="#64748b" font-size="11">T2</text>
+      <text x="110" y="95" fill="#2563eb" font-size="11" font-weight="bold">Toán</text>
+      <text x="190" y="95" fill="#d97706" font-size="11" font-weight="bold">T.Việt</text>
+      <text x="270" y="95" fill="#2563eb" font-size="11" font-weight="bold">Toán</text>
+      <text x="350" y="95" fill="#d97706" font-size="11" font-weight="bold">T.Việt</text>
+      <text x="420" y="95" fill="#2563eb" font-size="11" font-weight="bold">Toán</text>
+
+      <!-- T3 -->
+      <rect y="112" width="450" height="32" rx="4" fill="#f8fafc"/>
+      <text x="45" y="132" fill="#64748b" font-size="11">T3</text>
+      <text x="110" y="132" fill="#d97706" font-size="11" font-weight="bold">T.Việt</text>
+      <text x="190" y="132" fill="#7c3aed" font-size="11" font-weight="bold">T.Anh</text>
+      <text x="270" y="132" fill="#059669" font-size="11" font-weight="bold">K.Học</text>
+      <text x="350" y="132" fill="#7c3aed" font-size="11" font-weight="bold">T.Anh</text>
+      <text x="420" y="132" fill="#0891b2" font-size="11" font-weight="bold">Tin học</text>
+
+      <!-- Lunch Break -->
+      <rect y="150" width="450" height="24" rx="4" fill="#fef3c7"/>
+      <text x="225" y="166" text-anchor="middle" fill="#b45309" font-size="10" font-weight="bold">🍱 10:35 - 14:00 • ĂN BÁN TRÚ &amp; NGHỈ TRƯA</text>
+
+      <!-- Afternoon Rows -->
+      <!-- T5 -->
+      <rect y="180" width="450" height="32" rx="4" fill="#f8fafc"/>
+      <text x="45" y="200" fill="#64748b" font-size="11">T5</text>
+      <text x="110" y="200" fill="#0d9488" font-size="11" font-weight="bold">LS&amp;ĐL</text>
+      <text x="190" y="200" fill="#e11d48" font-size="11" font-weight="bold">Mỹ thuật</text>
+      <text x="270" y="200" fill="#0284c7" font-size="11" font-weight="bold">Tự học</text>
+      <text x="350" y="200" fill="#16a34a" font-size="11" font-weight="bold">Thể dục</text>
+      <text x="420" y="200" fill="#475569" font-size="11" font-weight="bold">SH Lớp</text>
+    </g>
+
+    <rect x="20" y="420" width="450" height="45" rx="8" fill="#1e293b"/>
+    <text x="245" y="448" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="bold">🔔 TỰ ĐỘNG ĐỒNG BỘ GHI CHÚ ĐỒ DÙNG SANG PHỤ HUYNH</text>
+  </g>
+</svg>

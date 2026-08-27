@@ -94,8 +94,8 @@ export default function StudentLookupPortal() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col items-center justify-center p-4 font-sans">
-      <div className="max-w-md w-full bg-white rounded-3xl border border-slate-200 shadow-xl p-6 sm:p-8 space-y-6 text-center">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col items-center justify-center p-3 sm:p-4 font-sans">
+      <div className="max-w-md w-full bg-white rounded-3xl border border-slate-200 shadow-xl p-4 sm:p-8 space-y-5 sm:space-y-6 text-center">
         {/* Brand Header */}
         <div className="space-y-3">
           {schoolInfo.logoUrl ? (

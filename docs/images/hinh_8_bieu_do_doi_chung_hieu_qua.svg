@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 640" width="100%" height="100%" style="background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <defs>
+    <linearGradient id="bgChart" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#0f766e"/><stop offset="100%" stop-color="#14b8a6"/></linearGradient>
+    <filter id="cShadow" x="-5%" y="-5%" width="110%" height="110%"><feDropShadow dx="0" dy="3" stdDeviation="5" flood-opacity="0.08"/></filter>
+  </defs>
+
+  <rect x="0" y="0" width="1100" height="60" fill="url(#bgChart)"/>
+  <text x="30" y="37" fill="#ffffff" font-size="18" font-weight="bold">KẾT QUẢ ĐỐI CHỨNG THỰC NGHIỆM TẠI TRƯỜNG TIỂU HỌC ĐẠI MỖ</text>
+  <text x="890" y="37" fill="#ccfbf1" font-size="13">Năm học 2025 - 2026</text>
+
+  <!-- Left Chart: Time Reduction (Hours) -->
+  <g transform="translate(40, 90)" filter="url(#cShadow)">
+    <rect width="480" height="500" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+    <text x="25" y="35" fill="#0f172a" font-size="15" font-weight="bold">⏱️ Thời Gian Xử Lý Hồ Sơ / Kỳ Đánh Giá (Giờ)</text>
+    <text x="25" y="55" fill="#64748b" font-size="12">So sánh giữa Lớp Đối chứng 4A2 và Lớp Thực nghiệm 4A1</text>
+
+    <!-- Bar Group 1: Tong hop TT27 -->
+    <g transform="translate(30, 80)">
+      <text x="0" y="15" fill="#334155" font-size="12" font-weight="bold">1. Tổng hợp điểm &amp; xếp loại TT27</text>
+      <!-- Before -->
+      <rect x="0" y="25" width="380" height="24" rx="4" fill="#cbd5e1"/>
+      <text x="390" y="42" fill="#475569" font-size="12" font-weight="bold">12 giờ</text>
+      <!-- After -->
+      <rect x="0" y="55" width="20" height="24" rx="4" fill="#10b981"/>
+      <text x="30" y="72" fill="#047857" font-size="12" font-weight="bold">0.25 giờ (15 phút) ⚡ Giảm 97.9%</text>
+    </g>
+
+    <!-- Bar Group 2: Viet nhan xet hoc ba -->
+    <g transform="translate(30, 185)">
+      <text x="0" y="15" fill="#334155" font-size="12" font-weight="bold">2. Viết nhận xét học bạ (45 học sinh)</text>
+      <!-- Before -->
+      <rect x="0" y="25" width="400" height="24" rx="4" fill="#f87171"/>
+      <text x="410" y="42" fill="#b91c1c" font-size="12" font-weight="bold">26.5 giờ</text>
+      <!-- After -->
+      <rect x="0" y="55" width="25" height="24" rx="4" fill="#7c3aed"/>
+      <text x="35" y="72" fill="#6b21a8" font-size="12" font-weight="bold">0.4 giờ (25 phút) ⚡ Giảm 98.4%</text>
+    </g>
+
+    <!-- Bar Group 3: Diem danh & So sach khac -->
+    <g transform="translate(30, 290)">
+      <text x="0" y="15" fill="#334155" font-size="12" font-weight="bold">3. Điểm danh bán trú &amp; sổ sách nề nếp</text>
+      <!-- Before -->
+      <rect x="0" y="25" width="300" height="24" rx="4" fill="#cbd5e1"/>
+      <text x="310" y="42" fill="#475569" font-size="12" font-weight="bold">26.5 giờ/kỳ</text>
+      <!-- After -->
+      <rect x="0" y="55" width="40" height="24" rx="4" fill="#0ea5e9"/>
+      <text x="50" y="72" fill="#0284c7" font-size="12" font-weight="bold">3.8 giờ/kỳ ⚡ Giảm 85.6%</text>
+    </g>
+
+    <!-- Total Callout -->
+    <rect x="30" y="405" width="420" height="65" rx="10" fill="#ecfdf5" stroke="#a7f3d0"/>
+    <text x="45" y="430" fill="#065f46" font-size="13" font-weight="bold">🎉 TỔNG THỜI GIAN TIẾT KIỆM CHO GIÁO VIÊN:</text>
+    <text x="45" y="455" fill="#047857" font-size="20" font-weight="bold">Từ 65.0 giờ ➔ 4.5 giờ (Tiết kiệm 93.1%)</text>
+  </g>
+
+  <!-- Right Chart: Student Progress & Parent Satisfaction -->
+  <g transform="translate(560, 90)" filter="url(#cShadow)">
+    <rect width="500" height="500" rx="14" fill="#ffffff" stroke="#e2e8f0"/>
+    <text x="25" y="35" fill="#0f172a" font-size="15" font-weight="bold">📈 Chất Lượng Học Sinh &amp; Mức Độ Hài Lòng</text>
+    <text x="25" y="55" fill="#64748b" font-size="12">Số liệu kiểm định cuối năm học 2025 - 2026</text>
+
+    <!-- Metric 1: Phẩm chất Tốt -->
+    <g transform="translate(30, 80)">
+      <text x="0" y="15" fill="#334155" font-size="12" font-weight="bold">Học sinh đạt Mức Tốt về 5 Phẩm chất</text>
+      <rect x="0" y="25" width="315" height="20" rx="4" fill="#cbd5e1"/>
+      <text x="325" y="40" fill="#475569" font-size="11">Đối chứng: 72.7%</text>
+      <rect x="0" y="50" width="395" height="20" rx="4" fill="#10b981"/>
+      <text x="405" y="65" fill="#047857" font-size="11" font-weight="bold">Thực nghiệm: 91.1% (+18.4%)</text>
+    </g>
+
+    <!-- Metric 2: Danh hieu Xuat sac & Tieu bieu -->
+    <g transform="translate(30, 175)">
+      <text x="0" y="15" fill="#334155" font-size="12" font-weight="bold">Tỷ lệ Học sinh Khen thưởng (Xuất sắc &amp; Tiêu biểu)</text>
+      <rect x="0" y="25" width="270" height="20" rx="4" fill="#cbd5e1"/>
+      <text x="280" y="40" fill="#475569" font-size="11">Đối chứng: 61.4%</text>
+      <rect x="0" y="50" width="360" height="20" rx="4" fill="#6366f1"/>
+      <text x="370" y="65" fill="#4338ca" font-size="11" font-weight="bold">Thực nghiệm: 82.2% (+20.8%)</text>
+    </g>
+
+    <!-- Metric 3: Parent Satisfaction -->
+    <g transform="translate(30, 270)">
+      <text x="0" y="15" fill="#334155" font-size="12" font-weight="bold">Độ hài lòng của Cha mẹ học sinh</text>
+      <rect x="0" y="25" width="300" height="20" rx="4" fill="#cbd5e1"/>
+      <text x="310" y="40" fill="#475569" font-size="11">Trước: 68.9%</text>
+      <rect x="0" y="50" width="430" height="20" rx="4" fill="#f59e0b"/>
+      <text x="440" y="65" fill="#b45309" font-size="11" font-weight="bold">Sau: 97.8% (+28.9%)</text>
+    </g>
+
+    <!-- Bottom summary banner -->
+    <rect x="30" y="380" width="440" height="90" rx="10" fill="#eff6ff" stroke="#bfdbfe"/>
+    <text x="45" y="405" fill="#1e40af" font-size="13" font-weight="bold">🌟 KẾT LUẬN THỰC TIỄN TẠI TH ĐẠI MỖ:</text>
+    <text x="45" y="430" fill="#334155" font-size="12">• 100% Học sinh tiến bộ rõ rệt về nề nếp và tính tự giác.</text>
+    <text x="45" y="452" fill="#334155" font-size="12">• 0% Học sinh phải rèn luyện lại trong hè.</text>
+  </g>
+</svg>

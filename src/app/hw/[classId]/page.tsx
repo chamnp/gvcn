@@ -247,71 +247,70 @@ export default function PublicClassHomeworkPortal({
   });
 
   const topStarStudents = [...classStudents]
-    .map((s) => ({ ...s, stars: studentStarMap[s.id] || 0 }))
+  .map((s) => ({ ...s, stars: studentStarMap[s.id] || 0 }))
     .sort((a, b) => b.stars - a.stars)
     .slice(0, 5);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-20 font-sans">
-      {/* 1. STICKY TOP BRANDING HEADER */}
-      <header className="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 shadow-xs">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 sm:h-18 flex items-center justify-between gap-3">
-          {/* Logo & School / Class Name */}
-          <div className="flex items-center space-x-3 min-w-0">
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+        <div className="max-w-6xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2">
+          {/* Logo & School Name */}
+          <div className="flex items-center space-x-2.5 sm:space-x-3 min-w-0 flex-1">
             {schoolInfo.logoUrl ? (
               <img
                 src={schoolInfo.logoUrl}
-                alt="Logo Trường"
-                className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl object-cover border border-slate-200 shadow-sm shrink-0 bg-white"
+                alt="Logo"
+                className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl object-cover border border-slate-200 shrink-0"
               />
             ) : (
-              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white font-black text-sm shadow-md shrink-0">
-                {currentClass.name}
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white text-base sm:text-xl font-bold shrink-0">
+                🏫
               </div>
             )}
 
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <div className="flex items-center space-x-1.5">
-                <span className="font-black text-slate-900 text-sm sm:text-base tracking-tight truncate">
+                <span className="font-black text-slate-900 text-xs sm:text-base tracking-tight truncate">
                   Lớp {currentClass.name}
                 </span>
                 <span className="bg-blue-100 text-blue-800 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0">
                   {schoolInfo.schoolYear || '2026-2027'}
                 </span>
               </div>
-              <p className="text-[11px] text-slate-500 truncate" title={schoolInfo.name}>
+              <p className="text-[10px] sm:text-[11px] text-slate-500 truncate" title={schoolInfo.name}>
                 {schoolInfo.name} • GVCN: {currentClass.teacherName}
               </p>
             </div>
           </div>
 
           {/* Quick Actions: Tra Cứu Điểm Của Con + Link to Teacher Login */}
-          <div className="flex items-center space-x-2 shrink-0">
+          <div className="flex items-center space-x-1.5 shrink-0">
             <Link
               href="/lookup"
-              className="text-[11px] font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 px-3 py-1.5 rounded-xl border border-amber-300 transition-colors inline-flex items-center gap-1 shadow-2xs"
+              className="text-[10px] sm:text-[11px] font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 px-2.5 py-1.5 rounded-xl border border-amber-300 transition-colors inline-flex items-center gap-1 shadow-2xs"
             >
               <span>🌟 Tra Cứu Con</span>
             </Link>
 
             <Link
               href="/login"
-              className="text-[11px] font-bold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-xl border border-blue-200 transition-colors inline-flex items-center gap-1"
+              className="text-[10px] sm:text-[11px] font-bold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1.5 rounded-xl border border-blue-200 transition-colors inline-flex items-center gap-0.5"
             >
               <span>Giáo viên</span>
-              <ChevronRight className="w-3.5 h-3.5" />
+              <ChevronRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
             </Link>
           </div>
         </div>
       </header>
 
       {/* 2. MAIN LAYOUT: RESPONSIVE GRID (DESKTOP 2-COL, MOBILE 1-COL) */}
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-5">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+      <main className="max-w-6xl mx-auto px-3 sm:px-6 pt-4 sm:pt-5 pb-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6 items-start">
           {/* LEFT 2 COLUMNS: HERO BANNER, TAB NAVIGATION & MAIN CONTENT */}
           <div className="lg:col-span-2 space-y-4">
             {/* HERO GREETING BANNER */}
-            <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-800 rounded-3xl p-5 sm:p-7 text-white shadow-xl relative overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-800 rounded-3xl p-4 sm:p-7 text-white shadow-xl relative overflow-hidden">
               <div className="relative z-10 space-y-2.5">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="inline-flex items-center space-x-1.5 bg-white/20 px-3 py-1 rounded-full text-xs font-bold backdrop-blur-xs">
