@@ -509,59 +509,84 @@ export default function AdminPortalPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {teachers.map((t) => (
-                <tr key={t.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="py-3 px-4 font-bold text-slate-900">{t.fullName}</td>
-                  <td className="py-3 px-4 font-mono text-slate-600">{t.email}</td>
-                  <td className="py-3 px-4 text-center">
-                    <span
-                      className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        t.role === 'ADMIN'
-                          ? 'bg-purple-100 text-purple-800 border border-purple-300'
-                          : 'bg-blue-100 text-blue-800 border border-blue-300'
-                      }`}
-                    >
-                      {t.role === 'ADMIN' ? 'Quản Trị Viên (Admin)' : 'Giáo Viên'}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    {t.role === 'ADMIN' ? (
-                      <span className="font-bold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-lg border border-purple-200">
-                        Toàn bộ trường
+              {teachers.map((t) => {
+                const isPending = t.role === 'PENDING' || !t.isActive;
+                return (
+                  <tr key={t.id} className={`hover:bg-slate-50 transition-colors ${isPending ? 'bg-amber-50/40' : ''}`}>
+                    <td className="py-3 px-4 font-bold text-slate-900">
+                      <div>{t.fullName}</div>
+                      {isPending && <span className="text-[10px] text-amber-600 font-normal">Vừa đăng ký tài khoản</span>}
+                    </td>
+                    <td className="py-3 px-4 font-mono text-slate-600">{t.email}</td>
+                    <td className="py-3 px-4 text-center">
+                      <span
+                        className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          t.role === 'ADMIN'
+                            ? 'bg-purple-100 text-purple-800 border border-purple-300'
+                            : isPending
+                            ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                            : 'bg-blue-100 text-blue-800 border border-blue-300'
+                        }`}
+                      >
+                        {t.role === 'ADMIN' ? 'Quản Trị Viên (Admin)' : isPending ? 'Chờ Duyệt' : 'Giáo Viên'}
                       </span>
-                    ) : (
-                      <select
-                        value={t.assignedClassName?.replace('Lớp ', '') || '4A1'}
-                        onChange={(e) => handleReassignTeacher(t.id, `Lớp ${e.target.value}`)}
-                        className="px-2.5 py-1 rounded-lg border border-slate-300 bg-white font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                      >
-                        {schoolClasses.map((c) => (
-                          <option key={c.id} value={c.name}>
-                            Lớp {c.name}
-                          </option>
-                        ))}
-                      </select>
-                    )}
-                  </td>
-                  <td className="py-3 px-4 text-center">
-                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                      <CheckCircle2 className="w-3 h-3" />
-                      <span>Hoạt động</span>
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    {t.email !== 'anhnnh4@gmail.com' && (
-                      <button
-                        onClick={() => deleteTeacher(t.id)}
-                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                        title="Xóa quyền giáo viên"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      {t.role === 'ADMIN' ? (
+                        <span className="font-bold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-lg border border-purple-200">
+                          Toàn bộ trường
+                        </span>
+                      ) : (
+                        <select
+                          value={t.assignedClassName?.replace('Lớp ', '') || '4A1'}
+                          onChange={(e) => handleReassignTeacher(t.id, `Lớp ${e.target.value}`)}
+                          className="px-2.5 py-1 rounded-lg border border-slate-300 bg-white font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        >
+                          {schoolClasses.map((c) => (
+                            <option key={c.id} value={c.name}>
+                              Lớp {c.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      {isPending ? (
+                        <button
+                          onClick={() => {
+                            updateTeacher(t.id, {
+                              role: 'TEACHER',
+                              isActive: true,
+                              assignedClassName: t.assignedClassName || `Lớp ${schoolClasses[0]?.name || '4A1'}`,
+                            });
+                            toast.success(`Đã phê duyệt quyền Giáo viên cho ${t.email}!`);
+                          }}
+                          className="inline-flex items-center gap-1 text-[11px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-3 py-1 rounded-lg shadow-xs transition-colors"
+                        >
+                          <CheckCircle2 className="w-3 h-3" />
+                          <span>Phê Duyệt Ngay</span>
+                        </button>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                          <CheckCircle2 className="w-3 h-3" />
+                          <span>Hoạt động</span>
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      {t.email !== 'anhnnh4@gmail.com' && (
+                        <button
+                          onClick={() => deleteTeacher(t.id)}
+                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                          title="Xóa quyền giáo viên"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
