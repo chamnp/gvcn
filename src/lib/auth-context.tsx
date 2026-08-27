@@ -23,7 +23,15 @@ interface AuthContextType {
   // Whitelist & Teacher Management (Synchronized with Supabase)
   teachers: TeacherProfile[];
   refreshTeachers: () => Promise<TeacherProfile[]>;
-  addTeacher: (email: string, fullName: string, role: UserRole, assignedClassName?: string) => Promise<void>;
+  addTeacher: (data: {
+    email: string;
+    fullName: string;
+    role: UserRole;
+    title?: string;
+    department?: string;
+    assignedClassName?: string;
+    phone?: string;
+  }) => Promise<void>;
   updateTeacher: (id: string, partial: Partial<TeacherProfile>) => Promise<void>;
   deleteTeacher: (id: string) => Promise<void>;
 }
@@ -33,8 +41,11 @@ const DEFAULT_TEACHERS: TeacherProfile[] = [
     id: 't-admin-1',
     email: 'anhnnh4@gmail.com',
     fullName: 'Admin Quản Trị Viên (Hiệu Trưởng)',
-    role: 'ADMIN',
-    assignedClassName: 'Tất cả các lớp',
+    role: 'ADMIN_TEACHER',
+    title: 'Hiệu trưởng kiêm GVCN',
+    department: 'Ban Giám Hiệu',
+    assignedClassId: 'class-4a1',
+    assignedClassName: 'Lớp 4A1',
     isActive: true,
     createdAt: new Date().toISOString(),
   },
@@ -43,7 +54,58 @@ const DEFAULT_TEACHERS: TeacherProfile[] = [
     email: 'cham@chuyenkhoan.vn',
     fullName: 'Cô Nguyễn Thị Mai',
     role: 'TEACHER',
+    title: 'Giáo viên Chủ nhiệm',
+    department: 'Tổ Khối 4',
+    assignedClassId: 'class-4a1',
     assignedClassName: 'Lớp 4A1',
+    isActive: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 't-teacher-2',
+    email: 'leha@school.edu.vn',
+    fullName: 'Cô Lê Thị Hà',
+    role: 'TEACHER',
+    title: 'Tổ trưởng Khối 1 & GVCN',
+    department: 'Tổ Khối 1',
+    assignedClassId: 'class-1a1',
+    assignedClassName: 'Lớp 1A1',
+    isActive: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 't-teacher-3',
+    email: 'thucuc@school.edu.vn',
+    fullName: 'Cô Trần Thu Cúc',
+    role: 'TEACHER',
+    title: 'Giáo viên Chủ nhiệm',
+    department: 'Tổ Khối 2',
+    assignedClassId: 'class-2a1',
+    assignedClassName: 'Lớp 2A1',
+    isActive: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 't-teacher-4',
+    email: 'vannam@school.edu.vn',
+    fullName: 'Thầy Phạm Văn Nam',
+    role: 'TEACHER',
+    title: 'Giáo viên Chủ nhiệm',
+    department: 'Tổ Khối 3',
+    assignedClassId: 'class-3a1',
+    assignedClassName: 'Lớp 3A1',
+    isActive: true,
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 't-teacher-5',
+    email: 'minhduc@school.edu.vn',
+    fullName: 'Thầy Hoàng Minh Đức',
+    role: 'TEACHER',
+    title: 'Tổ trưởng Khối 5 & GVCN',
+    department: 'Tổ Khối 5',
+    assignedClassId: 'class-5a1',
+    assignedClassName: 'Lớp 5A1',
     isActive: true,
     createdAt: new Date().toISOString(),
   },
@@ -72,6 +134,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: (row.email || '').toLowerCase().trim(),
           fullName: row.fullName || 'Giáo viên',
           role: (row.role || 'TEACHER') as UserRole,
+          title: row.title || (row.role === 'ADMIN' ? 'Ban Giám Hiệu' : row.role === 'ADMIN_TEACHER' ? 'BGH kiêm GVCN' : 'Giáo viên Chủ nhiệm'),
+          department: row.department || (row.role === 'ADMIN' ? 'Ban Giám Hiệu' : 'Tổ Chuyên môn'),
           assignedClassId: row.assignedClassId || undefined,
           assignedClassName: row.assignedClassName || (row.assignedClassId ? `Lớp ${row.assignedClassId.replace('class-', '').toUpperCase()}` : 'Lớp 4A1'),
           phone: row.phone || undefined,
@@ -116,25 +180,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     const email = (user.email || '').toLowerCase().trim();
+    const existing = teachers.find((t) => t.email.toLowerCase() === email);
 
-    // 1. Check if user is the primary Admin
+    // 1. Primary Admin Account
     if (email === 'anhnnh4@gmail.com') {
       const adminProf: TeacherProfile = {
-        id: `admin-${user.id}`,
+        id: existing?.id || `admin-${user.id}`,
         email,
-        fullName: user.user_metadata?.full_name || 'Admin Quản Trị Viên (Hiệu Trưởng)',
-        role: 'ADMIN',
-        assignedClassName: 'Tất cả các lớp',
+        fullName: existing?.fullName || user.user_metadata?.full_name || 'Admin Quản Trị Viên (Hiệu Trưởng)',
+        role: existing?.role || 'ADMIN_TEACHER',
+        title: existing?.title || 'Hiệu trưởng kiêm GVCN',
+        department: existing?.department || 'Ban Giám Hiệu',
+        assignedClassId: existing?.assignedClassId || 'class-4a1',
+        assignedClassName: existing?.assignedClassName || 'Lớp 4A1',
         isActive: true,
-        createdAt: new Date().toISOString(),
+        createdAt: existing?.createdAt || new Date().toISOString(),
       };
       setProfile(adminProf);
       return;
     }
 
     // 2. Check if user email is in whitelist
-    const existing = teachers.find((t) => t.email.toLowerCase() === email);
-
     if (existing) {
       setProfile(existing);
     } else {
@@ -144,6 +210,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email,
         fullName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Giáo viên mới',
         role: 'PENDING',
+        title: 'Chờ duyệt',
+        department: 'Chưa phân bổ',
         assignedClassName: undefined,
         isActive: false,
         createdAt: new Date().toISOString(),
@@ -157,6 +225,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             email,
             fullName: pendingProfile.fullName,
             role: 'PENDING',
+            title: pendingProfile.title,
+            department: pendingProfile.department,
             isActive: false,
           });
           if (!error) {
@@ -266,10 +336,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // TEACHER MANAGEMENT ACTIONS (Synced with Supabase)
-  const addTeacher = async (email: string, fullName: string, role: UserRole, assignedClassName?: string) => {
-    const cleanEmail = email.trim().toLowerCase();
-    const cleanName = fullName.trim();
-    const classId = assignedClassName ? `class-${assignedClassName.replace('Lớp ', '').toLowerCase()}` : undefined;
+  const addTeacher = async (data: {
+    email: string;
+    fullName: string;
+    role: UserRole;
+    title?: string;
+    department?: string;
+    assignedClassName?: string;
+    phone?: string;
+  }) => {
+    const cleanEmail = data.email.trim().toLowerCase();
+    const cleanName = data.fullName.trim();
+    const classId = data.assignedClassName ? `class-${data.assignedClassName.replace('Lớp ', '').toLowerCase()}` : undefined;
 
     // Write to Supabase
     try {
@@ -277,8 +355,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         {
           email: cleanEmail,
           fullName: cleanName,
-          role,
+          role: data.role,
+          title: data.title,
+          department: data.department,
           assignedClassId: classId,
+          phone: data.phone,
           isActive: true,
         },
         { onConflict: 'email' }
@@ -291,9 +372,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       id: `t-${Date.now()}`,
       email: cleanEmail,
       fullName: cleanName,
-      role,
+      role: data.role,
+      title: data.title || 'Giáo viên',
+      department: data.department || 'Tổ Chuyên môn',
       assignedClassId: classId,
-      assignedClassName: assignedClassName || 'Lớp 4A1',
+      assignedClassName: data.assignedClassName || (classId ? `Lớp ${data.assignedClassName}` : undefined),
+      phone: data.phone,
       isActive: true,
       createdAt: new Date().toISOString(),
     };
@@ -304,7 +388,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('gvcn_teachers', JSON.stringify(updated));
     } catch (e) {}
 
-    toast.success(`Đã cấp quyền ${role === 'ADMIN' ? 'Admin' : 'Giáo viên'} cho email ${email}!`);
+    toast.success(`Đã cấp quyền cho cán bộ/giáo viên ${data.email}!`);
   };
 
   const updateTeacher = async (id: string, partial: Partial<TeacherProfile>) => {
@@ -313,7 +397,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const cleanRole = partial.role || existing.role;
     const cleanActive = partial.isActive !== undefined ? partial.isActive : existing.isActive;
-    const cleanClass = partial.assignedClassName || existing.assignedClassName;
+    const cleanClass = partial.assignedClassName !== undefined ? partial.assignedClassName : existing.assignedClassName;
     const classId = cleanClass ? `class-${cleanClass.replace('Lớp ', '').toLowerCase()}` : undefined;
 
     // Update in Supabase
@@ -325,19 +409,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           isActive: cleanActive,
           assignedClassId: classId,
           fullName: partial.fullName || existing.fullName,
+          title: partial.title !== undefined ? partial.title : existing.title,
+          department: partial.department !== undefined ? partial.department : existing.department,
+          phone: partial.phone !== undefined ? partial.phone : existing.phone,
         })
         .eq('email', existing.email.toLowerCase());
     } catch (e) {
       console.warn('Supabase update teacher error:', e);
     }
 
-    const updated = teachers.map((t) => (t.id === id ? { ...t, ...partial } : t));
+    const updated = teachers.map((t) => (t.id === id ? { ...t, ...partial, assignedClassId: classId } : t));
     setTeachers(updated);
     try {
       localStorage.setItem('gvcn_teachers', JSON.stringify(updated));
     } catch (e) {}
 
-    toast.success('Đã cập nhật phân công và quyền giáo viên!');
+    toast.success('Đã cập nhật quyền và phân công cán bộ/giáo viên!');
   };
 
   const deleteTeacher = async (id: string) => {
@@ -357,18 +444,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('gvcn_teachers', JSON.stringify(updated));
     } catch (e) {}
 
-    toast.success('Đã gỡ quyền truy cập của giáo viên');
+    toast.success('Đã gỡ tài khoản cán bộ/giáo viên');
   };
 
-  // Auth & RBAC Flags
+  // Auth & RBAC Flags (Supports Admin, Teacher, and Dual Admin+Teacher)
+  const isAdmin =
+    user !== null &&
+    profile !== null &&
+    (profile.role === 'ADMIN' || profile.role === 'ADMIN_TEACHER');
+
+  const isTeacher =
+    user !== null &&
+    profile !== null &&
+    (profile.role === 'TEACHER' || profile.role === 'ADMIN_TEACHER');
+
   const isAuthorized =
     user !== null &&
     profile !== null &&
     profile.isActive &&
-    (profile.role === 'ADMIN' || profile.role === 'TEACHER');
-
-  const isAdmin = user !== null && profile !== null && profile.role === 'ADMIN';
-  const isTeacher = user !== null && profile !== null && profile.role === 'TEACHER';
+    (profile.role === 'ADMIN' || profile.role === 'TEACHER' || profile.role === 'ADMIN_TEACHER');
 
   return (
     <AuthContext.Provider

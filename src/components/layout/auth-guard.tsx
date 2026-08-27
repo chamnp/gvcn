@@ -24,7 +24,7 @@ export const AuthGuard: React.FC<{ children: React.ReactNode }> = ({ children })
         router.push('/login');
       } else if (!isAuthorized) {
         router.push('/unauthorized');
-      } else if (pathname === '/admin' && profile?.role !== 'ADMIN') {
+      } else if (pathname === '/admin' && profile?.role !== 'ADMIN' && profile?.role !== 'ADMIN_TEACHER') {
         router.push('/');
       }
     }

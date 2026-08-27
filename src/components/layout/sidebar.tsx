@@ -46,7 +46,7 @@ export const NAV_ITEMS = [
 const SidebarContent: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
   const pathname = usePathname();
   const { schoolClasses, activeClassId, classInfo, switchClass, students } = useAppStore();
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, isAdmin, signOut } = useAuth();
 
   return (
     <div className="flex flex-col h-full bg-slate-900 text-slate-200">
@@ -82,9 +82,9 @@ const SidebarContent: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
       <div className="mx-3 sm:mx-4 my-3 p-3 rounded-xl bg-slate-800/80 border border-slate-700/60 shadow-xs space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-            {profile?.role === 'ADMIN' ? 'Chọn Lớp Quản Lý' : 'Lớp Phụ Trách'}
+            {isAdmin ? 'Chọn Lớp Quản Lý' : 'Lớp Phụ Trách'}
           </span>
-          {profile?.role === 'ADMIN' ? (
+          {isAdmin ? (
             <select
               value={activeClassId}
               onChange={(e) => switchClass(e.target.value)}
@@ -111,7 +111,7 @@ const SidebarContent: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
 
       {/* Nav Menu */}
       <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
-        {NAV_ITEMS.filter((item) => (item.href === '/admin' ? profile?.role === 'ADMIN' : true)).map((item) => {
+        {NAV_ITEMS.filter((item) => (item.href === '/admin' ? isAdmin : true)).map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || (item.href !== '/' && item.href !== '/admin' && pathname.startsWith(item.href));
 

@@ -225,23 +225,25 @@ export function downloadStudentTemplate() {
 export function downloadTeacherTemplate() {
   const headers = [
     'STT',
-    'Email đăng nhập (*)',
-    'Họ và tên giáo viên (*)',
-    'Vai trò (ADMIN / TEACHER)',
-    'Lớp phụ trách (*)',
-    'Ghi chú',
+    'Email Đăng Nhập',
+    'Họ và Tên (*)',
+    'Chức Vụ',
+    'Tổ Chuyên Môn',
+    'Vai Trò (ADMIN / TEACHER / ADMIN_TEACHER)',
+    'Lớp Phụ Trách (*)',
+    'Số Điện Thoại',
   ];
 
   const sampleRows = [
-    [1, 'hieutruong@chuvanan.edu.vn', 'Thầy Nguyễn Văn Nam', 'ADMIN', 'Tất cả các lớp', 'Ban Giám Hiệu'],
-    [2, 'cuc.tt@chuvanan.edu.vn', 'Cô Trần Thu Cúc', 'TEACHER', '1A1', 'GVCN Khối 1'],
-    [3, 'mai.nt@chuvanan.edu.vn', 'Cô Nguyễn Thị Mai', 'TEACHER', '4A1', 'GVCN Khối 4'],
-    [4, 'duc.hm@chuvanan.edu.vn', 'Thầy Hoàng Minh Đức', 'TEACHER', '5A1', 'GVCN Khối 5'],
+    [1, 'anhnnh4@gmail.com', 'Thầy Nguyễn Văn Nam', 'Hiệu trưởng kiêm GVCN', 'Ban Giám Hiệu', 'ADMIN_TEACHER', '4A1', '0912345678'],
+    [2, 'phohieutruong@school.edu.vn', 'Cô Trần Thị B', 'Phó Hiệu trưởng', 'Ban Giám Hiệu', 'ADMIN', 'Tất cả', '0987654321'],
+    [3, 'mai.nt@school.edu.vn', 'Cô Nguyễn Thị Mai', 'Giáo viên Chủ nhiệm', 'Tổ Khối 4', 'TEACHER', '4A1', '0901234567'],
+    [4, 'duc.hm@school.edu.vn', 'Thầy Hoàng Minh Đức', 'Tổ trưởng Khối 5 & GVCN', 'Tổ Khối 5', 'TEACHER', '5A1', '0934567890'],
   ];
 
   const titleRows = [
-    ['MẪU DANH SÁCH & PHÂN CÔNG GIÁO VIÊN TOÀN TRƯỜNG'],
-    ['Hướng dẫn: Vai trò nhập ADMIN (Ban Giám Hiệu) hoặc TEACHER (Giáo viên Chủ Nhiệm).'],
+    ['MẪU DANH SÁCH & PHÂN CÔNG GIÁO VIÊN, CÁN BỘ TOÀN TRƯỜNG'],
+    ['Hướng dẫn: Vai trò nhập ADMIN (BGH), TEACHER (GVCN), hoặc ADMIN_TEACHER (BGH kiêm GVCN).'],
     [],
   ];
 
@@ -252,32 +254,43 @@ export function downloadTeacherTemplate() {
     { wch: 24 },
     { wch: 24 },
     { wch: 18 },
-    { wch: 25 },
+    { wch: 22 },
+    { wch: 18 },
+    { wch: 16 },
   ];
 
   const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Mau_GiaoVien');
-  XLSX.writeFile(workbook, 'Mau_Phan_Cong_Giao_Vien.xlsx');
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Mau_CanBo_GiaoVien');
+  XLSX.writeFile(workbook, 'Mau_Phan_Cong_Can_Bo_Giao_Vien.xlsx');
 }
 
 /**
  * Xuất danh sách giáo viên toàn trường ra file Excel
  */
 export function exportTeacherList(teachers: any[]) {
-  const headers = ['STT', 'Email Đăng Nhập', 'Họ và Tên', 'Vai Trò', 'Lớp Phụ Trách', 'Trạng Thái'];
+  const headers = ['STT', 'Email Đăng Nhập', 'Họ và Tên', 'Chức Vụ', 'Tổ Chuyên Môn', 'Vai Trò', 'Lớp Phụ Trách', 'Số Điện Thoại', 'Trạng Thái'];
 
   const rows = teachers.map((t, i) => [
     i + 1,
     t.email,
     t.fullName,
-    t.role === 'ADMIN' ? 'Ban Giám Hiệu (ADMIN)' : 'Giáo Viên Chủ Nhiệm (TEACHER)',
-    t.assignedClassName || 'Chưa phân công',
-    t.isActive ? 'Đang hoạt động' : 'Chờ duyệt',
+    t.title || 'Cán bộ/GV',
+    t.department || 'Tổ Chuyên môn',
+    t.role === 'ADMIN'
+      ? 'Quản Trị Viên (ADMIN)'
+      : t.role === 'ADMIN_TEACHER'
+      ? 'BGH kiêm GVCN (ADMIN_TEACHER)'
+      : t.role === 'PENDING'
+      ? 'Chờ duyệt'
+      : 'Giáo Viên Chủ Nhiệm (TEACHER)',
+    t.assignedClassName || 'Không chủ nhiệm',
+    t.phone || '',
+    t.isActive ? 'Đang hoạt động' : 'Chờ duyệt / Tạm khóa',
   ]);
 
   const titleRows = [
-    ['DANH SÁCH GIÁO VIÊN & MA TRẬN PHÂN CÔNG LỚP HỌC'],
-    [`Thời gian xuất: ${new Date().toLocaleDateString('vi-VN')} - Tổng số: ${teachers.length} giáo viên`],
+    ['DANH SÁCH CÁN BỘ, GIÁO VIÊN & PHÂN CÔNG NHÀ TRƯỜNG'],
+    [`Thời gian xuất: ${new Date().toLocaleDateString('vi-VN')} - Tổng số: ${teachers.length} cán bộ giáo viên`],
     [],
   ];
 

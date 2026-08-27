@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   ShieldCheck,
@@ -23,14 +23,36 @@ import {
   FileSpreadsheet,
   Building,
   Save,
+  Search,
+  Filter,
+  Phone,
+  Mail,
+  Briefcase,
+  Layers,
+  CheckCircle,
+  XCircle,
+  Crown,
+  UserCheck,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useAuth } from '@/lib/auth-context';
-import { ClassInfo, GradeLevel, UserRole } from '@/types';
+import { ClassInfo, GradeLevel, UserRole, TeacherProfile } from '@/types';
 import { parseTeacherExcelFile } from '@/lib/excel-import';
 import { downloadTeacherTemplate, exportTeacherList } from '@/lib/excel-export';
 import { toast } from 'sonner';
 import Link from 'next/link';
+
+const DEPARTMENTS = [
+  'Tất cả các tổ',
+  'Ban Giám Hiệu',
+  'Tổ Khối 1',
+  'Tổ Khối 2',
+  'Tổ Khối 3',
+  'Tổ Khối 4',
+  'Tổ Khối 5',
+  'Tổ Năng khiếu & Bộ môn',
+  'Tổ Văn phòng & Bán trú',
+];
 
 export default function AdminPortalPage() {
   const router = useRouter();
@@ -84,21 +106,67 @@ export default function AdminPortalPage() {
     seatingGridCols: 8,
   });
 
-  // Modal State for Teacher
-  const [isTeacherModalOpen, setIsTeacherModalOpen] = useState(false);
-  const [teacherEmail, setTeacherEmail] = useState('');
-  const [teacherFullName, setTeacherFullName] = useState('');
-  const [teacherRole, setTeacherRole] = useState<UserRole>('TEACHER');
-  const [teacherAssignedClass, setTeacherAssignedClass] = useState('1A1');
+  // Teacher / Staff Search & Filters
+  const [searchStaffQuery, setSearchStaffQuery] = useState('');
+  const [filterDepartment, setFilterDepartment] = useState('Tất cả các tổ');
+  const [filterRole, setFilterRole] = useState('ALL');
 
-  // Tổng hợp dữ liệu toàn trường
+  // Modal State for Teacher / Staff Role Editing
+  const [isTeacherModalOpen, setIsTeacherModalOpen] = useState(false);
+  const [editingTeacher, setEditingTeacher] = useState<TeacherProfile | null>(null);
+  const [teacherForm, setTeacherForm] = useState<{
+    email: string;
+    fullName: string;
+    role: UserRole;
+    title: string;
+    department: string;
+    assignedClassName: string;
+    phone: string;
+    isActive: boolean;
+  }>({
+    email: '',
+    fullName: '',
+    role: 'TEACHER',
+    title: 'Giáo viên Chủ nhiệm',
+    department: 'Tổ Khối 4',
+    assignedClassName: 'Lớp 4A1',
+    phone: '',
+    isActive: true,
+  });
+
+  // Metrics
   const totalClasses = schoolClasses.length;
   const totalEstimatedStudents = allStudents.length;
   const totalTeachers = teachers.length;
+  const totalAdmins = teachers.filter((t) => t.role === 'ADMIN' || t.role === 'ADMIN_TEACHER').length;
+  const totalPending = teachers.filter((t) => t.role === 'PENDING' || !t.isActive).length;
 
-  const isAdmin = !profile || profile.role === 'ADMIN';
+  const isAdmin = !profile || profile.role === 'ADMIN' || profile.role === 'ADMIN_TEACHER';
 
-  // Xử lý tạo / sửa lớp
+  // Filtered staff list
+  const filteredTeachers = useMemo(() => {
+    return teachers.filter((t) => {
+      const matchSearch =
+        t.fullName.toLowerCase().includes(searchStaffQuery.toLowerCase()) ||
+        t.email.toLowerCase().includes(searchStaffQuery.toLowerCase()) ||
+        (t.title || '').toLowerCase().includes(searchStaffQuery.toLowerCase()) ||
+        (t.phone || '').includes(searchStaffQuery);
+
+      const matchDept =
+        filterDepartment === 'Tất cả các tổ' || t.department === filterDepartment;
+
+      const matchRole =
+        filterRole === 'ALL' ||
+        (filterRole === 'ADMIN' && t.role === 'ADMIN') ||
+        (filterRole === 'ADMIN_TEACHER' && t.role === 'ADMIN_TEACHER') ||
+        (filterRole === 'TEACHER' && t.role === 'TEACHER') ||
+        (filterRole === 'PENDING' && (t.role === 'PENDING' || !t.isActive));
+
+      return matchSearch && matchDept && matchRole;
+    });
+  }, [teachers, searchStaffQuery, filterDepartment, filterRole]);
+
+  // Class Handlers
   const handleOpenClassModal = (cls?: ClassInfo) => {
     if (!isAdmin) {
       toast.error('Chỉ Quản trị viên / Ban Giám Hiệu mới có quyền thêm hoặc sửa cấu hình lớp!');
@@ -120,8 +188,8 @@ export default function AdminPortalPage() {
       setClassForm({
         name: `${schoolClasses.length + 1}A1`,
         grade: Math.min(5, Math.max(1, schoolClasses.length + 1)) as GradeLevel,
-        schoolYear: '2025-2026',
-        schoolName: 'Trường Tiểu học Chu Văn An',
+        schoolYear: schoolInfo.schoolYear,
+        schoolName: schoolInfo.name,
         teacherName: 'Giáo viên mới',
         seatingGridRows: 5,
         seatingGridCols: 8,
@@ -164,32 +232,82 @@ export default function AdminPortalPage() {
     }
   };
 
-  // Chuyển sang xem lớp và điều hướng đến Dashboard
   const handleJumpToClass = (classId: string, className: string) => {
     switchClass(classId);
     toast.success(`Đã chuyển quyền xem sang Lớp ${className}!`);
     router.push('/');
   };
 
-  // Thêm giáo viên
-  const handleCreateTeacher = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Staff / Teacher Handlers
+  const handleOpenTeacherModal = (t?: TeacherProfile) => {
     if (!isAdmin) {
-      toast.error('Chỉ Quản trị viên / Ban Giám Hiệu mới có quyền phân công giáo viên mới!');
+      toast.error('Chỉ Quản trị viên / Ban Giám Hiệu mới có quyền thêm/sửa cán bộ giáo viên!');
       return;
     }
-    if (!teacherEmail.trim() || !teacherFullName.trim()) {
-      toast.error('Vui lòng điền đủ email và họ tên giáo viên');
-      return;
+    if (t) {
+      setEditingTeacher(t);
+      setTeacherForm({
+        email: t.email,
+        fullName: t.fullName,
+        role: t.role,
+        title: t.title || (t.role === 'ADMIN' ? 'Ban Giám Hiệu' : t.role === 'ADMIN_TEACHER' ? 'BGH kiêm GVCN' : 'Giáo viên Chủ nhiệm'),
+        department: t.department || (t.role === 'ADMIN' ? 'Ban Giám Hiệu' : 'Tổ Khối 4'),
+        assignedClassName: t.assignedClassName || (schoolClasses[0] ? `Lớp ${schoolClasses[0].name}` : 'Lớp 4A1'),
+        phone: t.phone || '',
+        isActive: t.isActive,
+      });
+    } else {
+      setEditingTeacher(null);
+      setTeacherForm({
+        email: '',
+        fullName: '',
+        role: 'TEACHER',
+        title: 'Giáo viên Chủ nhiệm',
+        department: 'Tổ Khối 4',
+        assignedClassName: schoolClasses[0] ? `Lớp ${schoolClasses[0].name}` : 'Lớp 4A1',
+        phone: '',
+        isActive: true,
+      });
     }
-
-    await addTeacher(teacherEmail, teacherFullName, teacherRole, `Lớp ${teacherAssignedClass}`);
-    setIsTeacherModalOpen(false);
-    setTeacherEmail('');
-    setTeacherFullName('');
+    setIsTeacherModalOpen(true);
   };
 
-  // Nhập danh sách giáo viên từ Excel
+  const handleSaveTeacher = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isAdmin) {
+      toast.error('Chỉ Quản trị viên / Ban Giám Hiệu mới có quyền cập nhật quyền giáo viên!');
+      return;
+    }
+    if (!teacherForm.email.trim() || !teacherForm.fullName.trim()) {
+      toast.error('Vui lòng điền đủ email và họ tên');
+      return;
+    }
+
+    if (editingTeacher) {
+      await updateTeacher(editingTeacher.id, {
+        fullName: teacherForm.fullName,
+        role: teacherForm.role,
+        title: teacherForm.title,
+        department: teacherForm.department,
+        assignedClassName: teacherForm.assignedClassName,
+        phone: teacherForm.phone,
+        isActive: teacherForm.isActive,
+      });
+    } else {
+      await addTeacher({
+        email: teacherForm.email,
+        fullName: teacherForm.fullName,
+        role: teacherForm.role,
+        title: teacherForm.title,
+        department: teacherForm.department,
+        assignedClassName: teacherForm.assignedClassName,
+        phone: teacherForm.phone,
+      });
+    }
+
+    setIsTeacherModalOpen(false);
+  };
+
   const handleTeacherExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!isAdmin) {
       toast.error('Chỉ Ban Giám Hiệu mới có quyền nhập danh sách giáo viên!');
@@ -201,33 +319,31 @@ export default function AdminPortalPage() {
     try {
       const parsedTeachers = await parseTeacherExcelFile(file);
       if (parsedTeachers.length === 0) {
-        toast.error('Không tìm thấy danh sách giáo viên hợp lệ trong file');
+        toast.error('Không tìm thấy danh sách cán bộ/giáo viên hợp lệ trong file');
         return;
       }
 
       for (const t of parsedTeachers) {
-        await addTeacher(t.email, t.fullName, t.role, t.assignedClassName);
+        await addTeacher({
+          email: t.email,
+          fullName: t.fullName,
+          role: t.role,
+          title: t.title,
+          department: t.department,
+          assignedClassName: t.assignedClassName,
+          phone: t.phone,
+        });
       }
-      toast.success(`Đã nhập thành công ${parsedTeachers.length} giáo viên từ file Excel!`);
+      toast.success(`Đã nhập thành công ${parsedTeachers.length} cán bộ/giáo viên từ file Excel!`);
     } catch (err) {
       console.error(err);
       toast.error('Lỗi khi đọc file Excel giáo viên. Vui lòng kiểm tra định dạng.');
     }
   };
 
-  // Thay đổi phân công lớp của giáo viên
-  const handleReassignTeacher = async (teacherId: string, newClassName: string) => {
-    if (profile && profile.role !== 'ADMIN') {
-      toast.error('Chỉ Quản trị viên / Ban Giám Hiệu mới có quyền thay đổi phân công giáo viên!');
-      return;
-    }
-    await updateTeacher(teacherId, { assignedClassName: newClassName });
-    toast.success(`Đã chuyển phân công giáo viên sang ${newClassName}`);
-  };
-
   return (
     <div className="space-y-6">
-      {/* Role Warning for Non-Admin */}
+      {/* Role Warning for Regular Non-Admin Teachers */}
       {!isAdmin && profile?.role === 'TEACHER' && (
         <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl p-4 flex items-center justify-between gap-4">
           <div className="flex items-center space-x-3">
@@ -237,7 +353,7 @@ export default function AdminPortalPage() {
             <div>
               <p className="text-xs font-bold">Chế độ Chỉ Xem dành cho Giáo Viên</p>
               <p className="text-[11px] text-amber-700">
-                Bạn đang đăng nhập với vai trò <strong>{profile.fullName}</strong> ({profile.assignedClassName || 'GVCN'}). Chỉ Ban Giám Hiệu mới có quyền thêm/xóa lớp và phân công giáo viên.
+                Bạn đang đăng nhập với vai trò <strong>{profile.fullName}</strong> ({profile.assignedClassName || 'GVCN'}). Chỉ Ban Giám Hiệu mới có quyền thêm/xóa lớp và phân công cán bộ giáo viên.
               </p>
             </div>
           </div>
@@ -246,28 +362,6 @@ export default function AdminPortalPage() {
             className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shrink-0 transition-colors"
           >
             Quay Về Lớp Của Tôi
-          </Link>
-        </div>
-      )}
-
-      {!isAdmin && profile?.role === 'PENDING' && (
-        <div className="bg-rose-50 border border-rose-200 text-rose-900 rounded-2xl p-4 flex items-center justify-between gap-4">
-          <div className="flex items-center space-x-3">
-            <div className="w-9 h-9 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
-              <Lock className="w-5 h-5" />
-            </div>
-            <div>
-              <p className="text-xs font-bold">Tài Khoản Đang Chờ Phê Duyệt</p>
-              <p className="text-[11px] text-rose-700">
-                Tài khoản <strong>{profile.email}</strong> chưa được phân công lớp. Vui lòng liên hệ Ban Giám Hiệu để được cấp quyền.
-              </p>
-            </div>
-          </div>
-          <Link
-            href="/login"
-            className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shrink-0 transition-colors"
-          >
-            Đăng Nhập Tài Khoản Khác
           </Link>
         </div>
       )}
@@ -307,30 +401,18 @@ export default function AdminPortalPage() {
               <span>Cấu Hình Trường</span>
             </button>
             <button
-              onClick={() => {
-                if (!isAdmin) {
-                  toast.error('Bạn cần quyền Ban Giám Hiệu để thêm lớp học mới!');
-                  return;
-                }
-                handleOpenClassModal();
-              }}
+              onClick={() => handleOpenClassModal()}
               className="inline-flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-xs transition-colors"
             >
               <Plus className="w-4 h-4" />
               <span>Thêm Lớp Học</span>
             </button>
             <button
-              onClick={() => {
-                if (!isAdmin) {
-                  toast.error('Bạn cần quyền Ban Giám Hiệu để phân công giáo viên!');
-                  return;
-                }
-                setIsTeacherModalOpen(true);
-              }}
+              onClick={() => handleOpenTeacherModal()}
               className="inline-flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-xs transition-colors"
             >
               <UserPlus className="w-4 h-4" />
-              <span>Phân Công Giáo Viên</span>
+              <span>Thêm Cán Bộ / GV</span>
             </button>
           </div>
         </div>
@@ -338,63 +420,69 @@ export default function AdminPortalPage() {
 
       {/* School Overview Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase">Tổng Số Lớp</p>
-            <h3 className="text-2xl font-black text-slate-900 mt-1">{totalClasses} <span className="text-xs font-normal text-slate-500">lớp</span></h3>
-            <p className="text-xs text-blue-600 font-semibold mt-1">Từ Khối 1 đến Khối 5</p>
+        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center space-x-3">
+          <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+            <School className="w-5 h-5" />
           </div>
-          <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-            <School className="w-6 h-6" />
+          <div>
+            <p className="text-[11px] text-slate-500 font-semibold uppercase">Tổng Số Lớp</p>
+            <p className="text-xl font-black text-slate-900">{totalClasses} Lớp</p>
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase">Học Sinh Toàn Trường</p>
-            <h3 className="text-2xl font-black text-indigo-600 mt-1">{totalEstimatedStudents} <span className="text-xs font-normal text-slate-500">em</span></h3>
-            <p className="text-xs text-slate-500 mt-1">Trung bình 31 em/lớp</p>
+        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center space-x-3">
+          <div className="w-11 h-11 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
+            <Users className="w-5 h-5" />
           </div>
-          <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
-            <Users className="w-6 h-6" />
+          <div>
+            <p className="text-[11px] text-slate-500 font-semibold uppercase">Tổng Số Cán Bộ / GV</p>
+            <p className="text-xl font-black text-slate-900">{totalTeachers} Người</p>
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase">Giáo Viên Chủ Nhiệm</p>
-            <h3 className="text-2xl font-black text-emerald-600 mt-1">{totalTeachers} <span className="text-xs font-normal text-slate-500">thầy cô</span></h3>
-            <p className="text-xs text-emerald-600 font-semibold mt-1">100% đã cấp tài khoản</p>
+        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center space-x-3">
+          <div className="w-11 h-11 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
+            <Crown className="w-5 h-5" />
           </div>
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-            <ShieldCheck className="w-6 h-6" />
+          <div>
+            <p className="text-[11px] text-slate-500 font-semibold uppercase">Ban Giám Hiệu / Admin</p>
+            <p className="text-xl font-black text-slate-900">{totalAdmins} Người</p>
           </div>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase">Tiêu Chuẩn Đánh Giá</p>
-            <h3 className="text-2xl font-black text-amber-600 mt-1">TT 27</h3>
-            <p className="text-xs text-slate-500 mt-1">GDPT Tiểu học 2018</p>
+        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center space-x-3">
+          <div className={`w-11 h-11 rounded-xl flex items-center justify-center font-bold ${totalPending > 0 ? 'bg-rose-50 text-rose-600 animate-pulse' : 'bg-emerald-50 text-emerald-600'}`}>
+            <UserCheck className="w-5 h-5" />
           </div>
-          <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-            <Award className="w-6 h-6" />
+          <div>
+            <p className="text-[11px] text-slate-500 font-semibold uppercase">Chờ Phê Duyệt</p>
+            <p className={`text-xl font-black ${totalPending > 0 ? 'text-rose-600' : 'text-slate-900'}`}>
+              {totalPending} Yêu cầu
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Section 1: School Classes Roster & Inspector */}
+      {/* SECTION 1: DANH SÁCH LỚP HỌC TOÀN TRƯỜNG */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 sm:p-6 space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
               <School className="w-5 h-5 text-blue-600" />
-              <span>Danh Sách Lớp Học Trong Trường</span>
+              <span>Danh Sách Lớp Học Toàn Trường ({schoolClasses.length} Lớp)</span>
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Admin có thể bấm "Vào kiểm tra lớp" để xem trực tiếp hồ sơ học sinh, điểm danh, và đánh giá của từng lớp.
+              Quản trị viên có thể vào kiểm tra dữ liệu điểm số, nề nếp, học bạ của bất kỳ lớp nào.
             </p>
           </div>
+
+          <button
+            onClick={() => handleOpenClassModal()}
+            className="inline-flex items-center space-x-1 bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-1.5 rounded-xl font-bold text-xs transition-colors self-start sm:self-auto"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Thêm Lớp Mới</span>
+          </button>
         </div>
 
         <div className="overflow-x-auto border border-slate-200 rounded-xl">
@@ -402,48 +490,35 @@ export default function AdminPortalPage() {
             <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
               <tr>
                 <th className="py-3 px-4">Tên Lớp</th>
-                <th className="py-3 px-4 text-center">Khối Lớp</th>
+                <th className="py-3 px-4">Khối</th>
                 <th className="py-3 px-4">Giáo Viên Chủ Nhiệm</th>
                 <th className="py-3 px-4 text-center">Sĩ Số</th>
                 <th className="py-3 px-4 text-center">Sơ Đồ Chỗ Ngồi</th>
-                <th className="py-3 px-4 text-center">Trạng Thái Đang Xem</th>
-                <th className="py-3 px-4 text-right">Thao Tác</th>
+                <th className="py-3 px-4 text-right">Hành Động</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {schoolClasses.map((cls) => {
-                const isCurrentActive = cls.id === activeClassId;
+                const isCurrent = cls.id === activeClassId;
+                const studentCount = cls.id === 'class-4a1' ? allStudents.length : cls.totalStudents || 30;
+
                 return (
-                  <tr key={cls.id} className="hover:bg-slate-50 transition-colors">
-                    <td className="py-3 px-4 font-black text-slate-900 text-sm">
+                  <tr key={cls.id} className={`hover:bg-slate-50 transition-colors ${isCurrent ? 'bg-blue-50/50' : ''}`}>
+                    <td className="py-3 px-4 font-bold text-slate-900">
                       <div className="flex items-center space-x-2">
-                        <span className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs">
-                          {cls.name}
-                        </span>
-                        <span>Lớp {cls.name}</span>
+                        <span className="text-sm">Lớp {cls.name}</span>
+                        {isCurrent && (
+                          <span className="bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded-full border border-blue-200">
+                            Đang xem
+                          </span>
+                        )}
                       </div>
                     </td>
-                    <td className="py-3 px-4 text-center font-semibold text-slate-700">
-                      Khối {cls.grade}
-                    </td>
-                    <td className="py-3 px-4 font-medium text-slate-800">
-                      {cls.teacherName}
-                    </td>
-                    <td className="py-3 px-4 text-center font-bold text-slate-900">
-                      {allStudents.filter((s) => (s.classId || 'class-4a1') === cls.id).length} HS
-                    </td>
-                    <td className="py-3 px-4 text-center text-slate-500 font-mono">
-                      {cls.seatingGridRows} hàng x {cls.seatingGridCols} cột
-                    </td>
-                    <td className="py-3 px-4 text-center">
-                      {isCurrentActive ? (
-                        <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 font-bold px-2.5 py-1 rounded-full text-[11px]">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>Đang chọn</span>
-                        </span>
-                      ) : (
-                        <span className="text-slate-400 text-[11px]">—</span>
-                      )}
+                    <td className="py-3 px-4 text-slate-600 font-semibold">Khối {cls.grade}</td>
+                    <td className="py-3 px-4 font-medium text-slate-800">{cls.teacherName}</td>
+                    <td className="py-3 px-4 text-center font-bold text-slate-700">{studentCount} HS</td>
+                    <td className="py-3 px-4 text-center text-slate-500">
+                      {cls.seatingGridRows || 5} hàng × {cls.seatingGridCols || 8} cột
                     </td>
                     <td className="py-3 px-4 text-right space-x-1.5">
                       <button
@@ -478,25 +553,24 @@ export default function AdminPortalPage() {
         </div>
       </div>
 
-      {/* Section 2: Teacher Assignment Matrix */}
+      {/* SECTION 2: DANH SÁCH GIÁO VIÊN & CÁN BỘ NHÀ TRƯỜNG */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 sm:p-6 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
               <Users className="w-5 h-5 text-emerald-600" />
-              <span>Phân Công Giáo Viên Chủ Nhiệm (Teacher Assignment Matrix)</span>
+              <span>Danh Sách Cán Bộ & Giáo Viên Toàn Trường ({teachers.length} Người)</span>
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Khi giáo viên đăng nhập bằng Google hoặc Email, hệ thống sẽ tự động gán vào lớp tương ứng bên dưới.
+              Cập nhật quyền linh hoạt: Cho phép 1 tài khoản vừa làm Ban Giám Hiệu quản lý trường vừa trực tiếp chủ nhiệm lớp.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {/* Download Template Button */}
             <button
               onClick={() => {
                 downloadTeacherTemplate();
-                toast.success('Đã tải xuống file Excel mẫu phân công giáo viên!');
+                toast.success('Đã tải xuống file Excel mẫu phân công cán bộ/giáo viên!');
               }}
               className="inline-flex items-center space-x-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-2 rounded-xl text-xs font-semibold border border-emerald-300 transition-colors"
               title="Tải mẫu Excel chuẩn"
@@ -505,18 +579,16 @@ export default function AdminPortalPage() {
               <span>Tải File Mẫu</span>
             </button>
 
-            {/* Import Teachers Button */}
             <label className="cursor-pointer inline-flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl text-xs font-semibold border border-slate-300 transition-colors">
               <Upload className="w-4 h-4 text-slate-600" />
               <span>Nhập Excel</span>
               <input type="file" accept=".xlsx, .xls" onChange={handleTeacherExcelUpload} className="hidden" />
             </label>
 
-            {/* Export Teachers Button */}
             <button
               onClick={() => {
                 exportTeacherList(teachers);
-                toast.success('Đã xuất danh sách giáo viên ra Excel!');
+                toast.success('Đã xuất danh sách cán bộ/giáo viên ra Excel!');
               }}
               className="inline-flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl text-xs font-semibold border border-slate-300 transition-colors"
             >
@@ -524,75 +596,120 @@ export default function AdminPortalPage() {
               <span>Xuất Excel</span>
             </button>
 
-            {/* Add Teacher Button */}
             <button
-              onClick={() => {
-                if (!isAdmin) {
-                  toast.error('Bạn cần quyền Ban Giám Hiệu để thêm giáo viên!');
-                  return;
-                }
-                setIsTeacherModalOpen(true);
-              }}
+              onClick={() => handleOpenTeacherModal()}
               className="inline-flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs transition-colors"
             >
               <UserPlus className="w-4 h-4" />
-              <span>Thêm Giáo Viên</span>
+              <span>Thêm Cán Bộ / GV</span>
             </button>
           </div>
         </div>
 
+        {/* Search & Filters */}
+        <div className="flex flex-col sm:flex-row items-center gap-3 pt-1">
+          <div className="relative flex-1 w-full">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+            <input
+              type="text"
+              value={searchStaffQuery}
+              onChange={(e) => setSearchStaffQuery(e.target.value)}
+              placeholder="Tìm kiếm theo tên, email, chức vụ, số điện thoại..."
+              className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            />
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <select
+              value={filterDepartment}
+              onChange={(e) => setFilterDepartment(e.target.value)}
+              className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold bg-white text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            >
+              {DEPARTMENTS.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={filterRole}
+              onChange={(e) => setFilterRole(e.target.value)}
+              className="px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold bg-white text-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            >
+              <option value="ALL">Tất cả vai trò</option>
+              <option value="ADMIN_TEACHER">🌟 BGH kiêm GVCN</option>
+              <option value="ADMIN">👑 Ban Giám Hiệu (Admin)</option>
+              <option value="TEACHER">👩‍🏫 Giáo Viên Chủ Nhiệm</option>
+              <option value="PENDING">⏳ Chờ Phê Duyệt</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Staff Table */}
         <div className="overflow-x-auto border border-slate-200 rounded-xl">
           <table className="w-full text-left text-xs">
             <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
               <tr>
-                <th className="py-3 px-4">Họ và Tên Giáo Viên</th>
-                <th className="py-3 px-4">Email Đăng Nhập (Google / Password)</th>
-                <th className="py-3 px-4 text-center">Vai Trò</th>
-                <th className="py-3 px-4 text-center w-48">Lớp Phân Công Phụ Trách</th>
+                <th className="py-3 px-4">Họ và Tên Cán Bộ / GV</th>
+                <th className="py-3 px-4">Thông Tin Đăng Nhập & SĐT</th>
+                <th className="py-3 px-4">Tổ Chuyên Môn</th>
+                <th className="py-3 px-4 text-center">Quyền Hệ Thống</th>
+                <th className="py-3 px-4 text-center">Lớp Chủ Nhiệm</th>
                 <th className="py-3 px-4 text-center">Trạng Thái</th>
                 <th className="py-3 px-4 text-right">Thao Tác</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {teachers.map((t) => {
+              {filteredTeachers.map((t) => {
                 const isPending = t.role === 'PENDING' || !t.isActive;
                 return (
                   <tr key={t.id} className={`hover:bg-slate-50 transition-colors ${isPending ? 'bg-amber-50/40' : ''}`}>
                     <td className="py-3 px-4 font-bold text-slate-900">
-                      <div>{t.fullName}</div>
-                      {isPending && <span className="text-[10px] text-amber-600 font-normal">Vừa đăng ký tài khoản</span>}
+                      <div className="flex items-center space-x-2">
+                        <div>
+                          <div className="text-slate-900 font-bold">{t.fullName}</div>
+                          <span className="text-[11px] text-slate-500 font-normal">{t.title || 'Cán bộ giáo viên'}</span>
+                        </div>
+                      </div>
                     </td>
-                    <td className="py-3 px-4 font-mono text-slate-600">{t.email}</td>
-                    <td className="py-3 px-4 text-center">
-                      <span
-                        className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                          t.role === 'ADMIN'
-                            ? 'bg-purple-100 text-purple-800 border border-purple-300'
-                            : isPending
-                            ? 'bg-amber-100 text-amber-800 border border-amber-300'
-                            : 'bg-blue-100 text-blue-800 border border-blue-300'
-                        }`}
-                      >
-                        {t.role === 'ADMIN' ? 'Quản Trị Viên (Admin)' : isPending ? 'Chờ Duyệt' : 'Giáo Viên'}
+                    <td className="py-3 px-4 text-slate-600">
+                      <div className="font-mono text-xs text-slate-700">{t.email}</div>
+                      {t.phone && <div className="text-[11px] text-slate-400 font-mono mt-0.5">📞 {t.phone}</div>}
+                    </td>
+                    <td className="py-3 px-4 text-slate-700 font-medium">
+                      <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md text-[11px]">
+                        {t.department || 'Tổ Chuyên môn'}
                       </span>
                     </td>
                     <td className="py-3 px-4 text-center">
-                      {t.role === 'ADMIN' ? (
-                        <span className="font-bold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-lg border border-purple-200">
-                          Toàn bộ trường
+                      {t.role === 'ADMIN_TEACHER' ? (
+                        <span className="inline-flex items-center gap-1 bg-gradient-to-r from-amber-100 to-purple-100 text-purple-900 border border-purple-300 px-2.5 py-1 rounded-full font-bold text-[10px]">
+                          <Crown className="w-3 h-3 text-amber-600" />
+                          <span>BGH kiêm GVCN</span>
+                        </span>
+                      ) : t.role === 'ADMIN' ? (
+                        <span className="inline-flex items-center gap-1 bg-purple-100 text-purple-800 border border-purple-300 px-2.5 py-1 rounded-full font-bold text-[10px]">
+                          <ShieldCheck className="w-3 h-3 text-purple-600" />
+                          <span>Admin Quản Trị</span>
+                        </span>
+                      ) : isPending ? (
+                        <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-800 border border-amber-300 px-2.5 py-1 rounded-full font-bold text-[10px]">
+                          <span>Chờ Phê Duyệt</span>
                         </span>
                       ) : (
-                        <select
-                          value={t.assignedClassName?.replace('Lớp ', '') || '4A1'}
-                          onChange={(e) => handleReassignTeacher(t.id, `Lớp ${e.target.value}`)}
-                          className="px-2.5 py-1 rounded-lg border border-slate-300 bg-white font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                        >
-                          {schoolClasses.map((c) => (
-                            <option key={c.id} value={c.name}>
-                              Lớp {c.name}
-                            </option>
-                          ))}
-                        </select>
+                        <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 border border-blue-300 px-2.5 py-1 rounded-full font-bold text-[10px]">
+                          <span>Giáo Viên CN</span>
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      {t.assignedClassName ? (
+                        <span className="font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200">
+                          {t.assignedClassName}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 text-[11px]">Không chủ nhiệm</span>
                       )}
                     </td>
                     <td className="py-3 px-4 text-center">
@@ -618,12 +735,19 @@ export default function AdminPortalPage() {
                         </span>
                       )}
                     </td>
-                    <td className="py-3 px-4 text-right">
+                    <td className="py-3 px-4 text-right space-x-1">
+                      <button
+                        onClick={() => handleOpenTeacherModal(t)}
+                        className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        title="Cập nhật quyền & phân công"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
                       {t.email !== 'anhnnh4@gmail.com' && (
                         <button
                           onClick={() => deleteTeacher(t.id)}
                           className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                          title="Xóa quyền giáo viên"
+                          title="Xóa tài khoản"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -648,22 +772,22 @@ export default function AdminPortalPage() {
             <form onSubmit={handleSaveClass} className="space-y-3 text-xs">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Tên Lớp</label>
+                  <label className="block font-semibold text-slate-700 mb-1">Tên Lớp (*)</label>
                   <input
                     type="text"
                     required
                     placeholder="Ví dụ: 4A2"
                     value={classForm.name}
                     onChange={(e) => setClassForm({ ...classForm, name: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 font-bold focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Khối Lớp</label>
+                  <label className="block font-semibold text-slate-700 mb-1">Khối Lớp (*)</label>
                   <select
                     value={classForm.grade}
                     onChange={(e) => setClassForm({ ...classForm, grade: Number(e.target.value) as GradeLevel })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 font-bold focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   >
                     <option value={1}>Khối 1</option>
                     <option value={2}>Khối 2</option>
@@ -675,38 +799,38 @@ export default function AdminPortalPage() {
               </div>
 
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Giáo Viên Chủ Nhiệm</label>
+                <label className="block font-semibold text-slate-700 mb-1">Giáo Viên Chủ Nhiệm (*)</label>
                 <input
                   type="text"
                   required
-                  placeholder="Cô Trần Thu Hà"
+                  placeholder="Ví dụ: Cô Nguyễn Thị Mai"
                   value={classForm.teacherName}
                   onChange={(e) => setClassForm({ ...classForm, teacherName: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Số Hàng Ghế (Sơ đồ)</label>
+                  <label className="block font-semibold text-slate-700 mb-1">Số hàng ghế</label>
                   <input
                     type="number"
                     min={3}
-                    max={10}
+                    max={8}
                     value={classForm.seatingGridRows}
                     onChange={(e) => setClassForm({ ...classForm, seatingGridRows: Number(e.target.value) })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-slate-900"
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Số Cột Ghế (Sơ đồ)</label>
+                  <label className="block font-semibold text-slate-700 mb-1">Số cột ghế</label>
                   <input
                     type="number"
                     min={4}
                     max={12}
                     value={classForm.seatingGridCols}
                     onChange={(e) => setClassForm({ ...classForm, seatingGridCols: Number(e.target.value) })}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-slate-900"
                   />
                 </div>
               </div>
@@ -731,63 +855,188 @@ export default function AdminPortalPage() {
         </div>
       )}
 
-      {/* Modal Add Teacher */}
+      {/* Modal Add / Edit Teacher & Staff Role */}
       {isTeacherModalOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
-            <h3 className="text-base font-bold text-slate-900">Thêm & Phân Công Giáo Viên Mới</h3>
-
-            <form onSubmit={handleCreateTeacher} className="space-y-3 text-xs">
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Họ và Tên Giáo Viên</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Cô Lê Thị Mai"
-                  value={teacherFullName}
-                  onChange={(e) => setTeacherFullName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                />
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center space-x-2.5 border-b border-slate-100 pb-3">
+              <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                <Users className="w-5 h-5" />
               </div>
-
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Email Google / Đăng Nhập</label>
-                <input
-                  type="email"
-                  required
-                  placeholder="giaovien@gmail.com"
-                  value={teacherEmail}
-                  onChange={(e) => setTeacherEmail(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono"
-                />
+                <h3 className="text-base font-bold text-slate-900">
+                  {editingTeacher ? `Cập Nhật Quyền: ${editingTeacher.fullName}` : 'Thêm Cán Bộ / Giáo Viên Mới'}
+                </h3>
+                <p className="text-xs text-slate-500">Phân quyền quản trị và phân công lớp học chủ nhiệm</p>
               </div>
+            </div>
 
-              <div className="grid grid-cols-2 gap-2">
+            <form onSubmit={handleSaveTeacher} className="space-y-3.5 text-xs">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Vai Trò</label>
-                  <select
-                    value={teacherRole}
-                    onChange={(e) => setTeacherRole(e.target.value as UserRole)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold"
-                  >
-                    <option value="TEACHER">Giáo Viên</option>
-                    <option value="ADMIN">Quản Trị Viên (Admin)</option>
-                  </select>
+                  <label className="block font-semibold text-slate-700 mb-1">Họ và Tên (*)</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ví dụ: Thầy Nguyễn Văn A"
+                    value={teacherForm.fullName}
+                    onChange={(e) => setTeacherForm({ ...teacherForm, fullName: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
                 </div>
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Phân Công Lớp</label>
+                  <label className="block font-semibold text-slate-700 mb-1">Email Đăng Nhập (*)</label>
+                  <input
+                    type="email"
+                    required
+                    disabled={!!editingTeacher}
+                    placeholder="email@school.edu.vn"
+                    value={teacherForm.email}
+                    onChange={(e) => setTeacherForm({ ...teacherForm, email: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:bg-slate-100 disabled:text-slate-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Chức Vụ / Vị Trí</label>
+                  <input
+                    type="text"
+                    placeholder="Ví dụ: Hiệu trưởng, Tổ trưởng Khối 4, GVCN..."
+                    value={teacherForm.title}
+                    onChange={(e) => setTeacherForm({ ...teacherForm, title: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Tổ Chuyên Môn / Phòng Ban</label>
                   <select
-                    value={teacherAssignedClass}
-                    onChange={(e) => setTeacherAssignedClass(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold"
+                    value={teacherForm.department}
+                    onChange={(e) => setTeacherForm({ ...teacherForm, department: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 font-semibold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
                   >
-                    {schoolClasses.map((c) => (
-                      <option key={c.id} value={c.name}>
-                        Lớp {c.name}
+                    {DEPARTMENTS.filter((d) => d !== 'Tất cả các tổ').map((d) => (
+                      <option key={d} value={d}>
+                        {d}
                       </option>
                     ))}
                   </select>
                 </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Số Điện Thoại</label>
+                <input
+                  type="text"
+                  placeholder="0912 345 678"
+                  value={teacherForm.phone}
+                  onChange={(e) => setTeacherForm({ ...teacherForm, phone: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              {/* ROLE SELECTION CARDS */}
+              <div className="space-y-1.5">
+                <label className="block font-bold text-slate-800">Quyền Hạn Hệ Thống (Role):</label>
+                <div className="grid grid-cols-1 gap-2">
+                  <label
+                    className={`p-3 rounded-xl border flex items-start space-x-3 cursor-pointer transition-all ${
+                      teacherForm.role === 'ADMIN_TEACHER'
+                        ? 'bg-purple-50 border-purple-400 ring-2 ring-purple-200'
+                        : 'bg-white border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="userRole"
+                      value="ADMIN_TEACHER"
+                      checked={teacherForm.role === 'ADMIN_TEACHER'}
+                      onChange={() => setTeacherForm({ ...teacherForm, role: 'ADMIN_TEACHER' })}
+                      className="mt-0.5 text-purple-600 focus:ring-purple-500"
+                    />
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <Crown className="w-4 h-4 text-amber-500" />
+                        <span className="font-bold text-purple-900 text-xs">Admin kiêm Giáo Viên Chủ Nhiệm (Khuyên dùng cho BGH)</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Vừa có toàn quyền Quản trị trường (`/admin`), vừa trực tiếp phụ trách 1 lớp chủ nhiệm cụ thể.
+                      </p>
+                    </div>
+                  </label>
+
+                  <label
+                    className={`p-3 rounded-xl border flex items-start space-x-3 cursor-pointer transition-all ${
+                      teacherForm.role === 'ADMIN'
+                        ? 'bg-purple-50 border-purple-400 ring-2 ring-purple-200'
+                        : 'bg-white border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="userRole"
+                      value="ADMIN"
+                      checked={teacherForm.role === 'ADMIN'}
+                      onChange={() => setTeacherForm({ ...teacherForm, role: 'ADMIN' })}
+                      className="mt-0.5 text-purple-600 focus:ring-purple-500"
+                    />
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <ShieldCheck className="w-4 h-4 text-purple-600" />
+                        <span className="font-bold text-slate-900 text-xs">Quản Trị Viên Toàn Trường (Chỉ Quản Lý BGH)</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Toàn quyền xem tất cả các lớp, thêm/sửa lớp, phân công giáo viên, không chủ nhiệm lớp riêng.
+                      </p>
+                    </div>
+                  </label>
+
+                  <label
+                    className={`p-3 rounded-xl border flex items-start space-x-3 cursor-pointer transition-all ${
+                      teacherForm.role === 'TEACHER'
+                        ? 'bg-blue-50 border-blue-400 ring-2 ring-blue-200'
+                        : 'bg-white border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="userRole"
+                      value="TEACHER"
+                      checked={teacherForm.role === 'TEACHER'}
+                      onChange={() => setTeacherForm({ ...teacherForm, role: 'TEACHER' })}
+                      className="mt-0.5 text-blue-600 focus:ring-blue-500"
+                    />
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <Users className="w-4 h-4 text-blue-600" />
+                        <span className="font-bold text-slate-900 text-xs">Giáo Viên Chủ Nhiệm (Teacher)</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        Chuyên trách quản lý nề nếp, điểm danh, thời khóa biểu và bảng đánh giá TT27 của lớp phụ trách.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              {/* CLASS ASSIGNMENT */}
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  Lớp Học Chủ Nhiệm Phụ Trách
+                </label>
+                <select
+                  value={teacherForm.assignedClassName}
+                  onChange={(e) => setTeacherForm({ ...teacherForm, assignedClassName: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
+                >
+                  <option value="">-- Không chủ nhiệm --</option>
+                  {schoolClasses.map((c) => (
+                    <option key={c.id} value={`Lớp ${c.name}`}>
+                      Lớp {c.name} (Khối {c.grade})
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">
@@ -800,9 +1049,10 @@ export default function AdminPortalPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs"
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs flex items-center gap-1.5"
                 >
-                  Cấp Quyền & Phân Công
+                  <Save className="w-4 h-4" />
+                  <span>{editingTeacher ? 'Cập Nhật Quyền Cán Bộ' : 'Thêm & Cấp Quyền'}</span>
                 </button>
               </div>
             </form>

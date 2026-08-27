@@ -19,13 +19,15 @@ export type AwardTitle =
   | 'Hoàn thành chương trình lớp học'
   | 'Chưa hoàn thành';
 
-export type UserRole = 'ADMIN' | 'TEACHER' | 'PENDING';
+export type UserRole = 'ADMIN' | 'TEACHER' | 'ADMIN_TEACHER' | 'PENDING';
 
 export interface TeacherProfile {
   id: string;
   email: string;
   fullName: string;
   role: UserRole;
+  title?: string; // Chức vụ: Hiệu trưởng, Phó Hiệu trưởng, Tổ trưởng Khối 4, GVCN, GV Bộ môn...
+  department?: string; // Tổ chuyên môn: Ban Giám Hiệu, Tổ Khối 1, Tổ Khối 4-5, Tổ Năng khiếu...
   assignedClassId?: string;
   assignedClassName?: string;
   phone?: string;

@@ -128,8 +128,11 @@ export async function parseTeacherExcelFile(file: File): Promise<TeacherProfile[
 
   const emailIndex = headers.findIndex((h) => h.includes('email') || h.includes('thư'));
   const nameIndex = headers.findIndex((h) => h.includes('họ và tên') || h.includes('họ tên') || h.includes('giáo viên') || h.includes('tên'));
-  const roleIndex = headers.findIndex((h) => h.includes('vai trò') || h.includes('role') || h.includes('chức vụ'));
+  const titleIndex = headers.findIndex((h) => h.includes('chức vụ') || h.includes('chức danh') || h.includes('vị trí'));
+  const deptIndex = headers.findIndex((h) => h.includes('tổ') || h.includes('phòng') || h.includes('khoa') || h.includes('chuyên môn'));
+  const roleIndex = headers.findIndex((h) => h.includes('vai trò') || h.includes('role') || h.includes('quyền'));
   const classIndex = headers.findIndex((h) => h.includes('lớp') || h.includes('class') || h.includes('phân công'));
+  const phoneIndex = headers.findIndex((h) => h.includes('điện thoại') || h.includes('sđt') || h.includes('phone'));
 
   const results: TeacherProfile[] = [];
 
@@ -145,19 +148,32 @@ export async function parseTeacherExcelFile(file: File): Promise<TeacherProfile[
     let role: UserRole = 'TEACHER';
     if (roleIndex !== -1 && row[roleIndex]) {
       const rStr = String(row[roleIndex]).toLowerCase();
-      if (rStr.includes('admin') || rStr.includes('quản trị') || rStr.includes('hiệu trưởng') || rStr.includes('bgh')) {
+      if (rStr.includes('admin_teacher') || (rStr.includes('admin') && rStr.includes('gvcn')) || (rStr.includes('kiêm') && rStr.includes('admin'))) {
+        role = 'ADMIN_TEACHER';
+      } else if (rStr.includes('admin') || rStr.includes('quản trị') || rStr.includes('hiệu trưởng') || rStr.includes('bgh')) {
         role = 'ADMIN';
       }
     }
 
-    const assignedClassName = classIndex !== -1 ? String(row[classIndex] || '').trim() : 'Lớp 1A1';
+    const title = titleIndex !== -1 ? String(row[titleIndex] || '').trim() : undefined;
+    const department = deptIndex !== -1 ? String(row[deptIndex] || '').trim() : undefined;
+    const phone = phoneIndex !== -1 ? String(row[phoneIndex] || '').trim() : undefined;
+    const rawClass = classIndex !== -1 ? String(row[classIndex] || '').trim() : '';
+    const assignedClassName = rawClass
+      ? rawClass.startsWith('Lớp') || rawClass.includes('Tất cả') || rawClass.includes('Không')
+        ? rawClass
+        : `Lớp ${rawClass}`
+      : undefined;
 
     results.push({
       id: `t-${Date.now()}-${results.length}`,
       email,
       fullName: fullName || email.split('@')[0],
       role,
-      assignedClassName: assignedClassName.startsWith('Lớp') ? assignedClassName : `Lớp ${assignedClassName}`,
+      title: title || (role === 'ADMIN' ? 'Ban Giám Hiệu' : role === 'ADMIN_TEACHER' ? 'BGH kiêm GVCN' : 'Giáo viên Chủ nhiệm'),
+      department: department || (role === 'ADMIN' ? 'Ban Giám Hiệu' : 'Tổ Chuyên môn'),
+      assignedClassName,
+      phone,
       isActive: true,
       createdAt: new Date().toISOString(),
     });
