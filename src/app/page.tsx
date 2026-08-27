@@ -141,17 +141,32 @@ export default function DashboardPage() {
     else canCoGangCount++;
   });
 
-  // Sao thi đua nề nếp
-  const totalClassStars = starLogs.reduce((sum, log) => sum + log.points, 0);
-  const studentStarMap: { [id: string]: number } = {};
-  starLogs.forEach((log) => {
-    studentStarMap[log.studentId] = (studentStarMap[log.studentId] || 0) + log.points;
-  });
+  // Sao thi đua nề nếp (chỉ tính cho học sinh thuộc lớp hiện tại)
+  const classStudentIds = useMemo(() => new Set(students.map((s) => s.id)), [students]);
+  const activeClassStarLogs = useMemo(
+    () => starLogs.filter((log) => classStudentIds.has(log.studentId)),
+    [starLogs, classStudentIds]
+  );
+  const totalClassStars = useMemo(
+    () => activeClassStarLogs.reduce((sum, log) => sum + log.points, 0),
+    [activeClassStarLogs]
+  );
 
-  const topStarStudents = [...students]
-    .map((s) => ({ ...s, stars: studentStarMap[s.id] || 0 }))
-    .sort((a, b) => b.stars - a.stars)
-    .slice(0, 5);
+  const studentStarMap = useMemo(() => {
+    const map: { [id: string]: number } = {};
+    activeClassStarLogs.forEach((log) => {
+      map[log.studentId] = (map[log.studentId] || 0) + log.points;
+    });
+    return map;
+  }, [activeClassStarLogs]);
+
+  const topStarStudents = useMemo(() => {
+    return [...students]
+      .map((s) => ({ ...s, stars: studentStarMap[s.id] || 0 }))
+      .filter((s) => s.stars > 0)
+      .sort((a, b) => b.stars - a.stars)
+      .slice(0, 5);
+  }, [students, studentStarMap]);
 
   // Quỹ lớp
   const fundIncome = transactions.filter((t) => t.type === 'INCOME').reduce((acc, t) => acc + t.amount, 0);
@@ -404,7 +419,13 @@ export default function DashboardPage() {
               <span className="text-xs font-normal text-slate-500">sao tích lũy</span>
             </h3>
             <p className="text-xs text-slate-500 mt-1.5 truncate">
-              Dẫn đầu: <strong className="text-slate-900">{topStarStudents[0]?.fullName || 'Lớp ' + classInfo.name}</strong>
+              {topStarStudents.length > 0 && topStarStudents[0].stars > 0 ? (
+                <>
+                  Dẫn đầu: <strong className="text-slate-900">{topStarStudents[0].fullName}</strong> ({topStarStudents[0].stars} ⭐)
+                </>
+              ) : (
+                <span className="text-slate-400">Chưa có sao nào được chấm</span>
+              )}
             </p>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 shadow-xs">
@@ -813,38 +834,46 @@ export default function DashboardPage() {
               </Link>
             </div>
 
-            <div className="space-y-2 text-xs">
-              {topStarStudents.map((st, i) => (
-                <div
-                  key={st.id}
-                  className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-50 border border-slate-100"
-                >
-                  <div className="flex items-center space-x-2.5">
-                    <span
-                      className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${
-                        i === 0
-                          ? 'bg-amber-400 text-white shadow-xs'
-                          : i === 1
-                          ? 'bg-slate-300 text-slate-700'
-                          : i === 2
-                          ? 'bg-amber-700/60 text-white'
-                          : 'bg-slate-100 text-slate-600'
-                      }`}
-                    >
-                      {i + 1}
-                    </span>
-                    <div>
-                      <p className="font-bold text-slate-900">{st.fullName}</p>
-                      <p className="text-[10px] text-slate-400">{st.tags?.[0] || 'Học sinh'}</p>
+            {topStarStudents.length > 0 ? (
+              <div className="space-y-2 text-xs">
+                {topStarStudents.map((st, i) => (
+                  <div
+                    key={st.id}
+                    className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-50 border border-slate-100"
+                  >
+                    <div className="flex items-center space-x-2.5">
+                      <span
+                        className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${
+                          i === 0
+                            ? 'bg-amber-400 text-white shadow-xs'
+                            : i === 1
+                            ? 'bg-slate-300 text-slate-700'
+                            : i === 2
+                            ? 'bg-amber-700/60 text-white'
+                            : 'bg-slate-100 text-slate-600'
+                        }`}
+                      >
+                        {i + 1}
+                      </span>
+                      <div>
+                        <p className="font-bold text-slate-900">{st.fullName}</p>
+                        <p className="text-[10px] text-slate-400">{st.tags?.[0] || 'Học sinh'}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-1 bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full text-xs font-bold border border-amber-300">
+                      <span>⭐</span>
+                      <span>{st.stars} sao</span>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-1 bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full text-xs font-bold border border-amber-300">
-                    <span>⭐</span>
-                    <span>{st.stars} sao</span>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-6 text-center text-slate-400 text-xs space-y-1">
+                <p className="text-2xl">⭐</p>
+                <p className="font-semibold text-slate-600">Chưa có điểm sao tuần này</p>
+                <p className="text-[11px] text-slate-400">Vào Quản lý Nề nếp để khen thưởng và cộng sao cho các em</p>
+              </div>
+            )}
           </div>
 
           {/* WIDGET 5: THỜI KHÓA BIỂU HÔM NAY */}

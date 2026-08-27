@@ -263,7 +263,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (isMounted) {
           setSession(session);
-          setUser(session?.user ?? null);
+          let currentUser = session?.user ?? null;
+          if (!currentUser && typeof window !== 'undefined') {
+            const mockEmail = localStorage.getItem('gvcn_mock_email');
+            if (mockEmail) {
+              currentUser = {
+                id: 'mock-user-hang-4a1',
+                app_metadata: {},
+                user_metadata: { full_name: 'Cô Nguyễn Thị Minh Hằng' },
+                aud: 'authenticated',
+                created_at: new Date().toISOString(),
+                email: mockEmail,
+              } as User;
+            }
+          }
+          setUser(currentUser);
           setLoading(false);
         }
       } catch (err) {

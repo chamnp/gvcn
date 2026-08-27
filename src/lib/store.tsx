@@ -767,6 +767,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteStudent = (id: string) => {
     setAllStudents((prev) => prev.filter((s) => s.id !== id));
+    setStarLogs((prev) => prev.filter((s) => s.studentId !== id));
+    setAttendances((prev) => prev.filter((a) => a.studentId !== id));
+    setSubjectAssessments((prev) => prev.filter((a) => a.studentId !== id));
+    setTraitAssessments((prev) => prev.filter((a) => a.studentId !== id));
+    setTermSummaries((prev) => prev.filter((a) => a.studentId !== id));
   };
 
   const importStudents = (
@@ -915,7 +920,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const clearClassStudents = () => {
+    const classStudentIds = new Set(
+      allStudents
+        .filter((s) => (s.classId || 'class-4a1') === activeClassId)
+        .map((s) => s.id)
+    );
     setAllStudents((prev) => prev.filter((s) => (s.classId || 'class-4a1') !== activeClassId));
+    setStarLogs((prev) => prev.filter((s) => !classStudentIds.has(s.studentId)));
+    setAttendances((prev) => prev.filter((a) => !classStudentIds.has(a.studentId)));
+    setSubjectAssessments((prev) => prev.filter((a) => !classStudentIds.has(a.studentId)));
+    setTraitAssessments((prev) => prev.filter((a) => !classStudentIds.has(a.studentId)));
+    setTermSummaries((prev) => prev.filter((a) => !classStudentIds.has(a.studentId)));
   };
 
   const loadDemoStudents = () => {

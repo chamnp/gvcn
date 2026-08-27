@@ -349,12 +349,7 @@ export const INITIAL_DAILY_ATTENDANCE: DailyAttendance[] = INITIAL_STUDENTS.map(
   reason: idx === 4 ? 'Bị sốt nhẹ, phụ huynh xin nghỉ' : undefined,
 }));
 
-export const INITIAL_STAR_LOGS: StarLog[] = [
-  { id: 'star-1', studentId: 'hs-01', points: 2, category: 'Phát biểu', reason: 'Tích cực phát biểu xây dựng bài', createdAt: new Date().toISOString() },
-  { id: 'star-2', studentId: 'hs-02', points: 3, category: 'Vở sạch chữ đẹp', reason: 'Bài viết đạt điểm 10 sạch đẹp', createdAt: new Date().toISOString() },
-  { id: 'star-3', studentId: 'hs-03', points: 1, category: 'Giúp bạn', reason: 'Hỗ trợ bạn cùng bàn giải bài khó', createdAt: new Date().toISOString() },
-  { id: 'star-4', studentId: 'hs-05', points: 2, category: 'Nề nếp', reason: 'Xếp hàng ngay ngắn, giữ vệ sinh chung', createdAt: new Date().toISOString() },
-];
+export const INITIAL_STAR_LOGS: StarLog[] = [];
 
 export const INITIAL_TRANSACTIONS = [
   {
