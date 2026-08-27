@@ -18,10 +18,15 @@ import {
   Lock,
   Eye,
   LogOut,
+  Upload,
+  Download,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useAuth } from '@/lib/auth-context';
 import { ClassInfo, GradeLevel, UserRole } from '@/types';
+import { parseTeacherExcelFile } from '@/lib/excel-import';
+import { downloadTeacherTemplate, exportTeacherList } from '@/lib/excel-export';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
@@ -154,6 +159,32 @@ export default function AdminPortalPage() {
     setIsTeacherModalOpen(false);
     setTeacherEmail('');
     setTeacherFullName('');
+  };
+
+  // Nhập danh sách giáo viên từ Excel
+  const handleTeacherExcelUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isAdmin) {
+      toast.error('Chỉ Ban Giám Hiệu mới có quyền nhập danh sách giáo viên!');
+      return;
+    }
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const parsedTeachers = await parseTeacherExcelFile(file);
+      if (parsedTeachers.length === 0) {
+        toast.error('Không tìm thấy danh sách giáo viên hợp lệ trong file');
+        return;
+      }
+
+      for (const t of parsedTeachers) {
+        await addTeacher(t.email, t.fullName, t.role, t.assignedClassName);
+      }
+      toast.success(`Đã nhập thành công ${parsedTeachers.length} giáo viên từ file Excel!`);
+    } catch (err) {
+      console.error(err);
+      toast.error('Lỗi khi đọc file Excel giáo viên. Vui lòng kiểm tra định dạng.');
+    }
   };
 
   // Thay đổi phân công lớp của giáo viên
@@ -415,13 +446,54 @@ export default function AdminPortalPage() {
             </p>
           </div>
 
-          <button
-            onClick={() => setIsTeacherModalOpen(true)}
-            className="inline-flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs transition-colors self-start sm:self-auto"
-          >
-            <UserPlus className="w-4 h-4" />
-            <span>Thêm Tài Khoản Giáo Viên</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Download Template Button */}
+            <button
+              onClick={() => {
+                downloadTeacherTemplate();
+                toast.success('Đã tải xuống file Excel mẫu phân công giáo viên!');
+              }}
+              className="inline-flex items-center space-x-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3 py-2 rounded-xl text-xs font-semibold border border-emerald-300 transition-colors"
+              title="Tải mẫu Excel chuẩn"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+              <span>Tải File Mẫu</span>
+            </button>
+
+            {/* Import Teachers Button */}
+            <label className="cursor-pointer inline-flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl text-xs font-semibold border border-slate-300 transition-colors">
+              <Upload className="w-4 h-4 text-slate-600" />
+              <span>Nhập Excel</span>
+              <input type="file" accept=".xlsx, .xls" onChange={handleTeacherExcelUpload} className="hidden" />
+            </label>
+
+            {/* Export Teachers Button */}
+            <button
+              onClick={() => {
+                exportTeacherList(teachers);
+                toast.success('Đã xuất danh sách giáo viên ra Excel!');
+              }}
+              className="inline-flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-xl text-xs font-semibold border border-slate-300 transition-colors"
+            >
+              <Download className="w-4 h-4 text-slate-600" />
+              <span>Xuất Excel</span>
+            </button>
+
+            {/* Add Teacher Button */}
+            <button
+              onClick={() => {
+                if (!isAdmin) {
+                  toast.error('Bạn cần quyền Ban Giám Hiệu để thêm giáo viên!');
+                  return;
+                }
+                setIsTeacherModalOpen(true);
+              }}
+              className="inline-flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs transition-colors"
+            >
+              <UserPlus className="w-4 h-4" />
+              <span>Thêm Giáo Viên</span>
+            </button>
+          </div>
         </div>
 
         <div className="overflow-x-auto border border-slate-200 rounded-xl">

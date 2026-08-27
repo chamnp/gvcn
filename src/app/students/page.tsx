@@ -22,6 +22,7 @@ import {
 import { useAppStore } from '@/lib/store';
 import { Student, Gender } from '@/types';
 import { parseStudentExcelFile } from '@/lib/excel-import';
+import { downloadStudentTemplate } from '@/lib/excel-export';
 import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
 
@@ -227,6 +228,19 @@ export default function StudentsPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* Download Template Button */}
+          <button
+            onClick={() => {
+              downloadStudentTemplate();
+              toast.success('Đã tải xuống file Excel mẫu danh sách học sinh!');
+            }}
+            className="inline-flex items-center space-x-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 px-3.5 py-2 rounded-xl text-xs font-semibold border border-emerald-300 transition-colors"
+            title="Tải mẫu Excel chuẩn để nhập dữ liệu"
+          >
+            <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+            <span>Tải File Mẫu</span>
+          </button>
+
           {/* Import Button */}
           <label className="cursor-pointer inline-flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3.5 py-2 rounded-xl text-xs font-semibold border border-slate-300 transition-colors">
             <Upload className="w-4 h-4 text-slate-600" />

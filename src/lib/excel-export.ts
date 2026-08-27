@@ -172,3 +172,127 @@ export function exportVnEduTemplate(
   const fileName = `VnEdu_Import_${classInfo.name}_${term}.xlsx`;
   XLSX.writeFile(workbook, fileName);
 }
+
+/**
+ * Tải file Excel mẫu danh sách học sinh để giáo viên điền nhanh
+ */
+export function downloadStudentTemplate() {
+  const headers = [
+    'STT',
+    'Mã học sinh',
+    'Họ và tên (*)',
+    'Giới tính (Nam/Nữ)',
+    'Ngày sinh (DD/MM/YYYY)',
+    'Họ tên Phụ huynh',
+    'SĐT Phụ huynh',
+    'Ăn bán trú (Có/Không)',
+    'Ghi chú sức khỏe / Năng khiếu',
+  ];
+
+  const sampleRows = [
+    [1, 'HS4A1-001', 'Nguyễn Văn An', 'Nam', '15/03/2016', 'Nguyễn Văn Hùng', '0912345678', 'Có', 'Cận thị 1.5 độ (ưu tiên bàn đầu)'],
+    [2, 'HS4A1-002', 'Trần Thị Mai Anh', 'Nữ', '20/05/2016', 'Trần Quốc Bảo', '0987654321', 'Có', 'Vở sạch chữ đẹp, múa hát'],
+    [3, 'HS4A1-003', 'Lê Hoàng Bách', 'Nam', '10/08/2016', 'Lê Văn Tuấn', '0903123456', 'Không', ''],
+  ];
+
+  const titleRows = [
+    ['MẪU DANH SÁCH HỌC SINH LỚP HỌC (GVCN PRO)'],
+    ['Hướng dẫn: Điền thông tin học sinh từ dòng 4. Các cột có dấu (*) là bắt buộc.'],
+    [],
+  ];
+
+  const worksheet = XLSX.utils.aoa_to_sheet([...titleRows, headers, ...sampleRows]);
+  worksheet['!cols'] = [
+    { wch: 8 },
+    { wch: 14 },
+    { wch: 24 },
+    { wch: 18 },
+    { wch: 22 },
+    { wch: 22 },
+    { wch: 16 },
+    { wch: 20 },
+    { wch: 35 },
+  ];
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Mau_DanhSach_HocSinh');
+  XLSX.writeFile(workbook, 'Mau_Nhap_Danh_Sach_Hoc_Sinh.xlsx');
+}
+
+/**
+ * Tải file Excel mẫu phân công giáo viên toàn trường
+ */
+export function downloadTeacherTemplate() {
+  const headers = [
+    'STT',
+    'Email đăng nhập (*)',
+    'Họ và tên giáo viên (*)',
+    'Vai trò (ADMIN / TEACHER)',
+    'Lớp phụ trách (*)',
+    'Ghi chú',
+  ];
+
+  const sampleRows = [
+    [1, 'hieutruong@chuvanan.edu.vn', 'Thầy Nguyễn Văn Nam', 'ADMIN', 'Tất cả các lớp', 'Ban Giám Hiệu'],
+    [2, 'cuc.tt@chuvanan.edu.vn', 'Cô Trần Thu Cúc', 'TEACHER', '1A1', 'GVCN Khối 1'],
+    [3, 'mai.nt@chuvanan.edu.vn', 'Cô Nguyễn Thị Mai', 'TEACHER', '4A1', 'GVCN Khối 4'],
+    [4, 'duc.hm@chuvanan.edu.vn', 'Thầy Hoàng Minh Đức', 'TEACHER', '5A1', 'GVCN Khối 5'],
+  ];
+
+  const titleRows = [
+    ['MẪU DANH SÁCH & PHÂN CÔNG GIÁO VIÊN TOÀN TRƯỜNG'],
+    ['Hướng dẫn: Vai trò nhập ADMIN (Ban Giám Hiệu) hoặc TEACHER (Giáo viên Chủ Nhiệm).'],
+    [],
+  ];
+
+  const worksheet = XLSX.utils.aoa_to_sheet([...titleRows, headers, ...sampleRows]);
+  worksheet['!cols'] = [
+    { wch: 8 },
+    { wch: 28 },
+    { wch: 24 },
+    { wch: 24 },
+    { wch: 18 },
+    { wch: 25 },
+  ];
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Mau_GiaoVien');
+  XLSX.writeFile(workbook, 'Mau_Phan_Cong_Giao_Vien.xlsx');
+}
+
+/**
+ * Xuất danh sách giáo viên toàn trường ra file Excel
+ */
+export function exportTeacherList(teachers: any[]) {
+  const headers = ['STT', 'Email Đăng Nhập', 'Họ và Tên', 'Vai Trò', 'Lớp Phụ Trách', 'Trạng Thái'];
+
+  const rows = teachers.map((t, i) => [
+    i + 1,
+    t.email,
+    t.fullName,
+    t.role === 'ADMIN' ? 'Ban Giám Hiệu (ADMIN)' : 'Giáo Viên Chủ Nhiệm (TEACHER)',
+    t.assignedClassName || 'Chưa phân công',
+    t.isActive ? 'Đang hoạt động' : 'Chờ duyệt',
+  ]);
+
+  const titleRows = [
+    ['DANH SÁCH GIÁO VIÊN & MA TRẬN PHÂN CÔNG LỚP HỌC'],
+    [`Thời gian xuất: ${new Date().toLocaleDateString('vi-VN')} - Tổng số: ${teachers.length} giáo viên`],
+    [],
+  ];
+
+  const worksheet = XLSX.utils.aoa_to_sheet([...titleRows, headers, ...rows]);
+  worksheet['!cols'] = [
+    { wch: 8 },
+    { wch: 28 },
+    { wch: 24 },
+    { wch: 28 },
+    { wch: 20 },
+    { wch: 18 },
+  ];
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'DanhSach_GiaoVien');
+  XLSX.writeFile(workbook, `Danh_Sach_Giao_Vien_${new Date().toISOString().split('T')[0]}.xlsx`);
+}
+

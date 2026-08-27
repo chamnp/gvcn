@@ -1,4 +1,4 @@
-import { ClassInfo, Student, SubjectAssessment, TraitAssessment, StudentTermSummary, DailyAttendance, StarLog } from '@/types';
+import { ClassInfo, Student, SubjectAssessment, TraitAssessment, StudentTermSummary, DailyAttendance, StarLog, HomeworkAssignment } from '@/types';
 
 export const INITIAL_SCHOOL_CLASSES: ClassInfo[] = [
   {
@@ -388,4 +388,48 @@ export const INITIAL_TRANSACTIONS = [
     createdAt: '2025-11-10T09:00:00Z',
   },
 ];
+
+export const INITIAL_HOMEWORKS: HomeworkAssignment[] = [
+  {
+    id: 'hw-1',
+    classId: 'class-4a1',
+    className: '4A1',
+    subjectCode: 'TOAN',
+    subjectName: 'Toán học',
+    title: 'Ôn tập Phép nhân với số có hai chữ số',
+    description: 'Làm bài 1, 2, 3 trang 54 Vở bài tập Toán tập 1. Chú ý tính cẩn thận hàng đơn vị và hàng chục.',
+    attachmentUrl: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?w=800&auto=format&fit=crop&q=80',
+    assignedDate: new Date().toISOString().split('T')[0],
+    dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+    reminderNotes: 'Mang theo thước kẻ và compa cho tiết Toán sáng mai.',
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'hw-2',
+    classId: 'class-4a1',
+    className: '4A1',
+    subjectCode: 'TIENG_VIET',
+    subjectName: 'Tiếng Việt',
+    title: 'Viết đoạn văn ngắn tả một đồ dùng học tập em yêu thích',
+    description: 'Viết đoạn văn từ 4-5 câu vào vở ô ly. Nêu đặc điểm, màu sắc và công dụng của đồ dùng đó. Rèn chữ viết hoa đầu câu.',
+    assignedDate: new Date().toISOString().split('T')[0],
+    dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+    reminderNotes: 'Soạn đúng Vở bài tập Tiếng Việt tập 1 vào cặp.',
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: 'hw-3',
+    classId: 'class-4a1',
+    className: '4A1',
+    subjectCode: 'NGOAI_NGU',
+    subjectName: 'Tiếng Anh',
+    title: 'Unit 4: My Classroom - Vocabulary & Audio Listen',
+    description: 'Học thuộc 6 từ mới về đồ dùng lớp học (pencil case, sharpener, ruler...). Luyện nghe audio bài hát Unit 4.',
+    assignedDate: new Date().toISOString().split('T')[0],
+    dueDate: new Date(Date.now() + 2 * 86400000).toISOString().split('T')[0],
+    reminderNotes: 'Mang sách tiếng Anh Global Success tập 1.',
+    createdAt: new Date().toISOString(),
+  },
+];
+
 

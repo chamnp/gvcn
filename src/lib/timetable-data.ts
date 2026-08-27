@@ -1,4 +1,4 @@
-import { DayOfWeek, TimetableSlot } from '@/types';
+import { DayOfWeek, TimetableSlot, CustomSubject } from '@/types';
 
 export interface DayInfo {
   id: DayOfWeek;
@@ -42,37 +42,62 @@ export interface SubjectTheme {
   bgColor: string;
   textColor: string;
   borderColor: string;
+  category?: 'CORE' | 'ENRICHMENT' | 'CLUB';
 }
 
-export const SUBJECT_THEMES: SubjectTheme[] = [
-  { code: 'CHAO_CO', name: 'Chào cờ (SHDC)', shortName: 'Chào cờ', icon: '🇻🇳', bgColor: 'bg-red-50', textColor: 'text-red-700', borderColor: 'border-red-200' },
-  { code: 'TIENG_VIET', name: 'Tiếng Việt', shortName: 'Tiếng Việt', icon: '📖', bgColor: 'bg-amber-50', textColor: 'text-amber-800', borderColor: 'border-amber-200' },
-  { code: 'TOAN', name: 'Toán học', shortName: 'Toán', icon: '📐', bgColor: 'bg-blue-50', textColor: 'text-blue-800', borderColor: 'border-blue-200' },
-  { code: 'NGOAI_NGU', name: 'Tiếng Anh', shortName: 'Tiếng Anh', icon: '🇬🇧', bgColor: 'bg-purple-50', textColor: 'text-purple-800', borderColor: 'border-purple-200' },
-  { code: 'KHOA_HOC', name: 'Khoa học', shortName: 'Khoa học', icon: '🔬', bgColor: 'bg-teal-50', textColor: 'text-teal-800', borderColor: 'border-teal-200' },
-  { code: 'LS_DL', name: 'Lịch sử & Địa lý', shortName: 'LS & ĐL', icon: '🌍', bgColor: 'bg-orange-50', textColor: 'text-orange-800', borderColor: 'border-orange-200' },
-  { code: 'DAO_DUC', name: 'Đạo đức', shortName: 'Đạo đức', icon: '💖', bgColor: 'bg-rose-50', textColor: 'text-rose-700', borderColor: 'border-rose-200' },
-  { code: 'TIN_HOC_CN', name: 'Tin học & Công nghệ', shortName: 'Tin & CN', icon: '💻', bgColor: 'bg-cyan-50', textColor: 'text-cyan-800', borderColor: 'border-cyan-200' },
-  { code: 'AM_NHAC', name: 'Âm nhạc', shortName: 'Âm nhạc', icon: '🎵', bgColor: 'bg-pink-50', textColor: 'text-pink-700', borderColor: 'border-pink-200' },
-  { code: 'MY_THUAT', name: 'Mỹ thuật', shortName: 'Mỹ thuật', icon: '🎨', bgColor: 'bg-yellow-50', textColor: 'text-yellow-800', borderColor: 'border-yellow-200' },
-  { code: 'GD_THE_CHAT', name: 'Giáo dục thể chất', shortName: 'Thể chất', icon: '⚽', bgColor: 'bg-emerald-50', textColor: 'text-emerald-800', borderColor: 'border-emerald-200' },
-  { code: 'HD_TRAI_NGHIEM', name: 'Hoạt động trải nghiệm', shortName: 'HĐTN', icon: '🌟', bgColor: 'bg-indigo-50', textColor: 'text-indigo-800', borderColor: 'border-indigo-200' },
-  { code: 'SINH_HOAT_LOP', name: 'Sinh hoạt lớp', shortName: 'SH Lớp', icon: '👥', bgColor: 'bg-slate-100', textColor: 'text-slate-800', borderColor: 'border-slate-300' },
-  { code: 'TU_HOC', name: 'Tự học có hướng dẫn', shortName: 'Tự học', icon: '✏️', bgColor: 'bg-sky-50', textColor: 'text-sky-800', borderColor: 'border-sky-200' },
+export const DEFAULT_SUBJECT_THEMES: SubjectTheme[] = [
+  { code: 'CHAO_CO', name: 'Chào cờ (SHDC)', shortName: 'Chào cờ', icon: '🇻🇳', bgColor: 'bg-red-50', textColor: 'text-red-700', borderColor: 'border-red-200', category: 'CORE' },
+  { code: 'TIENG_VIET', name: 'Tiếng Việt', shortName: 'Tiếng Việt', icon: '📖', bgColor: 'bg-amber-50', textColor: 'text-amber-800', borderColor: 'border-amber-200', category: 'CORE' },
+  { code: 'TOAN', name: 'Toán học', shortName: 'Toán', icon: '📐', bgColor: 'bg-blue-50', textColor: 'text-blue-800', borderColor: 'border-blue-200', category: 'CORE' },
+  { code: 'NGOAI_NGU', name: 'Tiếng Anh', shortName: 'Tiếng Anh', icon: '🇬🇧', bgColor: 'bg-purple-50', textColor: 'text-purple-800', borderColor: 'border-purple-200', category: 'CORE' },
+  { code: 'KHOA_HOC', name: 'Khoa học', shortName: 'Khoa học', icon: '🔬', bgColor: 'bg-teal-50', textColor: 'text-teal-800', borderColor: 'border-teal-200', category: 'CORE' },
+  { code: 'LS_DL', name: 'Lịch sử & Địa lý', shortName: 'LS & ĐL', icon: '🌍', bgColor: 'bg-orange-50', textColor: 'text-orange-800', borderColor: 'border-orange-200', category: 'CORE' },
+  { code: 'DAO_DUC', name: 'Đạo đức', shortName: 'Đạo đức', icon: '💖', bgColor: 'bg-rose-50', textColor: 'text-rose-700', borderColor: 'border-rose-200', category: 'CORE' },
+  { code: 'TIN_HOC_CN', name: 'Tin học & Công nghệ', shortName: 'Tin & CN', icon: '💻', bgColor: 'bg-cyan-50', textColor: 'text-cyan-800', borderColor: 'border-cyan-200', category: 'CORE' },
+  { code: 'AM_NHAC', name: 'Âm nhạc', shortName: 'Âm nhạc', icon: '🎵', bgColor: 'bg-pink-50', textColor: 'text-pink-700', borderColor: 'border-pink-200', category: 'CORE' },
+  { code: 'MY_THUAT', name: 'Mỹ thuật', shortName: 'Mỹ thuật', icon: '🎨', bgColor: 'bg-yellow-50', textColor: 'text-yellow-800', borderColor: 'border-yellow-200', category: 'CORE' },
+  { code: 'GD_THE_CHAT', name: 'Giáo dục thể chất', shortName: 'Thể chất', icon: '⚽', bgColor: 'bg-emerald-50', textColor: 'text-emerald-800', borderColor: 'border-emerald-200', category: 'CORE' },
+  { code: 'HD_TRAI_NGHIEM', name: 'Hoạt động trải nghiệm', shortName: 'HĐTN', icon: '🌟', bgColor: 'bg-indigo-50', textColor: 'text-indigo-800', borderColor: 'border-indigo-200', category: 'CORE' },
+  { code: 'SINH_HOAT_LOP', name: 'Sinh hoạt lớp', shortName: 'SH Lớp', icon: '👥', bgColor: 'bg-slate-100', textColor: 'text-slate-800', borderColor: 'border-slate-300', category: 'CORE' },
+  { code: 'TU_HOC', name: 'Tự học có hướng dẫn', shortName: 'Tự học', icon: '✏️', bgColor: 'bg-sky-50', textColor: 'text-sky-800', borderColor: 'border-sky-200', category: 'CORE' },
 ];
 
-export function getSubjectTheme(code: string): SubjectTheme {
-  return (
-    SUBJECT_THEMES.find((s) => s.code === code) || {
-      code,
-      name: code,
-      shortName: code,
-      icon: '📚',
-      bgColor: 'bg-slate-50',
-      textColor: 'text-slate-700',
-      borderColor: 'border-slate-200',
-    }
-  );
+export const INITIAL_CUSTOM_SUBJECTS: CustomSubject[] = [
+  { id: 'cs-1', code: 'STEM_ROBOTICS', name: 'STEM & Robotics', shortName: 'STEM', icon: '🤖', bgColor: 'bg-cyan-50', textColor: 'text-cyan-800', borderColor: 'border-cyan-200', category: 'ENRICHMENT' },
+  { id: 'cs-2', code: 'KY_NANG_SONG', name: 'Kỹ Năng Sống', shortName: 'KN Sống', icon: '🌱', bgColor: 'bg-emerald-50', textColor: 'text-emerald-800', borderColor: 'border-emerald-200', category: 'ENRICHMENT' },
+  { id: 'cs-3', code: 'TIENG_ANH_QT', name: 'Tiếng Anh Quốc Tế (GVNN)', shortName: 'Anh QT', icon: '🇬🇧', bgColor: 'bg-purple-50', textColor: 'text-purple-800', borderColor: 'border-purple-200', category: 'ENRICHMENT' },
+  { id: 'cs-4', code: 'LUYEN_CHU_DEP', name: 'Luyện Chữ Đẹp', shortName: 'Luyện Chữ', icon: '✍️', bgColor: 'bg-amber-50', textColor: 'text-amber-800', borderColor: 'border-amber-200', category: 'ENRICHMENT' },
+];
+
+export const SUBJECT_THEMES = DEFAULT_SUBJECT_THEMES;
+
+export function getSubjectTheme(code: string, customSubjects: CustomSubject[] = []): SubjectTheme {
+  const defaultTheme = DEFAULT_SUBJECT_THEMES.find((s) => s.code === code);
+  if (defaultTheme) return defaultTheme;
+
+  const custom = customSubjects.find((s) => s.code === code);
+  if (custom) {
+    return {
+      code: custom.code,
+      name: custom.name,
+      shortName: custom.shortName,
+      icon: custom.icon,
+      bgColor: custom.bgColor,
+      textColor: custom.textColor,
+      borderColor: custom.borderColor,
+      category: custom.category,
+    };
+  }
+
+  return {
+    code,
+    name: code,
+    shortName: code,
+    icon: '📚',
+    bgColor: 'bg-slate-50',
+    textColor: 'text-slate-700',
+    borderColor: 'border-slate-200',
+  };
 }
 
 // Thời khóa biểu chuẩn mẫu Khối 4 (Tiểu học 2 buổi/ngày - GDPT 2018)

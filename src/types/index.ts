@@ -158,3 +158,32 @@ export interface FundTransaction {
   createdAt: string;
 }
 
+export interface CustomSubject {
+  id: string;
+  code: string;
+  name: string;
+  shortName: string;
+  icon: string;
+  bgColor: string;
+  textColor: string;
+  borderColor: string;
+  category?: 'CORE' | 'ENRICHMENT' | 'CLUB';
+  isDefault?: boolean;
+}
+
+export interface HomeworkAssignment {
+  id: string;
+  classId: string;
+  className: string;
+  subjectCode: string;
+  subjectName: string;
+  title: string;
+  description: string;
+  attachmentUrl?: string; // Image or document URL / base64
+  assignedDate: string; // YYYY-MM-DD
+  dueDate: string; // YYYY-MM-DD
+  reminderNotes?: string; // Dặn dò chuẩn bị sách vở đồ dùng
+  createdAt: string;
+}
+
+

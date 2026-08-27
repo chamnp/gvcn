@@ -10,6 +10,8 @@ import {
   DailyAttendance,
   StarLog,
   FundTransaction,
+  CustomSubject,
+  HomeworkAssignment,
   TermType,
   SubjectLevel,
   TraitLevel,
@@ -24,9 +26,10 @@ import {
   INITIAL_DAILY_ATTENDANCE,
   INITIAL_STAR_LOGS,
   INITIAL_TRANSACTIONS,
+  INITIAL_HOMEWORKS,
 } from '@/data/mock-data';
 import { PRIMARY_SUBJECTS, TRAIT_DEFINITIONS, evaluateStudentTT27 } from './tt27-engine';
-import { INITIAL_TIMETABLE } from './timetable-data';
+import { INITIAL_TIMETABLE, INITIAL_CUSTOM_SUBJECTS } from './timetable-data';
 import { useAuth } from './auth-context';
 
 interface AppContextType {
@@ -53,11 +56,23 @@ interface AppContextType {
   apiKey: string;
   setApiKey: (key: string) => void;
 
+  // Custom Subjects Management
+  customSubjects: CustomSubject[];
+  addCustomSubject: (subject: Omit<CustomSubject, 'id'>) => void;
+  deleteCustomSubject: (id: string) => void;
+
   // Timetable
   timetable: TimetableSlot[];
   updateTimetableSlot: (day: DayOfWeek, period: number, subjectCode: string, subjectName: string, note?: string) => void;
   setTimetable: (slots: TimetableSlot[]) => void;
   resetTimetableToStandard: () => void;
+
+  // Homework Management
+  allHomeworks: HomeworkAssignment[];
+  homeworks: HomeworkAssignment[];
+  addHomework: (hw: Omit<HomeworkAssignment, 'id' | 'createdAt'>) => void;
+  updateHomework: (hw: HomeworkAssignment) => void;
+  deleteHomework: (id: string) => void;
 
   // Class Fund Management
   transactions: FundTransaction[];
@@ -129,6 +144,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [attendances, setAttendances] = useState<DailyAttendance[]>(INITIAL_DAILY_ATTENDANCE);
   const [starLogs, setStarLogs] = useState<StarLog[]>(INITIAL_STAR_LOGS);
   const [allTransactions, setAllTransactions] = useState<FundTransaction[]>(INITIAL_TRANSACTIONS);
+  const [customSubjects, setCustomSubjects] = useState<CustomSubject[]>(INITIAL_CUSTOM_SUBJECTS);
+  const [allHomeworks, setAllHomeworks] = useState<HomeworkAssignment[]>(INITIAL_HOMEWORKS);
   const [allTimetables, setAllTimetables] = useState<TimetableSlot[]>(
     INITIAL_TIMETABLE.map((t) => ({ ...t, classId: 'class-4a1' }))
   );
@@ -158,6 +175,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return allTransactions.filter((tx) => (tx.classId || 'class-4a1') === activeClassId);
   }, [allTransactions, activeClassId]);
 
+  // Scoped Homework for active class
+  const homeworks = useMemo(() => {
+    return allHomeworks.filter(
+      (hw) => (hw.classId || 'class-4a1') === activeClassId || hw.className === classInfo.name
+    );
+  }, [allHomeworks, activeClassId, classInfo.name]);
+
   const { profile } = useAuth();
 
   // Tự động chuyển lớp theo phân công của giáo viên khi đăng nhập
@@ -185,19 +209,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const savedStars = localStorage.getItem(STORAGE_PREFIX + 'starLogs');
       const savedTx = localStorage.getItem(STORAGE_PREFIX + 'transactions');
       const savedTt = localStorage.getItem(STORAGE_PREFIX + 'timetable');
+      const savedCs = localStorage.getItem(STORAGE_PREFIX + 'customSubjects');
+      const savedHw = localStorage.getItem(STORAGE_PREFIX + 'homeworks');
       const savedKey = localStorage.getItem(STORAGE_PREFIX + 'apiKey');
 
       if (savedClasses) setSchoolClasses(JSON.parse(savedClasses));
       if (savedActiveId) setActiveClassId(savedActiveId);
-      if (savedStudents) {
-        const parsedStudents: Student[] = JSON.parse(savedStudents);
-        setAllStudents(parsedStudents.map((s) => ({ ...s, classId: s.classId || 'class-4a1' })));
-      }
+      if (savedStudents) setAllStudents(JSON.parse(savedStudents));
       if (savedTerm) setCurrentTerm(savedTerm as TermType);
       if (savedAtt) setAttendances(JSON.parse(savedAtt));
       if (savedStars) setStarLogs(JSON.parse(savedStars));
       if (savedTx) setAllTransactions(JSON.parse(savedTx));
       if (savedTt) setAllTimetables(JSON.parse(savedTt));
+      if (savedCs) setCustomSubjects(JSON.parse(savedCs));
+      if (savedHw) setAllHomeworks(JSON.parse(savedHw));
       if (savedKey) setApiKey(savedKey);
 
       // Nếu chưa có bảng đánh giá, tự động sinh dữ liệu mẫu ban đầu cho các môn
@@ -274,6 +299,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem(STORAGE_PREFIX + 'starLogs', JSON.stringify(starLogs));
       localStorage.setItem(STORAGE_PREFIX + 'transactions', JSON.stringify(allTransactions));
       localStorage.setItem(STORAGE_PREFIX + 'timetable', JSON.stringify(allTimetables));
+      localStorage.setItem(STORAGE_PREFIX + 'customSubjects', JSON.stringify(customSubjects));
+      localStorage.setItem(STORAGE_PREFIX + 'homeworks', JSON.stringify(allHomeworks));
       localStorage.setItem(STORAGE_PREFIX + 'apiKey', apiKey);
     } catch (e) {
       console.warn('Error writing to localStorage:', e);
@@ -291,6 +318,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     starLogs,
     allTransactions,
     allTimetables,
+    customSubjects,
+    allHomeworks,
     apiKey,
   ]);
 
@@ -318,11 +347,62 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteClass = (classId: string) => {
     setSchoolClasses((prev) => prev.filter((c) => c.id !== classId));
-    setAllStudents((prev) => prev.filter((s) => s.classId !== classId));
     if (activeClassId === classId) {
       const remaining = schoolClasses.filter((c) => c.id !== classId);
       if (remaining.length > 0) setActiveClassId(remaining[0].id);
     }
+  };
+
+  // CUSTOM SUBJECT ACTIONS
+  const addCustomSubject = (subjectData: Omit<CustomSubject, 'id'>) => {
+    const newSub: CustomSubject = {
+      ...subjectData,
+      id: `cs-${Date.now()}`,
+    };
+    setCustomSubjects((prev) => [...prev, newSub]);
+  };
+
+  const deleteCustomSubject = (id: string) => {
+    setCustomSubjects((prev) => prev.filter((s) => s.id !== id));
+  };
+
+  // HOMEWORK ACTIONS
+  const addHomework = (hwData: Omit<HomeworkAssignment, 'id' | 'createdAt'>) => {
+    const newHw: HomeworkAssignment = {
+      ...hwData,
+      id: `hw-${Date.now()}`,
+      classId: hwData.classId || activeClassId,
+      className: hwData.className || classInfo.name,
+      createdAt: new Date().toISOString(),
+    };
+    setAllHomeworks((prev) => [newHw, ...prev]);
+  };
+
+  const updateHomework = (updated: HomeworkAssignment) => {
+    setAllHomeworks((prev) => prev.map((h) => (h.id === updated.id ? updated : h)));
+  };
+
+  const deleteHomework = (id: string) => {
+    setAllHomeworks((prev) => prev.filter((h) => h.id !== id));
+  };
+
+  // CLASS FUND ACTIONS
+  const addTransaction = (txData: Omit<FundTransaction, 'id' | 'createdAt'>) => {
+    const newTx: FundTransaction = {
+      ...txData,
+      id: `tx-${Date.now()}`,
+      classId: txData.classId || activeClassId,
+      createdAt: new Date().toISOString(),
+    };
+    setAllTransactions((prev) => [newTx, ...prev]);
+  };
+
+  const updateTransaction = (updated: FundTransaction) => {
+    setAllTransactions((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+  };
+
+  const deleteTransaction = (id: string) => {
+    setAllTransactions((prev) => prev.filter((t) => t.id !== id));
   };
 
   // TIMETABLE ACTIONS
@@ -334,13 +414,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     note?: string
   ) => {
     setAllTimetables((prev) => {
-      const idx = prev.findIndex((s) => (s.classId || 'class-4a1') === activeClassId && s.day === day && s.period === period);
+      const idx = prev.findIndex(
+        (s) => (s.classId || 'class-4a1') === activeClassId && s.day === day && s.period === period
+      );
       const session = period <= 4 ? 'MORNING' : 'AFTERNOON';
       if (idx >= 0) {
         const copy = [...prev];
         copy[idx] = {
           ...copy[idx],
-          classId: activeClassId,
           subjectCode,
           subjectName,
           note: note !== undefined ? note : copy[idx].note,
@@ -365,49 +446,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const setTimetable = (slots: TimetableSlot[]) => {
     setAllTimetables((prev) => {
-      const otherClassesSlots = prev.filter((s) => (s.classId || 'class-4a1') !== activeClassId);
-      const scopedSlots = slots.map((s) => ({ ...s, classId: activeClassId }));
-      return [...otherClassesSlots, ...scopedSlots];
+      const otherClasses = prev.filter((s) => (s.classId || 'class-4a1') !== activeClassId);
+      const taggedSlots = slots.map((s) => ({ ...s, classId: activeClassId }));
+      return [...otherClasses, ...taggedSlots];
     });
   };
 
   const resetTimetableToStandard = () => {
-    const scopedSlots = INITIAL_TIMETABLE.map((t) => ({ ...t, classId: activeClassId }));
-    setTimetable(scopedSlots);
-  };
-
-  // CLASS FUND ACTIONS
-  const addTransaction = (txData: Omit<FundTransaction, 'id' | 'createdAt'>) => {
-    const newTx: FundTransaction = {
-      ...txData,
-      id: `tx-${Date.now()}`,
-      classId: activeClassId,
-      createdAt: new Date().toISOString(),
-    };
-    setAllTransactions((prev) => [newTx, ...prev]);
-  };
-
-  const updateTransaction = (updated: FundTransaction) => {
-    setAllTransactions((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
-  };
-
-  const deleteTransaction = (id: string) => {
-    setAllTransactions((prev) => prev.filter((t) => t.id !== id));
+    setTimetable(INITIAL_TIMETABLE.map((t) => ({ ...t, classId: activeClassId })));
   };
 
   // STUDENT ACTIONS
   const addStudent = (studentData: Omit<Student, 'id' | 'createdAt'>) => {
     const newStudent: Student = {
       ...studentData,
-      id: `hs-${Date.now()}`,
       classId: activeClassId,
+      id: `hs-${Date.now()}`,
       createdAt: new Date().toISOString(),
     };
     setAllStudents((prev) => [...prev, newStudent]);
   };
 
   const updateStudent = (updated: Student) => {
-    setAllStudents((prev) => prev.map((s) => (s.id === updated.id ? { ...updated, classId: updated.classId || activeClassId } : s)));
+    setAllStudents((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
   };
 
   const deleteStudent = (id: string) => {
@@ -415,19 +476,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const importStudents = (imported: Partial<Student>[]) => {
-    const currentClassStudents = allStudents.filter((s) => (s.classId || 'class-4a1') === activeClassId);
     const newStudents: Student[] = imported.map((st, i) => ({
       id: `hs-${Date.now()}-${i}`,
       classId: activeClassId,
-      studentCode: st.studentCode || `HS-${classInfo.name}-${String(currentClassStudents.length + i + 1).padStart(3, '0')}`,
+      studentCode: st.studentCode || `HS-${classInfo.name}-${String(students.length + i + 1).padStart(3, '0')}`,
       fullName: st.fullName || 'Học sinh mới',
       gender: st.gender || 'Nam',
       dateOfBirth: st.dateOfBirth || '2016-01-01',
       parentName: st.parentName || '',
       parentPhone: st.parentPhone || '',
       isBoarding: st.isBoarding ?? true,
-      seatRow: Math.floor((currentClassStudents.length + i) / 8),
-      seatCol: (currentClassStudents.length + i) % 8,
+      seatRow: Math.floor((students.length + i) / 8),
+      seatCol: (students.length + i) % 8,
       healthNotes: st.healthNotes || '',
       tags: [],
       createdAt: new Date().toISOString(),
@@ -638,10 +698,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .reduce((sum, s) => sum + s.points, 0);
   };
 
-  // FULL SYSTEM BACKUP & RESTORE
+  // BACKUP & RESTORE
   const exportAllDataJSON = (): string => {
     const payload = {
-      version: '1.0.0',
+      version: '1.0',
       exportedAt: new Date().toISOString(),
       schoolClasses,
       activeClassId,
@@ -653,6 +713,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       starLogs,
       transactions: allTransactions,
       timetable: allTimetables,
+      customSubjects,
+      homeworks: allHomeworks,
       currentTerm,
     };
     return JSON.stringify(payload, null, 2);
@@ -675,6 +737,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (Array.isArray(data.starLogs)) setStarLogs(data.starLogs);
       if (Array.isArray(data.transactions)) setAllTransactions(data.transactions);
       if (Array.isArray(data.timetable)) setAllTimetables(data.timetable);
+      if (Array.isArray(data.customSubjects)) setCustomSubjects(data.customSubjects);
+      if (Array.isArray(data.homeworks)) setAllHomeworks(data.homeworks);
       if (data.currentTerm) setCurrentTerm(data.currentTerm);
 
       return { success: true };
@@ -691,6 +755,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAttendances(INITIAL_DAILY_ATTENDANCE);
     setStarLogs(INITIAL_STAR_LOGS);
     setAllTransactions(INITIAL_TRANSACTIONS);
+    setCustomSubjects(INITIAL_CUSTOM_SUBJECTS);
+    setAllHomeworks(INITIAL_HOMEWORKS);
     setAllTimetables(INITIAL_TIMETABLE.map((t) => ({ ...t, classId: 'class-4a1' })));
     window.location.reload();
   };
@@ -715,6 +781,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         termSummaries,
         attendances,
         starLogs,
+        customSubjects,
+        addCustomSubject,
+        deleteCustomSubject,
+        homeworks,
+        allHomeworks,
+        addHomework,
+        updateHomework,
+        deleteHomework,
         transactions,
         addTransaction,
         updateTransaction,
