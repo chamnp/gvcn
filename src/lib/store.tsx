@@ -157,7 +157,10 @@ interface AppContextType {
   addStudent: (student: Omit<Student, 'id' | 'createdAt'>) => void;
   updateStudent: (student: Student) => void;
   deleteStudent: (id: string) => void;
-  importStudents: (newStudents: Partial<Student>[]) => void;
+  importStudents: (
+    newStudents: Partial<Student>[],
+    mode?: 'upsert' | 'replace' | 'append'
+  ) => { added: number; updated: number };
   clearClassStudents: () => void;
   loadDemoStudents: () => void;
   updateSeatPosition: (studentId: string, row: number, col: number) => void;
@@ -766,28 +769,149 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAllStudents((prev) => prev.filter((s) => s.id !== id));
   };
 
-  const importStudents = (imported: Partial<Student>[]) => {
-    const newStudents: Student[] = imported.map((st, i) => {
-      const studentId = `hs-${Date.now()}-${i}`;
-      return {
-        id: studentId,
-        classId: activeClassId,
-        studentCode: st.studentCode || `HS-${classInfo.name}-${String(students.length + i + 1).padStart(3, '0')}`,
-        fullName: st.fullName || 'Học sinh mới',
-        gender: st.gender || 'Nam',
-        dateOfBirth: st.dateOfBirth || '2016-01-01',
-        parentName: st.parentName || '',
-        parentPhone: st.parentPhone || '',
-        isBoarding: st.isBoarding ?? true,
-        seatRow: Math.floor((students.length + i) / 8),
-        seatCol: (students.length + i) % 8,
-        healthNotes: st.healthNotes || '',
-        tags: [],
-        shareToken: `s-${studentId}-${Math.random().toString(36).substring(2, 8)}`,
-        createdAt: new Date().toISOString(),
-      };
+  const importStudents = (
+    imported: Partial<Student>[],
+    mode: 'upsert' | 'replace' | 'append' = 'upsert'
+  ): { added: number; updated: number } => {
+    let addedCount = 0;
+    let updatedCount = 0;
+
+    const normalizeNameForMatch = (str?: string) =>
+      String(str || '')
+        .toLowerCase()
+        .replace(/đ/g, 'd')
+        .replace(/Đ/g, 'd')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]/g, '')
+        .trim();
+
+    if (mode === 'replace') {
+      const otherClassStudents = allStudents.filter(
+        (s) => (s.classId || 'class-4a1') !== activeClassId
+      );
+      const newStudents: Student[] = imported.map((st, i) => {
+        const studentId = `hs-${Date.now()}-${i}`;
+        return {
+          id: studentId,
+          classId: activeClassId,
+          studentCode: st.studentCode || `HS-${classInfo.name}-${String(i + 1).padStart(3, '0')}`,
+          fullName: st.fullName || 'Học sinh mới',
+          gender: st.gender || 'Nam',
+          dateOfBirth: st.dateOfBirth || '2016-01-01',
+          parentName: st.parentName || '',
+          parentPhone: st.parentPhone || '',
+          isBoarding: st.isBoarding ?? true,
+          seatRow: Math.floor(i / 8),
+          seatCol: i % 8,
+          healthNotes: st.healthNotes || '',
+          tags: [],
+          shareToken: `s-${studentId}-${Math.random().toString(36).substring(2, 8)}`,
+          createdAt: new Date().toISOString(),
+        };
+      });
+      setAllStudents([...otherClassStudents, ...newStudents]);
+      return { added: newStudents.length, updated: 0 };
+    }
+
+    if (mode === 'append') {
+      const newStudents: Student[] = imported.map((st, i) => {
+        const studentId = `hs-${Date.now()}-${i}`;
+        return {
+          id: studentId,
+          classId: activeClassId,
+          studentCode: st.studentCode || `HS-${classInfo.name}-${String(students.length + i + 1).padStart(3, '0')}`,
+          fullName: st.fullName || 'Học sinh mới',
+          gender: st.gender || 'Nam',
+          dateOfBirth: st.dateOfBirth || '2016-01-01',
+          parentName: st.parentName || '',
+          parentPhone: st.parentPhone || '',
+          isBoarding: st.isBoarding ?? true,
+          seatRow: Math.floor((students.length + i) / 8),
+          seatCol: (students.length + i) % 8,
+          healthNotes: st.healthNotes || '',
+          tags: [],
+          shareToken: `s-${studentId}-${Math.random().toString(36).substring(2, 8)}`,
+          createdAt: new Date().toISOString(),
+        };
+      });
+      setAllStudents((prev) => [...prev, ...newStudents]);
+      return { added: newStudents.length, updated: 0 };
+    }
+
+    // Default: 'upsert' (Cập nhật thông tin nếu học sinh đã tồn tại, thêm mới nếu chưa có)
+    setAllStudents((prev) => {
+      const currentClassStudents = prev.filter(
+        (s) => (s.classId || 'class-4a1') === activeClassId
+      );
+      const otherClassStudents = prev.filter(
+        (s) => (s.classId || 'class-4a1') !== activeClassId
+      );
+
+      const updatedClassStudents = [...currentClassStudents];
+
+      imported.forEach((st, i) => {
+        const normImportName = normalizeNameForMatch(st.fullName);
+        const importCode = st.studentCode ? st.studentCode.toLowerCase().trim() : '';
+
+        const existingIndex = updatedClassStudents.findIndex((existing) => {
+          const existCode = existing.studentCode ? existing.studentCode.toLowerCase().trim() : '';
+          const normExistName = normalizeNameForMatch(existing.fullName);
+
+          if (importCode && existCode && importCode === existCode) {
+            return true;
+          }
+          if (normImportName && normExistName && normImportName === normExistName) {
+            if (st.dateOfBirth && existing.dateOfBirth && st.dateOfBirth === existing.dateOfBirth) {
+              return true;
+            }
+            return true;
+          }
+          return false;
+        });
+
+        if (existingIndex !== -1) {
+          const existing = updatedClassStudents[existingIndex];
+          updatedClassStudents[existingIndex] = {
+            ...existing,
+            studentCode: st.studentCode || existing.studentCode,
+            fullName: st.fullName || existing.fullName,
+            gender: st.gender || existing.gender,
+            dateOfBirth: st.dateOfBirth || existing.dateOfBirth,
+            parentName: st.parentName !== undefined && st.parentName !== '' ? st.parentName : existing.parentName,
+            parentPhone: st.parentPhone !== undefined && st.parentPhone !== '' ? st.parentPhone : existing.parentPhone,
+            isBoarding: st.isBoarding !== undefined ? st.isBoarding : existing.isBoarding,
+            healthNotes: st.healthNotes !== undefined && st.healthNotes !== '' ? st.healthNotes : existing.healthNotes,
+          };
+          updatedCount++;
+        } else {
+          const studentId = `hs-${Date.now()}-${i}`;
+          const newStudent: Student = {
+            id: studentId,
+            classId: activeClassId,
+            studentCode: st.studentCode || `HS-${classInfo.name}-${String(updatedClassStudents.length + 1).padStart(3, '0')}`,
+            fullName: st.fullName || 'Học sinh mới',
+            gender: st.gender || 'Nam',
+            dateOfBirth: st.dateOfBirth || '2016-01-01',
+            parentName: st.parentName || '',
+            parentPhone: st.parentPhone || '',
+            isBoarding: st.isBoarding ?? true,
+            seatRow: Math.floor(updatedClassStudents.length / 8),
+            seatCol: updatedClassStudents.length % 8,
+            healthNotes: st.healthNotes || '',
+            tags: [],
+            shareToken: `s-${studentId}-${Math.random().toString(36).substring(2, 8)}`,
+            createdAt: new Date().toISOString(),
+          };
+          updatedClassStudents.push(newStudent);
+          addedCount++;
+        }
+      });
+
+      return [...otherClassStudents, ...updatedClassStudents];
     });
-    setAllStudents((prev) => [...prev, ...newStudents]);
+
+    return { added: addedCount, updated: updatedCount };
   };
 
   const clearClassStudents = () => {

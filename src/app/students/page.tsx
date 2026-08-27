@@ -219,8 +219,14 @@ export default function StudentsPage() {
         toast.error('Không tìm thấy danh sách học sinh hợp lệ trong file Excel. Vui lòng kiểm tra lại file hoặc dùng file mẫu của app!');
         return;
       }
-      importStudents(parsed);
-      toast.success(`Đã nhập thành công ${parsed.length} học sinh từ file Excel vào lớp ${classInfo.name}!`);
+      const result = importStudents(parsed, 'upsert');
+      if (result && result.updated > 0 && result.added > 0) {
+        toast.success(`Đã cập nhật thông tin ${result.updated} học sinh và thêm mới ${result.added} học sinh vào lớp ${classInfo.name}!`);
+      } else if (result && result.updated > 0) {
+        toast.success(`Đã cập nhật/đồng bộ thông tin cho ${result.updated} học sinh lớp ${classInfo.name}!`);
+      } else {
+        toast.success(`Đã nhập thành công ${result?.added || parsed.length} học sinh từ file Excel vào lớp ${classInfo.name}!`);
+      }
     } catch (err: any) {
       toast.error(`Lỗi đọc file Excel: ${err.message || 'Vui lòng kiểm tra định dạng file'}`);
     }
