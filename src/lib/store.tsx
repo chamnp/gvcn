@@ -340,9 +340,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const updated = prev.map((cls) => {
           const matchedTeacher = teachers.find(
             (t) =>
-              t.assignedClassId === cls.id ||
-              (t.assignedClassName &&
-                t.assignedClassName.replace('Lớp ', '').trim().toLowerCase() === cls.name.toLowerCase())
+              t.role === 'TEACHER' &&
+              (t.assignedClassId === cls.id ||
+                (t.assignedClassName &&
+                  t.assignedClassName.replace('Lớp ', '').trim().toLowerCase() === cls.name.toLowerCase()))
           );
           if (matchedTeacher && matchedTeacher.fullName && matchedTeacher.fullName !== cls.teacherName) {
             hasDiff = true;
@@ -367,7 +368,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Đồng bộ Giáo viên Chủ nhiệm của lớp đang chọn với profile người dùng nếu là GVCN lớp đó
   useEffect(() => {
-    if (profile && profile.fullName && profile.fullName.trim() !== '') {
+    if (profile && profile.role === 'TEACHER' && profile.fullName && profile.fullName.trim() !== '') {
       if (
         profile.assignedClassId === activeClassId ||
         profile.assignedClassName?.replace('Lớp ', '').trim().toLowerCase() === classInfo.name.toLowerCase()
@@ -426,7 +427,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           return {
             ...c,
             totalStudents: is4A1 ? 55 : c.totalStudents || initialMatch?.totalStudents || 35,
-            teacherName: is4A1 && (!c.teacherName || c.teacherName === 'Cô Nguyễn Thị Mai') ? 'Cô Nguyễn Thị Minh Hằng' : c.teacherName || initialMatch?.teacherName || 'Giáo viên',
+            teacherName: is4A1 && (!c.teacherName || c.teacherName === 'Cô Nguyễn Thị Mai' || c.teacherName === 'Cô Nguyễn Ngọc Ánh') ? 'Cô Nguyễn Thị Minh Hằng' : c.teacherName || initialMatch?.teacherName || 'Giáo viên',
             schoolName: c.schoolName === 'Trường Tiểu học Chu Văn An' ? INITIAL_SCHOOL_INFO.name : c.schoolName || INITIAL_SCHOOL_INFO.name,
             schoolYear: c.schoolYear === '2025-2026' ? '2026-2027' : c.schoolYear || '2026-2027',
             shareToken: c.shareToken || initialMatch?.shareToken || `c${cleanName}-${Math.random().toString(36).substring(2, 8)}`,

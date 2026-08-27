@@ -52,22 +52,6 @@ export default function StudentLookupPortal() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
-  // Quick 1-Click Demo Fill
-  const handleFillDemo = () => {
-    const targetClass = schoolClasses.find((c) => c.id === 'class-4a1') || schoolClasses[0];
-    if (targetClass) setSelectedClassId(targetClass.id);
-
-    const demoStudent = allStudents.find(
-      (s) => (s.classId || 'class-4a1') === (targetClass?.id || 'class-4a1')
-    );
-
-    if (demoStudent) {
-      setStudentIdentifierInput(demoStudent.fullName);
-      setPinInput(getDefaultPinForStudent(demoStudent));
-      toast.success(`Đã tự động điền học sinh mẫu: ${demoStudent.fullName} (Mã PIN: ${getDefaultPinForStudent(demoStudent)})`);
-    }
-  };
-
   // Handle Verify & Navigate
   const handleVerify = (e: React.FormEvent) => {
     e.preventDefault();
@@ -172,23 +156,6 @@ export default function StudentLookupPortal() {
             <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
               Nhập họ tên con và ngày sinh để xem phiếu báo điểm định kỳ, lời nhận xét của cô giáo và lịch học.
             </p>
-          </div>
-
-          {/* QUICK DEMO BUTTON (1-CLICK TEST) */}
-          <div className="bg-gradient-to-r from-amber-50 to-orange-50 p-2.5 rounded-2xl border border-amber-200/80 flex items-center justify-between text-xs text-amber-900">
-            <div className="flex items-center space-x-2 min-w-0 text-left">
-              <span className="text-base shrink-0">✨</span>
-              <span className="text-[11px] leading-tight truncate">
-                Dùng thử nhanh dữ liệu mẫu
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={handleFillDemo}
-              className="bg-white hover:bg-amber-100/60 text-amber-800 font-black text-[11px] px-3 py-1 rounded-xl border border-amber-300 shadow-2xs transition-colors shrink-0 cursor-pointer"
-            >
-              Điền Mẫu 1-Chạm
-            </button>
           </div>
 
           {/* LOOKUP FORM */}

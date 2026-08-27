@@ -1207,8 +1207,8 @@ export const INITIAL_REDEMPTIONS: RewardRedemption[] = [
   {
     id: 'rd-1',
     classId: 'class-4a1',
-    studentId: 'hs-01',
-    studentName: 'Nguyễn Văn An',
+    studentId: 'hs-4a1-001',
+    studentName: 'Vũ Huệ An',
     studentCode: 'HS4A1-001',
     items: [
       {
@@ -1235,8 +1235,8 @@ export const INITIAL_REDEMPTIONS: RewardRedemption[] = [
   {
     id: 'rd-2',
     classId: 'class-4a1',
-    studentId: 'hs-02',
-    studentName: 'Trần Thị Mai Anh',
+    studentId: 'hs-4a1-002',
+    studentName: 'Đào Châm Anh',
     studentCode: 'HS4A1-002',
     items: [
       {
@@ -1257,47 +1257,47 @@ export const INITIAL_REDEMPTIONS: RewardRedemption[] = [
 ];
 
 export const INITIAL_STAR_LOGS: StarLog[] = [
-  // Top 1: hs-01 Nguyễn Văn An (24 ⭐)
-  { id: 'sl-1', studentId: 'hs-01', points: 3, category: 'Phẩm chất', reason: 'Trung thực, nhặt được của rơi trả lại', comment: 'Rất đáng khen ngợi tinh thần thật thà!', date: '2026-08-10', createdAt: '2026-08-10T08:00:00Z' },
-  { id: 'sl-2', studentId: 'hs-01', points: 2, category: 'Học tập', reason: 'Làm bài xuất sắc / Đạt điểm 9-10', comment: 'Điểm 10 môn Toán bài kiểm tra 15 phút', date: '2026-08-12', createdAt: '2026-08-12T09:30:00Z' },
-  { id: 'sl-3', studentId: 'hs-01', points: 2, category: 'Học tập', reason: 'Vở sạch chữ đẹp / Chữ mẫu mực', comment: 'Chữ viết đều đẹp, giữ gìn vở cẩn thận', date: '2026-08-15', createdAt: '2026-08-15T10:00:00Z' },
-  { id: 'sl-4', studentId: 'hs-01', points: 2, category: 'Nề nếp', reason: 'Xếp hàng & nề nếp gương mẫu', comment: 'Lớp trưởng gương mẫu quản lý lớp tốt', date: '2026-08-18', createdAt: '2026-08-18T14:00:00Z' },
-  { id: 'sl-5', studentId: 'hs-01', points: 2, category: 'Học tập', reason: 'Tiến bộ vượt bậc môn Toán/Tiếng Việt', comment: 'Giải toán nhanh và chính xác', date: '2026-08-20', createdAt: '2026-08-20T08:30:00Z' },
-  { id: 'sl-6', studentId: 'hs-01', points: 2, category: 'Phẩm chất', reason: 'Giúp đỡ bạn bè cùng tiến bộ', comment: 'Hướng dẫn bạn học nhóm rất nhiệt tình', date: '2026-08-22', createdAt: '2026-08-22T15:00:00Z' },
-  { id: 'sl-7', studentId: 'hs-01', points: 1, category: 'Học tập', reason: 'Phát biểu hăng hái xây dựng bài', comment: 'Hăng hái giơ tay trong tiết Khoa học', date: '2026-08-24', createdAt: '2026-08-24T09:00:00Z' },
-  { id: 'sl-8', studentId: 'hs-01', points: 10, category: 'Khen thưởng', reason: 'Học sinh xuất sắc tuần 3', comment: 'Dẫn đầu phong trào thi đua tuần', date: '2026-08-26', createdAt: '2026-08-26T16:00:00Z' },
+  // Top 1: hs-4a1-001 Vũ Huệ An (24 ⭐)
+  { id: 'sl-1', studentId: 'hs-4a1-001', points: 3, category: 'Phẩm chất', reason: 'Trung thực, nhặt được của rơi trả lại', comment: 'Rất đáng khen ngợi tinh thần thật thà!', date: '2026-08-10', createdAt: '2026-08-10T08:00:00Z' },
+  { id: 'sl-2', studentId: 'hs-4a1-001', points: 2, category: 'Học tập', reason: 'Làm bài xuất sắc / Đạt điểm 9-10', comment: 'Điểm 10 môn Toán bài kiểm tra 15 phút', date: '2026-08-12', createdAt: '2026-08-12T09:30:00Z' },
+  { id: 'sl-3', studentId: 'hs-4a1-001', points: 2, category: 'Học tập', reason: 'Vở sạch chữ đẹp / Chữ mẫu mực', comment: 'Chữ viết đều đẹp, giữ gìn vở cẩn thận', date: '2026-08-15', createdAt: '2026-08-15T10:00:00Z' },
+  { id: 'sl-4', studentId: 'hs-4a1-001', points: 2, category: 'Nề nếp', reason: 'Xếp hàng & nề nếp gương mẫu', comment: 'Lớp trưởng gương mẫu quản lý lớp tốt', date: '2026-08-18', createdAt: '2026-08-18T14:00:00Z' },
+  { id: 'sl-5', studentId: 'hs-4a1-001', points: 2, category: 'Học tập', reason: 'Tiến bộ vượt bậc môn Toán/Tiếng Việt', comment: 'Giải toán nhanh và chính xác', date: '2026-08-20', createdAt: '2026-08-20T08:30:00Z' },
+  { id: 'sl-6', studentId: 'hs-4a1-001', points: 2, category: 'Phẩm chất', reason: 'Giúp đỡ bạn bè cùng tiến bộ', comment: 'Hướng dẫn bạn học nhóm rất nhiệt tình', date: '2026-08-22', createdAt: '2026-08-22T15:00:00Z' },
+  { id: 'sl-7', studentId: 'hs-4a1-001', points: 1, category: 'Học tập', reason: 'Phát biểu hăng hái xây dựng bài', comment: 'Hăng hái giơ tay trong tiết Khoa học', date: '2026-08-24', createdAt: '2026-08-24T09:00:00Z' },
+  { id: 'sl-8', studentId: 'hs-4a1-001', points: 10, category: 'Khen thưởng', reason: 'Học sinh xuất sắc tuần 3', comment: 'Dẫn đầu phong trào thi đua tuần', date: '2026-08-26', createdAt: '2026-08-26T16:00:00Z' },
 
-  // Top 2: hs-02 Trần Thị Mai Anh (21 ⭐)
-  { id: 'sl-9', studentId: 'hs-02', points: 2, category: 'Học tập', reason: 'Vở sạch chữ đẹp / Chữ mẫu mực', comment: 'Bài viết chính tả sạch đẹp không tẩy xóa', date: '2026-08-11', createdAt: '2026-08-11T09:00:00Z' },
-  { id: 'sl-10', studentId: 'hs-02', points: 2, category: 'Học tập', reason: 'Làm bài xuất sắc / Đạt điểm 9-10', comment: 'Bài kiểm tra đọc hiểu đạt điểm tối đa', date: '2026-08-14', createdAt: '2026-08-14T10:30:00Z' },
-  { id: 'sl-11', studentId: 'hs-02', points: 2, category: 'Phẩm chất', reason: 'Giúp đỡ bạn bè cùng tiến bộ', comment: 'Kèm bạn đọc bài diễn cảm rất chu đáo', date: '2026-08-16', createdAt: '2026-08-16T14:20:00Z' },
-  { id: 'sl-12', studentId: 'hs-02', points: 2, category: 'Nề nếp', reason: 'Xếp hàng & nề nếp gương mẫu', comment: 'Lớp phó học tập chăm ngoan', date: '2026-08-19', createdAt: '2026-08-19T08:45:00Z' },
-  { id: 'sl-13', studentId: 'hs-02', points: 1, category: 'Học tập', reason: 'Đọc diễn cảm / Kể chuyện sinh động', comment: 'Kể chuyện giọng truyền cảm, tự tin', date: '2026-08-21', createdAt: '2026-08-21T11:00:00Z' },
-  { id: 'sl-14', studentId: 'hs-02', points: 2, category: 'Học tập', reason: 'Hoàn thành bài tập về nhà sớm', comment: 'Chuẩn bị bài đầy đủ, cẩn thận', date: '2026-08-23', createdAt: '2026-08-23T15:30:00Z' },
-  { id: 'sl-15', studentId: 'hs-02', points: 10, category: 'Khen thưởng', reason: 'Học sinh xuất sắc tuần 2', comment: 'Đạt danh hiệu gương sáng học đường', date: '2026-08-25', createdAt: '2026-08-25T16:00:00Z' },
+  // Top 2: hs-4a1-002 Đào Châm Anh (21 ⭐)
+  { id: 'sl-9', studentId: 'hs-4a1-002', points: 2, category: 'Học tập', reason: 'Vở sạch chữ đẹp / Chữ mẫu mực', comment: 'Bài viết chính tả sạch đẹp không tẩy xóa', date: '2026-08-11', createdAt: '2026-08-11T09:00:00Z' },
+  { id: 'sl-10', studentId: 'hs-4a1-002', points: 2, category: 'Học tập', reason: 'Làm bài xuất sắc / Đạt điểm 9-10', comment: 'Bài kiểm tra đọc hiểu đạt điểm tối đa', date: '2026-08-14', createdAt: '2026-08-14T10:30:00Z' },
+  { id: 'sl-11', studentId: 'hs-4a1-002', points: 2, category: 'Phẩm chất', reason: 'Giúp đỡ bạn bè cùng tiến bộ', comment: 'Kèm bạn đọc bài diễn cảm rất chu đáo', date: '2026-08-16', createdAt: '2026-08-16T14:20:00Z' },
+  { id: 'sl-12', studentId: 'hs-4a1-002', points: 2, category: 'Nề nếp', reason: 'Xếp hàng & nề nếp gương mẫu', comment: 'Lớp phó học tập chăm ngoan', date: '2026-08-19', createdAt: '2026-08-19T08:45:00Z' },
+  { id: 'sl-13', studentId: 'hs-4a1-002', points: 1, category: 'Học tập', reason: 'Đọc diễn cảm / Kể chuyện sinh động', comment: 'Kể chuyện giọng truyền cảm, tự tin', date: '2026-08-21', createdAt: '2026-08-21T11:00:00Z' },
+  { id: 'sl-14', studentId: 'hs-4a1-002', points: 2, category: 'Học tập', reason: 'Hoàn thành bài tập về nhà sớm', comment: 'Chuẩn bị bài đầy đủ, cẩn thận', date: '2026-08-23', createdAt: '2026-08-23T15:30:00Z' },
+  { id: 'sl-15', studentId: 'hs-4a1-002', points: 10, category: 'Khen thưởng', reason: 'Học sinh xuất sắc tuần 2', comment: 'Đạt danh hiệu gương sáng học đường', date: '2026-08-25', createdAt: '2026-08-25T16:00:00Z' },
 
-  // Top 3: hs-03 Lê Hoàng Bách (18 ⭐)
-  { id: 'sl-16', studentId: 'hs-03', points: 2, category: 'Học tập', reason: 'Làm bài xuất sắc / Đạt điểm 9-10', comment: 'Điểm 10 môn Toán', date: '2026-08-12', createdAt: '2026-08-12T09:00:00Z' },
-  { id: 'sl-17', studentId: 'hs-03', points: 1, category: 'Nề nếp', reason: 'Giữ gìn vệ sinh lớp học / Trực nhật sạch', comment: 'Tổ trưởng Tổ 1 đôn đốc trực nhật rất tốt', date: '2026-08-15', createdAt: '2026-08-15T16:30:00Z' },
-  { id: 'sl-18', studentId: 'hs-03', points: 2, category: 'Phẩm chất', reason: 'Dũng cảm nhận lỗi & sửa đổi', comment: 'Biết lắng nghe và sửa chữa nhanh', date: '2026-08-17', createdAt: '2026-08-17T10:15:00Z' },
-  { id: 'sl-19', studentId: 'hs-03', points: 1, category: 'Học tập', reason: 'Phát biểu hăng hái xây dựng bài', comment: 'Tích cực đóng góp ý kiến hay', date: '2026-08-20', createdAt: '2026-08-20T14:00:00Z' },
-  { id: 'sl-20', studentId: 'hs-03', points: 2, category: 'Học tập', reason: 'Tiến bộ vượt bậc môn Toán/Tiếng Việt', comment: 'Tiến bộ nhiều trong kỹ năng tính nhẩm', date: '2026-08-22', createdAt: '2026-08-22T08:30:00Z' },
-  { id: 'sl-21', studentId: 'hs-03', points: 10, category: 'Khen thưởng', reason: 'Tổ trưởng gương mẫu', comment: 'Tổ 1 đạt giải Nhất nề nếp tuần', date: '2026-08-25', createdAt: '2026-08-25T16:00:00Z' },
+  // Top 3: hs-4a1-003 Đào Duy Anh (18 ⭐)
+  { id: 'sl-16', studentId: 'hs-4a1-003', points: 2, category: 'Học tập', reason: 'Làm bài xuất sắc / Đạt điểm 9-10', comment: 'Điểm 10 môn Toán', date: '2026-08-12', createdAt: '2026-08-12T09:00:00Z' },
+  { id: 'sl-17', studentId: 'hs-4a1-003', points: 1, category: 'Nề nếp', reason: 'Giữ gìn vệ sinh lớp học / Trực nhật sạch', comment: 'Tổ trưởng Tổ 1 đôn đốc trực nhật rất tốt', date: '2026-08-15', createdAt: '2026-08-15T16:30:00Z' },
+  { id: 'sl-18', studentId: 'hs-4a1-003', points: 2, category: 'Phẩm chất', reason: 'Dũng cảm nhận lỗi & sửa đổi', comment: 'Biết lắng nghe và sửa chữa nhanh', date: '2026-08-17', createdAt: '2026-08-17T10:15:00Z' },
+  { id: 'sl-19', studentId: 'hs-4a1-003', points: 1, category: 'Học tập', reason: 'Phát biểu hăng hái xây dựng bài', comment: 'Tích cực đóng góp ý kiến hay', date: '2026-08-20', createdAt: '2026-08-20T14:00:00Z' },
+  { id: 'sl-20', studentId: 'hs-4a1-003', points: 2, category: 'Học tập', reason: 'Tiến bộ vượt bậc môn Toán/Tiếng Việt', comment: 'Tiến bộ nhiều trong kỹ năng tính nhẩm', date: '2026-08-22', createdAt: '2026-08-22T08:30:00Z' },
+  { id: 'sl-21', studentId: 'hs-4a1-003', points: 10, category: 'Khen thưởng', reason: 'Tổ trưởng gương mẫu', comment: 'Tổ 1 đạt giải Nhất nề nếp tuần', date: '2026-08-25', createdAt: '2026-08-25T16:00:00Z' },
 
-  // hs-07 Hoàng Minh Đức (15 ⭐)
-  { id: 'sl-22', studentId: 'hs-07', points: 2, category: 'Học tập', reason: 'Làm bài xuất sắc / Đạt điểm 9-10', comment: 'Học tốt môn Toán', date: '2026-08-12', createdAt: '2026-08-12T09:00:00Z' },
-  { id: 'sl-23', studentId: 'hs-07', points: 2, category: 'Học tập', reason: 'Tiến bộ vượt bậc môn Toán/Tiếng Việt', comment: 'Giải toán nâng cao xuất sắc', date: '2026-08-18', createdAt: '2026-08-18T10:00:00Z' },
-  { id: 'sl-24', studentId: 'hs-07', points: 1, category: 'Học tập', reason: 'Phát biểu hăng hái xây dựng bài', comment: 'Hăng hái trả lời câu hỏi khó', date: '2026-08-22', createdAt: '2026-08-22T14:00:00Z' },
-  { id: 'sl-25', studentId: 'hs-07', points: 10, category: 'Khen thưởng', reason: 'Khen thưởng môn Toán', comment: 'Đạt giải cao câu đố toán tuần', date: '2026-08-26', createdAt: '2026-08-26T16:00:00Z' },
+  // hs-4a1-006 Võ Duy Bách (15 ⭐)
+  { id: 'sl-22', studentId: 'hs-4a1-006', points: 2, category: 'Học tập', reason: 'Làm bài xuất sắc / Đạt điểm 9-10', comment: 'Học tốt môn Toán', date: '2026-08-12', createdAt: '2026-08-12T09:00:00Z' },
+  { id: 'sl-23', studentId: 'hs-4a1-006', points: 2, category: 'Học tập', reason: 'Tiến bộ vượt bậc môn Toán/Tiếng Việt', comment: 'Giải toán nâng cao xuất sắc', date: '2026-08-18', createdAt: '2026-08-18T10:00:00Z' },
+  { id: 'sl-24', studentId: 'hs-4a1-006', points: 1, category: 'Học tập', reason: 'Phát biểu hăng hái xây dựng bài', comment: 'Hăng hái trả lời câu hỏi khó', date: '2026-08-22', createdAt: '2026-08-22T14:00:00Z' },
+  { id: 'sl-25', studentId: 'hs-4a1-006', points: 10, category: 'Khen thưởng', reason: 'Khen thưởng môn Toán', comment: 'Đạt giải cao câu đố toán tuần', date: '2026-08-26', createdAt: '2026-08-26T16:00:00Z' },
 
-  // hs-08 Bùi Khánh Hà (14 ⭐)
-  { id: 'sl-26', studentId: 'hs-08', points: 2, category: 'Học tập', reason: 'Vở sạch chữ đẹp / Chữ mẫu mực', comment: 'Chữ viết nắn nót', date: '2026-08-15', createdAt: '2026-08-15T09:00:00Z' },
-  { id: 'sl-27', studentId: 'hs-08', points: 2, category: 'Nề nếp', reason: 'Xếp hàng & nề nếp gương mẫu', comment: 'Tổ trưởng Tổ 2 nề nếp tốt', date: '2026-08-20', createdAt: '2026-08-20T10:00:00Z' },
-  { id: 'sl-28', studentId: 'hs-08', points: 10, category: 'Khen thưởng', reason: 'Sao chăm ngoan', comment: 'Luôn gương mẫu trong các hoạt động', date: '2026-08-26', createdAt: '2026-08-26T16:00:00Z' },
+  // hs-4a1-007 Nguyễn Quốc Bảo (14 ⭐)
+  { id: 'sl-26', studentId: 'hs-4a1-007', points: 2, category: 'Học tập', reason: 'Vở sạch chữ đẹp / Chữ mẫu mực', comment: 'Chữ viết nắn nót', date: '2026-08-15', createdAt: '2026-08-15T09:00:00Z' },
+  { id: 'sl-27', studentId: 'hs-4a1-007', points: 2, category: 'Nề nếp', reason: 'Xếp hàng & nề nếp gương mẫu', comment: 'Tổ trưởng Tổ 2 nề nếp tốt', date: '2026-08-20', createdAt: '2026-08-20T10:00:00Z' },
+  { id: 'sl-28', studentId: 'hs-4a1-007', points: 10, category: 'Khen thưởng', reason: 'Sao chăm ngoan', comment: 'Luôn gương mẫu trong các hoạt động', date: '2026-08-26', createdAt: '2026-08-26T16:00:00Z' },
 
-  // hs-04 Phạm Ngọc Bảo Châu (12 ⭐)
-  { id: 'sl-29', studentId: 'hs-04', points: 2, category: 'Học tập', reason: 'Đọc diễn cảm / Kể chuyện sinh động', comment: 'Hát hay, múa đẹp', date: '2026-08-14', createdAt: '2026-08-14T10:00:00Z' },
-  { id: 'sl-30', studentId: 'hs-04', points: 10, category: 'Khen thưởng', reason: 'Tích cực phong trào văn nghệ', comment: 'Đóng góp tiết mục văn nghệ khai giảng', date: '2026-08-25', createdAt: '2026-08-25T16:00:00Z' },
+  // hs-4a1-004 Nguyễn Hồng Anh (12 ⭐)
+  { id: 'sl-29', studentId: 'hs-4a1-004', points: 2, category: 'Học tập', reason: 'Đọc diễn cảm / Kể chuyện sinh động', comment: 'Hát hay, múa đẹp', date: '2026-08-14', createdAt: '2026-08-14T10:00:00Z' },
+  { id: 'sl-30', studentId: 'hs-4a1-004', points: 10, category: 'Khen thưởng', reason: 'Tích cực phong trào văn nghệ', comment: 'Đóng góp tiết mục văn nghệ khai giảng', date: '2026-08-25', createdAt: '2026-08-25T16:00:00Z' },
 ];
 
 export const INITIAL_HOMEWORKS: HomeworkAssignment[] = [

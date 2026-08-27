@@ -105,7 +105,12 @@ export default function DashboardPage() {
   const [newEventImportant, setNewEventImportant] = useState(false);
 
   const termName = TERMS.find((t) => t.id === currentTerm)?.name || currentTerm;
-  const teacherDisplayName = classInfo.teacherName || profile?.fullName || 'Thầy/Cô';
+  const teacherDisplayName = useMemo(() => {
+    if (profile?.role === 'ADMIN') {
+      return profile.fullName || 'Ban Giám Hiệu';
+    }
+    return classInfo.teacherName || profile?.fullName || 'Thầy/Cô';
+  }, [profile, classInfo.teacherName]);
 
   // Thống kê sĩ số học sinh
   const totalStudents = students.length;
@@ -250,12 +255,12 @@ export default function DashboardPage() {
             </span>
           </div>
 
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight leading-snug">
-            Xin chào {teacherDisplayName}! Chúc cô một ngày dạy học hiệu quả 🌟
+          <h1 className="text-xl sm:text-3xl font-black tracking-tight leading-snug">
+            Xin chào {teacherDisplayName}! 🌟
           </h1>
 
           <p className="text-blue-100 text-xs sm:text-sm leading-relaxed max-w-2xl">
-            Bảng điều khiển lớp <strong>{classInfo.name}</strong> — Theo dõi nề nếp, lịch sự kiện, chúc mừng sinh nhật và dữ liệu đánh giá Môn học, Năng lực, Phẩm chất theo chuẩn <strong>Thông tư 27/2020/TT-BGDĐT</strong>.
+            Bảng điều khiển <strong>Lớp {classInfo.name}</strong> — {profile?.role === 'ADMIN' ? `GVCN: ${classInfo.teacherName || 'Chưa phân công'}` : `Theo dõi nề nếp, điểm danh và đánh giá TT27`}.
           </p>
 
           <div className="flex flex-wrap gap-2.5 pt-1.5">
