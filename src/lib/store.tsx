@@ -855,6 +855,187 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         }
       )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'Student' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const st = payload.new as any;
+            const mapped: Student = {
+              ...st,
+              tags: typeof st.tags === 'string' ? JSON.parse(st.tags || '[]') : st.tags || [],
+              isActivated: Boolean(st.isActivated),
+            };
+            setAllStudents((prev) => {
+              if (prev.some((s) => s.id === mapped.id)) return prev;
+              return [...prev, mapped];
+            });
+          } else if (payload.eventType === 'DELETE') {
+            const oldRow = payload.old as any;
+            setAllStudents((prev) => prev.filter((s) => s.id !== oldRow.id));
+          } else if (payload.eventType === 'UPDATE') {
+            const st = payload.new as any;
+            const mapped: Student = {
+              ...st,
+              tags: typeof st.tags === 'string' ? JSON.parse(st.tags || '[]') : st.tags || [],
+              isActivated: Boolean(st.isActivated),
+            };
+            setAllStudents((prev) => prev.map((s) => (s.id === mapped.id ? mapped : s)));
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'DailyAttendance' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newRow = payload.new as DailyAttendance;
+            setAttendances((prev) => {
+              if (prev.some((a) => a.id === newRow.id)) return prev;
+              return [...prev, newRow];
+            });
+          } else if (payload.eventType === 'DELETE') {
+            const oldRow = payload.old as any;
+            setAttendances((prev) => prev.filter((a) => a.id !== oldRow.id));
+          } else if (payload.eventType === 'UPDATE') {
+            const newRow = payload.new as DailyAttendance;
+            setAttendances((prev) => prev.map((a) => (a.id === newRow.id ? newRow : a)));
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'SubjectAssessment' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newRow = payload.new as SubjectAssessment;
+            setSubjectAssessments((prev) => {
+              if (prev.some((s) => s.id === newRow.id)) return prev;
+              return [...prev, newRow];
+            });
+          } else if (payload.eventType === 'DELETE') {
+            const oldRow = payload.old as any;
+            setSubjectAssessments((prev) => prev.filter((s) => s.id !== oldRow.id));
+          } else if (payload.eventType === 'UPDATE') {
+            const newRow = payload.new as SubjectAssessment;
+            setSubjectAssessments((prev) => prev.map((s) => (s.id === newRow.id ? newRow : s)));
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'TraitAssessment' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newRow = payload.new as TraitAssessment;
+            setTraitAssessments((prev) => {
+              if (prev.some((t) => t.id === newRow.id)) return prev;
+              return [...prev, newRow];
+            });
+          } else if (payload.eventType === 'DELETE') {
+            const oldRow = payload.old as any;
+            setTraitAssessments((prev) => prev.filter((t) => t.id !== oldRow.id));
+          } else if (payload.eventType === 'UPDATE') {
+            const newRow = payload.new as TraitAssessment;
+            setTraitAssessments((prev) => prev.map((t) => (t.id === newRow.id ? newRow : t)));
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'TermSummary' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newRow = payload.new as StudentTermSummary;
+            setTermSummaries((prev) => {
+              if (prev.some((t) => t.studentId === newRow.studentId && t.term === newRow.term)) return prev;
+              return [...prev, newRow];
+            });
+          } else if (payload.eventType === 'DELETE') {
+            const oldRow = payload.old as any;
+            setTermSummaries((prev) => prev.filter((t) => !(t.studentId === oldRow.studentId && t.term === oldRow.term)));
+          } else if (payload.eventType === 'UPDATE') {
+            const newRow = payload.new as StudentTermSummary;
+            setTermSummaries((prev) => prev.map((t) => (t.studentId === newRow.studentId && t.term === newRow.term ? newRow : t)));
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'HomeworkAssignment' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newRow = payload.new as HomeworkAssignment;
+            setAllHomeworks((prev) => {
+              if (prev.some((h) => h.id === newRow.id)) return prev;
+              return [newRow, ...prev];
+            });
+          } else if (payload.eventType === 'DELETE') {
+            const oldRow = payload.old as any;
+            setAllHomeworks((prev) => prev.filter((h) => h.id !== oldRow.id));
+          } else if (payload.eventType === 'UPDATE') {
+            const newRow = payload.new as HomeworkAssignment;
+            setAllHomeworks((prev) => prev.map((h) => (h.id === newRow.id ? newRow : h)));
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'ClassEvent' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newRow = payload.new as ClassEvent;
+            setAllClassEvents((prev) => {
+              if (prev.some((e) => e.id === newRow.id)) return prev;
+              return [newRow, ...prev];
+            });
+          } else if (payload.eventType === 'DELETE') {
+            const oldRow = payload.old as any;
+            setAllClassEvents((prev) => prev.filter((e) => e.id !== oldRow.id));
+          } else if (payload.eventType === 'UPDATE') {
+            const newRow = payload.new as ClassEvent;
+            setAllClassEvents((prev) => prev.map((e) => (e.id === newRow.id ? newRow : e)));
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'TimetableSlot' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newRow = payload.new as TimetableSlot;
+            setAllTimetables((prev) => {
+              if (prev.some((t) => t.id === newRow.id)) return prev;
+              return [...prev, newRow];
+            });
+          } else if (payload.eventType === 'DELETE') {
+            const oldRow = payload.old as any;
+            setAllTimetables((prev) => prev.filter((t) => t.id !== oldRow.id));
+          } else if (payload.eventType === 'UPDATE') {
+            const newRow = payload.new as TimetableSlot;
+            setAllTimetables((prev) => prev.map((t) => (t.id === newRow.id ? newRow : t)));
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'CustomSubject' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newRow = payload.new as CustomSubject;
+            setCustomSubjects((prev) => {
+              if (prev.some((s) => s.id === newRow.id)) return prev;
+              return [...prev, newRow];
+            });
+          } else if (payload.eventType === 'DELETE') {
+            const oldRow = payload.old as any;
+            setCustomSubjects((prev) => prev.filter((s) => s.id !== oldRow.id));
+          } else if (payload.eventType === 'UPDATE') {
+            const newRow = payload.new as CustomSubject;
+            setCustomSubjects((prev) => prev.map((s) => (s.id === newRow.id ? newRow : s)));
+          }
+        }
+      )
       .subscribe();
 
     return () => {
@@ -1476,6 +1657,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSubjectAssessments((prev) => prev.filter((a) => !classStudentIds.has(a.studentId)));
     setTraitAssessments((prev) => prev.filter((a) => !classStudentIds.has(a.studentId)));
     setTermSummaries((prev) => prev.filter((a) => !classStudentIds.has(a.studentId)));
+
+    // Live API Deletion from Supabase
+    supabase.from('Student').delete().eq('classId', activeClassId).then();
   };
 
   const loadDemoStudents = () => {
@@ -1490,6 +1674,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const otherClasses = prev.filter((s) => (s.classId || 'class-4a1') !== activeClassId);
       return [...otherClasses, ...demoForActive];
     });
+
+    const dbRows = demoForActive.map((st) => ({
+      id: st.id,
+      classId: st.classId,
+      studentCode: st.studentCode,
+      fullName: st.fullName,
+      gender: st.gender,
+      dateOfBirth: st.dateOfBirth,
+      parentName: st.parentName,
+      parentPhone: st.parentPhone,
+      isBoarding: st.isBoarding,
+      seatRow: st.seatRow,
+      seatCol: st.seatCol,
+      healthNotes: st.healthNotes,
+      tags: JSON.stringify(st.tags || []),
+      shareToken: st.shareToken,
+      createdAt: st.createdAt,
+      updatedAt: new Date().toISOString(),
+    }));
+    supabase.from('Student').upsert(dbRows).then();
   };
 
   const updateSeatPosition = (studentId: string, row: number, col: number) => {
@@ -2154,20 +2358,83 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return { success: false, error: 'File sao lưu không hợp lệ' };
       }
 
-      if (Array.isArray(data.schoolClasses)) setSchoolClasses(data.schoolClasses);
+      if (Array.isArray(data.schoolClasses)) {
+        setSchoolClasses(data.schoolClasses);
+        supabase.from('Class').upsert(data.schoolClasses).then();
+      }
       if (typeof data.activeClassId === 'string') setActiveClassId(data.activeClassId);
-      if (Array.isArray(data.students)) setAllStudents(data.students);
-      if (Array.isArray(data.subjectAssessments)) setSubjectAssessments(data.subjectAssessments);
-      if (Array.isArray(data.traitAssessments)) setTraitAssessments(data.traitAssessments);
-      if (Array.isArray(data.termSummaries)) setTermSummaries(data.termSummaries);
-      if (Array.isArray(data.attendances)) setAttendances(data.attendances);
-      if (Array.isArray(data.starLogs)) setStarLogs(data.starLogs);
-      if (Array.isArray(data.starCriteria)) setStarCriteria(data.starCriteria);
-      if (Array.isArray(data.rewardProducts)) setRewardProducts(data.rewardProducts);
-      if (Array.isArray(data.rewardRedemptions)) setRewardRedemptions(data.rewardRedemptions);
-      if (Array.isArray(data.timetable)) setAllTimetables(data.timetable);
-      if (Array.isArray(data.customSubjects)) setCustomSubjects(data.customSubjects);
-      if (Array.isArray(data.homeworks)) setAllHomeworks(data.homeworks);
+      if (Array.isArray(data.students)) {
+        setAllStudents(data.students);
+        const dbRows = data.students.map((st: any) => ({
+          id: st.id,
+          classId: st.classId,
+          studentCode: st.studentCode,
+          fullName: st.fullName,
+          gender: st.gender,
+          dateOfBirth: st.dateOfBirth,
+          birthPlace: st.birthPlace,
+          ethnicity: st.ethnicity,
+          address: st.address,
+          parentName: st.parentName,
+          parentPhone: st.parentPhone,
+          isBoarding: st.isBoarding,
+          seatRow: st.seatRow,
+          seatCol: st.seatCol,
+          healthNotes: st.healthNotes,
+          tags: JSON.stringify(st.tags || []),
+          shareToken: st.shareToken,
+          avatarUrl: st.avatarUrl,
+          customPin: st.customPin,
+          isActivated: st.isActivated,
+          createdAt: st.createdAt,
+          updatedAt: new Date().toISOString(),
+        }));
+        supabase.from('Student').upsert(dbRows).then();
+      }
+      if (Array.isArray(data.subjectAssessments)) {
+        setSubjectAssessments(data.subjectAssessments);
+        supabase.from('SubjectAssessment').upsert(data.subjectAssessments).then();
+      }
+      if (Array.isArray(data.traitAssessments)) {
+        setTraitAssessments(data.traitAssessments);
+        supabase.from('TraitAssessment').upsert(data.traitAssessments).then();
+      }
+      if (Array.isArray(data.termSummaries)) {
+        setTermSummaries(data.termSummaries);
+        supabase.from('TermSummary').upsert(data.termSummaries).then();
+      }
+      if (Array.isArray(data.attendances)) {
+        setAttendances(data.attendances);
+        supabase.from('DailyAttendance').upsert(data.attendances).then();
+      }
+      if (Array.isArray(data.starLogs)) {
+        setStarLogs(data.starLogs);
+        supabase.from('StarLog').upsert(data.starLogs).then();
+      }
+      if (Array.isArray(data.starCriteria)) {
+        setStarCriteria(data.starCriteria);
+        supabase.from('StarCriterion').upsert(data.starCriteria).then();
+      }
+      if (Array.isArray(data.rewardProducts)) {
+        setRewardProducts(data.rewardProducts);
+        supabase.from('RewardProduct').upsert(data.rewardProducts).then();
+      }
+      if (Array.isArray(data.rewardRedemptions)) {
+        setRewardRedemptions(data.rewardRedemptions);
+        supabase.from('RewardRedemption').upsert(data.rewardRedemptions).then();
+      }
+      if (Array.isArray(data.timetable)) {
+        setAllTimetables(data.timetable);
+        supabase.from('TimetableSlot').upsert(data.timetable).then();
+      }
+      if (Array.isArray(data.customSubjects)) {
+        setCustomSubjects(data.customSubjects);
+        supabase.from('CustomSubject').upsert(data.customSubjects).then();
+      }
+      if (Array.isArray(data.homeworks)) {
+        setAllHomeworks(data.homeworks);
+        supabase.from('HomeworkAssignment').upsert(data.homeworks).then();
+      }
       if (data.currentTerm) setCurrentTerm(data.currentTerm);
 
       return { success: true };

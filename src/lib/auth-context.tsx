@@ -339,9 +339,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     });
 
+    // Realtime subscription on Teacher table
+    const teacherChannel = supabase
+      .channel('gvcn_teacher_sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'Teacher' },
+        () => {
+          if (isMounted) refreshTeachers();
+        }
+      )
+      .subscribe();
+
     return () => {
       isMounted = false;
       subscription.unsubscribe();
+      supabase.removeChannel(teacherChannel);
     };
   }, [refreshTeachers]);
 
