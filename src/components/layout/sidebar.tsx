@@ -45,27 +45,39 @@ export const NAV_ITEMS = [
 
 const SidebarContent: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
   const pathname = usePathname();
-  const { schoolClasses, activeClassId, classInfo, switchClass, students } = useAppStore();
+  const { schoolClasses, activeClassId, classInfo, switchClass, students, schoolInfo } = useAppStore();
   const { user, profile, isAdmin, signOut } = useAuth();
 
   return (
     <div className="flex flex-col h-full bg-slate-900 text-slate-200">
       {/* Brand Header */}
       <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30 shrink-0">
-            <GraduationCap className="w-6 h-6 text-white" />
-          </div>
-          <div>
+        <Link href="/" onClick={onClose} className="flex items-center space-x-3 group min-w-0">
+          {schoolInfo?.logoUrl ? (
+            <img
+              src={schoolInfo.logoUrl}
+              alt="Logo trường"
+              className="w-10 h-10 rounded-xl object-cover border border-slate-700 shadow-md shadow-blue-500/10 shrink-0 bg-white"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30 shrink-0">
+              <GraduationCap className="w-6 h-6 text-white" />
+            </div>
+          )}
+          <div className="min-w-0">
             <div className="flex items-center space-x-1.5">
-              <span className="font-bold text-white tracking-wide text-base">GVCN PRO</span>
-              <span className="bg-emerald-500/20 text-emerald-400 text-[10px] font-semibold px-1.5 py-0.5 rounded border border-emerald-500/30">
+              <span className="font-bold text-white tracking-wide text-base group-hover:text-blue-400 transition-colors">
+                GVCN PRO
+              </span>
+              <span className="bg-emerald-500/20 text-emerald-400 text-[10px] font-bold px-1.5 py-0.5 rounded border border-emerald-500/30">
                 TT27
               </span>
             </div>
-            <p className="text-xs text-slate-400">Tiểu học 2018</p>
+            <p className="text-[11px] text-slate-400 truncate max-w-[140px]" title={schoolInfo?.name || 'Tiểu học'}>
+              {schoolInfo?.name || 'Tiểu học Đại Mỗ'}
+            </p>
           </div>
-        </div>
+        </Link>
 
         {onClose && (
           <button

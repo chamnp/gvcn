@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, use } from 'react';
+import React, { useState, useEffect, use, useMemo } from 'react';
+import Link from 'next/link';
 import {
   BookOpen,
   Calendar,
@@ -10,7 +11,6 @@ import {
   GraduationCap,
   Sparkles,
   School,
-  ExternalLink,
   ChevronRight,
   Sun,
   Backpack,
@@ -19,11 +19,56 @@ import {
   Square,
   FileText,
   Eye,
+  MapPin,
+  Phone,
+  Cake,
+  PartyPopper,
+  Gift,
+  Flame,
+  Award,
+  Info,
+  Check,
+  ChevronDown,
+  X,
+  Share2,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { getSubjectTheme, DAYS_OF_WEEK, PERIODS } from '@/lib/timetable-data';
-import { DayOfWeek, TimetableSlot } from '@/types';
-import Link from 'next/link';
+import { DayOfWeek, ClassEvent, ClassEventType } from '@/types';
+import { toast } from 'sonner';
+
+// Helper to calculate birthday information
+function getStudentBirthdayInfo(dobStr: string) {
+  if (!dobStr) return null;
+  const today = new Date();
+  const birthDate = new Date(dobStr);
+  if (isNaN(birthDate.getTime())) return null;
+
+  const currentYear = today.getFullYear();
+  const birthMonth = birthDate.getMonth();
+  const birthDay = birthDate.getDate();
+
+  let nextBday = new Date(currentYear, birthMonth, birthDay);
+  const todayZero = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+  if (nextBday < todayZero) {
+    nextBday = new Date(currentYear + 1, birthMonth, birthDay);
+  }
+
+  const diffTime = nextBday.getTime() - todayZero.getTime();
+  const daysRemaining = Math.round(diffTime / (1000 * 60 * 60 * 24));
+  const isToday = birthMonth === today.getMonth() && birthDay === today.getDate();
+  const isThisMonth = birthMonth === today.getMonth();
+  const turningAge = currentYear - birthDate.getFullYear() + (nextBday.getFullYear() > currentYear ? 1 : 0);
+
+  return {
+    isToday,
+    isThisMonth,
+    daysRemaining,
+    turningAge,
+    formattedDate: `${birthDay < 10 ? '0' : ''}${birthDay}/${birthMonth + 1 < 10 ? '0' : ''}${birthMonth + 1}`,
+  };
+}
 
 export default function PublicClassHomeworkPortal({
   params,
@@ -33,9 +78,18 @@ export default function PublicClassHomeworkPortal({
   const resolvedParams = use(params);
   const rawParam = (resolvedParams.classId || '4a1').toLowerCase();
 
-  const { schoolClasses, allHomeworks, customSubjects, timetable } = useAppStore();
+  const {
+    schoolClasses,
+    allHomeworks,
+    customSubjects,
+    timetable,
+    schoolInfo,
+    allClassEvents,
+    allStudents,
+    starLogs,
+  } = useAppStore();
 
-  // Find class from param
+  // Find class from URL slug/id
   const currentClass = schoolClasses.find(
     (c) =>
       c.id.toLowerCase() === rawParam ||
@@ -43,25 +97,66 @@ export default function PublicClassHomeworkPortal({
       c.name.toLowerCase().replace(/\s+/g, '') === rawParam
   ) || schoolClasses[0];
 
-  // Filter homework for this class
+  // Scoped Homework for this class
   const classHomeworks = allHomeworks.filter(
     (h) =>
-      h.classId === currentClass.id ||
+      (h.classId || 'class-4a1') === currentClass.id ||
       h.className.toLowerCase() === currentClass.name.toLowerCase() ||
       h.className.toLowerCase().replace(/\s+/g, '') === rawParam
   );
 
+  // Scoped Events for this class
+  const classEvents = allClassEvents.filter(
+    (e) => (e.classId || 'class-4a1') === currentClass.id
+  );
+
+  // Scoped Students for this class
+  const classStudents = allStudents.filter(
+    (s) => (s.classId || 'class-4a1') === currentClass.id
+  );
+
   // Student Local Checklist (State stored in localStorage)
   const [completedHwIds, setCompletedHwIds] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<'HOMEWORK' | 'BACKPACK' | 'TIMETABLE'>('HOMEWORK');
+  const [packedSubjectCodes, setPackedSubjectCodes] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<'HOMEWORK' | 'EVENTS' | 'BACKPACK' | 'TIMETABLE' | 'SPOTLIGHT'>('HOMEWORK');
+  const [selectedTimetableDay, setSelectedTimetableDay] = useState<DayOfWeek>('T2');
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+  const [eventFilter, setEventFilter] = useState<'ALL' | 'EXAM' | 'MEETING' | 'FESTIVAL'>('ALL');
+
+  const todayStr = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(`gvcn_hw_done_${currentClass.id}`);
-      if (saved) setCompletedHwIds(JSON.parse(saved));
+      const savedHw = localStorage.getItem(`gvcn_hw_done_${currentClass.id}`);
+      if (savedHw) setCompletedHwIds(JSON.parse(savedHw));
+
+      const savedPack = localStorage.getItem(`gvcn_pack_${currentClass.id}_${todayStr}`);
+      if (savedPack) setPackedSubjectCodes(JSON.parse(savedPack));
     } catch (e) {}
-  }, [currentClass.id]);
+  }, [currentClass.id, todayStr]);
+
+  // Determine tomorrow's day of week
+  const todayDayIndex = new Date().getDay(); // 0 = Sun, 1 = Mon...
+  const nextDayMap: Record<number, DayOfWeek> = {
+    0: 'T2',
+    1: 'T3',
+    2: 'T4',
+    3: 'T5',
+    4: 'T6',
+    5: 'T2',
+    6: 'T2',
+  };
+  const tomorrowDayCode: DayOfWeek = nextDayMap[todayDayIndex] || 'T2';
+  const tomorrowDayInfo = DAYS_OF_WEEK.find((d) => d.id === tomorrowDayCode);
+
+  useEffect(() => {
+    setSelectedTimetableDay(tomorrowDayCode);
+  }, [tomorrowDayCode]);
+
+  // Tomorrow slots from timetable
+  const tomorrowSlots = timetable.filter(
+    (s) => s.day === tomorrowDayCode && (s.classId || 'class-4a1') === currentClass.id
+  );
 
   const toggleCompleteHw = (hwId: string) => {
     setCompletedHwIds((prev) => {
@@ -74,380 +169,757 @@ export default function PublicClassHomeworkPortal({
     });
   };
 
-  // Determine tomorrow's day of week
-  const todayDayIndex = new Date().getDay(); // 0 = Sunday, 1 = Monday...
-  const nextDayMap: Record<number, DayOfWeek> = {
-    0: 'T2', // Sunday -> Monday
-    1: 'T3', // Monday -> Tuesday
-    2: 'T4', // Tuesday -> Wednesday
-    3: 'T5', // Wednesday -> Thursday
-    4: 'T6', // Thursday -> Friday
-    5: 'T2', // Friday -> Monday
-    6: 'T2', // Saturday -> Monday
+  const togglePackSubject = (code: string) => {
+    setPackedSubjectCodes((prev) => {
+      const isPacked = prev.includes(code);
+      const updated = isPacked ? prev.filter((c) => c !== code) : [...prev, code];
+      try {
+        localStorage.setItem(`gvcn_pack_${currentClass.id}_${todayStr}`, JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
   };
-  const tomorrowDayCode: DayOfWeek = nextDayMap[todayDayIndex] || 'T2';
-  const tomorrowDayInfo = DAYS_OF_WEEK.find((d) => d.id === tomorrowDayCode);
-
-  // Tomorrow slots from timetable
-  const tomorrowSlots = timetable.filter((s) => s.day === tomorrowDayCode);
 
   const doneCount = classHomeworks.filter((h) => completedHwIds.includes(h.id)).length;
   const isAllDone = classHomeworks.length > 0 && doneCount === classHomeworks.length;
 
+  // Birthday list calculation
+  const studentBirthdayList = useMemo(() => {
+    return classStudents
+      .map((st) => {
+        const bInfo = getStudentBirthdayInfo(st.dateOfBirth);
+        return { student: st, ...bInfo };
+      })
+      .filter((item): item is { student: typeof classStudents[0] } & NonNullable<ReturnType<typeof getStudentBirthdayInfo>> => item !== null)
+      .sort((a, b) => a.daysRemaining - b.daysRemaining);
+  }, [classStudents]);
+
+  const todayBirthdays = studentBirthdayList.filter((b) => b.isToday);
+  const thisMonthBirthdays = studentBirthdayList.filter((b) => b.isThisMonth);
+
+  // Filtered Events
+  const sortedEvents = useMemo(() => {
+    return [...classEvents]
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .filter((ev) => {
+        if (eventFilter === 'ALL') return true;
+        return ev.type === eventFilter;
+      });
+  }, [classEvents, eventFilter]);
+
+  // Star leaderboard for praise wall
+  const studentStarMap: { [id: string]: number } = {};
+  starLogs.forEach((log) => {
+    studentStarMap[log.studentId] = (studentStarMap[log.studentId] || 0) + log.points;
+  });
+
+  const topStarStudents = [...classStudents]
+    .map((s) => ({ ...s, stars: studentStarMap[s.id] || 0 }))
+    .sort((a, b) => b.stars - a.stars)
+    .slice(0, 5);
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-16">
-      {/* Header Bar */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
-        <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-2.5">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black text-sm shadow-md shadow-blue-500/20">
-              {currentClass.name}
-            </div>
-            <div>
+    <div className="min-h-screen bg-slate-50 text-slate-900 pb-20 font-sans">
+      {/* 1. STICKY TOP BRANDING HEADER */}
+      <header className="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 shadow-xs">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 sm:h-18 flex items-center justify-between gap-3">
+          {/* Logo & School / Class Name */}
+          <div className="flex items-center space-x-3 min-w-0">
+            {schoolInfo.logoUrl ? (
+              <img
+                src={schoolInfo.logoUrl}
+                alt="Logo Trường"
+                className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl object-cover border border-slate-200 shadow-sm shrink-0 bg-white"
+              />
+            ) : (
+              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white font-black text-sm shadow-md shrink-0">
+                {currentClass.name}
+              </div>
+            )}
+
+            <div className="min-w-0">
               <div className="flex items-center space-x-1.5">
-                <span className="font-extrabold text-slate-900 text-sm sm:text-base">
-                  Góc Học Tập Lớp {currentClass.name}
+                <span className="font-black text-slate-900 text-sm sm:text-base tracking-tight truncate">
+                  Lớp {currentClass.name}
                 </span>
-                <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                  Tiểu học
+                <span className="bg-blue-100 text-blue-800 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0">
+                  {schoolInfo.schoolYear || '2026-2027'}
                 </span>
               </div>
-              <p className="text-[11px] text-slate-500 truncate max-w-[200px] sm:max-w-sm">
-                GVCN: {currentClass.teacherName} • {currentClass.schoolName}
+              <p className="text-[11px] text-slate-500 truncate" title={schoolInfo.name}>
+                {schoolInfo.name} • GVCN: {currentClass.teacherName}
               </p>
             </div>
           </div>
 
-          <Link
-            href="/login"
-            className="text-[11px] font-bold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-xl border border-blue-200 transition-colors"
-          >
-            Dành cho Giáo viên →
-          </Link>
+          {/* Quick Actions / Link to Teacher Login */}
+          <div className="flex items-center space-x-2 shrink-0">
+            <Link
+              href="/login"
+              className="text-[11px] font-bold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-xl border border-blue-200 transition-colors inline-flex items-center gap-1"
+            >
+              <span>Giáo viên</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
         </div>
       </header>
 
-      {/* Main Container */}
-      <main className="max-w-3xl mx-auto px-4 pt-4 space-y-4">
-        {/* Welcome Greeting Card */}
-        <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-3xl p-5 sm:p-6 text-white shadow-lg relative overflow-hidden">
-          <div className="relative z-10 space-y-2">
-            <div className="inline-flex items-center space-x-1.5 bg-white/20 px-3 py-1 rounded-full text-xs font-bold backdrop-blur-xs">
-              <Sun className="w-3.5 h-3.5 text-amber-300" />
-              <span>Chào các em học sinh & Quý phụ huynh!</span>
-            </div>
-            <h1 className="text-xl sm:text-2xl font-black tracking-tight">
-              Bảng Bài Tập & Lịch Học Về Nhà
-            </h1>
-            <p className="text-xs sm:text-sm text-blue-100 max-w-xl">
-              Kiểm tra nhiệm vụ hôm nay và chuẩn bị sách vở cho ngày mai ({tomorrowDayInfo?.name}).
-            </p>
-
-            {/* Progress Bar */}
-            {classHomeworks.length > 0 && (
-              <div className="pt-2">
-                <div className="flex items-center justify-between text-xs font-bold mb-1">
-                  <span>Tiến độ hoàn thành bài tập của em:</span>
-                  <span>{doneCount}/{classHomeworks.length} bài ({Math.round((doneCount / classHomeworks.length) * 100)}%)</span>
+      {/* 2. MAIN LAYOUT: RESPONSIVE GRID (DESKTOP 2-COL, MOBILE 1-COL) */}
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 pt-5">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+          {/* LEFT 2 COLUMNS: HERO BANNER, TAB NAVIGATION & MAIN CONTENT */}
+          <div className="lg:col-span-2 space-y-4">
+            {/* HERO GREETING BANNER */}
+            <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-800 rounded-3xl p-5 sm:p-7 text-white shadow-xl relative overflow-hidden">
+              <div className="relative z-10 space-y-2.5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center space-x-1.5 bg-white/20 px-3 py-1 rounded-full text-xs font-bold backdrop-blur-xs">
+                    <Sun className="w-3.5 h-3.5 text-amber-300" />
+                    <span>Góc Phụ Huynh & Học Sinh</span>
+                  </span>
+                  <span className="bg-yellow-400/20 text-yellow-300 text-xs font-bold px-2.5 py-0.5 rounded-full border border-yellow-400/30">
+                    Lớp {currentClass.name}
+                  </span>
                 </div>
-                <div className="w-full bg-black/20 rounded-full h-2.5 overflow-hidden p-0.5">
-                  <div
-                    className="bg-emerald-400 h-full rounded-full transition-all duration-300"
-                    style={{ width: `${(doneCount / classHomeworks.length) * 100}%` }}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
 
-        {/* Navigation Tabs */}
-        <div className="grid grid-cols-3 gap-1 bg-white p-1.5 rounded-2xl border border-slate-200 shadow-xs text-xs font-bold">
-          <button
-            onClick={() => setActiveTab('HOMEWORK')}
-            className={`flex items-center justify-center space-x-1.5 py-2.5 rounded-xl transition-all ${
-              activeTab === 'HOMEWORK'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-            }`}
-          >
-            <BookOpen className="w-4 h-4" />
-            <span>Bài Tập ({classHomeworks.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('BACKPACK')}
-            className={`flex items-center justify-center space-x-1.5 py-2.5 rounded-xl transition-all ${
-              activeTab === 'BACKPACK'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-            }`}
-          >
-            <Backpack className="w-4 h-4" />
-            <span>Soạn Sách Vở</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('TIMETABLE')}
-            className={`flex items-center justify-center space-x-1.5 py-2.5 rounded-xl transition-all ${
-              activeTab === 'TIMETABLE'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-            }`}
-          >
-            <Calendar className="w-4 h-4" />
-            <span>Thời Khóa Biểu</span>
-          </button>
-        </div>
-
-        {/* TAB 1: HOMEWORK LIST */}
-        {activeTab === 'HOMEWORK' && (
-          <div className="space-y-3">
-            {isAllDone && (
-              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex items-center space-x-3 text-emerald-800 animate-in fade-in">
-                <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center text-xl shrink-0">
-                  🎉
-                </div>
-                <div>
-                  <h4 className="font-bold text-sm">Tuyệt vời! Em đã hoàn thành hết bài tập!</h4>
-                  <p className="text-xs text-emerald-700">Hãy soạn sách vở vào cặp và chuẩn bị cho ngày học ngày mai nhé.</p>
-                </div>
-              </div>
-            )}
-
-            {classHomeworks.length === 0 ? (
-              <div className="bg-white rounded-3xl border border-slate-200 p-10 text-center space-y-3">
-                <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto text-3xl">
-                  ✨
-                </div>
-                <h3 className="font-bold text-base text-slate-800">Hôm nay không có bài tập về nhà!</h3>
-                <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                  Chúc các em học sinh có một buổi tối nghỉ ngơi vui vẻ bên gia đình.
+                <h1 className="text-xl sm:text-2xl font-black tracking-tight leading-snug">
+                  Cổng Thông Tin Học Tập & Hoạt Động Lớp {currentClass.name}
+                </h1>
+                <p className="text-xs sm:text-sm text-blue-100 max-w-xl leading-relaxed">
+                  Cập nhật bài tập về nhà, lịch sự kiện, chuẩn bị sách vở ngày mai ({tomorrowDayInfo?.name}) và theo dõi nề nếp thi đua của con.
                 </p>
-              </div>
-            ) : (
-              classHomeworks.map((hw) => {
-                const theme = getSubjectTheme(hw.subjectCode, customSubjects);
-                const isDone = completedHwIds.includes(hw.id);
 
-                return (
-                  <div
-                    key={hw.id}
-                    className={`bg-white rounded-3xl border transition-all duration-200 p-5 shadow-xs ${
-                      isDone
-                        ? 'border-emerald-200 bg-emerald-50/30'
-                        : 'border-slate-200 hover:border-blue-300'
-                    }`}
-                  >
-                    {/* Header */}
-                    <div className="flex items-start justify-between gap-3 mb-3">
-                      <div className="flex items-center space-x-2.5">
-                        <span className="text-2xl">{theme.icon}</span>
-                        <div>
-                          <span
-                            className={`inline-block text-[11px] font-black px-2.5 py-0.5 rounded-lg border ${theme.bgColor} ${theme.textColor} ${theme.borderColor}`}
-                          >
-                            {hw.subjectName}
-                          </span>
-                          <h3 className={`font-bold text-sm sm:text-base text-slate-900 mt-0.5 ${isDone ? 'line-through text-slate-400' : ''}`}>
-                            {hw.title}
-                          </h3>
-                        </div>
-                      </div>
-
-                      {/* Interactive Checkbox */}
-                      <button
-                        onClick={() => toggleCompleteHw(hw.id)}
-                        className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors shrink-0 ${
-                          isDone
-                            ? 'bg-emerald-600 text-white shadow-xs'
-                            : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                        }`}
-                      >
-                        {isDone ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
-                        <span>{isDone ? 'Đã Xong' : 'Chưa Xong'}</span>
-                      </button>
-                    </div>
-
-                    {/* Description */}
-                    <div className="bg-slate-50 rounded-2xl p-3.5 border border-slate-100 text-xs sm:text-sm text-slate-700 whitespace-pre-line leading-relaxed">
-                      {hw.description}
-                    </div>
-
-                    {/* Teacher Reminder */}
-                    {hw.reminderNotes && (
-                      <div className="mt-2.5 bg-amber-50 border border-amber-200 rounded-xl p-2.5 flex items-start space-x-2 text-amber-900 text-xs">
-                        <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
-                        <span><strong>Cô dặn dò:</strong> {hw.reminderNotes}</span>
-                      </div>
-                    )}
-
-                    {/* Attachment / Preview */}
-                    {hw.attachmentUrl && (
-                      <div className="mt-3 flex items-center space-x-2">
-                        <button
-                          onClick={() => setPreviewImageUrl(hw.attachmentUrl!)}
-                          className="inline-flex items-center space-x-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-3 py-1.5 rounded-xl font-bold text-xs transition-colors"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          <span>Xem ảnh phiếu bài tập</span>
-                        </button>
-                      </div>
-                    )}
-
-                    {/* Footer Due */}
-                    <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-                      <span>Ngày giao: {hw.assignedDate}</span>
-                      <span className="font-bold text-rose-600 flex items-center space-x-1">
-                        <Clock className="w-3 h-3" />
-                        <span>Hạn nộp: {hw.dueDate}</span>
+                {/* Progress Bar for Homework */}
+                {classHomeworks.length > 0 && (
+                  <div className="pt-2">
+                    <div className="flex items-center justify-between text-xs font-bold mb-1">
+                      <span>Tiến độ bài tập hôm nay:</span>
+                      <span className="text-emerald-300">
+                        {doneCount}/{classHomeworks.length} bài ({Math.round((doneCount / classHomeworks.length) * 100)}%)
                       </span>
                     </div>
+                    <div className="w-full bg-black/25 rounded-full h-2.5 overflow-hidden p-0.5 border border-white/20">
+                      <div
+                        className="bg-emerald-400 h-full rounded-full transition-all duration-300"
+                        style={{ width: `${(doneCount / classHomeworks.length) * 100}%` }}
+                      />
+                    </div>
                   </div>
-                );
-              })
-            )}
-          </div>
-        )}
+                )}
+              </div>
+            </div>
 
-        {/* TAB 2: BACKPACK PREPARATION FOR TOMORROW */}
-        {activeTab === 'BACKPACK' && (
-          <div className="space-y-4">
-            <div className="bg-white rounded-3xl border border-slate-200 p-5 shadow-xs space-y-4">
-              <div className="flex items-center space-x-2.5">
-                <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl shrink-0">
-                  🎒
+            {/* BIRTHDAY SPOTLIGHT BANNER (If today has birthday) */}
+            {todayBirthdays.length > 0 && (
+              <div className="bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 rounded-3xl p-4 sm:p-5 text-white shadow-lg flex items-center space-x-3.5 animate-in fade-in">
+                <div className="w-12 h-12 rounded-2xl bg-white/25 backdrop-blur-md flex items-center justify-center text-2xl shadow-inner shrink-0 animate-bounce">
+                  🎂
                 </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 text-sm sm:text-base">
-                    Chuẩn Bị Sách Vở Cho Ngày Mai ({tomorrowDayInfo?.name})
+                <div className="space-y-0.5 min-w-0">
+                  <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-rose-100">
+                    <PartyPopper className="w-3.5 h-3.5" />
+                    <span>Hôm Nay Sinh Nhật Thành Viên Lớp!</span>
+                  </div>
+                  <h3 className="font-black text-sm sm:text-base truncate">
+                    Chúc Mừng Sinh Nhật Em {todayBirthdays.map((b) => b.student.fullName).join(', ')} 🎉
                   </h3>
-                  <p className="text-xs text-slate-500">
-                    Dựa vào Thời khóa biểu ngày mai để mang đủ sách vở và đồ dùng học tập.
+                  <p className="text-xs text-rose-100">
+                    Chúc em bước sang tuổi <strong>{todayBirthdays[0]?.turningAge || 10}</strong> luôn chăm ngoan, học giỏi và ngập tràn niềm vui!
                   </p>
                 </div>
               </div>
+            )}
 
-              {/* Tomorrow Periods */}
-              <div className="space-y-2">
-                {tomorrowSlots.length === 0 ? (
-                  <p className="text-center py-6 text-xs text-slate-400">Không có tiết học vào ngày này.</p>
+            {/* 3. NAVIGATION TABS (5 TABS: HOMEWORK, EVENTS, BACKPACK, TIMETABLE, SPOTLIGHT) */}
+            <div className="flex overflow-x-auto no-scrollbar gap-1.5 bg-white p-1.5 rounded-2xl border border-slate-200 shadow-xs text-xs font-bold">
+              {[
+                { id: 'HOMEWORK', label: '📝 Bài Tập', count: classHomeworks.length },
+                { id: 'EVENTS', label: '📅 Sự Kiện', count: classEvents.length },
+                { id: 'BACKPACK', label: '🎒 Soạn Sách Vở', count: null },
+                { id: 'TIMETABLE', label: '🗓️ Thời Khóa Biểu', count: null },
+                { id: 'SPOTLIGHT', label: '🌟 Khen Thưởng & Sinh Nhật', count: null },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={`flex items-center justify-center space-x-1.5 px-3.5 py-2.5 rounded-xl transition-all whitespace-nowrap cursor-pointer shrink-0 ${
+                    activeTab === tab.id
+                      ? 'bg-blue-600 text-white shadow-xs font-black'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                  }`}
+                >
+                  <span>{tab.label}</span>
+                  {tab.count !== null && (
+                    <span
+                      className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                        activeTab === tab.id ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
+                      }`}
+                    >
+                      {tab.count}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {/* TAB CONTENT 1: HOMEWORK */}
+            {activeTab === 'HOMEWORK' && (
+              <div className="space-y-3.5">
+                {isAllDone && (
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-3xl p-4 flex items-center space-x-3 text-emerald-800 animate-in fade-in">
+                    <div className="w-10 h-10 rounded-2xl bg-emerald-500 text-white flex items-center justify-center text-xl shrink-0">
+                      🎉
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm">Tuyệt vời! Em đã hoàn thành 100% bài tập hôm nay!</h4>
+                      <p className="text-xs text-emerald-700">Hãy chuyển sang tab <strong>Soạn Sách Vở</strong> để chuẩn bị sách cho ngày mai nhé.</p>
+                    </div>
+                  </div>
+                )}
+
+                {classHomeworks.length === 0 ? (
+                  <div className="bg-white rounded-3xl border border-slate-200 p-10 text-center space-y-3">
+                    <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto text-3xl">
+                      ✨
+                    </div>
+                    <h3 className="font-bold text-base text-slate-800">Hôm nay không có bài tập về nhà!</h3>
+                    <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                      Chúc các em học sinh có một buổi tối nghỉ ngơi vui vẻ bên gia đình.
+                    </p>
+                  </div>
                 ) : (
-                  tomorrowSlots.map((slot) => {
-                    const theme = getSubjectTheme(slot.subjectCode, customSubjects);
-                    const periodInfo = PERIODS.find((p) => p.period === slot.period);
+                  classHomeworks.map((hw) => {
+                    const theme = getSubjectTheme(hw.subjectCode, customSubjects);
+                    const isDone = completedHwIds.includes(hw.id);
 
                     return (
                       <div
-                        key={slot.id}
-                        className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200/80"
+                        key={hw.id}
+                        className={`bg-white rounded-3xl border transition-all duration-200 p-5 shadow-xs ${
+                          isDone
+                            ? 'border-emerald-200 bg-emerald-50/20'
+                            : 'border-slate-200 hover:border-blue-300'
+                        }`}
                       >
-                        <div className="flex items-center space-x-3">
-                          <span className="text-2xl">{theme.icon}</span>
-                          <div>
-                            <div className="flex items-center space-x-2">
-                              <span className="font-bold text-slate-900 text-xs sm:text-sm">
-                                {slot.subjectName}
+                        {/* Header */}
+                        <div className="flex items-start justify-between gap-3 mb-3">
+                          <div className="flex items-center space-x-2.5">
+                            <span className="text-2xl">{theme.icon}</span>
+                            <div>
+                              <span
+                                className={`inline-block text-[11px] font-black px-2.5 py-0.5 rounded-lg border ${theme.bgColor} ${theme.textColor} ${theme.borderColor}`}
+                              >
+                                {hw.subjectName}
                               </span>
-                              <span className="text-[10px] text-slate-400 font-mono">
-                                ({periodInfo?.name} • {periodInfo?.time})
-                              </span>
+                              <h3 className={`font-bold text-sm sm:text-base text-slate-900 mt-0.5 ${isDone ? 'line-through text-slate-400' : ''}`}>
+                                {hw.title}
+                              </h3>
                             </div>
-                            {slot.note && (
-                              <p className="text-[11px] text-amber-700 font-medium mt-0.5">
-                                🔔 {slot.note}
-                              </p>
-                            )}
                           </div>
+
+                          {/* Interactive Checkbox */}
+                          <button
+                            type="button"
+                            onClick={() => toggleCompleteHw(hw.id)}
+                            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                              isDone
+                                ? 'bg-emerald-600 text-white shadow-xs'
+                                : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                            }`}
+                          >
+                            {isDone ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+                            <span>{isDone ? 'Đã Xong' : 'Chưa Xong'}</span>
+                          </button>
                         </div>
 
-                        <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-lg border ${theme.bgColor} ${theme.textColor} ${theme.borderColor}`}
-                        >
-                          {theme.shortName}
-                        </span>
+                        {/* Description */}
+                        <div className="bg-slate-50 rounded-2xl p-3.5 border border-slate-100 text-xs sm:text-sm text-slate-700 whitespace-pre-line leading-relaxed">
+                          {hw.description}
+                        </div>
+
+                        {/* Teacher Reminder */}
+                        {hw.reminderNotes && (
+                          <div className="mt-2.5 bg-amber-50 border border-amber-200 rounded-xl p-2.5 flex items-start space-x-2 text-amber-900 text-xs">
+                            <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                            <span><strong>Cô dặn dò:</strong> {hw.reminderNotes}</span>
+                          </div>
+                        )}
+
+                        {/* Attachment / Preview */}
+                        {hw.attachmentUrl && (
+                          <div className="mt-3 flex items-center space-x-2">
+                            <button
+                              type="button"
+                              onClick={() => setPreviewImageUrl(hw.attachmentUrl!)}
+                              className="inline-flex items-center space-x-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-3 py-1.5 rounded-xl font-bold text-xs transition-colors cursor-pointer"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>Xem ảnh phiếu bài tập</span>
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Footer Due */}
+                        <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+                          <span>Ngày giao: {hw.assignedDate}</span>
+                          <span className="font-semibold text-slate-600">Hạn nộp: {hw.dueDate}</span>
+                        </div>
                       </div>
                     );
                   })
                 )}
               </div>
-            </div>
-          </div>
-        )}
+            )}
 
-        {/* TAB 3: FULL TIMETABLE */}
-        {activeTab === 'TIMETABLE' && (
-          <div className="bg-white rounded-3xl border border-slate-200 p-4 sm:p-5 shadow-xs space-y-3">
-            <h3 className="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-blue-600" />
-              <span>Thời Khóa Biểu Tuần — Lớp {currentClass.name}</span>
-            </h3>
+            {/* TAB CONTENT 2: CLASS & SCHOOL EVENTS */}
+            {activeTab === 'EVENTS' && (
+              <div className="space-y-4">
+                {/* Event Category Filter */}
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { id: 'ALL', label: 'Tất cả sự kiện' },
+                    { id: 'EXAM', label: '🏆 Khảo sát & Thi' },
+                    { id: 'MEETING', label: '👥 Họp Phụ huynh' },
+                    { id: 'FESTIVAL', label: '🎪 Lễ hội & Khai giảng' },
+                  ].map((f) => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => setEventFilter(f.id as any)}
+                      className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        eventFilter === f.id
+                          ? 'bg-indigo-600 text-white shadow-xs'
+                          : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
 
-            <div className="overflow-x-auto border border-slate-200 rounded-2xl">
-              <table className="w-full text-xs text-left">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold">
-                  <tr>
-                    <th className="p-2.5 text-center w-16">Tiết</th>
-                    {DAYS_OF_WEEK.map((d) => (
-                      <th key={d.id} className="p-2.5 text-center">
-                        {d.name}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {PERIODS.map((period) => (
-                    <tr key={period.period} className="hover:bg-slate-50/60">
-                      <td className="p-2 text-center font-bold text-slate-600 bg-slate-50/50">
-                        <div>{period.name}</div>
-                        <div className="text-[9px] text-slate-400 font-normal">{period.time.split(' - ')[0]}</div>
-                      </td>
-                      {DAYS_OF_WEEK.map((d) => {
-                        const slot = timetable.find((s) => s.day === d.id && s.period === period.period);
-                        if (!slot) return <td key={d.id} className="p-1.5 text-center text-slate-300">—</td>;
+                {sortedEvents.length > 0 ? (
+                  <div className="space-y-3">
+                    {sortedEvents.map((ev) => {
+                      const evDate = new Date(ev.date);
+                      const dayNum = evDate.getDate();
+                      const monthNum = evDate.getMonth() + 1;
+                      const isTodayEvent = ev.date === todayStr;
+
+                      return (
+                        <div
+                          key={ev.id}
+                          className={`bg-white rounded-3xl border p-4 sm:p-5 transition-all shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 ${
+                            isTodayEvent
+                              ? 'border-amber-400 bg-amber-50/40 ring-2 ring-amber-200'
+                              : ev.isImportant
+                              ? 'border-indigo-200 bg-indigo-50/30'
+                              : 'border-slate-200 hover:border-slate-300'
+                          }`}
+                        >
+                          <div className="flex items-start space-x-3.5 min-w-0">
+                            {/* Date Badge */}
+                            <div
+                              className={`w-13 h-14 rounded-2xl flex flex-col items-center justify-center shrink-0 font-bold border shadow-xs ${
+                                isTodayEvent
+                                  ? 'bg-amber-500 text-white border-amber-600'
+                                  : ev.isImportant
+                                  ? 'bg-indigo-600 text-white border-indigo-700'
+                                  : 'bg-slate-100 text-slate-800 border-slate-200'
+                              }`}
+                            >
+                              <span className="text-[10px] uppercase font-semibold">Th.{monthNum}</span>
+                              <span className="text-xl font-black leading-none">{dayNum}</span>
+                            </div>
+
+                            <div className="space-y-1 min-w-0">
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <h3 className="text-sm sm:text-base font-bold text-slate-900 truncate">
+                                  {ev.title}
+                                </h3>
+                                {isTodayEvent && (
+                                  <span className="bg-amber-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase">
+                                    Hôm nay
+                                  </span>
+                                )}
+                                {ev.isImportant && !isTodayEvent && (
+                                  <span className="bg-rose-100 text-rose-700 text-[9px] font-bold px-2 py-0.5 rounded-full">
+                                    Quan trọng
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                                {ev.time && (
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="w-3.5 h-3.5 text-slate-400" />
+                                    <span>{ev.time}</span>
+                                  </span>
+                                )}
+                                {ev.location && (
+                                  <span className="flex items-center gap-1">
+                                    <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                                    <span>{ev.location}</span>
+                                  </span>
+                                )}
+                              </div>
+
+                              {ev.description && (
+                                <p className="text-xs text-slate-600 leading-relaxed pt-1 bg-slate-50 p-2.5 rounded-xl border border-slate-100 mt-1">
+                                  <strong>Dặn dò phụ huynh:</strong> {ev.description}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="bg-white rounded-3xl border border-slate-200 p-8 text-center text-xs text-slate-400 space-y-2">
+                    <Calendar className="w-8 h-8 mx-auto opacity-40" />
+                    <p>Chưa có sự kiện nào trong danh mục này.</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB CONTENT 3: SOẠN SÁCH VỞ CHO NGÀY MAI */}
+            {activeTab === 'BACKPACK' && (
+              <div className="space-y-4">
+                <div className="bg-white rounded-3xl border border-slate-200 p-5 space-y-4 shadow-xs">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div>
+                      <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
+                        <Backpack className="w-5 h-5 text-blue-600" />
+                        <span>Danh Sách Soạn Sách Vở Cho Ngày Mai ({tomorrowDayInfo?.name})</span>
+                      </h3>
+                      <p className="text-xs text-slate-500">
+                        Tích chọn từng môn sau khi em đã bỏ sách vở và đồ dùng vào cặp.
+                      </p>
+                    </div>
+
+                    <span className="bg-blue-100 text-blue-800 text-[11px] font-bold px-2.5 py-1 rounded-full">
+                      {tomorrowSlots.length} Tiết Học
+                    </span>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    {tomorrowSlots.length === 0 ? (
+                      <p className="text-xs text-slate-400 text-center py-4">Ngày mai không có tiết học hoặc là ngày nghỉ.</p>
+                    ) : (
+                      tomorrowSlots.map((slot) => {
                         const theme = getSubjectTheme(slot.subjectCode, customSubjects);
+                        const isPacked = packedSubjectCodes.includes(slot.subjectCode);
 
                         return (
-                          <td key={d.id} className="p-1.5 text-center">
-                            <div
-                              className={`p-1.5 rounded-xl border text-[11px] font-bold ${theme.bgColor} ${theme.textColor} ${theme.borderColor}`}
-                            >
-                              <div className="text-sm leading-none mb-0.5">{theme.icon}</div>
-                              <div className="truncate">{theme.shortName}</div>
+                          <div
+                            key={slot.id}
+                            className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
+                              isPacked
+                                ? 'bg-emerald-50/40 border-emerald-200'
+                                : 'bg-slate-50 border-slate-200'
+                            }`}
+                          >
+                            <div className="flex items-center space-x-3 min-w-0">
+                              <span className="text-2xl">{theme.icon}</span>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-bold text-xs text-slate-900">{slot.subjectName}</span>
+                                  <span className="text-[10px] font-mono text-slate-500 bg-white px-1.5 py-0.2 rounded border border-slate-200">
+                                    Tiết {slot.period}
+                                  </span>
+                                </div>
+                                <p className="text-xs text-slate-500 mt-0.5">
+                                  {slot.note ? `Mang theo: ${slot.note}` : `Sách giáo khoa & Vở bài tập ${slot.subjectName}`}
+                                </p>
+                              </div>
                             </div>
-                          </td>
+
+                            <button
+                              type="button"
+                              onClick={() => togglePackSubject(slot.subjectCode)}
+                              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                                isPacked
+                                  ? 'bg-emerald-600 text-white shadow-xs'
+                                  : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                              }`}
+                            >
+                              {isPacked ? <Check className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+                              <span>{isPacked ? 'Đã Xếp' : 'Chưa Xếp'}</span>
+                            </button>
+                          </div>
                         );
-                      })}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      })
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB CONTENT 4: THỜI KHÓA BIỂU TUẦN */}
+            {activeTab === 'TIMETABLE' && (
+              <div className="bg-white rounded-3xl border border-slate-200 p-5 space-y-4 shadow-xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                  <div>
+                    <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
+                      <Calendar className="w-5 h-5 text-blue-600" />
+                      <span>Thời Khóa Biểu Lớp {currentClass.name}</span>
+                    </h3>
+                    <p className="text-xs text-slate-500">Chương trình học chuẩn 2 buổi/ngày kèm ăn bán trú.</p>
+                  </div>
+
+                  {/* Day Picker Pills for Mobile/Tablet */}
+                  <div className="flex flex-wrap gap-1">
+                    {DAYS_OF_WEEK.map((d) => (
+                      <button
+                        key={d.id}
+                        type="button"
+                        onClick={() => setSelectedTimetableDay(d.id)}
+                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                          selectedTimetableDay === d.id
+                            ? 'bg-blue-600 text-white shadow-xs'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }`}
+                      >
+                        {d.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Day Schedule List */}
+                <div className="space-y-2">
+                  {PERIODS.map((p) => {
+                    const slot = timetable.find(
+                      (s) => s.day === selectedTimetableDay && s.period === p.period && (s.classId || 'class-4a1') === currentClass.id
+                    );
+                    const theme = slot ? getSubjectTheme(slot.subjectCode, customSubjects) : null;
+
+                    return (
+                      <div
+                        key={p.period}
+                        className={`flex items-center justify-between p-3 rounded-2xl border transition-colors ${
+                          theme ? `${theme.bgColor} ${theme.borderColor}` : 'bg-slate-50 border-slate-200'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <span className="font-mono text-xs font-bold text-slate-500 w-12 shrink-0">
+                            {p.name}
+                          </span>
+                          <span className="text-xl">{theme?.icon || '📚'}</span>
+                          <div>
+                            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+                              {slot?.subjectName || 'Tự học / Nghỉ'}
+                            </h4>
+                            {slot?.note && (
+                              <p className="text-[11px] text-slate-600 mt-0.5">{slot.note}</p>
+                            )}
+                          </div>
+                        </div>
+                        <span className="text-xs font-mono text-slate-500 font-semibold">{p.time}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* TAB CONTENT 5: KHEN THƯỞNG & SINH NHẬT */}
+            {activeTab === 'SPOTLIGHT' && (
+              <div className="space-y-5">
+                {/* Birthday in Month */}
+                <div className="bg-white rounded-3xl border border-slate-200 p-5 space-y-4 shadow-xs">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
+                      <Cake className="w-5 h-5 text-rose-500" />
+                      <span>Sinh Nhật Trong Tháng Này</span>
+                    </h3>
+                    <span className="bg-rose-100 text-rose-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      {thisMonthBirthdays.length} bạn
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    {studentBirthdayList.slice(0, 6).map((b) => (
+                      <div
+                        key={b.student.id}
+                        className={`p-3 rounded-2xl border flex items-center justify-between gap-2 ${
+                          b.isToday
+                            ? 'bg-rose-50 border-rose-300 shadow-xs'
+                            : 'bg-slate-50 border-slate-100'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-2.5 min-w-0">
+                          <div className="w-9 h-9 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-sm shrink-0">
+                            {b.isToday ? '🎂' : '🎁'}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-bold text-slate-900 truncate">{b.student.fullName}</p>
+                            <p className="text-[11px] text-slate-500">
+                              {b.formattedDate} • Tròn {b.turningAge} tuổi
+                            </p>
+                          </div>
+                        </div>
+
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-white border border-slate-200 text-slate-600 shrink-0">
+                          {b.isToday ? '🎉 Hôm nay' : `Còn ${b.daysRemaining} ngày`}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Star Leaderboard */}
+                <div className="bg-white rounded-3xl border border-slate-200 p-5 space-y-4 shadow-xs">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
+                      <Flame className="w-5 h-5 text-amber-500" />
+                      <span>Góc Thi Đua & Ngôi Sao Sáng Của Tuần</span>
+                    </h3>
+                    <span className="text-xs font-bold text-amber-600">Top 5 nề nếp</span>
+                  </div>
+
+                  <div className="space-y-2 text-xs">
+                    {topStarStudents.map((st, idx) => (
+                      <div
+                        key={st.id}
+                        className="p-2.5 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between"
+                      >
+                        <div className="flex items-center space-x-2.5">
+                          <span
+                            className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${
+                              idx === 0
+                                ? 'bg-amber-400 text-white'
+                                : idx === 1
+                                ? 'bg-slate-300 text-slate-700'
+                                : idx === 2
+                                ? 'bg-amber-700/60 text-white'
+                                : 'bg-slate-100 text-slate-600'
+                            }`}
+                          >
+                            {idx + 1}
+                          </span>
+                          <span className="font-bold text-slate-900">{st.fullName}</span>
+                        </div>
+                        <span className="bg-amber-100 text-amber-800 font-bold px-2.5 py-0.5 rounded-full text-xs border border-amber-200">
+                          ⭐ {st.stars} sao
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* RIGHT 1 COLUMN: SIDE CONTACT & SCHOOL INFO PANEL */}
+          <div className="space-y-4">
+            {/* TEACHER PROFILE CARD */}
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-5 space-y-3.5">
+              <div className="flex items-center space-x-3">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-md shrink-0">
+                  👩‍🏫
+                </div>
+                <div className="min-w-0">
+                  <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">
+                    Giáo Viên Chủ Nhiệm
+                  </span>
+                  <h3 className="font-bold text-base text-slate-900 truncate">
+                    {currentClass.teacherName || 'Cô Nguyễn Thị Mai'}
+                  </h3>
+                  <p className="text-xs text-blue-600 font-semibold">Chủ nhiệm Lớp {currentClass.name}</p>
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-slate-100 space-y-2 text-xs text-slate-600">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400">Trường:</span>
+                  <strong className="text-slate-800 text-right truncate max-w-[170px]">{schoolInfo.name}</strong>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400">Năm học:</span>
+                  <strong className="font-mono text-slate-800">{schoolInfo.schoolYear || '2026-2027'}</strong>
+                </div>
+                {schoolInfo.phone && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400">Hotline trường:</span>
+                    <a href={`tel:${schoolInfo.phone}`} className="font-mono font-bold text-blue-600 hover:underline">
+                      {schoolInfo.phone}
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* CLASS GENERAL RULES / PARENT NOTICE CARD */}
+            <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-3xl border border-indigo-100 p-5 space-y-3 text-xs">
+              <h4 className="font-bold text-indigo-950 flex items-center gap-1.5 text-sm">
+                <Info className="w-4 h-4 text-indigo-600" />
+                <span>Quy Định & Dặn Dò Đầu Năm</span>
+              </h4>
+              <ul className="space-y-1.5 text-indigo-900/90 leading-relaxed list-disc list-inside">
+                <li>Học sinh có mặt tại lớp trước <strong>07:45</strong> sáng.</li>
+                <li>Đồng phục chỉnh tề, đeo khăn quàng đỏ (với Đội viên).</li>
+                <li>Học sinh bán trú chuẩn bị gối ngủ cá nhân.</li>
+                <li>Nghỉ học phụ huynh vui lòng nhắn tin báo cô trước 07:30.</li>
+              </ul>
+            </div>
+
+            {/* SWITCH TO OTHER CLASS IN SCHOOL */}
+            <div className="bg-white rounded-3xl border border-slate-200 p-5 space-y-3 shadow-xs">
+              <h4 className="font-bold text-xs uppercase text-slate-500 tracking-wider">
+                Xem Lớp Khác Trong Trường
+              </h4>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                {schoolClasses.map((cls) => {
+                  const slug = cls.name.toLowerCase().replace(/\s+/g, '');
+                  const isCurrent = cls.id === currentClass.id;
+                  return (
+                    <Link
+                      key={cls.id}
+                      href={`/hw/${slug}`}
+                      className={`p-2.5 rounded-xl border text-center font-bold transition-all ${
+                        isCurrent
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                          : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'
+                      }`}
+                    >
+                      Lớp {cls.name}
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
           </div>
-        )}
+        </div>
       </main>
 
-      {/* MODAL IMAGE PREVIEW */}
+      {/* MODAL PREVIEW IMAGE OF HOMEWORK */}
       {previewImageUrl && (
         <div
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in"
           onClick={() => setPreviewImageUrl(null)}
         >
-          <div className="max-w-2xl w-full bg-white rounded-3xl overflow-hidden shadow-2xl p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <h4 className="font-bold text-slate-900 text-sm">Phiếu Bài Tập Đính Kèm</h4>
+          <div className="bg-white max-w-2xl w-full rounded-3xl overflow-hidden shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
+            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+              <h3 className="font-bold text-sm text-slate-800">Ảnh Phiếu Bài Tập Về Nhà</h3>
               <button
+                type="button"
                 onClick={() => setPreviewImageUrl(null)}
-                className="text-xs font-bold text-slate-500 hover:text-slate-800"
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer"
               >
-                Đóng ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
-            <img
-              src={previewImageUrl}
-              alt="Phiếu bài tập"
-              className="w-full max-h-[75vh] object-contain rounded-2xl border border-slate-200"
-            />
+            <div className="p-4 max-h-[75vh] overflow-auto flex items-center justify-center bg-slate-50">
+              <img
+                src={previewImageUrl}
+                alt="Phiếu bài tập"
+                className="max-h-[70vh] object-contain rounded-xl border border-slate-200"
+              />
+            </div>
           </div>
         </div>
       )}

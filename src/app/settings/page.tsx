@@ -199,6 +199,7 @@ export default function SettingsPage() {
   const [principalName, setPrincipalName] = useState(schoolInfo.principalName);
   const [address, setAddress] = useState(schoolInfo.address || '');
   const [phone, setPhone] = useState(schoolInfo.phone || '');
+  const [schoolLogoUrl, setSchoolLogoUrl] = useState(schoolInfo.logoUrl || '');
 
   // Class Form State
   const [className, setClassName] = useState(classInfo.name);
@@ -358,6 +359,24 @@ export default function SettingsPage() {
     }
   };
 
+  const handleLogoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 3 * 1024 * 1024) {
+      toast.error('Dung lượng ảnh logo không được vượt quá 3MB');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const base64 = event.target?.result as string;
+      if (base64) {
+        setSchoolLogoUrl(base64);
+        toast.success('Đã tải lên ảnh logo trường!');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSaveSchool = (e: React.FormEvent) => {
     e.preventDefault();
     if (!isAdmin) {
@@ -371,7 +390,9 @@ export default function SettingsPage() {
       principalName,
       address,
       phone,
+      logoUrl: schoolLogoUrl,
     });
+    toast.success('Đã lưu thông tin hồ sơ trường học & logo thành công!');
   };
 
   const handleSyncRealDate = () => {
@@ -910,6 +931,110 @@ export default function SettingsPage() {
           )}
 
           <form onSubmit={handleSaveSchool} className="space-y-4 text-xs max-w-3xl">
+            {/* School Logo Selector & Uploader */}
+            <div className="space-y-2.5 p-4 rounded-2xl bg-purple-50/50 border border-purple-100">
+              <label className="block font-bold text-slate-800 uppercase tracking-wider text-[11px]">
+                Logo & Biểu Trưng Trường Học
+              </label>
+
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="relative shrink-0">
+                  {schoolLogoUrl ? (
+                    <img
+                      src={schoolLogoUrl}
+                      alt="Logo trường"
+                      className="w-16 h-16 rounded-2xl object-cover border-2 border-purple-500 shadow-md bg-white"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 rounded-2xl bg-purple-100 border-2 border-dashed border-purple-300 flex items-center justify-center text-purple-600 text-2xl font-bold">
+                      🏫
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex-1 min-w-[260px] space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label className={`inline-flex items-center space-x-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold px-3 py-1.5 rounded-xl transition-colors ${!isAdmin ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}`}>
+                      <Camera className="w-3.5 h-3.5" />
+                      <span>Tải Ảnh Logo Lên (PNG/JPG)</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={!isAdmin}
+                        onChange={handleLogoFileUpload}
+                        className="hidden"
+                      />
+                    </label>
+
+                    {schoolLogoUrl && isAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => setSchoolLogoUrl('')}
+                        className="text-[11px] text-rose-600 hover:underline font-semibold"
+                      >
+                        Xóa logo
+                      </button>
+                    )}
+                  </div>
+
+                  <p className="text-[11px] text-slate-500 font-medium">Hoặc chọn mẫu biểu trưng trường học có sẵn bên dưới:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      {
+                        id: 'lotus',
+                        label: 'Búp Sen & Ngọn Đuốc',
+                        url: 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=150&auto=format&fit=crop&q=80',
+                      },
+                      {
+                        id: 'school',
+                        label: 'Ngôi Trường Thân Thiện',
+                        url: 'https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=150&auto=format&fit=crop&q=80',
+                      },
+                      {
+                        id: 'books',
+                        label: 'Trang Sách Tri Thức',
+                        url: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=150&auto=format&fit=crop&q=80',
+                      },
+                      {
+                        id: 'grad',
+                        label: 'Huy Hiệu Giáo Dục',
+                        url: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=150&auto=format&fit=crop&q=80',
+                      },
+                    ].map((item) => (
+                      <button
+                        key={item.id}
+                        type="button"
+                        disabled={!isAdmin}
+                        onClick={() => setSchoolLogoUrl(item.url)}
+                        className={`relative rounded-xl overflow-hidden border-2 transition-all ${
+                          schoolLogoUrl === item.url
+                            ? 'border-purple-600 ring-2 ring-purple-300 scale-105'
+                            : 'border-slate-200 hover:border-slate-300'
+                        } ${!isAdmin ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                        title={item.label}
+                      >
+                        <img src={item.url} alt={item.label} className="w-8 h-8 object-cover bg-white" />
+                        {schoolLogoUrl === item.url && (
+                          <div className="absolute inset-0 bg-purple-600/40 flex items-center justify-center text-white">
+                            <Check className="w-3.5 h-3.5 stroke-[3]" />
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+
+                  <input
+                    type="url"
+                    disabled={!isAdmin}
+                    placeholder="Hoặc dán URL link ảnh logo trường..."
+                    value={schoolLogoUrl}
+                    onChange={(e) => setSchoolLogoUrl(e.target.value)}
+                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-700 focus:ring-1 focus:ring-purple-500 disabled:bg-slate-50"
+                  />
+                </div>
+              </div>
+            </div>
+
             <div>
               <label className="block font-semibold text-slate-700 mb-1">Tên Trường Tiểu Học (*)</label>
               <input

@@ -10,6 +10,7 @@ export const INITIAL_SCHOOL_INFO: SchoolInfo = {
   phone: '024 3839 0134',
   email: 'c1daimo-ntl@hanoiedu.vn',
   website: 'thdaimo.edu.vn',
+  logoUrl: 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=150&auto=format&fit=crop&q=80',
 };
 
 export const INITIAL_SCHOOL_CLASSES: ClassInfo[] = [

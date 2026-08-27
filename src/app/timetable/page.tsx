@@ -105,7 +105,7 @@ export default function TimetablePage() {
 
   // Reset về mẫu chuẩn
   const handleResetToStandard = () => {
-    if (confirm('Bạn có muốn khôi phục lại Thời khóa biểu mẫu chuẩn Khối 4 (2 buổi/ngày) theo Chương trình GDPT 2018?')) {
+    if (confirm('Bạn có muốn khôi phục lại Thời khóa biểu mẫu chuẩn Khối 4 (2 buổi/ngày) theo chuẩn Tiểu học?')) {
       resetTimetableToStandard();
       toast.success('Đã áp dụng Thời khóa biểu chuẩn mẫu!');
     }
@@ -160,7 +160,7 @@ Kính nhờ quý phụ huynh nhắc nhở các em chuẩn bị đầy đủ sác
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Chuẩn khung thời gian GDPT 2018 (Sáng 4 tiết: 07:45 - 10:35 • Chiều 3 tiết: 14:00 - 16:05).
+            Khung thời lượng chuẩn Tiểu học (Sáng 4 tiết: 07:45 - 10:35 • Chiều 3 tiết: 14:00 - 16:05).
           </p>
         </div>
 
