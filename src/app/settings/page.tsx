@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Settings,
   Database,
@@ -45,6 +45,9 @@ import {
   Sliders,
   CheckCheck,
   XCircle,
+  RefreshCw,
+  Edit3,
+  List,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useAuth } from '@/lib/auth-context';
@@ -75,14 +78,25 @@ const DEPARTMENTS = [
 
 const AI_VENDOR_PRESETS = [
   {
+    id: 'xiaomi',
+    name: 'Xiaomi MIMO / MiLM',
+    provider: 'CUSTOM_OPENAI' as AIProviderType,
+    badge: 'Khuyên dùng (Đã cấu hình)',
+    icon: '🟠',
+    defaultModel: 'mimo-v1',
+    baseUrl: 'https://api.xiaomimimo.com/v1',
+    description: 'Mô hình Xiaomi MIMO theo chuẩn định dạng OpenAI, hỗ trợ chìa khóa cá nhân.',
+    models: ['mimo-v1', 'mimo-pro', 'milm-7b'],
+  },
+  {
     id: 'gemini',
     name: 'Google Gemini',
     provider: 'GEMINI' as AIProviderType,
-    badge: 'Khuyên dùng',
+    badge: 'Tốc độ cao',
     icon: '✨',
     defaultModel: 'gemini-2.5-flash',
     baseUrl: '',
-    description: 'Tối ưu nhận xét tiếng Việt, tốc độ cao, hỗ trợ chìa khóa tích hợp sẵn hoặc khóa riêng.',
+    description: 'Tối ưu nhận xét tiếng Việt, hỗ trợ chìa khóa tích hợp sẵn hoặc khóa riêng.',
     models: ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'],
   },
   {
@@ -93,30 +107,19 @@ const AI_VENDOR_PRESETS = [
     icon: '🟢',
     defaultModel: 'gpt-4o-mini',
     baseUrl: 'https://api.openai.com/v1',
-    description: 'Mô hình GPT-4o-mini & GPT-4o từ OpenAI, độ chính xác cao và khả năng viết văn sư phạm phong phú.',
+    description: 'Mô hình GPT-4o-mini & GPT-4o từ OpenAI, độ chính xác cao và viết văn sư phạm phong phú.',
     models: ['gpt-4o-mini', 'gpt-4o', 'gpt-3.5-turbo'],
   },
   {
     id: 'anthropic',
     name: 'Anthropic Claude',
     provider: 'ANTHROPIC' as AIProviderType,
-    badge: 'Văn phong tốt',
+    badge: 'Văn phong ấm áp',
     icon: '🟣',
     defaultModel: 'claude-3-5-haiku-20241022',
     baseUrl: 'https://api.anthropic.com/v1',
-    description: 'Claude 3.5 Haiku/Sonnet với ngôn ngữ tự nhiên, ấm áp, rất phù hợp nhận xét học sinh tiểu học.',
+    description: 'Claude 3.5 Haiku/Sonnet với ngôn ngữ tự nhiên, ấm áp, rất phù hợp học sinh tiểu học.',
     models: ['claude-3-5-haiku-20241022', 'claude-3-5-sonnet-20241022'],
-  },
-  {
-    id: 'xiaomi',
-    name: 'Xiaomi MIMO / MiLM',
-    provider: 'CUSTOM_OPENAI' as AIProviderType,
-    badge: 'OpenAI Format',
-    icon: '🟠',
-    defaultModel: 'mimo-v1',
-    baseUrl: 'https://api.xiaomimimo.com/v1',
-    description: 'Mô hình Xiaomi MIMO theo chuẩn định dạng OpenAI, hỗ trợ chìa khóa sk-sjozamg...',
-    models: ['mimo-v1', 'mimo-pro', 'milm-7b'],
   },
   {
     id: 'deepseek',
@@ -138,7 +141,7 @@ const AI_VENDOR_PRESETS = [
     defaultModel: 'openai/gpt-4o-mini',
     baseUrl: 'https://openrouter.ai/api/v1',
     description: 'Cổng kết nối hơn 100+ mô hình AI toàn cầu chỉ với 1 tài khoản duy nhất.',
-    models: ['openai/gpt-4o-mini', 'anthropic/claude-3.5-haiku', 'deepseek/deepseek-chat', 'google/gemini-flash-1.5'],
+    models: ['openai/gpt-4o-mini', 'anthropic/claude-3.5-haiku', 'deepseek/deepseek-chat'],
   },
 ];
 
@@ -205,10 +208,10 @@ export default function SettingsPage() {
   const [cols, setCols] = useState(classInfo.seatingGridCols || 8);
 
   // Multi-Vendor AI Form State
-  const [aiProvider, setAiProvider] = useState<AIProviderType>(aiConfig?.provider || 'GEMINI');
-  const [inputApiKey, setInputApiKey] = useState(aiConfig?.apiKey || apiKey || '');
-  const [baseUrl, setBaseUrl] = useState(aiConfig?.baseUrl || '');
-  const [modelName, setModelName] = useState(aiConfig?.modelName || 'gemini-2.5-flash');
+  const [aiProvider, setAiProvider] = useState<AIProviderType>(aiConfig?.provider || 'CUSTOM_OPENAI');
+  const [inputApiKey, setInputApiKey] = useState(aiConfig?.apiKey || apiKey || 'sk-sjozamgxafx93e1ut7zizxetbf653tx3amguacizr6c40jby');
+  const [baseUrl, setBaseUrl] = useState(aiConfig?.baseUrl || 'https://api.xiaomimimo.com/v1');
+  const [modelName, setModelName] = useState(aiConfig?.modelName || 'mimo-v1');
   const [temperature, setTemperature] = useState(aiConfig?.temperature ?? 0.7);
   const [showKey, setShowKey] = useState(false);
   const [isTestingAi, setIsTestingAi] = useState(false);
@@ -221,16 +224,56 @@ export default function SettingsPage() {
     error?: string;
   } | null>(null);
 
+  // Dynamic Models List State
+  const [fetchedModels, setFetchedModels] = useState<string[]>([]);
+  const [isFetchingModels, setIsFetchingModels] = useState(false);
+  const [useCustomModelInput, setUseCustomModelInput] = useState(false);
+
+  // Fetch Models from Server / Provider API
+  const fetchModelsList = useCallback(async (prov = aiProvider, key = inputApiKey, base = baseUrl) => {
+    setIsFetchingModels(true);
+    try {
+      const res = await fetch('/api/fetch-models', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider: prov,
+          apiKey: key,
+          baseUrl: base,
+        }),
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.models) && data.models.length > 0) {
+        setFetchedModels(data.models);
+        // If current model is not in the list, set to first one
+        if (!data.models.includes(modelName)) {
+          setModelName(data.models[0]);
+        }
+      }
+    } catch (e) {
+      console.warn('Could not fetch models list:', e);
+    } finally {
+      setIsFetchingModels(false);
+    }
+  }, [aiProvider, inputApiKey, baseUrl, modelName]);
+
   // Sync AI Config when loaded
   useEffect(() => {
     if (aiConfig) {
-      setAiProvider(aiConfig.provider || 'GEMINI');
-      setInputApiKey(aiConfig.apiKey || apiKey || '');
-      setBaseUrl(aiConfig.baseUrl || '');
-      setModelName(aiConfig.modelName || 'gemini-2.5-flash');
+      setAiProvider(aiConfig.provider || 'CUSTOM_OPENAI');
+      setInputApiKey(aiConfig.apiKey || apiKey || 'sk-sjozamgxafx93e1ut7zizxetbf653tx3amguacizr6c40jby');
+      setBaseUrl(aiConfig.baseUrl || 'https://api.xiaomimimo.com/v1');
+      setModelName(aiConfig.modelName || 'mimo-v1');
       setTemperature(aiConfig.temperature ?? 0.7);
     }
   }, [aiConfig, apiKey]);
+
+  // Fetch models on tab change or initial load
+  useEffect(() => {
+    if (activeTab === 'DATA' && fetchedModels.length === 0) {
+      fetchModelsList(aiProvider, inputApiKey, baseUrl);
+    }
+  }, [activeTab, aiProvider, inputApiKey, baseUrl, fetchModelsList, fetchedModels.length]);
 
   // Apply Preset
   const handleApplyVendorPreset = (preset: typeof AI_VENDOR_PRESETS[0]) => {
@@ -238,6 +281,8 @@ export default function SettingsPage() {
     setModelName(preset.defaultModel);
     setBaseUrl(preset.baseUrl);
     setTestResult(null);
+    setUseCustomModelInput(false);
+    fetchModelsList(preset.provider, inputApiKey, preset.baseUrl);
     toast.info(`Đã chọn cấu hình ${preset.name} (${preset.defaultModel})`);
   };
 
@@ -248,11 +293,11 @@ export default function SettingsPage() {
       provider: aiProvider,
       apiKey: inputApiKey.trim(),
       baseUrl: baseUrl.trim(),
-      modelName: modelName.trim() || 'gemini-2.5-flash',
+      modelName: modelName.trim() || 'mimo-v1',
       temperature,
     };
     setAiConfig(newConfig);
-    toast.success(`Đã lưu cấu hình AI ${aiProvider} thành công!`);
+    toast.success(`Đã lưu cấu hình AI ${aiProvider} (${modelName}) thành công!`);
   };
 
   // Test AI Connection
@@ -264,7 +309,7 @@ export default function SettingsPage() {
         provider: aiProvider,
         apiKey: inputApiKey.trim(),
         baseUrl: baseUrl.trim(),
-        modelName: modelName.trim() || 'gemini-2.5-flash',
+        modelName: modelName.trim() || 'mimo-v1',
         temperature,
       };
 
@@ -436,7 +481,7 @@ export default function SettingsPage() {
       <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3">
         <button
           onClick={() => setActiveTab('PROFILE')}
-          className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+          className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeTab === 'PROFILE'
               ? 'bg-blue-600 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
@@ -448,7 +493,7 @@ export default function SettingsPage() {
 
         <button
           onClick={() => setActiveTab('CLASS')}
-          className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+          className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeTab === 'CLASS'
               ? 'bg-blue-600 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
@@ -460,7 +505,7 @@ export default function SettingsPage() {
 
         <button
           onClick={() => setActiveTab('SCHOOL')}
-          className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+          className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeTab === 'SCHOOL'
               ? 'bg-blue-600 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
@@ -472,9 +517,9 @@ export default function SettingsPage() {
 
         <button
           onClick={() => setActiveTab('DATA')}
-          className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+          className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeTab === 'DATA'
-              ? 'bg-blue-600 text-white shadow-xs'
+              ? 'bg-purple-600 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
           }`}
         >
@@ -964,7 +1009,7 @@ export default function SettingsPage() {
                     Cấu Hình Mô Hình Trí Tuệ Nhân Tạo (Multi-Vendor AI)
                   </h2>
                   <p className="text-xs text-slate-500">
-                    Tùy chọn đa dạng nhà cung cấp (Google Gemini, OpenAI ChatGPT, Anthropic Claude, Xiaomi MIMO, DeepSeek, OpenRouter) để tự động sinh nhận xét học bạ TT27.
+                    Tùy chọn đa dạng nhà cung cấp (Xiaomi MIMO, Google Gemini, OpenAI ChatGPT, Anthropic Claude, DeepSeek, OpenRouter) để tự động sinh nhận xét học bạ TT27.
                   </p>
                 </div>
               </div>
@@ -1027,29 +1072,88 @@ export default function SettingsPage() {
                   </label>
                   <select
                     value={aiProvider}
-                    onChange={(e) => setAiProvider(e.target.value as AIProviderType)}
+                    onChange={(e) => {
+                      const newProv = e.target.value as AIProviderType;
+                      setAiProvider(newProv);
+                      fetchModelsList(newProv, inputApiKey, baseUrl);
+                    }}
                     className="w-full px-3 py-2.5 rounded-xl border border-slate-200 font-bold text-slate-900 focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white"
                   >
-                    <option value="GEMINI">Google Gemini API (Mặc định)</option>
+                    <option value="CUSTOM_OPENAI">Custom OpenAI-Compatible (Xiaomi MIMO, DeepSeek, OpenRouter, Groq)</option>
+                    <option value="GEMINI">Google Gemini API</option>
                     <option value="OPENAI">OpenAI API (ChatGPT Standard)</option>
                     <option value="ANTHROPIC">Anthropic Claude API (Claude 3.5)</option>
-                    <option value="CUSTOM_OPENAI">Custom OpenAI-Compatible (Xiaomi MIMO, DeepSeek, OpenRouter, Groq, Ollama)</option>
                   </select>
                 </div>
 
-                {/* Model Name */}
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">
-                    Tên Mô Hình (Model ID)
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={modelName}
-                    onChange={(e) => setModelName(e.target.value)}
-                    placeholder="Ví dụ: mimo-v1, gpt-4o-mini, gemini-2.5-flash..."
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 font-mono font-bold text-slate-900 focus:ring-2 focus:ring-purple-500 focus:outline-none"
-                  />
+                {/* Dynamic Model Selector (Fetched from server) */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="font-semibold text-slate-700">
+                      Mô Hình AI (Model ID)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => fetchModelsList(aiProvider, inputApiKey, baseUrl)}
+                        disabled={isFetchingModels}
+                        className="text-[11px] text-purple-700 hover:text-purple-900 font-bold flex items-center gap-1 cursor-pointer"
+                        title="Tải lại danh sách mô hình từ API"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${isFetchingModels ? 'animate-spin' : ''}`} />
+                        <span>{isFetchingModels ? 'Đang tải...' : 'Tải lại Model'}</span>
+                      </button>
+
+                      <span className="text-slate-300">|</span>
+
+                      <button
+                        type="button"
+                        onClick={() => setUseCustomModelInput(!useCustomModelInput)}
+                        className="text-[11px] text-slate-500 hover:text-slate-800 font-medium flex items-center gap-1 cursor-pointer"
+                      >
+                        {useCustomModelInput ? (
+                          <>
+                            <List className="w-3 h-3" />
+                            <span>Chọn từ danh sách</span>
+                          </>
+                        ) : (
+                          <>
+                            <Edit3 className="w-3 h-3" />
+                            <span>Tự nhập</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {!useCustomModelInput && fetchedModels.length > 0 ? (
+                    <select
+                      value={modelName}
+                      onChange={(e) => setModelName(e.target.value)}
+                      className="w-full px-3 py-2.5 rounded-xl border border-slate-200 font-mono font-bold text-slate-900 focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white"
+                    >
+                      {fetchedModels.map((m) => (
+                        <option key={m} value={m}>
+                          🤖 {m}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      required
+                      value={modelName}
+                      onChange={(e) => setModelName(e.target.value)}
+                      placeholder="Ví dụ: mimo-v1, gpt-4o-mini, gemini-2.5-flash..."
+                      className="w-full px-3 py-2.5 rounded-xl border border-slate-200 font-mono font-bold text-slate-900 focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                    />
+                  )}
+
+                  <p className="text-[10px] text-slate-400">
+                    {fetchedModels.length > 0
+                      ? `✨ Đã nạp ${fetchedModels.length} mô hình khả dụng cho nhà cung cấp này.`
+                      : 'Đang dùng danh sách mô hình mặc định.'}
+                  </p>
                 </div>
               </div>
 
@@ -1068,19 +1172,13 @@ export default function SettingsPage() {
                     type={showKey ? 'text' : 'password'}
                     value={inputApiKey}
                     onChange={(e) => setInputApiKey(e.target.value)}
-                    placeholder={
-                      aiProvider === 'GEMINI'
-                        ? 'AIzaSy... (Để trống để dùng khóa máy chủ)'
-                        : aiProvider === 'ANTHROPIC'
-                        ? 'sk-ant-...'
-                        : 'sk-sjozamgxafx93e1ut7zizxetbf653tx3amguacizr6c40jby (sk-...)'
-                    }
+                    placeholder="sk-sjozamgxafx93e1ut7zizxetbf653tx3amguacizr6c40jby (sk-...)"
                     className="w-full pl-3 pr-10 py-2.5 rounded-xl border border-slate-200 font-mono text-xs text-slate-900 focus:ring-2 focus:ring-purple-500 focus:outline-none"
                   />
                   <button
                     type="button"
                     onClick={() => setShowKey(!showKey)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
                   >
                     {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -1097,36 +1195,48 @@ export default function SettingsPage() {
                     type="url"
                     value={baseUrl}
                     onChange={(e) => setBaseUrl(e.target.value)}
-                    placeholder="https://api.openai.com/v1 hoặc https://api.xiaomimimo.com/v1..."
+                    placeholder="https://api.xiaomimimo.com/v1 hoặc https://api.openai.com/v1..."
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 font-mono text-xs text-slate-900 focus:ring-2 focus:ring-purple-500 focus:outline-none"
                   />
                   <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
                     <span className="text-[10px] text-slate-400">Gợi ý nhanh URL:</span>
                     <button
                       type="button"
-                      onClick={() => setBaseUrl('https://api.openai.com/v1')}
-                      className="text-[10px] font-mono bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded text-slate-700"
-                    >
-                      OpenAI (https://api.openai.com/v1)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setBaseUrl('https://api.xiaomimimo.com/v1')}
-                      className="text-[10px] font-mono bg-orange-50 hover:bg-orange-100 px-2 py-0.5 rounded text-orange-700 border border-orange-200"
+                      onClick={() => {
+                        setBaseUrl('https://api.xiaomimimo.com/v1');
+                        fetchModelsList(aiProvider, inputApiKey, 'https://api.xiaomimimo.com/v1');
+                      }}
+                      className="text-[10px] font-mono bg-orange-50 hover:bg-orange-100 px-2 py-0.5 rounded text-orange-700 border border-orange-200 cursor-pointer"
                     >
                       Xiaomi MIMO (https://api.xiaomimimo.com/v1)
                     </button>
                     <button
                       type="button"
-                      onClick={() => setBaseUrl('https://api.deepseek.com/v1')}
-                      className="text-[10px] font-mono bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded text-blue-700 border border-blue-200"
+                      onClick={() => {
+                        setBaseUrl('https://api.openai.com/v1');
+                        fetchModelsList(aiProvider, inputApiKey, 'https://api.openai.com/v1');
+                      }}
+                      className="text-[10px] font-mono bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded text-slate-700 cursor-pointer"
+                    >
+                      OpenAI (https://api.openai.com/v1)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBaseUrl('https://api.deepseek.com/v1');
+                        fetchModelsList(aiProvider, inputApiKey, 'https://api.deepseek.com/v1');
+                      }}
+                      className="text-[10px] font-mono bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded text-blue-700 border border-blue-200 cursor-pointer"
                     >
                       DeepSeek (https://api.deepseek.com/v1)
                     </button>
                     <button
                       type="button"
-                      onClick={() => setBaseUrl('https://openrouter.ai/api/v1')}
-                      className="text-[10px] font-mono bg-purple-50 hover:bg-purple-100 px-2 py-0.5 rounded text-purple-700 border border-purple-200"
+                      onClick={() => {
+                        setBaseUrl('https://openrouter.ai/api/v1');
+                        fetchModelsList(aiProvider, inputApiKey, 'https://openrouter.ai/api/v1');
+                      }}
+                      className="text-[10px] font-mono bg-purple-50 hover:bg-purple-100 px-2 py-0.5 rounded text-purple-700 border border-purple-200 cursor-pointer"
                     >
                       OpenRouter (https://openrouter.ai/api/v1)
                     </button>
@@ -1147,7 +1257,7 @@ export default function SettingsPage() {
                   step="0.05"
                   value={temperature}
                   onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                  className="w-full accent-purple-600"
+                  className="w-full accent-purple-600 cursor-pointer"
                 />
                 <div className="flex items-center justify-between text-[10px] text-slate-400">
                   <span>0.0 (Chuẩn mực, tối giản)</span>

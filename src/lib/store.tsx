@@ -23,10 +23,10 @@ import {
 } from '@/types';
 
 export const DEFAULT_AI_CONFIG: AIConfig = {
-  provider: 'GEMINI',
-  apiKey: '',
-  baseUrl: '',
-  modelName: 'gemini-2.5-flash',
+  provider: 'CUSTOM_OPENAI',
+  apiKey: 'sk-sjozamgxafx93e1ut7zizxetbf653tx3amguacizr6c40jby',
+  baseUrl: 'https://api.xiaomimimo.com/v1',
+  modelName: 'mimo-v1',
   temperature: 0.7,
 };
 import {

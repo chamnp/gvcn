@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Sparkles,
   Bot,
@@ -18,6 +18,7 @@ import {
   MessageSquare,
   Cpu,
   ArrowRight,
+  ChevronDown,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { generateStudentAIComment } from '@/lib/ai-service';
@@ -37,6 +38,7 @@ export default function AIAssistantPage() {
     starLogs,
     attendances,
     aiConfig,
+    setAiConfig,
     apiKey,
   } = useAppStore();
 
@@ -45,6 +47,8 @@ export default function AIAssistantPage() {
   const [generatingStudentId, setGeneratingStudentId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [customNotes, setCustomNotes] = useState<{ [studentId: string]: string }>({});
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
+  const [isFetchingModels, setIsFetchingModels] = useState(false);
 
   const termName = TERMS.find((t) => t.id === currentTerm)?.name || currentTerm;
   const activeProviderLabel =
@@ -55,6 +59,41 @@ export default function AIAssistantPage() {
       : aiConfig?.provider === 'ANTHROPIC'
       ? 'Anthropic Claude'
       : 'Xiaomi MIMO / Custom AI';
+
+  // Fetch available models for active provider
+  const loadModels = useCallback(async () => {
+    setIsFetchingModels(true);
+    try {
+      const res = await fetch('/api/fetch-models', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider: aiConfig?.provider || 'CUSTOM_OPENAI',
+          apiKey: aiConfig?.apiKey || apiKey,
+          baseUrl: aiConfig?.baseUrl,
+        }),
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.models)) {
+        setAvailableModels(data.models);
+      }
+    } catch (e) {
+      console.warn('Failed to load models list:', e);
+    } finally {
+      setIsFetchingModels(false);
+    }
+  }, [aiConfig, apiKey]);
+
+  useEffect(() => {
+    loadModels();
+  }, [loadModels]);
+
+  const handleModelChange = (newModel: string) => {
+    if (!aiConfig) return;
+    const updated = { ...aiConfig, modelName: newModel };
+    setAiConfig(updated);
+    toast.success(`Đã chuyển sang mô hình ${newModel}`);
+  };
 
   // Sinh nhận xét cho 1 học sinh
   const handleGenerateSingle = async (studentId: string) => {
@@ -93,7 +132,7 @@ export default function AIAssistantPage() {
   // Sinh nhận xét cho cả lớp (1-Click)
   const handleGenerateAll = async () => {
     setIsGeneratingAll(true);
-    toast.info(`Đang sinh nhận xét tự động cho ${students.length} học sinh qua ${activeProviderLabel}...`);
+    toast.info(`Đang sinh nhận xét tự động cho ${students.length} học sinh qua ${activeProviderLabel} (${aiConfig?.modelName || 'mimo-v1'})...`);
 
     for (const student of students) {
       const sAss = subjectAssessments.filter((a) => a.studentId === student.id && a.term === currentTerm);
@@ -192,29 +231,44 @@ export default function AIAssistantPage() {
           </div>
         </div>
 
-        {/* AI Provider Live Badge & Quick Switcher */}
+        {/* AI Provider Live Badge & Dynamic Model Dropdown */}
         <div className="flex items-center space-x-3 bg-purple-50/80 border border-purple-200 p-3 rounded-2xl shrink-0">
           <div className="w-9 h-9 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
             <Bot className="w-5 h-5" />
           </div>
-          <div className="text-xs min-w-0">
-            <p className="font-bold text-purple-950 flex items-center gap-1">
-              <span>{activeProviderLabel}</span>
-              <span className="bg-purple-200 text-purple-800 text-[10px] font-mono px-1.5 py-0.2 rounded font-bold">
-                {aiConfig?.modelName || 'gemini-2.5-flash'}
+
+          <div className="text-xs min-w-[170px] space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-purple-950">{activeProviderLabel}</span>
+              <span className="text-[10px] text-purple-600 font-medium">Mô hình:</span>
+            </div>
+
+            {availableModels.length > 0 ? (
+              <select
+                value={aiConfig?.modelName || 'mimo-v1'}
+                onChange={(e) => handleModelChange(e.target.value)}
+                className="w-full bg-white text-purple-900 border border-purple-200 rounded-lg px-2 py-1 text-[11px] font-mono font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none"
+              >
+                {availableModels.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <span className="bg-purple-200 text-purple-800 text-[10px] font-mono px-2 py-0.5 rounded font-bold block">
+                {aiConfig?.modelName || 'mimo-v1'}
               </span>
-            </p>
-            <p className="text-[11px] text-purple-700/80 mt-0.5">
-              {aiConfig?.apiKey ? 'Đã cài đặt API Key cá nhân' : 'Khóa mặc định hệ thống / Offline Bank'}
-            </p>
+            )}
           </div>
+
           <Link
             href="/settings"
-            className="inline-flex items-center space-x-1 bg-white hover:bg-purple-100 text-purple-800 border border-purple-200 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors shrink-0"
+            className="inline-flex items-center space-x-1 bg-white hover:bg-purple-100 text-purple-800 border border-purple-200 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-colors shrink-0"
             title="Đổi nhà cung cấp hoặc cấu hình khóa API"
           >
             <Settings className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Cấu hình</span>
+            <span className="hidden sm:inline">Cài đặt</span>
           </Link>
         </div>
       </div>
