@@ -20,12 +20,25 @@ import {
   ArrowRight,
   ChevronDown,
   CheckCheck,
+  Plus,
+  X,
+  Lightbulb,
+  FileText,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { generateStudentAICommentFull, GeneratedCommentResult } from '@/lib/ai-service';
 import { TERMS, evaluateStudentTT27, getAwardBadgeClass } from '@/lib/tt27-engine';
 import { toast } from 'sonner';
 import Link from 'next/link';
+
+const PROMPT_DIRECTIVE_SUGGESTIONS = [
+  '🌟 Khen ngợi phong trào thi đua giữ vở sạch chữ đẹp',
+  '🤝 Nhấn mạnh tinh thần đoàn kết, tích cực giúp đỡ bạn bè',
+  '📚 Động viên em hăng hái phát biểu xây dựng bài',
+  '🎯 Lời văn cô đọng đúng 3 câu, ấm áp và truyền cảm hứng',
+  '🎨 Nhắc nhở rèn luyện thêm tính cẩn thận và kiên nhẫn',
+  '🚀 Khích lệ tự tin tham gia các hoạt động tập thể của lớp',
+];
 
 export default function AIAssistantPage() {
   const {
@@ -44,6 +57,7 @@ export default function AIAssistantPage() {
   } = useAppStore();
 
   const [selectedTone, setSelectedTone] = useState<'standard' | 'encouraging' | 'detailed' | 'concise'>('standard');
+  const [classPromptDirective, setClassPromptDirective] = useState('');
   const [isGeneratingAll, setIsGeneratingAll] = useState(false);
   const [generatingStudentId, setGeneratingStudentId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -61,6 +75,30 @@ export default function AIAssistantPage() {
       : aiConfig?.provider === 'ANTHROPIC'
       ? 'Anthropic Claude'
       : 'Xiaomi MIMO AI';
+
+  // Load saved class prompt directive from localStorage
+  useEffect(() => {
+    try {
+      const savedDirective = localStorage.getItem('gvcn_class_prompt_directive');
+      if (savedDirective) setClassPromptDirective(savedDirective);
+    } catch (e) {}
+  }, []);
+
+  const handleDirectiveChange = (val: string) => {
+    setClassPromptDirective(val);
+    try {
+      localStorage.setItem('gvcn_class_prompt_directive', val);
+    } catch (e) {}
+  };
+
+  const handleAddSuggestion = (text: string) => {
+    const cleanText = text.replace(/^[^\w\s\u00C0-\u1EF9]+/, '').trim();
+    if (!classPromptDirective) {
+      handleDirectiveChange(cleanText);
+    } else if (!classPromptDirective.includes(cleanText)) {
+      handleDirectiveChange(`${classPromptDirective}; ${cleanText}`);
+    }
+  };
 
   // Fetch available models for active provider
   const loadModels = useCallback(async () => {
@@ -108,6 +146,10 @@ export default function AIAssistantPage() {
     const studentStars = starLogs.filter((l) => l.studentId === studentId);
     const studentAtt = attendances.filter((a) => a.studentId === studentId);
 
+    const combinedExtraNotes = [classPromptDirective.trim(), customNotes[studentId]?.trim()]
+      .filter(Boolean)
+      .join('; ');
+
     try {
       const result = await generateStudentAICommentFull({
         student,
@@ -118,7 +160,7 @@ export default function AIAssistantPage() {
         aiConfig,
         apiKey,
         tone: selectedTone,
-        extraNotes: customNotes[studentId],
+        extraNotes: combinedExtraNotes,
       });
 
       updateTermSummary(studentId, currentTerm, { teacherComment: result.comment });
@@ -150,6 +192,10 @@ export default function AIAssistantPage() {
       const studentStars = starLogs.filter((l) => l.studentId === student.id);
       const studentAtt = attendances.filter((a) => a.studentId === student.id);
 
+      const combinedExtraNotes = [classPromptDirective.trim(), customNotes[student.id]?.trim()]
+        .filter(Boolean)
+        .join('; ');
+
       const result = await generateStudentAICommentFull({
         student,
         subjects: sAss,
@@ -159,7 +205,7 @@ export default function AIAssistantPage() {
         aiConfig,
         apiKey,
         tone: selectedTone,
-        extraNotes: customNotes[student.id],
+        extraNotes: combinedExtraNotes,
       });
 
       updateTermSummary(student.id, currentTerm, { teacherComment: result.comment });
@@ -285,6 +331,71 @@ export default function AIAssistantPage() {
         </div>
       </div>
 
+      {/* NEW: CLASS-WIDE BATCH PROMPT DIRECTIVE PANEL */}
+      <div className="bg-gradient-to-br from-purple-900/90 via-indigo-900 to-slate-900 text-white p-5 rounded-3xl border border-purple-800/60 shadow-lg space-y-3 relative overflow-hidden">
+        {/* Subtle background glow */}
+        <div className="absolute right-0 top-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-2.5">
+          <div className="flex items-center space-x-2">
+            <div className="w-7 h-7 rounded-lg bg-purple-500/30 text-purple-300 flex items-center justify-center font-bold">
+              <FileText className="w-4 h-4" />
+            </div>
+            <div>
+              <h2 className="text-xs font-bold uppercase tracking-wider text-purple-200 flex items-center gap-1.5">
+                <span>Định Hướng & Yêu Cầu Bổ Sung Cho Toàn Lớp (Prompt Directive)</span>
+                <span className="bg-purple-500/30 text-purple-300 border border-purple-400/30 text-[9px] px-2 py-0.5 rounded-full font-semibold">
+                  Áp dụng cho {students.length} học sinh
+                </span>
+              </h2>
+            </div>
+          </div>
+
+          {classPromptDirective && (
+            <button
+              type="button"
+              onClick={() => handleDirectiveChange('')}
+              className="text-[11px] text-purple-300 hover:text-white flex items-center gap-1 cursor-pointer self-start sm:self-auto"
+            >
+              <X className="w-3.5 h-3.5" />
+              <span>Xóa định hướng</span>
+            </button>
+          )}
+        </div>
+
+        <div className="space-y-2 text-xs">
+          <textarea
+            rows={2}
+            value={classPromptDirective}
+            onChange={(e) => handleDirectiveChange(e.target.value)}
+            placeholder="Nhập yêu cầu bổ sung chung cho cả lớp (Ví dụ: Lớp vừa hoàn thành đợt thi đua 20/11 xuất sắc, hãy lồng ghép lời khen về tinh thần chăm ngoan, giữ vở sạch chữ đẹp và nhắc nhở chuẩn bị bài chu đáo...)"
+            className="w-full p-3 rounded-2xl bg-white/10 border border-white/20 text-white placeholder:text-purple-200/50 text-xs focus:ring-2 focus:ring-purple-400 focus:outline-none resize-none leading-relaxed backdrop-blur-sm"
+          />
+
+          {/* Quick Suggestion Chips */}
+          <div className="space-y-1.5 pt-0.5">
+            <div className="flex items-center gap-1 text-[11px] text-purple-300 font-medium">
+              <Lightbulb className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              <span>Gợi ý nhanh chủ đề định hướng (nhấp để thêm vào prompt):</span>
+            </div>
+
+            <div className="flex flex-wrap gap-1.5">
+              {PROMPT_DIRECTIVE_SUGGESTIONS.map((sug, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => handleAddSuggestion(sug)}
+                  className="inline-flex items-center gap-1 text-[10px] bg-white/10 hover:bg-white/20 border border-white/15 px-2.5 py-1 rounded-full text-purple-100 transition-all cursor-pointer active:scale-95"
+                >
+                  <Plus className="w-2.5 h-2.5 opacity-70" />
+                  <span>{sug}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Student Cards List */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {students.map((st, idx) => {
@@ -331,11 +442,11 @@ export default function AIAssistantPage() {
                   </span>
                 </div>
 
-                {/* Custom teacher notes */}
+                {/* Custom teacher notes for this student */}
                 <div>
                   <input
                     type="text"
-                    placeholder="Gợi ý thêm cho AI (VD: chữ viết sạch đẹp, năng nổ trong giờ văn nghệ...)"
+                    placeholder="Gợi ý riêng cho em này (VD: chữ viết sạch đẹp, năng nổ văn nghệ...)"
                     value={customNotes[st.id] || ''}
                     onChange={(e) => setCustomNotes({ ...customNotes, [st.id]: e.target.value })}
                     className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:ring-2 focus:ring-purple-500 focus:outline-none bg-slate-50 text-slate-700"
