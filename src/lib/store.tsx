@@ -240,7 +240,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       if (savedSchool) {
         const parsedSchool = JSON.parse(savedSchool);
-        if (parsedSchool.name === 'Trường Tiểu học Chu Văn An' || parsedSchool.schoolYear === '2025-2026' || !parsedSchool.name) {
+        if (
+          parsedSchool.name === 'Trường Tiểu học Chu Văn An' ||
+          parsedSchool.principalName === 'Cô Ngô Thị Thúy' ||
+          parsedSchool.principalName === 'Thầy/Cô Hiệu Trưởng' ||
+          parsedSchool.schoolYear === '2025-2026' ||
+          !parsedSchool.name
+        ) {
           setSchoolInfo(INITIAL_SCHOOL_INFO);
           localStorage.setItem(STORAGE_PREFIX + 'schoolInfo', JSON.stringify(INITIAL_SCHOOL_INFO));
         } else {

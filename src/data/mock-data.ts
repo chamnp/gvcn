@@ -5,9 +5,9 @@ export const INITIAL_SCHOOL_INFO: SchoolInfo = {
   name: 'Trường Tiểu học Đại Mỗ',
   departmentName: 'Phòng GD&ĐT Quận Nam Từ Liêm - TP. Hà Nội',
   schoolYear: '2026-2027',
-  principalName: 'Cô Ngô Thị Thúy',
-  address: 'Số 19 đường Hữu Hưng, Phường Đại Mỗ, Nam Từ Liêm, Hà Nội',
-  phone: '098 770 7278',
+  principalName: 'Cô Giang Thanh Thủy',
+  address: 'Phố Trung Văn - Số 19 Hữu Hưng, Nam Từ Liêm, Hà Nội',
+  phone: '024 3839 0134',
   email: 'c1daimo-ntl@hanoiedu.vn',
   website: 'thdaimo.edu.vn',
 };
