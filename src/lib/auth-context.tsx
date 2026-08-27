@@ -136,7 +136,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Google OAuth
   const signInWithGoogle = async () => {
-    const redirectTo = typeof window !== 'undefined' ? window.location.origin : undefined;
+    const origin = typeof window !== 'undefined' && window.location.origin
+      ? window.location.origin
+      : 'https://gvcn-eta.vercel.app';
+    const redirectTo = `${origin}/login`;
+
     const res = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
