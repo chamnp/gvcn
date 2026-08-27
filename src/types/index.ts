@@ -26,7 +26,10 @@ export type AIProviderType = 'GEMINI' | 'OPENAI' | 'ANTHROPIC' | 'CUSTOM_OPENAI'
 export type AIToneType = 'standard' | 'encouraging' | 'detailed' | 'concise' | 'custom';
 export type AILengthPreset = 'short' | 'standard' | 'detailed' | 'custom';
 
+export type AIGenerationMode = 'AI_ONLINE' | 'OFFLINE_BANK';
+
 export interface AIGenerationSettings {
+  mode: AIGenerationMode;
   tone: AIToneType;
   customToneText?: string;
   lengthPreset: AILengthPreset;

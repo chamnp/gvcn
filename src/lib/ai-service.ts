@@ -22,9 +22,27 @@ export interface GeneratedCommentResult {
 }
 
 export async function generateStudentAICommentFull(req: GenerateCommentRequest): Promise<GeneratedCommentResult> {
-  const { student, subjects, traits, starLogs, attendances, aiConfig, aiGenSettings, apiKey, tone = 'standard', extraNotes } = req;
+  const { student, subjects, traits, starLogs = [], attendances = [], aiConfig, aiGenSettings, apiKey, tone = 'standard', extraNotes } = req;
 
-  // Gọi qua API Route để bảo mật API key và thực hiện gọi các AI provider
+  // 1. Chế độ TỰ ĐỘNG NGOẠI TUYẾN (Offline Smart Pedagogical Bank)
+  if (aiGenSettings?.mode === 'OFFLINE_BANK') {
+    const offlineComment = generateSmartComment(
+      student,
+      subjects,
+      traits,
+      extraNotes,
+      starLogs,
+      attendances,
+      aiGenSettings
+    );
+    return {
+      comment: offlineComment,
+      source: 'Mẫu Sư Phạm Ngoại Tuyến (Offline)',
+      isRealAI: false,
+    };
+  }
+
+  // 2. Chế độ AI TRỰC TUYẾN (Online LLM)
   try {
     const res = await fetch('/api/generate-comment', {
       method: 'POST',
@@ -62,8 +80,8 @@ export async function generateStudentAICommentFull(req: GenerateCommentRequest):
 
   // Fallback ngoại tuyến (100% offline-ready)
   return {
-    comment: generateSmartComment(student, subjects, traits, extraNotes),
-    source: 'Ngân hàng sư phạm ngoại tuyến',
+    comment: generateSmartComment(student, subjects, traits, extraNotes, starLogs, attendances, aiGenSettings),
+    source: 'Mẫu Sư Phạm Ngoại Tuyến (Fallback)',
     isRealAI: false,
   };
 }

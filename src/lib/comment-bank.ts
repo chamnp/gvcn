@@ -1,176 +1,174 @@
-import { SubjectAssessment, TraitAssessment, Student } from '@/types';
-
-export interface CommentTemplate {
-  category: 'TONG_HOP' | 'MON_HOC' | 'PHAM_CHAT' | 'NANG_LUC';
-  type?: string; // TOAN, TIENG_VIET, CHAM_CHI, v.v.
-  level: 'T' | 'H' | 'Đ' | 'C' | 'XUAT_SAC' | 'TIEU_BIEU' | 'HOAN_THANH' | 'CAN_CO_GANG';
-  templates: string[];
-}
-
-export const PEDAGOGICAL_COMMENT_TEMPLATES: CommentTemplate[] = [
-  // 1. Nhận xét tổng hợp học bạ (Cuối kỳ / Cuối năm)
-  {
-    category: 'TONG_HOP',
-    level: 'XUAT_SAC',
-    templates: [
-      'Em {name} có ý thức học tập rất tốt, nắm vững kiến thức toàn diện tất cả các môn học. Năng nổ, tự giác, tích cực tham gia các hoạt động phong trào của lớp. Xứng đáng là tấm gương sáng cho các bạn noi theo.',
-      'Học sinh {name} tiếp thu bài nhanh, tư duy logic và sáng tạo trong giải quyết vấn đề. Luôn hoàn thành xuất sắc các nhiệm vụ học tập và rèn luyện. Giao tiếp tự tin, lễ phép với thầy cô và thân thiện với bạn bè.',
-      'Em {name} chăm ngoan, gương mẫu, đạt kết quả xuất sắc trong học tập và rèn luyện nề nếp. Chữ viết đẹp, trình bày bài cẩn thận. Tự giác, tự chủ cao trong mọi hoạt động.',
-      'Em {name} có tinh thần tự học rất cao, học đều tất cả các môn. Thường xuyên giúp đỡ bạn bè cùng tiến bộ, được thầy cô yêu mến và bạn bè tín nhiệm.',
-    ],
-  },
-  {
-    category: 'TONG_HOP',
-    level: 'TIEU_BIEU',
-    templates: [
-      'Em {name} có nhiều tiến bộ vượt bậc trong học tập, hoàn thành tốt các môn học. Chăm chỉ, tích cực phát biểu xây dựng bài. Cần tiếp tục phát huy sự tự tin trong các hoạt động nhóm.',
-      'Học sinh {name} nắm chắc kiến thức cơ bản, có năng khiếu nổi bật trong học tập. Lễ phép, hòa đồng, có trách nhiệm với công việc được giao của lớp.',
-      'Em {name} hoàn thành tốt các nhiệm vụ học tập và rèn luyện. Chăm ngoan, nề nếp, có tinh thần tương trợ bạn bè. Đạt danh hiệu học sinh tiêu biểu của lớp.',
-    ],
-  },
-  {
-    category: 'TONG_HOP',
-    level: 'HOAN_THANH',
-    templates: [
-      'Em {name} hoàn thành các nội dung học tập theo yêu cầu. Có ý thức chấp hành tốt nội quy lớp học. Cần rèn luyện thêm tính cẩn thận và chủ động hơn khi làm bài.',
-      'Học sinh {name} ngoan ngoãn, lễ phép, tiếp thu bài đều đặn. Em cần tự tin hơn khi trao đổi ý kiến trước lớp và dành thêm thời gian ôn tập môn Toán/Tiếng Việt.',
-      'Em {name} có cố gắng trong học tập và rèn luyện, hoàn thành các nhiệm vụ được giao. Cần duy trì thói quen đọc sách và chuẩn bị bài kỹ trước khi đến lớp.',
-    ],
-  },
-  {
-    category: 'TONG_HOP',
-    level: 'CAN_CO_GANG',
-    templates: [
-      'Em {name} ngoan ngoãn, có ý thức nề nếp. Tuy nhiên khả năng tiếp thu bài còn chậm ở một số môn, cần gia đình và thầy cô phối hợp bồi dưỡng thêm trong thời gian tới.',
-      'Học sinh {name} cần tập trung hơn trong giờ học, rèn luyện kỹ năng tính toán và đọc hiểu. Cần mạnh dạn hỏi thầy cô và bạn bè khi gặp bài tập chưa hiểu.',
-    ],
-  },
-
-  // 2. Nhận xét Môn Toán
-  {
-    category: 'MON_HOC',
-    type: 'TOAN',
-    level: 'T',
-    templates: [
-      'Tính toán nhanh, chính xác; tư duy logic tốt và biết vận dụng linh hoạt vào giải toán có lời văn.',
-      'Nắm chắc kiến thức, kỹ năng tính nhẩm tốt, trình bày bài giải khoa học và mạch lạc.',
-      'Có năng khiếu toán học, làm tốt các bài tập nâng cao và giải quyết vấn đề sáng tạo.',
-    ],
-  },
-  {
-    category: 'MON_HOC',
-    type: 'TOAN',
-    level: 'H',
-    templates: [
-      'Nắm được các phép tính cơ bản, thực hiện bài tập đúng yêu cầu. Cần cẩn thận hơn khi đặt tính.',
-      'Hiểu bài, hoàn thành các dạng toán trong chương trình. Cần rèn thêm kỹ năng phân tích đề toán có lời văn.',
-    ],
-  },
-  {
-    category: 'MON_HOC',
-    type: 'TOAN',
-    level: 'C',
-    templates: [
-      'Còn lúng túng trong các phép tính nhân/chia và toán có lời văn, cần rèn luyện thêm bảng cửu chương.',
-      'Tiếp thu toán còn chậm, cần cẩn thận tính toán và nhờ giáo viên hướng dẫn thêm.',
-    ],
-  },
-
-  // 3. Nhận xét Môn Tiếng Việt
-  {
-    category: 'MON_HOC',
-    type: 'TIENG_VIET',
-    level: 'T',
-    templates: [
-      'Đọc to, rõ ràng, diễn cảm; vốn từ phong phú, viết văn giàu cảm xúc và hình ảnh sinh động.',
-      'Chữ viết sạch đẹp, đúng chính tả; kỹ năng đọc hiểu và trả lời câu hỏi rất tốt.',
-      'Diễn đạt lưu loát, bài viết giàu ý tưởng sáng tạo và bố cục rõ ràng.',
-    ],
-  },
-  {
-    category: 'MON_HOC',
-    type: 'TIENG_VIET',
-    level: 'H',
-    templates: [
-      'Đọc lưu loát, hiểu nội dung bài học. Cần chú ý rèn chữ viết và cách dùng dấu câu.',
-      'Hoàn thành bài viết theo yêu cầu. Cần mở rộng thêm vốn từ và hạn chế lỗi chính tả.',
-    ],
-  },
-  {
-    category: 'MON_HOC',
-    type: 'TIENG_VIET',
-    level: 'C',
-    templates: [
-      'Tốc độ đọc còn chậm, hay mắc lỗi chính tả, cần luyện đọc và viết đoạn văn thường xuyên hơn.',
-      'Cần rèn thêm kỹ năng đặt câu, dùng từ và tập trung khi nghe viết chính tả.',
-    ],
-  },
-
-  // 4. Nhận xét Ngoại ngữ
-  {
-    category: 'MON_HOC',
-    type: 'NGOAI_NGU',
-    level: 'T',
-    templates: [
-      'Phát âm chuẩn, ghi nhớ từ vựng tốt và tự tin giao tiếp các đoạn hội thoại đơn giản.',
-      'Hăng hái tham gia các hoạt động luyện nói tiếng Anh, tiếp thu ngữ pháp nhanh.',
-    ],
-  },
-  {
-    category: 'MON_HOC',
-    type: 'NGOAI_NGU',
-    level: 'H',
-    templates: [
-      'Nắm được từ vựng cơ bản. Cần tự tin hơn khi luyện phát âm và thực hành nói trước lớp.',
-    ],
-  },
-  {
-    category: 'MON_HOC',
-    type: 'NGOAI_NGU',
-    level: 'C',
-    templates: [
-      'Chưa nhớ được từ vựng cơ bản, cần dành thời gian nghe và luyện phát âm hàng ngày.',
-    ],
-  },
-];
+import { SubjectAssessment, TraitAssessment, Student, StarLog, DailyAttendance, AIGenerationSettings } from '@/types';
 
 /**
- * Sinh nhận xét học bạ tự động theo quy chuẩn sư phạm Thông tư 27
+ * Intelligent Offline Pedagogical Generation Engine
+ * Tự động sinh lời nhận xét học sinh chuẩn mực theo Thông tư 27/2020/TT-BGDĐT
+ * Tổng hợp từ điểm số môn học, nề nếp tích sao hàng ngày, chuyên cần và định hướng của giáo viên.
  */
 export function generateSmartComment(
   student: Student,
-  subjects: SubjectAssessment[],
-  traits: TraitAssessment[],
-  customStrength?: string
+  subjects: SubjectAssessment[] = [],
+  traits: TraitAssessment[] = [],
+  extraNotes?: string,
+  starLogs: StarLog[] = [],
+  attendances: DailyAttendance[] = [],
+  settings?: Partial<AIGenerationSettings>
 ): string {
-  const name = student.fullName.split(' ').pop() || student.fullName; // Tên ngắn gọn (Ví dụ: "An" từ "Nguyễn Văn An")
-  
-  const hasC = subjects.some((s) => s.level === 'C') || traits.some((t) => t.level === 'C');
-  const allT = subjects.length > 0 && subjects.every((s) => s.level === 'T') && traits.every((t) => t.level === 'T');
-  
-  let targetLevel: 'XUAT_SAC' | 'TIEU_BIEU' | 'HOAN_THANH' | 'CAN_CO_GANG' = 'HOAN_THANH';
-  if (allT) {
-    targetLevel = 'XUAT_SAC';
-  } else if (!hasC && subjects.filter((s) => s.level === 'T').length >= subjects.length / 2) {
-    targetLevel = 'TIEU_BIEU';
-  } else if (hasC) {
-    targetLevel = 'CAN_CO_GANG';
+  const name = student.fullName.split(' ').pop() || student.fullName;
+  const isFemale = student.gender === 'Nữ';
+  const pronoun = 'Em';
+
+  // Config parameters
+  const tone = settings?.tone || 'standard';
+  const customTone = settings?.customToneText || '';
+  const lengthPreset = settings?.lengthPreset || 'standard';
+  const targetWords = settings?.targetWordCount || 60;
+  const incSubjects = settings?.includeSubjectGrades !== false;
+  const incTraits = settings?.includeTraitsAndCompetencies !== false;
+  const incStars = settings?.includeDailyStarsAndComments !== false;
+  const incAttendance = settings?.includeAttendanceAndBoarding !== false;
+  const classDirective = settings?.classDirectivePrompt || '';
+
+  // 1. Phân tích kết quả học tập
+  const hasCSubject = subjects.some((s) => s.level === 'C');
+  const allTSubject = subjects.length > 0 && subjects.every((s) => s.level === 'T');
+  const goodSubjects = subjects.filter((s) => s.level === 'T');
+  const mathAss = subjects.find((s) => s.subjectCode === 'TOAN');
+  const tvAss = subjects.find((s) => s.subjectCode === 'TV');
+  const engAss = subjects.find((s) => s.subjectCode === 'TA' || s.subjectCode === 'NGOAI_NGU');
+
+  // Tìm môn nổi trội nhất
+  let outstandingSubject = '';
+  if (mathAss?.score && mathAss.score >= 9.0) {
+    outstandingSubject = 'môn Toán';
+  } else if (tvAss?.score && tvAss.score >= 9.0) {
+    outstandingSubject = 'môn Tiếng Việt';
+  } else if (engAss?.score && engAss.score >= 9.0) {
+    outstandingSubject = 'môn Tiếng Anh';
+  } else if (goodSubjects.length > 0) {
+    const subjectNames: Record<string, string> = {
+      TOAN: 'môn Toán',
+      TV: 'môn Tiếng Việt',
+      TA: 'môn Tiếng Anh',
+      KH: 'môn Khoa học',
+      LS_DL: 'môn Lịch sử & Địa lí',
+      TH_CN: 'môn Tin học',
+      MT: 'môn Mỹ thuật',
+      AN: 'môn Âm nhạc',
+    };
+    outstandingSubject = subjectNames[goodSubjects[0].subjectCode] || 'các môn học';
   }
 
-  const list = PEDAGOGICAL_COMMENT_TEMPLATES.filter(
-    (t) => t.category === 'TONG_HOP' && t.level === targetLevel
-  );
+  // 2. Phân tích nề nếp & sao thi đua hàng ngày
+  const studentStars = starLogs.filter((l) => l.studentId === student.id);
+  const totalStars = studentStars.reduce((sum, l) => sum + l.points, 0);
+  const topReasons = studentStars
+    .filter((l) => l.reason)
+    .map((l) => l.reason)
+    .slice(0, 2);
 
-  const pool = list.length > 0 ? list[0].templates : [];
-  // Chọn ngẫu nhiên hoặc theo id học sinh để đảm bảo không trùng lặp giữa các học sinh
+  // 3. Phân tích chuyên cần
+  const studentAtt = attendances.filter((a) => a.studentId === student.id);
+  const absentCount = studentAtt.filter((a) => a.status !== 'CO_MAT').length;
+
+  // 4. Sinh ngẫu nhiên theo hash để tránh trùng lặp giữa các em
   const hash = student.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  const selectedTemplate = pool.length > 0 ? pool[hash % pool.length] : 'Em hoàn thành tốt các nhiệm vụ học tập và rèn luyện.';
 
-  let comment = selectedTemplate.replace(/\{name\}/g, name);
-
-  if (customStrength) {
-    comment += ` Đặc biệt, em ${customStrength}.`;
+  // === CÂU 1: ĐÁNH GIÁ HỌC TẬP ===
+  let s1 = '';
+  if (incSubjects) {
+    if (allTSubject || (goodSubjects.length >= subjects.length * 0.7 && goodSubjects.length > 0)) {
+      const s1Variants = [
+        `${pronoun} ${name} có ý thức học tập rất tốt, nắm chắc kiến thức toàn diện và hoàn thành xuất sắc các môn học${outstandingSubject ? `, nổi bật ở ${outstandingSubject}` : ''}.`,
+        `${pronoun} tiếp thu bài nhanh, tư duy linh hoạt và đạt kết quả vượt trội ở tất cả các môn học${outstandingSubject ? `, đặc biệt là ${outstandingSubject}` : ''}.`,
+        `${pronoun} ${name} chăm chỉ học tập, hoàn thành tốt mọi nội dung kiến thức và có năng lực nổi bật ở ${outstandingSubject || 'các môn học'}.`,
+        `${pronoun} có tinh thần tự học cao, bài làm luôn cẩn thận, chính xác và đạt thành tích xuất sắc trong học tập.`,
+      ];
+      s1 = s1Variants[hash % s1Variants.length];
+    } else if (!hasCSubject) {
+      const s1Variants = [
+        `${pronoun} ${name} nắm chắc kiến thức cơ bản, hoàn thành tốt các nội dung học tập và có nhiều cố gắng trong giờ học.`,
+        `${pronoun} có tiến bộ rõ rệt trong học tập, hoàn thành các yêu cầu môn học và tiếp thu bài đều đặn.`,
+        `${pronoun} ${name} chăm chỉ, hoàn thành tốt các bài tập được giao và luôn chú ý lắng nghe thầy cô giảng bài.`,
+      ];
+      s1 = s1Variants[hash % s1Variants.length];
+    } else {
+      const s1Variants = [
+        `${pronoun} ${name} có cố gắng hoàn thành các nhiệm vụ học tập, tiếp thu bài mức độ cơ bản.`,
+        `${pronoun} có ý thức học tập, tuy nhiên cần dành thêm thời gian rèn luyện thêm để nắm vững kiến thức hơn.`,
+      ];
+      s1 = s1Variants[hash % s1Variants.length];
+    }
+  } else {
+    s1 = `${pronoun} ${name} luôn có tinh thần trách nhiệm và hoàn thành tốt nhiệm vụ của người học sinh.`;
   }
 
-  return comment;
+  // === CÂU 2: ĐÁNH GIÁ NỀ NẾP & LỊCH SỬ NHẬN XÉT HÀNG NGÀY ===
+  let s2 = '';
+  if (incStars && studentStars.length > 0) {
+    if (topReasons.includes('Phát biểu hăng hái') || topReasons.includes('Hăng hái phát biểu')) {
+      s2 = `Trong lớp, ${name.toLowerCase()} rất hăng hái phát biểu xây dựng bài, tự tin chia sẻ ý kiến và tích cực tham gia hoạt động nhóm.`;
+    } else if (topReasons.includes('Vở sạch chữ đẹp') || topReasons.includes('Chữ viết sạch đẹp')) {
+      s2 = `${pronoun} có ý thức giữ vở sạch, rèn chữ viết rất đẹp, cẩn thận và nề nếp học tập gương mẫu.`;
+    } else if (topReasons.includes('Trực nhật & Vệ sinh') || topReasons.includes('Giúp đỡ bạn bè')) {
+      s2 = `${pronoun} luôn trung thực, lễ phép, nhiệt tình giúp đỡ bạn bè và hoàn thành tốt các công việc chung của lớp.`;
+    } else if (totalStars >= 5) {
+      s2 = `${pronoun} gương mẫu trong nề nếp thi đua với ${totalStars} sao khen thưởng, luôn tự giác chấp hành tốt nội quy.`;
+    } else {
+      s2 = `${pronoun} ngoan ngoãn, chấp hành tốt nội quy lớp học, biết vâng lời thầy cô và thân thiện với bạn bè.`;
+    }
+  } else if (incTraits) {
+    const s2Variants = [
+      `${pronoun} có phẩm chất đạo đức tốt, trung thực, lễ phép và biết quan tâm, chia sẻ với bạn bè.`,
+      `${pronoun} nề nếp tốt, hòa đồng, tự giác trong các hoạt động tập thể và có tinh thần trách nhiệm cao.`,
+      `${pronoun} luôn lễ phép với thầy cô, chan hòa với bạn bè và tích cực tham gia các phong trào của lớp.`,
+    ];
+    s2 = s2Variants[(hash + 1) % s2Variants.length];
+  }
+
+  // Chuyên cần bổ sung nếu có nghỉ học
+  let attNote = '';
+  if (incAttendance && absentCount > 0) {
+    attNote = ` Em đi học đều đặn (có ${absentCount} buổi nghỉ có phép).`;
+  }
+
+  // === CÂU 3: LỜI ĐỘNG VIÊN / ĐỊNH HƯỚNG SƯ PHẠM ===
+  let s3 = '';
+  if (tone === 'encouraging') {
+    const s3Variants = [
+      `Cô rất khen ngợi sự nỗ lực của ${name.toLowerCase()}, chúc em luôn giữ vững ngọn lửa đam mê học tập để đạt nhiều thành tích hơn nữa!`,
+      `Thầy cô tin tưởng em sẽ tiếp tục tự tin, tỏa sáng và gặt hái thêm nhiều niềm vui trong năm học này!`,
+      `Cô rất tự hào về sự tiến bộ của em, hãy luôn phát huy những ưu điểm tuyệt vời này nhé!`,
+    ];
+    s3 = s3Variants[(hash + 2) % s3Variants.length];
+  } else if (tone === 'concise' || lengthPreset === 'short') {
+    s3 = `Cần tiếp tục phát huy ưu điểm để đạt thành tích cao hơn nữa.`;
+  } else if (tone === 'detailed' || lengthPreset === 'detailed') {
+    if (hasCSubject) {
+      s3 = `Thời gian tới, em cần tự tin hơn khi trao đổi bài cùng bạn bè, rèn thêm kỹ năng tính toán và duy trì thói quen đọc sách hàng ngày.`;
+    } else {
+      s3 = `Em cần duy trì phong độ học tập này, phát huy sự chủ động, sáng tạo và tiếp tục là tấm gương sáng cho các bạn trong lớp noi theo.`;
+    }
+  } else {
+    // Standard TT27
+    if (hasCSubject) {
+      s3 = `Em cần cố gắng rèn luyện thêm, chú ý tập trung nghe giảng để đạt kết quả tốt hơn trong kỳ tới.`;
+    } else {
+      s3 = `Tiếp tục phát huy những ưu điểm đã đạt được để gặt hái thêm nhiều thành công mới trong học tập, em nhé!`;
+    }
+  }
+
+  // === ĐỊNH HƯỚNG TOÀN LỚP & GHI CHÚ RIÊNG ===
+  let extraText = '';
+  const combinedDirectives = [classDirective.trim(), extraNotes?.trim()].filter(Boolean).join('; ');
+  if (combinedDirectives) {
+    extraText = ` Đặc biệt, em ${combinedDirectives}.`;
+  }
+
+  // Lắp ráp theo độ dài yêu cầu
+  if (lengthPreset === 'short' || targetWords <= 40) {
+    return `${s1} ${s2}${extraText}`.replace(/\s+/g, ' ').trim();
+  }
+
+  return `${s1} ${s2}${attNote} ${s3}${extraText}`.replace(/\s+/g, ' ').trim();
 }

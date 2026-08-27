@@ -24,6 +24,7 @@ import {
 } from '@/types';
 
 export const DEFAULT_AI_GEN_SETTINGS: AIGenerationSettings = {
+  mode: 'AI_ONLINE',
   tone: 'standard',
   customToneText: '',
   lengthPreset: 'standard',

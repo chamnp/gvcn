@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
 
     // Nếu không có API Key, sử dụng smart offline pedagogical engine
     if (!effectiveKey) {
-      const fallbackComment = generateSmartComment(student, subjects, traits, extraNotes);
+      const fallbackComment = generateSmartComment(student, subjects, traits, extraNotes, starLogs, attendances, aiGenSettings);
       return NextResponse.json({ success: true, comment: fallbackComment, source: 'Ngân hàng sư phạm offline', isRealAI: false });
     }
 
@@ -270,11 +270,11 @@ Nhiệm vụ của bạn là viết một đoạn LỜI NHẬN XÉT HỌC BẠ /
     }
 
     // 4. FALLBACK TO HIGH-QUALITY PEDAGOGICAL BANK
-    const fallbackComment = generateSmartComment(student, subjects, traits, extraNotes);
+    const fallbackComment = generateSmartComment(student, subjects, traits, extraNotes, starLogs, attendances, aiGenSettings);
     return NextResponse.json({
       success: true,
       comment: fallbackComment,
-      source: 'Ngân hàng sư phạm offline',
+      source: 'Mẫu Sư Phạm Ngoại Tuyến (Offline)',
       isRealAI: false,
     });
   } catch (error: any) {
