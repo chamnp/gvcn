@@ -95,15 +95,23 @@
 
 # DANH MỤC HÌNH ẢNH MINH HỌA VÀ BẢNG BIỂU
 
-### Danh mục Hình ảnh:
-- **Hình 1:** [Sơ đồ kiến trúc tổng thể hệ sinh thái chuyển đổi số GVCN Pro](#hinh-1)
-- **Hình 2:** [Giao diện Sơ đồ lớp thông minh tương tác (Interactive Seating Chart) và Tích sao nề nếp](#hinh-2)
-- **Hình 3:** [Giao diện Điểm danh 1 chạm và Kiểm diện bán trú hằng ngày kèm tin nhắn Zalo tự động](#hinh-3)
-- **Hình 4:** [Giao diện Ma trận đánh giá kết quả học tập và phẩm chất năng lực theo Thông tư 27/2020](#hinh-4)
-- **Hình 5:** [Giao diện Trợ lý Sư phạm AI và Ngân hàng nhận xét học bạ cá nhân hóa](#hinh-5)
-- **Hình 6:** [Giao diện Cổng bài tập về nhà QR trên di động và Sổ liên lạc điện tử mã PIN bảo mật](#hinh-6)
-- **Hình 7:** [Giao diện Quản lý Quỹ lớp minh bạch và Thời khóa biểu 2 buổi/ngày thông minh](#hinh-7)
-- **Hình 8:** [Biểu đồ so sánh đối chứng hiệu quả thực nghiệm tại Trường Tiểu học Đại Mỗ](#hinh-8)
+### Danh mục Hình ảnh Sơ đồ & Ảnh chụp thực tế:
+- **Hình 1:** Sơ đồ kiến trúc tổng thể hệ sinh thái chuyển đổi số GVCN Pro
+- **Hình 1b:** Ảnh chụp thực tế: Bàn làm việc tổng quan của Giáo viên Chủ nhiệm (Lớp 4A1 - Trường TH Đại Mỗ)
+- **Hình 2a:** Sơ đồ nguyên lý Sơ đồ lớp tương tác và cơ chế tích sao rèn nề nếp
+- **Hình 2b:** Ảnh chụp thực tế: Giao diện Sơ đồ lớp thông minh và Tích sao hoa việc tốt
+- **Hình 3a:** Sơ đồ quy trình Điểm danh 1 chạm và kiểm diện bán trú
+- **Hình 3b:** Ảnh chụp thực tế: Giao diện Điểm danh và tính năng sao chép tin nhắn Zalo gửi Nhà bếp
+- **Hình 4a:** Sơ đồ thuật toán xét danh hiệu khen thưởng theo Thông tư 27/2020/TT-BGDĐT
+- **Hình 4b:** Ảnh chụp thực tế: Ma trận đánh giá kết quả học tập và năng lực phẩm chất
+- **Hình 5a:** Sơ đồ cấu trúc Trợ lý Sư phạm AI thế hệ mới (Dual-Engine Architecture)
+- **Hình 5b:** Ảnh chụp thực tế: Giao diện Trợ lý AI sinh nhận xét học bạ cá nhân hóa
+- **Hình 6a:** Sơ đồ Cổng bài tập QR và Sổ liên lạc điện tử mã PIN bảo mật
+- **Hình 6b:** Ảnh chụp thực tế: Giao diện Quản lý & Giao bài tập về nhà QR
+- **Hình 7a:** Sơ đồ Quản trị tài chính quỹ lớp và Thời khóa biểu 2 buổi/ngày
+- **Hình 7b:** Ảnh chụp thực tế: Giao diện Thời khóa biểu 2 buổi/ngày (7 tiết)
+- **Hình 8:** Biểu đồ so sánh đối chứng hiệu quả thực nghiệm tại Trường Tiểu học Đại Mỗ
+- **Hình 9:** Ảnh chụp thực tế: Cổng tra cứu kết quả học tập cá nhân dành cho phụ huynh
 
 ### Danh mục Bảng biểu:
 - **Bảng 1:** Thống kê thời gian và khó khăn của GVCN trong công tác quản lý lớp (N = 32 GV)
@@ -166,10 +174,11 @@ Thông tư số 27/2020/TT-BGDĐT ngày 04/9/2020 của Bộ GD&ĐT quy định 
 
 Tuy nhiên, việc triển khai đánh giá thường xuyên và định kỳ trên 3 trục: **(1) Quá trình học tập các môn học (T/H/C)**; **(2) 5 Phẩm chất chủ yếu (T/Đ/C)**; **(3) Năng lực cốt lõi (T/Đ/C)** qua 4 kỳ trong năm học (`Giữa HK1`, `Cuối HK1`, `Giữa HK2`, `Cuối Năm`) với hàng chục chỉ số chi tiết cho một lớp học từ 40 - 45 học sinh đòi hỏi người GVCN phải xử lý một khối lượng dữ liệu khổng lồ.
 
-<a id="hinh-1"></a>
-
 ![Hình 1: Sơ đồ kiến trúc tổng thể hệ sinh thái chuyển đổi số GVCN Pro](/Users/chamnp/.gemini/antigravity/brain/f2d756a9-b42d-48bb-ab0d-9f23e5a1e32c/images/hinh_1_tong_quan_kien_truc.svg)
 *Hình 1: Sơ đồ kiến trúc tổng thể hệ sinh thái chuyển đổi số GVCN Pro hỗ trợ toàn diện người Giáo viên Chủ nhiệm*
+
+![Hình 1b: Ảnh chụp thực tế: Bàn làm việc tổng quan của Giáo viên Chủ nhiệm (Lớp 4A1 - Trường TH Đại Mỗ)](/Users/chamnp/.gemini/antigravity/brain/f2d756a9-b42d-48bb-ab0d-9f23e5a1e32c/images/01_dashboard_tong_quan.png)
+*Hình 1b: Ảnh chụp thực tế Bàn làm việc tổng quan của GVCN Lớp 4A1 - Trường Tiểu học Đại Mỗ trên nền tảng GVCN Pro*
 
 ### 1.3. Áp lực thực tế của người Giáo viên Chủ nhiệm tại Trường Tiểu học Đại Mỗ
 Tại Trường Tiểu học Đại Mỗ - Quận Nam Từ Liêm, hầu hết các lớp học đều tổ chức 2 buổi/ngày có bán trú. Là một giáo viên trực tiếp chủ nhiệm Lớp 4A1 với 45 học sinh, tôi nhận thấy các khó khăn, áp lực thường nhật bao gồm:
@@ -275,10 +284,11 @@ Năm học 2025 - 2026, tôi được phân công chủ nhiệm **Lớp 4A1** t�
 #### 1. Mục tiêu:
 Quản lý tập trung dữ liệu lý lịch học sinh; bố trí chỗ ngồi tối ưu bảo vệ thị lực và tạo động lực thi đua học tập tích cực qua cơ chế trò chơi hóa (Gamification).
 
-<a id="hinh-2"></a>
+![Hình 2a: Sơ đồ nguyên lý Sơ đồ lớp tương tác và cơ chế tích sao nề nếp](/Users/chamnp/.gemini/antigravity/brain/f2d756a9-b42d-48bb-ab0d-9f23e5a1e32c/images/hinh_2_so_do_lop_thong_minh.svg)
+*Hình 2a: Sơ đồ nguyên lý phân bổ chỗ ngồi chống cận thị và cơ chế Thưởng Sao Hoa Việc Tốt*
 
-![Hình 2: Giao diện Sơ đồ lớp thông minh tương tác và Tích sao nề nếp](/Users/chamnp/.gemini/antigravity/brain/f2d756a9-b42d-48bb-ab0d-9f23e5a1e32c/images/hinh_2_so_do_lop_thong_minh.svg)
-*Hình 2: Giao diện Sơ đồ lớp thông minh tương tác (Interactive Seating Chart) và Tích sao nề nếp trong GVCN Pro*
+![Hình 2b: Ảnh chụp thực tế: Giao diện Sơ đồ lớp thông minh và Tích sao hoa việc tốt](/Users/chamnp/.gemini/antigravity/brain/f2d756a9-b42d-48bb-ab0d-9f23e5a1e32c/images/02_so_do_lop_thong_minh.png)
+*Hình 2b: Ảnh chụp thực tế Giao diện Sơ đồ lớp thông minh tương tác (Interactive Seating Chart) trên GVCN Pro*
 
 #### 2. Quy trình thực hiện:
 - **Bước 1: Quản lý hồ sơ dữ liệu số**:
@@ -301,10 +311,11 @@ Quản lý tập trung dữ liệu lý lịch học sinh; bố trí chỗ ngồi
 #### 1. Mục tiêu:
 Rút ngắn thời gian điểm danh buổi sáng còn dưới 30 giây; chuẩn xác 100% số lượng suất ăn bán trú báo cho Nhà bếp và BGH.
 
-<a id="hinh-3"></a>
+![Hình 3a: Sơ đồ quy trình Điểm danh 1 chạm và kiểm diện bán trú](/Users/chamnp/.gemini/antigravity/brain/f2d756a9-b42d-48bb-ab0d-9f23e5a1e32c/images/hinh_3_diem_danh_ban_tru.svg)
+*Hình 3a: Sơ đồ quy trình Điểm danh 1 chạm và tự động tạo báo cáo Zalo bán trú*
 
-![Hình 3: Giao diện Điểm danh 1 chạm và Kiểm diện bán trú hằng ngày](/Users/chamnp/.gemini/antigravity/brain/f2d756a9-b42d-48bb-ab0d-9f23e5a1e32c/images/hinh_3_diem_danh_ban_tru.svg)
-*Hình 3: Giao diện Điểm danh 1 chạm và Kiểm diện bán trú hằng ngày kèm tính năng tạo tin nhắn Zalo tự động*
+![Hình 3b: Ảnh chụp thực tế: Giao diện Điểm danh và tính năng sao chép tin nhắn Zalo gửi Nhà bếp](/Users/chamnp/.gemini/antigravity/brain/f2d756a9-b42d-48bb-ab0d-9f23e5a1e32c/images/03_diem_danh_ban_tru.png)
+*Hình 3b: Ảnh chụp thực tế Giao diện Điểm danh 1 chạm & Kiểm diện báo cơm bán trú trên GVCN Pro*
 
 #### 2. Quy trình thực hiện:
 - **Giao diện điểm danh 1 chạm**: Mỗi sáng lúc 07h45, giáo viên mở ứng dụng trên điện thoại:
@@ -329,10 +340,11 @@ Rút ngắn thời gian điểm danh buổi sáng còn dưới 30 giây; chuẩn
 #### 1. Mục tiêu:
 Loại bỏ hoàn toàn sai sót tính toán thủ công; tự động hóa việc phân loại danh hiệu khen thưởng học sinh theo đúng Điều 13 Thông tư 27/2020/TT-BGDĐT.
 
-<a id="hinh-4"></a>
+![Hình 4a: Sơ đồ thuật toán xét danh hiệu khen thưởng theo Thông tư 27/2020/TT-BGDĐT](/Users/chamnp/.gemini/antigravity/brain/f2d756a9-b42d-48bb-ab0d-9f23e5a1e32c/images/hinh_4_ma_tran_danh_gia_tt27.svg)
+*Hình 4a: Sơ đồ thuật toán xét duyệt danh hiệu khen thưởng tự động theo Điều 13 Thông tư 27*
 
-![Hình 4: Ma trận đánh giá kết quả học tập và phẩm chất năng lực theo Thông tư 27/2020](/Users/chamnp/.gemini/antigravity/brain/f2d756a9-b42d-48bb-ab0d-9f23e5a1e32c/images/hinh_4_ma_tran_danh_gia_tt27.svg)
-*Hình 4: Ma trận đánh giá kết quả học tập theo Thông tư 27/2020/TT-BGDĐT với thuật toán phân loại tự động*
+![Hình 4b: Ảnh chụp thực tế: Ma trận đánh giá kết quả học tập và năng lực phẩm chất](/Users/chamnp/.gemini/antigravity/brain/f2d756a9-b42d-48bb-ab0d-9f23e5a1e32c/images/04_ma_tran_danh_gia_tt27.png)
+*Hình 4b: Ảnh chụp thực tế Ma trận đánh giá Thông tư 27/2020/TT-BGDĐT trên phần mềm GVCN Pro*
 
 #### 2. Quy trình thực hiện:
 - **Tự động nhận diện kỳ đánh giá theo lịch năm học (`getCurrentTermByDate`)**:
@@ -363,10 +375,11 @@ Hệ thống tính toán tức thì cho toàn bộ 45 học sinh trong 1 giây, 
 #### 1. Mục tiêu:
 Xóa bỏ hoàn toàn việc sao chép nhận xét sáo rỗng; tạo ra những lời nhận xét học bạ độc bản, ấm áp, thúc đẩy sự tiến bộ của từng học sinh; giảm 98% thời gian viết nhận xét cho giáo viên.
 
-<a id="hinh-5"></a>
+![Hình 5a: Sơ đồ cấu trúc Trợ lý Sư phạm AI thế hệ mới (Dual-Engine Architecture)](/Users/chamnp/.gemini/antigravity/brain/f2d756a9-b42d-48bb-ab0d-9f23e5a1e32c/images/hinh_5_tro_ly_ai_nhan_xet.svg)
+*Hình 5a: Sơ đồ cấu trúc hoạt động kép Dual-Engine của Trợ lý Sư phạm AI*
 
-![Hình 5: Giao diện Trợ lý Sư phạm AI và Ngân hàng nhận xét học bạ cá nhân hóa](/Users/chamnp/.gemini/antigravity/brain/f2d756a9-b42d-48bb-ab0d-9f23e5a1e32c/images/hinh_5_tro_ly_ai_nhan_xet.svg)
-*Hình 5: Giao diện Trợ lý Sư phạm AI thế hệ mới kết hợp Dual-Engine sinh lời nhận xét học bạ cá nhân hóa*
+![Hình 5b: Ảnh chụp thực tế: Giao diện Trợ lý AI sinh nhận xét học bạ cá nhân hóa](/Users/chamnp/.gemini/antigravity/brain/f2d756a9-b42d-48bb-ab0d-9f23e5a1e32c/images/05_tro_ly_ai_nhan_xet.png)
+*Hình 5b: Ảnh chụp thực tế Giao diện Trợ lý Sư phạm AI sinh lời nhận xét học bạ tự động trong GVCN Pro*
 
 #### 2. Kiến trúc hoạt động kép (Dual-Engine AI Architecture):
 Hệ thống tích hợp song song 2 cơ chế:
@@ -392,10 +405,11 @@ Hệ thống tích hợp song song 2 cơ chế:
 #### 1. Mục tiêu:
 Giúp phụ huynh nắm bắt bài tập về nhà và dặn dò của giáo viên tức thời mà không bị trôi tin nhắn; tra cứu kết quả học tập cá nhân của con an toàn, bảo mật tuyệt đối theo Luật Trẻ em.
 
-<a id="hinh-6"></a>
+![Hình 6a: Sơ đồ Cổng bài tập QR và Sổ liên lạc điện tử mã PIN bảo mật](/Users/chamnp/.gemini/antigravity/brain/f2d756a9-b42d-48bb-ab0d-9f23e5a1e32c/images/hinh_6_cong_bai_tap_qr.svg)
+*Hình 6a: Sơ đồ Cổng bài tập QR không cần đăng nhập và Sổ liên lạc số mã PIN cá nhân*
 
-![Hình 6: Cổng bài tập về nhà QR trên di động và Sổ liên lạc điện tử mã PIN bảo mật](/Users/chamnp/.gemini/antigravity/brain/f2d756a9-b42d-48bb-ab0d-9f23e5a1e32c/images/hinh_6_cong_bai_tap_qr.svg)
-*Hình 6: Giao diện Cổng bài tập về nhà QR Code trên smartphone và Sổ liên lạc điện tử mã PIN bảo mật*
+![Hình 6b: Ảnh chụp thực tế: Giao diện Quản lý & Giao bài tập về nhà QR](/Users/chamnp/.gemini/antigravity/brain/f2d756a9-b42d-48bb-ab0d-9f23e5a1e32c/images/06_cong_bai_tap_qr.png)
+*Hình 6b: Ảnh chụp thực tế Giao diện Quản lý và Giao bài tập về nhà QR Code trên GVCN Pro*
 
 #### 2. Quy trình thực hiện:
 - **Cổng tra cứu bài tập về nhà qua mã QR động (`/hw/[classId]`)**:
@@ -415,10 +429,11 @@ Giúp phụ huynh nắm bắt bài tập về nhà và dặn dò của giáo vi�
 #### 1. Mục tiêu:
 Minh bạch hóa 100% các khoản thu - chi quỹ cha mẹ học sinh; quản lý thời khóa biểu 2 buổi/ngày thông minh và hỗ trợ trích xuất dữ liệu chuẩn để đồng bộ lên phần mềm quản trị ngành (VnEdu, SMAS).
 
-<a id="hinh-7"></a>
+![Hình 7a: Sơ đồ Quản trị tài chính quỹ lớp và Thời khóa biểu 2 buổi/ngày](/Users/chamnp/.gemini/antigravity/brain/f2d756a9-b42d-48bb-ab0d-9f23e5a1e32c/images/hinh_7_quan_ly_thu_chi_tkb.svg)
+*Hình 7a: Sơ đồ Quản lý thu chi quỹ lớp và Thời khóa biểu 2 buổi/ngày thông minh*
 
-![Hình 7: Phân hệ Quản lý thu chi quỹ lớp và Thời khóa biểu 2 buổi/ngày thông minh](/Users/chamnp/.gemini/antigravity/brain/f2d756a9-b42d-48bb-ab0d-9f23e5a1e32c/images/hinh_7_quan_ly_thu_chi_tkb.svg)
-*Hình 7: Phân hệ Quản lý thu chi quỹ lớp minh bạch và Thời khóa biểu 2 buổi/ngày thông minh*
+![Hình 7b: Ảnh chụp thực tế: Giao diện Thời khóa biểu 2 buổi/ngày (7 tiết)](/Users/chamnp/.gemini/antigravity/brain/f2d756a9-b42d-48bb-ab0d-9f23e5a1e32c/images/07_thoi_khoa_bieu_2_buoi.png)
+*Hình 7b: Ảnh chụp thực tế Giao diện Thời khóa biểu tiểu học 2 buổi/ngày (7 tiết/ngày) trên GVCN Pro*
 
 #### 2. Quy trình thực hiện:
 - **Quản lý thu chi quỹ lớp minh bạch**:
@@ -431,13 +446,14 @@ Minh bạch hóa 100% các khoản thu - chi quỹ cha mẹ học sinh; quản l
   + **Xuất Excel Bảng tổng hợp đánh giá Mẫu 1 (TT27)**: Đúng định dạng phôi mẫu của Bộ Giáo dục và Đào tạo để lưu trữ hồ sơ trường học.
   + **Xuất file nhập điểm định dạng VnEdu / SMAS**: Cấu trúc cột tương thích hoàn hảo giúp giáo viên chỉ cần 1 thao tác import là đẩy toàn bộ điểm số và nhận xét lên hệ thống quản trị của nhà trường mà không phải gõ lại từng ký tự.
 
+![Hình 9: Ảnh chụp thực tế: Cổng tra cứu kết quả học tập cá nhân dành cho phụ huynh](/Users/chamnp/.gemini/antigravity/brain/f2d756a9-b42d-48bb-ab0d-9f23e5a1e32c/images/09_cong_tra_cuu_phu_huynh.png)
+*Hình 9: Ảnh chụp thực tế Cổng tra cứu kết quả học tập và nề nếp cá nhân dành cho Cha mẹ học sinh*
+
 ---
 
 ## 4. Kết quả và hiệu quả áp dụng sáng kiến
 
 Sau một năm học kiên trì triển khai sáng kiến tại Lớp 4A1 và mở rộng thực nghiệm tại Trường Tiểu học Đại Mỗ trong năm học 2025 - 2026, sáng kiến đã mang lại những kết quả chuyển biến vượt bậc cả về định tính và định lượng:
-
-<a id="hinh-8"></a>
 
 ![Hình 8: Biểu đồ so sánh đối chứng hiệu quả thực nghiệm](/Users/chamnp/.gemini/antigravity/brain/f2d756a9-b42d-48bb-ab0d-9f23e5a1e32c/images/hinh_8_bieu_do_doi_chung_hieu_qua.svg)
 *Hình 8: Biểu đồ so sánh đối chứng hiệu quả thực nghiệm tại Trường Tiểu học Đại Mỗ (Năm học 2025 - 2026)*
