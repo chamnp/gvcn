@@ -21,6 +21,7 @@ import {
   SchoolInfo,
   AIConfig,
   AIGenerationSettings,
+  ClassEvent,
 } from '@/types';
 
 export const DEFAULT_AI_GEN_SETTINGS: AIGenerationSettings = {
@@ -54,6 +55,7 @@ import {
   INITIAL_TRANSACTIONS,
   INITIAL_HOMEWORKS,
   INITIAL_SCHOOL_INFO,
+  INITIAL_CLASS_EVENTS,
 } from '@/data/mock-data';
 import {
   PRIMARY_SUBJECTS,
@@ -129,6 +131,13 @@ interface AppContextType {
   addTransaction: (tx: Omit<FundTransaction, 'id' | 'createdAt'>) => void;
   updateTransaction: (tx: FundTransaction) => void;
   deleteTransaction: (id: string) => void;
+
+  // Class Events Management
+  classEvents: ClassEvent[];
+  allClassEvents: ClassEvent[];
+  addClassEvent: (event: Omit<ClassEvent, 'id'>) => void;
+  updateClassEvent: (event: ClassEvent) => void;
+  deleteClassEvent: (id: string) => void;
 
   // Student Actions
   addStudent: (student: Omit<Student, 'id' | 'createdAt'>) => void;
@@ -208,6 +217,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [allTransactions, setAllTransactions] = useState<FundTransaction[]>(INITIAL_TRANSACTIONS);
   const [customSubjects, setCustomSubjects] = useState<CustomSubject[]>(INITIAL_CUSTOM_SUBJECTS);
   const [allHomeworks, setAllHomeworks] = useState<HomeworkAssignment[]>(INITIAL_HOMEWORKS);
+  const [allClassEvents, setAllClassEvents] = useState<ClassEvent[]>(INITIAL_CLASS_EVENTS);
   const [allTimetables, setAllTimetables] = useState<TimetableSlot[]>(
     INITIAL_TIMETABLE.map((t) => ({ ...t, classId: 'class-4a1' }))
   );
@@ -226,6 +236,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const list = allStudents.filter((s) => (s.classId || 'class-4a1') === activeClassId);
     return list;
   }, [allStudents, activeClassId]);
+
+  // Scoped Events for active class
+  const classEvents = useMemo(() => {
+    return allClassEvents.filter((ev) => (ev.classId || 'class-4a1') === activeClassId);
+  }, [allClassEvents, activeClassId]);
 
   // Scoped Timetable for active class
   const timetable = useMemo(() => {
@@ -330,6 +345,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (savedTt) setAllTimetables(JSON.parse(savedTt));
       if (savedCs) setCustomSubjects(JSON.parse(savedCs));
       if (savedHw) setAllHomeworks(JSON.parse(savedHw));
+      const savedEvents = localStorage.getItem(STORAGE_PREFIX + 'classEvents');
+      if (savedEvents) setAllClassEvents(JSON.parse(savedEvents));
 
       const savedAiConfig = localStorage.getItem(STORAGE_PREFIX + 'aiConfig');
       if (savedAiConfig) {
@@ -978,6 +995,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (e) {}
   };
 
+  const addClassEvent = (event: Omit<ClassEvent, 'id'>) => {
+    const newEv: ClassEvent = {
+      ...event,
+      id: 'ev-' + Date.now(),
+      classId: activeClassId,
+    };
+    setAllClassEvents((prev) => {
+      const updated = [newEv, ...prev];
+      try {
+        localStorage.setItem(STORAGE_PREFIX + 'classEvents', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  };
+
+  const updateClassEvent = (event: ClassEvent) => {
+    setAllClassEvents((prev) => {
+      const updated = prev.map((e) => (e.id === event.id ? event : e));
+      try {
+        localStorage.setItem(STORAGE_PREFIX + 'classEvents', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  };
+
+  const deleteClassEvent = (id: string) => {
+    setAllClassEvents((prev) => {
+      const updated = prev.filter((e) => e.id !== id);
+      try {
+        localStorage.setItem(STORAGE_PREFIX + 'classEvents', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -1013,6 +1065,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addTransaction,
         updateTransaction,
         deleteTransaction,
+        classEvents,
+        allClassEvents,
+        addClassEvent,
+        updateClassEvent,
+        deleteClassEvent,
         timetable,
         updateTimetableSlot,
         setTimetable,

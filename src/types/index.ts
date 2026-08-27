@@ -177,6 +177,20 @@ export interface TimetableSlot {
   note?: string; // Ghi chú: Dụng cụ cần mang, dặn dò học sinh
 }
 
+export type ClassEventType = 'EXAM' | 'HOLIDAY' | 'ACTIVITY' | 'MEETING' | 'FESTIVAL' | 'OTHER';
+
+export interface ClassEvent {
+  id: string;
+  classId?: string;
+  title: string;
+  date: string; // YYYY-MM-DD
+  time?: string; // e.g. "08:00 - 10:30"
+  type: ClassEventType;
+  location?: string;
+  description?: string;
+  isImportant?: boolean;
+}
+
 export type TransactionType = 'INCOME' | 'EXPENSE';
 
 export interface FundTransaction {

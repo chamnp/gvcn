@@ -1,4 +1,4 @@
-import { ClassInfo, Student, SubjectAssessment, TraitAssessment, StudentTermSummary, DailyAttendance, StarLog, HomeworkAssignment, SchoolInfo } from '@/types';
+import { ClassInfo, Student, SubjectAssessment, TraitAssessment, StudentTermSummary, DailyAttendance, StarLog, HomeworkAssignment, SchoolInfo, ClassEvent } from '@/types';
 
 export const INITIAL_SCHOOL_INFO: SchoolInfo = {
   id: 'school-1',
@@ -80,7 +80,7 @@ export const INITIAL_STUDENTS: Student[] = [
     studentCode: 'HS4A1-001',
     fullName: 'Nguyễn Văn An',
     gender: 'Nam',
-    dateOfBirth: '2016-03-15',
+    dateOfBirth: '2016-08-27',
     parentName: 'Nguyễn Văn Hùng',
     parentPhone: '0912345678',
     isBoarding: true,
@@ -96,7 +96,7 @@ export const INITIAL_STUDENTS: Student[] = [
     studentCode: 'HS4A1-002',
     fullName: 'Trần Thị Mai Anh',
     gender: 'Nữ',
-    dateOfBirth: '2016-05-20',
+    dateOfBirth: '2016-08-30',
     parentName: 'Trần Quốc Bảo',
     parentPhone: '0987654321',
     isBoarding: true,
@@ -112,7 +112,7 @@ export const INITIAL_STUDENTS: Student[] = [
     studentCode: 'HS4A1-003',
     fullName: 'Lê Hoàng Bách',
     gender: 'Nam',
-    dateOfBirth: '2016-08-10',
+    dateOfBirth: '2016-09-05',
     parentName: 'Lê Văn Tuấn',
     parentPhone: '0903123456',
     isBoarding: true,
@@ -441,6 +441,70 @@ export const INITIAL_HOMEWORKS: HomeworkAssignment[] = [
     dueDate: new Date(Date.now() + 2 * 86400000).toISOString().split('T')[0],
     reminderNotes: 'Mang sách tiếng Anh Global Success tập 1.',
     createdAt: new Date().toISOString(),
+  },
+];
+
+const formatEventDate = (offsetDays: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  return d.toISOString().split('T')[0];
+};
+
+export const INITIAL_CLASS_EVENTS: ClassEvent[] = [
+  {
+    id: 'ev-1',
+    classId: 'class-4a1',
+    title: 'Lễ Khai Giảng Năm Học Mới 2026-2027',
+    date: formatEventDate(2),
+    time: '07:30 - 10:00',
+    type: 'FESTIVAL',
+    location: 'Sân trường Tiểu học Đại Mỗ',
+    description: 'Học sinh mặc đồng phục chỉnh tề, đi giày dép quai hậu, mang theo cờ và hoa vẫy đón học sinh lớp 1.',
+    isImportant: true,
+  },
+  {
+    id: 'ev-2',
+    classId: 'class-4a1',
+    title: 'Họp Cha Mẹ Học Sinh Đầu Năm Học 2026-2027',
+    date: formatEventDate(6),
+    time: '08:00 - 10:30',
+    type: 'MEETING',
+    location: 'Phòng học Lớp 4A1 (Tầng 2 nhà B)',
+    description: 'Bầu Ban đại diện Cha mẹ học sinh, phổ biến kế hoạch học tập và quy định bán trú Thông tư 27.',
+    isImportant: true,
+  },
+  {
+    id: 'ev-3',
+    classId: 'class-4a1',
+    title: 'Hội Thi Vở Sạch Chữ Đẹp & Trưng Bày Báo Tường',
+    date: formatEventDate(12),
+    time: '14:00 - 16:30',
+    type: 'ACTIVITY',
+    location: 'Phòng Đa năng',
+    description: 'Phong trào thi đua rèn chữ, giữ vở sạch đẹp chào mừng năm học mới.',
+    isImportant: false,
+  },
+  {
+    id: 'ev-4',
+    classId: 'class-4a1',
+    title: 'Kiểm Tra Đánh Giá Định Kỳ Giữa Học Kỳ 1',
+    date: formatEventDate(20),
+    time: '08:00 - 11:00',
+    type: 'EXAM',
+    location: 'Phòng học 4A1',
+    description: 'Kiểm tra môn Toán và môn Tiếng Việt theo chuẩn kiến thức Thông tư 27.',
+    isImportant: true,
+  },
+  {
+    id: 'ev-5',
+    classId: 'class-4a1',
+    title: 'Lễ Kỷ Niệm Ngày Nhà Giáo Việt Nam 20/11',
+    date: formatEventDate(40),
+    time: '07:30 - 11:30',
+    type: 'FESTIVAL',
+    location: 'Hội trường lớn',
+    description: 'Biểu diễn văn nghệ, tri ân thầy cô giáo và trao thưởng đợt thi đua thứ nhất.',
+    isImportant: true,
   },
 ];
 
