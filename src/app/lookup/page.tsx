@@ -15,6 +15,13 @@ import {
   Sparkles,
   CheckCircle2,
   Calendar,
+  Eye,
+  EyeOff,
+  ChevronDown,
+  BookOpen,
+  HeartHandshake,
+  Check,
+  GraduationCap,
 } from 'lucide-react';
 import { useAppStore, getDefaultPinForStudent } from '@/lib/store';
 import { toast } from 'sonner';
@@ -41,7 +48,25 @@ export default function StudentLookupPortal() {
 
   const [studentIdentifierInput, setStudentIdentifierInput] = useState('');
   const [pinInput, setPinInput] = useState('');
+  const [showPin, setShowPin] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+
+  // Quick 1-Click Demo Fill
+  const handleFillDemo = () => {
+    const targetClass = schoolClasses.find((c) => c.id === 'class-4a1') || schoolClasses[0];
+    if (targetClass) setSelectedClassId(targetClass.id);
+
+    const demoStudent = allStudents.find(
+      (s) => (s.classId || 'class-4a1') === (targetClass?.id || 'class-4a1')
+    );
+
+    if (demoStudent) {
+      setStudentIdentifierInput(demoStudent.fullName);
+      setPinInput(getDefaultPinForStudent(demoStudent));
+      toast.success(`Đã tự động điền học sinh mẫu: ${demoStudent.fullName} (Mã PIN: ${getDefaultPinForStudent(demoStudent)})`);
+    }
+  };
 
   // Handle Verify & Navigate
   const handleVerify = (e: React.FormEvent) => {
@@ -86,122 +111,220 @@ export default function StudentLookupPortal() {
     if (isDefaultMatch || isCustomMatch) {
       toast.success(`Xác thực thành công! Đang mở phiếu báo điểm em ${matchedStudent.fullName}...`);
       const token = matchedStudent.shareToken || matchedStudent.id;
-      router.push(`/student/${token}`);
+      setTimeout(() => {
+        router.push(`/student/${token}`);
+      }, 400);
     } else {
       toast.error('Mã xác thực không chính xác! (Lần đầu đăng nhập là 4 số ngày tháng sinh của con, ví dụ: 15/08 thì nhập 1508).');
       setIsVerifying(false);
     }
   };
 
+  const selectedClass = schoolClasses.find((c) => c.id === selectedClassId) || schoolClasses[0];
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col items-center justify-center p-3 sm:p-4 font-sans">
-      <div className="max-w-md w-full bg-white rounded-3xl border border-slate-200 shadow-xl p-4 sm:p-8 space-y-5 sm:space-y-6 text-center">
-        {/* Brand Header */}
-        <div className="space-y-3">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-50/50 text-slate-900 flex flex-col justify-between p-3.5 sm:p-6 font-sans">
+      {/* TOP HEADER BRANDING */}
+      <header className="max-w-xl w-full mx-auto flex items-center justify-between py-2">
+        <div className="flex items-center space-x-2.5">
           {schoolInfo.logoUrl ? (
             <img
               src={schoolInfo.logoUrl}
               alt="Logo"
-              className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl object-cover border-2 border-blue-500 shadow-lg shadow-blue-500/20 mx-auto bg-white"
+              className="w-8 h-8 rounded-xl object-cover border border-slate-200 shadow-2xs bg-white"
             />
           ) : (
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center mx-auto shadow-lg text-3xl text-white font-bold">
-              🎒
+            <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-2xs">
+              🏫
             </div>
           )}
-
-          <div className="space-y-1">
-            <span className="inline-block bg-blue-100 text-blue-800 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-              {schoolInfo.schoolYear || '2026-2027'}
-            </span>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-              Cổng Tra Cứu Kết Quả Học Tập
-            </h1>
-            <p className="text-xs text-slate-500">
-              Tra cứu phiếu báo điểm định kỳ và lời nhận xét của cô giáo dành riêng cho con.
-            </p>
-          </div>
+          <span className="font-bold text-xs sm:text-sm text-slate-800 truncate max-w-[200px] sm:max-w-xs">
+            {schoolInfo.name}
+          </span>
         </div>
 
-        {/* Form Container */}
-        <form onSubmit={handleVerify} className="space-y-4 text-left text-xs">
-          {/* Step 1: Select Class */}
-          <div>
-            <label className="block font-bold text-slate-700 mb-1 uppercase tracking-wider">
-              1. Chọn Lớp Học Của Con:
-            </label>
-            <select
-              value={selectedClassId}
-              onChange={(e) => setSelectedClassId(e.target.value)}
-              className="w-full p-2.5 rounded-xl border border-slate-200 font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 bg-white"
-            >
-              {schoolClasses.map((cls) => (
-                <option key={cls.id} value={cls.id}>
-                  Lớp {cls.name} (Khối {cls.grade}) - GVCN: {cls.teacherName}
-                </option>
-              ))}
-            </select>
-          </div>
+        <Link
+          href={`/hw/${selectedClassId === 'class-4a1' ? 'c4a1-8f92a4' : selectedClassId}`}
+          className="text-xs font-bold text-blue-600 hover:text-blue-700 bg-white hover:bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 shadow-2xs transition-colors"
+        >
+          Trang Lớp Học →
+        </Link>
+      </header>
 
-          {/* Step 2: Student Name or Code */}
-          <div>
-            <label className="block font-bold text-slate-700 mb-1 uppercase tracking-wider">
-              2. Họ Và Tên Của Con (Hoặc Mã Học Sinh):
-            </label>
-            <div className="relative">
-              <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                required
-                placeholder="Ví dụ: Nguyễn Văn An"
-                value={studentIdentifierInput}
-                onChange={(e) => setStudentIdentifierInput(e.target.value)}
-                className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 bg-white text-xs"
-              />
+      {/* MAIN LOOKUP CARD */}
+      <main className="max-w-md w-full mx-auto my-auto py-4 space-y-4">
+        {/* HERO BADGE & CARD */}
+        <div className="bg-white rounded-3xl border border-slate-200/80 shadow-xl shadow-blue-500/5 p-5 sm:p-7 space-y-5 text-center relative overflow-hidden">
+          {/* Subtle decorative glow accent */}
+          <div className="absolute -top-16 -right-16 w-32 h-32 bg-blue-400/10 rounded-full blur-2xl pointer-events-none" />
+          <div className="absolute -bottom-16 -left-16 w-32 h-32 bg-indigo-400/10 rounded-full blur-2xl pointer-events-none" />
+
+          {/* Title Area */}
+          <div className="space-y-2 relative z-10">
+            <div className="inline-flex items-center space-x-1.5 bg-blue-50 border border-blue-200 text-blue-800 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider">
+              <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+              <span>Cổng Tra Cứu Thông Tư 27</span>
             </div>
+
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+              Tra Cứu Kết Quả Học Tập
+            </h1>
+            <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
+              Nhập họ tên con và ngày sinh để xem phiếu báo điểm định kỳ, lời nhận xét của cô giáo và lịch học.
+            </p>
           </div>
 
-          {/* Step 3: PIN Input */}
-          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
-            <label className="block font-bold text-slate-800 flex items-center gap-1.5">
-              <Key className="w-3.5 h-3.5 text-blue-600" />
-              <span>3. Mã Xác Thực (Ngày Sinh Hoặc Mã PIN Riêng):</span>
-            </label>
+          {/* QUICK DEMO BUTTON (1-CLICK TEST) */}
+          <div className="bg-gradient-to-r from-amber-50 to-orange-50 p-2.5 rounded-2xl border border-amber-200/80 flex items-center justify-between text-xs text-amber-900">
+            <div className="flex items-center space-x-2 min-w-0 text-left">
+              <span className="text-base shrink-0">✨</span>
+              <span className="text-[11px] leading-tight truncate">
+                Dùng thử nhanh dữ liệu mẫu
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={handleFillDemo}
+              className="bg-white hover:bg-amber-100/60 text-amber-800 font-black text-[11px] px-3 py-1 rounded-xl border border-amber-300 shadow-2xs transition-colors shrink-0 cursor-pointer"
+            >
+              Điền Mẫu 1-Chạm
+            </button>
+          </div>
 
-            <input
-              type="password"
-              required
-              maxLength={6}
-              placeholder="VD: 1508 (nếu con sinh ngày 15/08)..."
-              value={pinInput}
-              onChange={(e) => setPinInput(e.target.value.replace(/\D/g, ''))}
-              className="w-full p-3 rounded-xl border border-slate-200 text-slate-900 font-mono text-center font-bold tracking-widest text-base focus:ring-2 focus:ring-blue-500 bg-white"
-            />
+          {/* LOOKUP FORM */}
+          <form onSubmit={handleVerify} className="space-y-4 text-left text-xs relative z-10">
+            {/* Step 1: Select Class */}
+            <div className="space-y-1.5">
+              <label className="block font-bold text-slate-700 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                <School className="w-3.5 h-3.5 text-blue-600" />
+                <span>1. Chọn Lớp Học Của Con:</span>
+              </label>
+              <div className="relative">
+                <select
+                  value={selectedClassId}
+                  onChange={(e) => setSelectedClassId(e.target.value)}
+                  className="w-full h-11 px-3.5 pr-9 rounded-2xl border border-slate-200 font-bold text-slate-900 bg-slate-50/50 hover:bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all appearance-none cursor-pointer text-xs"
+                >
+                  {schoolClasses.map((cls) => (
+                    <option key={cls.id} value={cls.id}>
+                      Lớp {cls.name} (Khối {cls.grade}) — GVCN: {cls.teacherName}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+            </div>
 
-            <p className="text-[11px] text-slate-500 leading-snug">
-              💡 <strong>Lần đầu tra cứu:</strong> Mật khẩu là <strong>4 số ngày tháng sinh của con</strong> (Ví dụ: con sinh ngày 15/08 thì nhập <strong>1508</strong>).
-            </p>
+            {/* Step 2: Student Full Name or Student Code */}
+            <div className="space-y-1.5">
+              <label className="block font-bold text-slate-700 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                <User className="w-3.5 h-3.5 text-blue-600" />
+                <span>2. Họ Và Tên Của Con:</span>
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  required
+                  placeholder="Nhập đầy đủ họ tên, ví dụ: Nguyễn Văn An"
+                  value={studentIdentifierInput}
+                  onChange={(e) => setStudentIdentifierInput(e.target.value)}
+                  className="w-full h-11 px-3.5 rounded-2xl border border-slate-200 font-bold text-slate-900 bg-slate-50/50 hover:bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-xs placeholder:text-slate-400 placeholder:font-normal"
+                />
+              </div>
+            </div>
 
+            {/* Step 3: PIN Input */}
+            <div className="space-y-1.5 bg-slate-50/80 p-3.5 rounded-2xl border border-slate-200">
+              <div className="flex items-center justify-between">
+                <label className="block font-bold text-slate-800 flex items-center gap-1.5 text-[11px]">
+                  <Key className="w-3.5 h-3.5 text-blue-600" />
+                  <span>3. Mã Xác Thực (Ngày Sinh Hoặc Mã PIN):</span>
+                </label>
+              </div>
+
+              <div className="relative">
+                <input
+                  type={showPin ? 'text' : 'password'}
+                  inputMode="numeric"
+                  required
+                  maxLength={6}
+                  placeholder="VD: 1508 (nếu con sinh ngày 15/08)"
+                  value={pinInput}
+                  onChange={(e) => setPinInput(e.target.value.replace(/\D/g, ''))}
+                  className="w-full h-12 px-3.5 pr-11 rounded-xl border border-slate-200 text-slate-900 font-mono text-center font-black tracking-widest text-base bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all placeholder:text-xs placeholder:font-sans placeholder:tracking-normal placeholder:font-normal placeholder:text-slate-400"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPin(!showPin)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                  title={showPin ? 'Ẩn mã' : 'Xem mã'}
+                >
+                  {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+
+              <p className="text-[11px] text-slate-500 leading-snug pt-1">
+                💡 <strong>Lần đầu tra cứu:</strong> Nhập <strong>4 số ngày tháng sinh của con</strong> (Ví dụ: con sinh ngày 15/08 thì nhập <strong>1508</strong>).
+              </p>
+            </div>
+
+            {/* SUBMIT BUTTON */}
             <button
               type="submit"
               disabled={isVerifying}
-              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-md transition-colors flex items-center justify-center space-x-1.5 cursor-pointer mt-2"
+              className="w-full h-12 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 text-white font-black text-xs sm:text-sm rounded-2xl shadow-md shadow-blue-500/20 transition-all flex items-center justify-center space-x-2 cursor-pointer"
             >
-              <span>{isVerifying ? 'Đang xác thực...' : 'Xem Phiếu Báo Điểm Của Con'}</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <span>{isVerifying ? 'Đang xác thực bảo mật...' : 'Xem Phiếu Báo Điểm Của Con'}</span>
+              <ArrowRight className="w-4 h-4 shrink-0" />
             </button>
-          </div>
-        </form>
-
-        <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-          <span className="text-slate-400 font-medium truncate max-w-[200px]" title={schoolInfo.address}>
-            {schoolInfo.address || 'Hà Nội'}
-          </span>
-          <Link href="/login" className="font-bold text-blue-600 hover:underline shrink-0">
-            Giáo viên đăng nhập →
-          </Link>
+          </form>
         </div>
-      </div>
+
+        {/* FAQ & SECURITY ACCORDION */}
+        <div className="bg-white/80 backdrop-blur-xs rounded-3xl border border-slate-200/80 p-4 space-y-2 text-xs">
+          <div className="flex items-center space-x-2 text-slate-700 font-bold mb-2">
+            <HelpCircle className="w-4 h-4 text-blue-600" />
+            <span>Câu Hỏi Thường Gặp Của Phụ Huynh</span>
+          </div>
+
+          {[
+            {
+              q: 'Dữ liệu của con có bị người khác xem không?',
+              a: 'Hệ thống bảo mật tuyệt đối. Mỗi học sinh có một mã định danh và mã PIN bí mật riêng. Người ngoài không thể xem trộm danh sách lớp hay bảng điểm của bạn khác.',
+            },
+            {
+              q: 'Nếu tôi quên mã PIN thì phải làm thế nào?',
+              a: 'Bố mẹ chỉ cần nhắn tin cho Giáo viên chủ nhiệm. Cô giáo có thể gửi lại liên kết hoặc khôi phục mã PIN về ngày sinh mặc định trong 1 giây.',
+            },
+          ].map((faq, idx) => (
+            <div key={idx} className="border-t border-slate-100 pt-2">
+              <button
+                type="button"
+                onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
+                className="w-full flex items-center justify-between font-bold text-slate-800 text-left py-1 hover:text-blue-600 cursor-pointer"
+              >
+                <span>{faq.q}</span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${openFaq === idx ? 'rotate-180' : ''}`} />
+              </button>
+              {openFaq === idx && (
+                <p className="text-[11px] text-slate-500 leading-relaxed pt-1 pb-2">
+                  {faq.a}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      </main>
+
+      {/* FOOTER */}
+      <footer className="max-w-xl w-full mx-auto pt-3 border-t border-slate-200/60 flex items-center justify-between text-xs text-slate-400">
+        <span className="truncate max-w-[200px]" title={schoolInfo.address}>
+          {schoolInfo.name}
+        </span>
+        <Link href="/login" className="font-bold text-slate-600 hover:text-blue-600 transition-colors">
+          Giáo viên đăng nhập →
+        </Link>
+      </footer>
     </div>
   );
 }

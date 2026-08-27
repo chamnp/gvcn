@@ -310,37 +310,43 @@ export default function PublicClassHomeworkPortal({
           {/* LEFT 2 COLUMNS: HERO BANNER, TAB NAVIGATION & MAIN CONTENT */}
           <div className="lg:col-span-2 space-y-4">
             {/* HERO GREETING BANNER */}
-            <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-800 rounded-3xl p-4 sm:p-7 text-white shadow-xl relative overflow-hidden">
-              <div className="relative z-10 space-y-2.5">
+            <div className="bg-gradient-to-br from-blue-700 via-indigo-700 to-slate-900 rounded-3xl p-5 sm:p-7 text-white shadow-xl relative overflow-hidden">
+              {/* Background ambient glow */}
+              <div className="absolute top-0 right-0 w-64 h-64 bg-blue-400/10 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+
+              <div className="relative z-10 space-y-3">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center space-x-1.5 bg-white/20 px-3 py-1 rounded-full text-xs font-bold backdrop-blur-xs">
+                  <span className="inline-flex items-center space-x-1.5 bg-white/15 px-3 py-1 rounded-full text-xs font-bold backdrop-blur-md border border-white/10">
                     <Sun className="w-3.5 h-3.5 text-amber-300" />
                     <span>Góc Phụ Huynh & Học Sinh</span>
                   </span>
-                  <span className="bg-yellow-400/20 text-yellow-300 text-xs font-bold px-2.5 py-0.5 rounded-full border border-yellow-400/30">
+                  <span className="bg-yellow-400/20 text-yellow-300 text-xs font-black px-2.5 py-0.5 rounded-full border border-yellow-400/30">
                     Lớp {currentClass.name}
                   </span>
                 </div>
 
-                <h1 className="text-xl sm:text-2xl font-black tracking-tight leading-snug">
-                  Cổng Thông Tin Học Tập & Hoạt Động Lớp {currentClass.name}
-                </h1>
-                <p className="text-xs sm:text-sm text-blue-100 max-w-xl leading-relaxed">
-                  Cập nhật bài tập về nhà, lịch sự kiện, chuẩn bị sách vở ngày mai ({tomorrowDayInfo?.name}) và theo dõi nề nếp thi đua của con.
-                </p>
+                <div>
+                  <h1 className="text-xl sm:text-2xl font-black tracking-tight leading-snug">
+                    Cổng Thông Tin Học Tập Lớp {currentClass.name}
+                  </h1>
+                  <p className="text-xs sm:text-sm text-blue-100/90 max-w-xl leading-relaxed mt-1">
+                    Cập nhật bài tập về nhà, lịch sự kiện, chuẩn bị sách vở ngày mai ({tomorrowDayInfo?.name}) và thông báo mới nhất từ cô giáo.
+                  </p>
+                </div>
 
                 {/* Progress Bar for Homework */}
                 {classHomeworks.length > 0 && (
-                  <div className="pt-2">
-                    <div className="flex items-center justify-between text-xs font-bold mb-1">
-                      <span>Tiến độ bài tập hôm nay:</span>
-                      <span className="text-emerald-300">
+                  <div className="pt-1.5 space-y-1.5">
+                    <div className="flex items-center justify-between text-xs font-bold">
+                      <span className="text-blue-200">Tiến độ bài tập hôm nay:</span>
+                      <span className="text-emerald-300 font-mono">
                         {doneCount}/{classHomeworks.length} bài ({Math.round((doneCount / classHomeworks.length) * 100)}%)
                       </span>
                     </div>
-                    <div className="w-full bg-black/25 rounded-full h-2.5 overflow-hidden p-0.5 border border-white/20">
+                    <div className="w-full bg-black/30 rounded-full h-2.5 overflow-hidden p-0.5 border border-white/15">
                       <div
-                        className="bg-emerald-400 h-full rounded-full transition-all duration-300"
+                        className="bg-gradient-to-r from-emerald-400 to-teal-300 h-full rounded-full transition-all duration-300 shadow-xs"
                         style={{ width: `${(doneCount / classHomeworks.length) * 100}%` }}
                       />
                     </div>
@@ -350,9 +356,9 @@ export default function PublicClassHomeworkPortal({
             </div>
 
             {/* PRIVATE STUDENT LOOKUP CTA BANNER */}
-            <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-3xl p-4 sm:p-5 text-white shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in">
+            <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-3xl p-4 sm:p-5 text-white shadow-lg shadow-orange-500/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 animate-in fade-in">
               <div className="flex items-center space-x-3.5 min-w-0">
-                <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl shadow-inner shrink-0">
+                <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl shadow-inner shrink-0">
                   🌟
                 </div>
                 <div className="space-y-0.5 min-w-0">
@@ -361,9 +367,9 @@ export default function PublicClassHomeworkPortal({
                     <span>Tra Cứu Riêng Tư Thông Tư 27</span>
                   </div>
                   <h3 className="font-black text-sm sm:text-base truncate">
-                    Bảng Điểm, Nhận Xét & Thi Đua Riêng Của Con
+                    Bảng Điểm & Lời Nhận Xét Riêng Của Con
                   </h3>
-                  <p className="text-xs text-amber-100 truncate">
+                  <p className="text-xs text-amber-100/90 truncate">
                     Bảo mật tuyệt đối, chỉ phụ huynh có mã mới xem được kết quả của con mình.
                   </p>
                 </div>
@@ -371,10 +377,10 @@ export default function PublicClassHomeworkPortal({
 
               <Link
                 href="/lookup"
-                className="inline-flex items-center justify-center space-x-1.5 bg-white text-orange-900 hover:bg-orange-50 font-black text-xs px-4 py-2.5 rounded-2xl shadow-md transition-all shrink-0 cursor-pointer"
+                className="inline-flex items-center justify-center space-x-1.5 bg-white hover:bg-orange-50 text-orange-950 font-black text-xs px-4 py-2.5 rounded-2xl shadow-md transition-all shrink-0 cursor-pointer"
               >
                 <span>Tra Cứu Con Ngay</span>
-                <ChevronRight className="w-3.5 h-3.5 text-orange-600" />
+                <ChevronRight className="w-4 h-4 text-orange-600" />
               </Link>
             </div>
 
