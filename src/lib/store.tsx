@@ -567,6 +567,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           { data: dbSummaries },
           { data: dbAttendances },
           { data: dbStars },
+          { data: dbCriteria },
+          { data: dbProducts },
+          { data: dbRedemptions },
           { data: dbHomeworks },
           { data: dbTimetable },
           { data: dbEvents },
@@ -580,6 +583,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           supabase.from('TermSummary').select('*'),
           supabase.from('DailyAttendance').select('*'),
           supabase.from('StarLog').select('*').order('createdAt', { ascending: false }),
+          supabase.from('StarCriterion').select('*').order('points', { ascending: false }),
+          supabase.from('RewardProduct').select('*').order('starPrice', { ascending: true }),
+          supabase.from('RewardRedemption').select('*').order('requestedAt', { ascending: false }),
           supabase.from('HomeworkAssignment').select('*').order('createdAt', { ascending: false }),
           supabase.from('TimetableSlot').select('*'),
           supabase.from('ClassEvent').select('*').order('date', { ascending: true }),
@@ -652,6 +658,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setStarLogs(dbStars);
         }
 
+        if (dbCriteria && dbCriteria.length > 0) {
+          setStarCriteria(dbCriteria);
+        }
+
+        if (dbProducts && dbProducts.length > 0) {
+          setRewardProducts(dbProducts);
+        }
+
+        if (dbRedemptions && dbRedemptions.length > 0) {
+          const mappedRedemptions: RewardRedemption[] = dbRedemptions.map((r: any) => ({
+            id: r.id,
+            classId: r.classId,
+            studentId: r.studentId,
+            studentName: r.studentName,
+            studentCode: r.studentCode,
+            studentAvatar: r.studentAvatar,
+            items: typeof r.items === 'string' ? JSON.parse(r.items) : (r.items || []),
+            totalStars: r.totalStars,
+            month: r.month,
+            status: r.status,
+            studentNote: r.studentNote,
+            requestedAt: r.requestedAt,
+            deliveredAt: r.deliveredAt,
+          }));
+          setRewardRedemptions(mappedRedemptions);
+        }
+
         if (dbHomeworks && dbHomeworks.length > 0) {
           setAllHomeworks(dbHomeworks);
         }
@@ -674,8 +707,98 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     syncFromSupabase();
 
+    // Setup Live Realtime Subscriptions via Supabase Channels
+    const channel = supabase
+      .channel('gvcn_live_sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'StarLog' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newRow = payload.new as StarLog;
+            setStarLogs((prev) => {
+              if (prev.some((l) => l.id === newRow.id)) return prev;
+              return [newRow, ...prev];
+            });
+          } else if (payload.eventType === 'DELETE') {
+            const oldRow = payload.old as any;
+            setStarLogs((prev) => prev.filter((l) => l.id !== oldRow.id));
+          } else if (payload.eventType === 'UPDATE') {
+            const newRow = payload.new as StarLog;
+            setStarLogs((prev) => prev.map((l) => (l.id === newRow.id ? newRow : l)));
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'RewardRedemption' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newRow = payload.new as any;
+            const mapped: RewardRedemption = {
+              ...newRow,
+              items: typeof newRow.items === 'string' ? JSON.parse(newRow.items) : (newRow.items || []),
+            };
+            setRewardRedemptions((prev) => {
+              if (prev.some((r) => r.id === mapped.id)) return prev;
+              return [mapped, ...prev];
+            });
+          } else if (payload.eventType === 'DELETE') {
+            const oldRow = payload.old as any;
+            setRewardRedemptions((prev) => prev.filter((r) => r.id !== oldRow.id));
+          } else if (payload.eventType === 'UPDATE') {
+            const newRow = payload.new as any;
+            const mapped: RewardRedemption = {
+              ...newRow,
+              items: typeof newRow.items === 'string' ? JSON.parse(newRow.items) : (newRow.items || []),
+            };
+            setRewardRedemptions((prev) => prev.map((r) => (r.id === mapped.id ? mapped : r)));
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'RewardProduct' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newRow = payload.new as RewardProduct;
+            setRewardProducts((prev) => {
+              if (prev.some((p) => p.id === newRow.id)) return prev;
+              return [newRow, ...prev];
+            });
+          } else if (payload.eventType === 'DELETE') {
+            const oldRow = payload.old as any;
+            setRewardProducts((prev) => prev.filter((p) => p.id !== oldRow.id));
+          } else if (payload.eventType === 'UPDATE') {
+            const newRow = payload.new as RewardProduct;
+            setRewardProducts((prev) => prev.map((p) => (p.id === newRow.id ? newRow : p)));
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'StarCriterion' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newRow = payload.new as StarCriterion;
+            setStarCriteria((prev) => {
+              if (prev.some((c) => c.id === newRow.id)) return prev;
+              return [...prev, newRow];
+            });
+          } else if (payload.eventType === 'DELETE') {
+            const oldRow = payload.old as any;
+            setStarCriteria((prev) => prev.filter((c) => c.id !== oldRow.id));
+          } else if (payload.eventType === 'UPDATE') {
+            const newRow = payload.new as StarCriterion;
+            setStarCriteria((prev) => prev.map((c) => (c.id === newRow.id ? newRow : c)));
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       isMounted = false;
+      supabase.removeChannel(channel);
     };
   }, []);
 
@@ -1678,6 +1801,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         points: newLog.points,
         category: newLog.category,
         reason: newLog.reason,
+        comment: newLog.comment || '',
+        date: newLog.date,
         createdAt: newLog.createdAt,
       })
       .then();
@@ -1701,21 +1826,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: `sc-${Date.now()}`,
     };
     setStarCriteria((prev) => [...prev, newCriterion]);
+    supabase.from('StarCriterion').upsert(newCriterion).then();
     toast.success('Đã thêm tiêu chí đánh giá mới!');
   };
 
   const updateStarCriterion = (updated: StarCriterion) => {
     setStarCriteria((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+    supabase.from('StarCriterion').upsert(updated).then();
     toast.success('Đã cập nhật tiêu chí!');
   };
 
   const deleteStarCriterion = (id: string) => {
     setStarCriteria((prev) => prev.filter((c) => c.id !== id));
+    supabase.from('StarCriterion').delete().eq('id', id).then();
     toast.success('Đã xóa tiêu chí!');
   };
 
   const resetStarCriteriaToDefault = () => {
     setStarCriteria(INITIAL_STAR_CRITERIA);
+    supabase.from('StarCriterion').upsert(INITIAL_STAR_CRITERIA).then();
     toast.success('Đã khôi phục danh mục tiêu chí chuẩn Thông tư 27!');
   };
 
@@ -1728,29 +1857,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createdAt: new Date().toISOString(),
     };
     setRewardProducts((prev) => [newProduct, ...prev]);
+    supabase.from('RewardProduct').upsert(newProduct).then();
     toast.success('Đã thêm sản phẩm mới vào Shop Quà!');
   };
 
   const updateRewardProduct = (updated: RewardProduct) => {
     setRewardProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+    supabase.from('RewardProduct').upsert(updated).then();
     toast.success('Đã cập nhật thông tin sản phẩm!');
   };
 
   const deleteRewardProduct = (id: string) => {
     setRewardProducts((prev) => prev.filter((p) => p.id !== id));
+    supabase.from('RewardProduct').delete().eq('id', id).then();
     toast.success('Đã xóa sản phẩm khỏi Shop!');
   };
 
   const restockRewardProduct = (id: string, additionalStock: number) => {
+    const target = rewardProducts.find((p) => p.id === id);
+    const newStock = target ? Math.max(0, target.stock + additionalStock) : additionalStock;
+    const isAvailable = newStock > 0;
+
     setRewardProducts((prev) =>
-      prev.map((p) => {
-        if (p.id === id) {
-          const newStock = Math.max(0, p.stock + additionalStock);
-          return { ...p, stock: newStock, isAvailable: newStock > 0 };
-        }
-        return p;
-      })
+      prev.map((p) => (p.id === id ? { ...p, stock: newStock, isAvailable } : p))
     );
+
+    supabase.from('RewardProduct').update({ stock: newStock, isAvailable }).eq('id', id).then();
     toast.success(`Đã cập nhật số lượng tồn kho (+${additionalStock})!`);
   };
 
@@ -1820,12 +1952,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       requestedAt: new Date().toISOString(),
     };
 
-    // Decrement stock
+    // Decrement stock in React state and in Supabase
     setRewardProducts((prev) =>
       prev.map((p) => {
         const matchingItem = data.items.find((item) => item.productId === p.id);
         if (matchingItem) {
           const remainingStock = Math.max(0, p.stock - matchingItem.quantity);
+          supabase.from('RewardProduct').update({ stock: remainingStock, isAvailable: remainingStock > 0 }).eq('id', p.id).then();
           return { ...p, stock: remainingStock, isAvailable: remainingStock > 0 };
         }
         return p;
@@ -1833,17 +1966,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
 
     setRewardRedemptions((prev) => [newRedemption, ...prev]);
+
+    // Live API Write to Supabase
+    supabase
+      .from('RewardRedemption')
+      .insert({
+        id: newRedemption.id,
+        classId: newRedemption.classId,
+        studentId: newRedemption.studentId,
+        studentName: newRedemption.studentName,
+        studentCode: newRedemption.studentCode,
+        studentAvatar: newRedemption.studentAvatar || null,
+        items: newRedemption.items,
+        totalStars: newRedemption.totalStars,
+        month: newRedemption.month,
+        status: newRedemption.status,
+        studentNote: newRedemption.studentNote || null,
+        requestedAt: newRedemption.requestedAt,
+      })
+      .then();
+
     return { success: true };
   };
 
   const fulfillRewardRedemption = (redemptionId: string) => {
+    const deliveredAt = new Date().toISOString();
     setRewardRedemptions((prev) =>
       prev.map((r) =>
         r.id === redemptionId
-          ? { ...r, status: 'DELIVERED', deliveredAt: new Date().toISOString() }
+          ? { ...r, status: 'DELIVERED', deliveredAt }
           : r
       )
     );
+
+    supabase
+      .from('RewardRedemption')
+      .update({ status: 'DELIVERED', deliveredAt })
+      .eq('id', redemptionId)
+      .then();
+
     toast.success('Đã xác nhận trao quà cho học sinh thành công! 🎉');
   };
 
@@ -1852,12 +2013,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!target) return;
 
     if (target.status === 'PENDING') {
-      // Restore inventory stock
+      // Restore inventory stock in React state and in Supabase
       setRewardProducts((prev) =>
         prev.map((p) => {
           const matched = target.items.find((item) => item.productId === p.id);
           if (matched) {
-            return { ...p, stock: p.stock + matched.quantity, isAvailable: true };
+            const restoredStock = p.stock + matched.quantity;
+            supabase.from('RewardProduct').update({ stock: restoredStock, isAvailable: true }).eq('id', p.id).then();
+            return { ...p, stock: restoredStock, isAvailable: true };
           }
           return p;
         })
@@ -1867,6 +2030,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setRewardRedemptions((prev) =>
       prev.map((r) => (r.id === redemptionId ? { ...r, status: 'CANCELLED' } : r))
     );
+
+    supabase
+      .from('RewardRedemption')
+      .update({ status: 'CANCELLED' })
+      .eq('id', redemptionId)
+      .then();
+
     toast.info('Đã hủy đơn đổi quà và hoàn lại sao/tồn kho!');
   };
 
@@ -1879,6 +2049,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setRewardRedemptions((prev) =>
         prev.filter((r) => r.month !== targetMonth)
       );
+
+      // Delete in Supabase
+      supabase.from('StarLog').delete().ilike('date', `${targetMonth}%`).then();
+      supabase.from('RewardRedemption').delete().eq('month', targetMonth).then();
+
       toast.success(`Đã reset điểm thi đua tháng ${targetMonth.replace('-', '/')}!`);
     }
   };
