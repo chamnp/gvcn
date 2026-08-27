@@ -196,22 +196,6 @@ export interface ClassEvent {
   isImportant?: boolean;
 }
 
-export type TransactionType = 'INCOME' | 'EXPENSE';
-
-export interface FundTransaction {
-  id: string;
-  classId?: string;
-  studentId?: string;
-  type: TransactionType; // Thu hoặc Chi
-  category: string; // Quỹ hội cha mẹ HS, Cơ sở vật chất, Liên hoan, v.v.
-  title: string;
-  amount: number; // Số tiền (VNĐ)
-  date: string; // YYYY-MM-DD
-  payerOrReceiver?: string; // Người nộp hoặc Người nhận
-  notes?: string;
-  createdAt: string;
-}
-
 export interface CustomSubject {
   id: string;
   code: string;

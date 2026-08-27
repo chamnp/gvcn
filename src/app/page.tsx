@@ -27,8 +27,6 @@ import {
   ChevronRight,
   X,
   BookOpen,
-  DollarSign,
-  HeartHandshake,
   Star,
   Compass,
 } from 'lucide-react';
@@ -87,7 +85,6 @@ export default function DashboardPage() {
     attendances,
     starLogs,
     timetable,
-    transactions,
     classEvents,
     addClassEvent,
     deleteClassEvent,
@@ -167,11 +164,6 @@ export default function DashboardPage() {
       .sort((a, b) => b.stars - a.stars)
       .slice(0, 5);
   }, [students, studentStarMap]);
-
-  // Quỹ lớp
-  const fundIncome = transactions.filter((t) => t.type === 'INCOME').reduce((acc, t) => acc + t.amount, 0);
-  const fundExpense = transactions.filter((t) => t.type === 'EXPENSE').reduce((acc, t) => acc + t.amount, 0);
-  const fundBalance = fundIncome - fundExpense;
 
   // Tính toán sinh nhật học sinh
   const studentBirthdayList = useMemo(() => {
@@ -914,37 +906,6 @@ export default function DashboardPage() {
                   </div>
                 );
               })}
-            </div>
-          </div>
-
-          {/* WIDGET 6: QUỸ LỚP TỔNG QUAN */}
-          <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-3xl border border-indigo-100 p-5 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2 text-indigo-950 font-bold text-sm">
-                <DollarSign className="w-4 h-4 text-indigo-600" />
-                <span>Quỹ Lớp {classInfo.name}</span>
-              </div>
-              <Link href="/settings" className="text-xs text-indigo-600 font-bold hover:underline">
-                Sổ quỹ →
-              </Link>
-            </div>
-
-            <div className="space-y-1 text-xs">
-              <p className="text-[11px] text-slate-500 font-medium">Số dư quỹ hiện tại:</p>
-              <h3 className="text-xl font-black text-indigo-700 font-mono">
-                {fundBalance.toLocaleString('vi-VN')} ₫
-              </h3>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 pt-1 text-[11px]">
-              <div className="bg-white/80 p-2 rounded-xl border border-indigo-100">
-                <span className="text-slate-500 block">Tổng thu:</span>
-                <strong className="text-emerald-600 font-mono">+{fundIncome.toLocaleString('vi-VN')} ₫</strong>
-              </div>
-              <div className="bg-white/80 p-2 rounded-xl border border-indigo-100">
-                <span className="text-slate-500 block">Tổng chi:</span>
-                <strong className="text-rose-600 font-mono">-{fundExpense.toLocaleString('vi-VN')} ₫</strong>
-              </div>
             </div>
           </div>
         </div>

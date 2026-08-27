@@ -351,57 +351,6 @@ export const INITIAL_DAILY_ATTENDANCE: DailyAttendance[] = INITIAL_STUDENTS.map(
 
 export const INITIAL_STAR_LOGS: StarLog[] = [];
 
-export const INITIAL_TRANSACTIONS = [
-  {
-    id: 'tx-1',
-    classId: 'class-4a1',
-    type: 'INCOME' as const,
-    category: 'Quỹ hội Cha Mẹ Học Sinh',
-    title: 'Thu quỹ phụ huynh đầu năm học (Đợt 1)',
-    amount: 15000000,
-    date: '2025-09-15',
-    payerOrReceiver: 'Ban đại diện CMHS lớp 4A1',
-    notes: '30 phụ huynh nộp 500.000đ/học sinh',
-    createdAt: '2025-09-15T08:00:00Z',
-  },
-  {
-    id: 'tx-2',
-    classId: 'class-4a1',
-    type: 'EXPENSE' as const,
-    category: 'Cơ sở vật chất',
-    title: 'Mua máy lọc nước và rèm cửa lớp học',
-    amount: 3200000,
-    date: '2025-09-20',
-    payerOrReceiver: 'Cửa hàng Nội thất Trường học',
-    notes: 'Có hóa đơn VAT',
-    createdAt: '2025-09-20T10:00:00Z',
-  },
-  {
-    id: 'tx-3',
-    classId: 'class-4a1',
-    type: 'EXPENSE' as const,
-    category: 'Hoạt động & Sự kiện',
-    title: 'Tổ chức tiệc Trung Thu cho các em học sinh',
-    amount: 2500000,
-    date: '2025-09-28',
-    payerOrReceiver: 'Bánh kẹo & Hoa quả Trung Thu',
-    notes: 'Bánh nướng, đèn ông sao, hoa quả bày cỗ',
-    createdAt: '2025-09-28T15:00:00Z',
-  },
-  {
-    id: 'tx-4',
-    classId: 'class-4a1',
-    type: 'EXPENSE' as const,
-    category: 'Khen thưởng',
-    title: 'Mua quà khen thưởng giữa kỳ (vở, bút máy, sticker)',
-    amount: 1200000,
-    date: '2025-11-10',
-    payerOrReceiver: 'Nhà sách Giáo Dục',
-    notes: 'Trao thưởng cho các học sinh đạt nhiều sao nề nếp',
-    createdAt: '2025-11-10T09:00:00Z',
-  },
-];
-
 export const INITIAL_HOMEWORKS: HomeworkAssignment[] = [
   {
     id: 'hw-1',
