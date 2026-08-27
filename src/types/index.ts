@@ -237,4 +237,57 @@ export interface SchoolInfo {
   logoUrl?: string; // Logo trường học (URL hoặc base64 data)
 }
 
+// Gamification, Star Criteria & Reward Shop Types
+export type StarCriterionCategory = 'Học tập' | 'Nề nếp' | 'Phẩm chất' | 'Nhắc nhở' | 'Khác';
 
+export interface StarCriterion {
+  id: string;
+  classId?: string;
+  category: StarCriterionCategory;
+  title: string;
+  points: number; // +1, +2, +3, -1, -2
+  icon: string; // Emoji
+  description?: string;
+  isDefault?: boolean;
+}
+
+export type RewardProductCategory = 'Bút viết' | 'Vở & Sổ' | 'Hộp bút & Thước' | 'Dụng cụ học tập' | 'Phụ kiện dễ thương' | 'Khác';
+
+export interface RewardProduct {
+  id: string;
+  classId?: string;
+  name: string;
+  description: string;
+  imageUrl: string;
+  starPrice: number; // Số sao cần đổi
+  stock: number; // Số lượng tồn kho
+  category: RewardProductCategory;
+  isAvailable: boolean;
+  createdAt: string;
+}
+
+export interface RedemptionItem {
+  productId: string;
+  productName: string;
+  quantity: number;
+  unitStarPrice: number;
+  imageUrl?: string;
+}
+
+export type RedemptionStatus = 'PENDING' | 'DELIVERED' | 'CANCELLED';
+
+export interface RewardRedemption {
+  id: string;
+  classId: string;
+  studentId: string;
+  studentName: string;
+  studentCode: string;
+  studentAvatar?: string;
+  items: RedemptionItem[];
+  totalStars: number;
+  month: string; // 'YYYY-MM' e.g. '2026-08'
+  status: RedemptionStatus;
+  studentNote?: string;
+  requestedAt: string;
+  deliveredAt?: string;
+}

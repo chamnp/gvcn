@@ -1,4 +1,18 @@
-import { ClassInfo, Student, SubjectAssessment, TraitAssessment, StudentTermSummary, DailyAttendance, StarLog, HomeworkAssignment, SchoolInfo, ClassEvent } from '@/types';
+import {
+  ClassInfo,
+  Student,
+  SubjectAssessment,
+  TraitAssessment,
+  StudentTermSummary,
+  DailyAttendance,
+  StarLog,
+  HomeworkAssignment,
+  SchoolInfo,
+  ClassEvent,
+  StarCriterion,
+  RewardProduct,
+  RewardRedemption,
+} from '@/types';
 
 export const INITIAL_SCHOOL_INFO: SchoolInfo = {
   id: 'school-1',
@@ -349,7 +363,266 @@ export const INITIAL_DAILY_ATTENDANCE: DailyAttendance[] = INITIAL_STUDENTS.map(
   reason: idx === 4 ? 'Bị sốt nhẹ, phụ huynh xin nghỉ' : undefined,
 }));
 
-export const INITIAL_STAR_LOGS: StarLog[] = [];
+export const INITIAL_STAR_CRITERIA: StarCriterion[] = [
+  // Học tập
+  { id: 'sc-1', category: 'Học tập', title: 'Phát biểu hăng hái xây dựng bài', points: 1, icon: '🙋‍♂️', isDefault: true },
+  { id: 'sc-2', category: 'Học tập', title: 'Làm bài xuất sắc / Đạt điểm 9-10', points: 2, icon: '📝', isDefault: true },
+  { id: 'sc-3', category: 'Học tập', title: 'Vở sạch chữ đẹp / Chữ mẫu mực', points: 2, icon: '✍️', isDefault: true },
+  { id: 'sc-4', category: 'Học tập', title: 'Tiến bộ vượt bậc môn Toán/Tiếng Việt', points: 2, icon: '📈', isDefault: true },
+  { id: 'sc-5', category: 'Học tập', title: 'Đọc diễn cảm / Kể chuyện sinh động', points: 1, icon: '📖', isDefault: true },
+  { id: 'sc-6', category: 'Học tập', title: 'Hoàn thành bài tập về nhà sớm', points: 1, icon: '🎯', isDefault: true },
+
+  // Nề nếp
+  { id: 'sc-7', category: 'Nề nếp', title: 'Giữ gìn vệ sinh lớp học / Trực nhật sạch', points: 1, icon: '🧹', isDefault: true },
+  { id: 'sc-8', category: 'Nề nếp', title: 'Xếp hàng & nề nếp gương mẫu', points: 2, icon: '⭐', isDefault: true },
+  { id: 'sc-9', category: 'Nề nếp', title: 'Tích cực hoạt động nhóm & sinh hoạt', points: 1, icon: '👥', isDefault: true },
+  { id: 'sc-10', category: 'Nề nếp', title: 'Đi học chuyên cần, đúng giờ', points: 1, icon: '⏰', isDefault: true },
+  { id: 'sc-11', category: 'Nề nếp', title: 'Mang đầy đủ sách vở & đồ dùng', points: 1, icon: '🎒', isDefault: true },
+
+  // Phẩm chất
+  { id: 'sc-12', category: 'Phẩm chất', title: 'Giúp đỡ bạn bè cùng tiến bộ', points: 2, icon: '🤝', isDefault: true },
+  { id: 'sc-13', category: 'Phẩm chất', title: 'Trung thực, nhặt được của rơi trả lại', points: 3, icon: '💎', isDefault: true },
+  { id: 'sc-14', category: 'Phẩm chất', title: 'Lễ phép, kính trọng thầy cô', points: 1, icon: '🌸', isDefault: true },
+  { id: 'sc-15', category: 'Phẩm chất', title: 'Dũng cảm nhận lỗi & sửa đổi', points: 2, icon: '🛡️', isDefault: true },
+
+  // Nhắc nhở
+  { id: 'sc-16', category: 'Nhắc nhở', title: 'Mất trật tự trong giờ học', points: -1, icon: '⚠️', isDefault: true },
+  { id: 'sc-17', category: 'Nhắc nhở', title: 'Chưa hoàn thành bài tập về nhà', points: -1, icon: '❌', isDefault: true },
+  { id: 'sc-18', category: 'Nhắc nhở', title: 'Quên mang sách vở / đồ dùng học tập', points: -1, icon: '🎒', isDefault: true },
+  { id: 'sc-19', category: 'Nhắc nhở', title: 'Chưa giữ gìn vệ sinh chỗ ngồi', points: -1, icon: '🚮', isDefault: true },
+];
+
+export const INITIAL_REWARD_PRODUCTS: RewardProduct[] = [
+  {
+    id: 'prod-1',
+    classId: 'class-4a1',
+    name: 'Bút máy mài nét thanh nét đậm Kim Thành',
+    description: 'Bút máy luyện chữ đẹp ngòi mài êm trơn, mực ra đều, thân kim loại cao cấp.',
+    imageUrl: 'https://images.unsplash.com/photo-1583485088034-697b5bc54ccd?w=500&auto=format&fit=crop&q=80',
+    starPrice: 15,
+    stock: 10,
+    category: 'Bút viết',
+    isAvailable: true,
+    createdAt: '2026-08-01T00:00:00Z',
+  },
+  {
+    id: 'prod-2',
+    classId: 'class-4a1',
+    name: 'Hộp bút thông minh 3D đa ngăn Phi Hành Gia',
+    description: 'Hộp bút nổi 3D chống sốc, chống thấm nước, đựng vừa compa thước kẻ và bút dạ.',
+    imageUrl: 'https://images.unsplash.com/photo-1588072432836-e10032774350?w=500&auto=format&fit=crop&q=80',
+    starPrice: 20,
+    stock: 8,
+    category: 'Hộp bút & Thước',
+    isAvailable: true,
+    createdAt: '2026-08-01T00:00:00Z',
+  },
+  {
+    id: 'prod-3',
+    classId: 'class-4a1',
+    name: 'Bộ thước kẻ Eke dẻo không gãy 4 chi tiết Hồng Hà',
+    description: 'Bộ thước eke, đo góc, thước thẳng 20cm chất liệu nhựa dẻo siêu bền bỉ uốn cong được.',
+    imageUrl: 'https://images.unsplash.com/photo-1596495578065-6e0763fa1178?w=500&auto=format&fit=crop&q=80',
+    starPrice: 8,
+    stock: 15,
+    category: 'Hộp bút & Thước',
+    isAvailable: true,
+    createdAt: '2026-08-01T00:00:00Z',
+  },
+  {
+    id: 'prod-4',
+    classId: 'class-4a1',
+    name: 'Gôm tẩy thú cưng 3D Capybara siêu cute',
+    description: 'Gôm tẩy hình thú dễ thương, tẩy sạch bụi ít rơi vụn, an toàn không độc hại.',
+    imageUrl: 'https://images.unsplash.com/photo-1569683795645-b62e50fbf103?w=500&auto=format&fit=crop&q=80',
+    starPrice: 5,
+    stock: 25,
+    category: 'Phụ kiện dễ thương',
+    isAvailable: true,
+    createdAt: '2026-08-01T00:00:00Z',
+  },
+  {
+    id: 'prod-5',
+    classId: 'class-4a1',
+    name: 'Set 6 bút dạ quang Pastel highlight rực rỡ',
+    description: 'Bút nhớ dòng màu pastel nhẹ mắt, không lem trang sau, 6 tông màu bắt mắt.',
+    imageUrl: 'https://images.unsplash.com/photo-1585336261026-7f5ed6d1e49b?w=500&auto=format&fit=crop&q=80',
+    starPrice: 12,
+    stock: 12,
+    category: 'Bút viết',
+    isAvailable: true,
+    createdAt: '2026-08-01T00:00:00Z',
+  },
+  {
+    id: 'prod-6',
+    classId: 'class-4a1',
+    name: 'Sổ tay lò xo bìa hoạt hình bỏ túi cute',
+    description: 'Sổ tay ghi nhớ 80 trang giấy kẻ ngang dày dặn, tiện bỏ cặp mang theo.',
+    imageUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=500&auto=format&fit=crop&q=80',
+    starPrice: 7,
+    stock: 20,
+    category: 'Vở & Sổ',
+    isAvailable: true,
+    createdAt: '2026-08-01T00:00:00Z',
+  },
+  {
+    id: 'prod-7',
+    classId: 'class-4a1',
+    name: 'Bộ 100 Sticker khen thưởng 3D lấp lánh',
+    description: 'Bộ nhãn dán sticker ngôi sao, động vật, hoa điểm 10 lấp lánh phản quang.',
+    imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&auto=format&fit=crop&q=80',
+    starPrice: 4,
+    stock: 30,
+    category: 'Phụ kiện dễ thương',
+    isAvailable: true,
+    createdAt: '2026-08-01T00:00:00Z',
+  },
+  {
+    id: 'prod-8',
+    classId: 'class-4a1',
+    name: 'Huy hiệu Bé Ngoan Xuất Sắc cài áo mạ vàng',
+    description: 'Huy hiệu kim loại cài áo danh dự dành cho học sinh tiêu biểu xuất sắc trong tháng.',
+    imageUrl: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?w=500&auto=format&fit=crop&q=80',
+    starPrice: 10,
+    stock: 15,
+    category: 'Phụ kiện dễ thương',
+    isAvailable: true,
+    createdAt: '2026-08-01T00:00:00Z',
+  },
+  {
+    id: 'prod-9',
+    classId: 'class-4a1',
+    name: 'Gọt bút chì tự động hình phi thuyền vũ trụ',
+    description: 'Máy chuốt chì quay tay chống gãy ngòi, có khay đựng vỏ tiện lợi sạch sẽ.',
+    imageUrl: 'https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?w=500&auto=format&fit=crop&q=80',
+    starPrice: 10,
+    stock: 10,
+    category: 'Dụng cụ học tập',
+    isAvailable: true,
+    createdAt: '2026-08-01T00:00:00Z',
+  },
+  {
+    id: 'prod-10',
+    classId: 'class-4a1',
+    name: 'Tập 5 quyển vở ô ly 48 trang Hồng Hà',
+    description: 'Vở ô ly 4 ly vuông chống lóa, định lượng giấy 100g/m2 không nhòe mực.',
+    imageUrl: 'https://images.unsplash.com/photo-1517842645767-c639042777db?w=500&auto=format&fit=crop&q=80',
+    starPrice: 15,
+    stock: 15,
+    category: 'Vở & Sổ',
+    isAvailable: true,
+    createdAt: '2026-08-01T00:00:00Z',
+  },
+  {
+    id: 'prod-11',
+    classId: 'class-4a1',
+    name: 'Set 3 bút Gel xóa được mực xanh tím Deli',
+    description: 'Bút bi xóa được ngòi 0.5mm êm ái, tẩy nhiệt sạch sẽ không rách giấy.',
+    imageUrl: 'https://images.unsplash.com/photo-1585336261026-7f5ed6d1e49b?w=500&auto=format&fit=crop&q=80',
+    starPrice: 6,
+    stock: 20,
+    category: 'Bút viết',
+    isAvailable: true,
+    createdAt: '2026-08-01T00:00:00Z',
+  },
+];
+
+export const INITIAL_REDEMPTIONS: RewardRedemption[] = [
+  {
+    id: 'rd-1',
+    classId: 'class-4a1',
+    studentId: 'hs-01',
+    studentName: 'Nguyễn Văn An',
+    studentCode: 'HS4A1-001',
+    items: [
+      {
+        productId: 'prod-4',
+        productName: 'Gôm tẩy thú cưng 3D Capybara siêu cute',
+        quantity: 1,
+        unitStarPrice: 5,
+        imageUrl: 'https://images.unsplash.com/photo-1569683795645-b62e50fbf103?w=500&auto=format&fit=crop&q=80',
+      },
+      {
+        productId: 'prod-7',
+        productName: 'Bộ 100 Sticker khen thưởng 3D lấp lánh',
+        quantity: 1,
+        unitStarPrice: 4,
+        imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=500&auto=format&fit=crop&q=80',
+      },
+    ],
+    totalStars: 9,
+    month: '2026-08',
+    status: 'PENDING',
+    studentNote: 'Em xin cô cho em sticker hình chú thỏ ạ!',
+    requestedAt: '2026-08-25T08:30:00Z',
+  },
+  {
+    id: 'rd-2',
+    classId: 'class-4a1',
+    studentId: 'hs-02',
+    studentName: 'Trần Thị Mai Anh',
+    studentCode: 'HS4A1-002',
+    items: [
+      {
+        productId: 'prod-6',
+        productName: 'Sổ tay lò xo bìa hoạt hình bỏ túi cute',
+        quantity: 1,
+        unitStarPrice: 7,
+        imageUrl: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=500&auto=format&fit=crop&q=80',
+      },
+    ],
+    totalStars: 7,
+    month: '2026-08',
+    status: 'DELIVERED',
+    studentNote: 'Em cảm ơn cô giáo nhiều ạ!',
+    requestedAt: '2026-08-20T14:15:00Z',
+    deliveredAt: '2026-08-21T09:00:00Z',
+  },
+];
+
+export const INITIAL_STAR_LOGS: StarLog[] = [
+  // Top 1: hs-01 Nguyễn Văn An (24 ⭐)
+  { id: 'sl-1', studentId: 'hs-01', points: 3, category: 'Phẩm chất', reason: 'Trung thực, nhặt được của rơi trả lại', comment: 'Rất đáng khen ngợi tinh thần thật thà!', date: '2026-08-10', createdAt: '2026-08-10T08:00:00Z' },
+  { id: 'sl-2', studentId: 'hs-01', points: 2, category: 'Học tập', reason: 'Làm bài xuất sắc / Đạt điểm 9-10', comment: 'Điểm 10 môn Toán bài kiểm tra 15 phút', date: '2026-08-12', createdAt: '2026-08-12T09:30:00Z' },
+  { id: 'sl-3', studentId: 'hs-01', points: 2, category: 'Học tập', reason: 'Vở sạch chữ đẹp / Chữ mẫu mực', comment: 'Chữ viết đều đẹp, giữ gìn vở cẩn thận', date: '2026-08-15', createdAt: '2026-08-15T10:00:00Z' },
+  { id: 'sl-4', studentId: 'hs-01', points: 2, category: 'Nề nếp', reason: 'Xếp hàng & nề nếp gương mẫu', comment: 'Lớp trưởng gương mẫu quản lý lớp tốt', date: '2026-08-18', createdAt: '2026-08-18T14:00:00Z' },
+  { id: 'sl-5', studentId: 'hs-01', points: 2, category: 'Học tập', reason: 'Tiến bộ vượt bậc môn Toán/Tiếng Việt', comment: 'Giải toán nhanh và chính xác', date: '2026-08-20', createdAt: '2026-08-20T08:30:00Z' },
+  { id: 'sl-6', studentId: 'hs-01', points: 2, category: 'Phẩm chất', reason: 'Giúp đỡ bạn bè cùng tiến bộ', comment: 'Hướng dẫn bạn học nhóm rất nhiệt tình', date: '2026-08-22', createdAt: '2026-08-22T15:00:00Z' },
+  { id: 'sl-7', studentId: 'hs-01', points: 1, category: 'Học tập', reason: 'Phát biểu hăng hái xây dựng bài', comment: 'Hăng hái giơ tay trong tiết Khoa học', date: '2026-08-24', createdAt: '2026-08-24T09:00:00Z' },
+  { id: 'sl-8', studentId: 'hs-01', points: 10, category: 'Khen thưởng', reason: 'Học sinh xuất sắc tuần 3', comment: 'Dẫn đầu phong trào thi đua tuần', date: '2026-08-26', createdAt: '2026-08-26T16:00:00Z' },
+
+  // Top 2: hs-02 Trần Thị Mai Anh (21 ⭐)
+  { id: 'sl-9', studentId: 'hs-02', points: 2, category: 'Học tập', reason: 'Vở sạch chữ đẹp / Chữ mẫu mực', comment: 'Bài viết chính tả sạch đẹp không tẩy xóa', date: '2026-08-11', createdAt: '2026-08-11T09:00:00Z' },
+  { id: 'sl-10', studentId: 'hs-02', points: 2, category: 'Học tập', reason: 'Làm bài xuất sắc / Đạt điểm 9-10', comment: 'Bài kiểm tra đọc hiểu đạt điểm tối đa', date: '2026-08-14', createdAt: '2026-08-14T10:30:00Z' },
+  { id: 'sl-11', studentId: 'hs-02', points: 2, category: 'Phẩm chất', reason: 'Giúp đỡ bạn bè cùng tiến bộ', comment: 'Kèm bạn đọc bài diễn cảm rất chu đáo', date: '2026-08-16', createdAt: '2026-08-16T14:20:00Z' },
+  { id: 'sl-12', studentId: 'hs-02', points: 2, category: 'Nề nếp', reason: 'Xếp hàng & nề nếp gương mẫu', comment: 'Lớp phó học tập chăm ngoan', date: '2026-08-19', createdAt: '2026-08-19T08:45:00Z' },
+  { id: 'sl-13', studentId: 'hs-02', points: 1, category: 'Học tập', reason: 'Đọc diễn cảm / Kể chuyện sinh động', comment: 'Kể chuyện giọng truyền cảm, tự tin', date: '2026-08-21', createdAt: '2026-08-21T11:00:00Z' },
+  { id: 'sl-14', studentId: 'hs-02', points: 2, category: 'Học tập', reason: 'Hoàn thành bài tập về nhà sớm', comment: 'Chuẩn bị bài đầy đủ, cẩn thận', date: '2026-08-23', createdAt: '2026-08-23T15:30:00Z' },
+  { id: 'sl-15', studentId: 'hs-02', points: 10, category: 'Khen thưởng', reason: 'Học sinh xuất sắc tuần 2', comment: 'Đạt danh hiệu gương sáng học đường', date: '2026-08-25', createdAt: '2026-08-25T16:00:00Z' },
+
+  // Top 3: hs-03 Lê Hoàng Bách (18 ⭐)
+  { id: 'sl-16', studentId: 'hs-03', points: 2, category: 'Học tập', reason: 'Làm bài xuất sắc / Đạt điểm 9-10', comment: 'Điểm 10 môn Toán', date: '2026-08-12', createdAt: '2026-08-12T09:00:00Z' },
+  { id: 'sl-17', studentId: 'hs-03', points: 1, category: 'Nề nếp', reason: 'Giữ gìn vệ sinh lớp học / Trực nhật sạch', comment: 'Tổ trưởng Tổ 1 đôn đốc trực nhật rất tốt', date: '2026-08-15', createdAt: '2026-08-15T16:30:00Z' },
+  { id: 'sl-18', studentId: 'hs-03', points: 2, category: 'Phẩm chất', reason: 'Dũng cảm nhận lỗi & sửa đổi', comment: 'Biết lắng nghe và sửa chữa nhanh', date: '2026-08-17', createdAt: '2026-08-17T10:15:00Z' },
+  { id: 'sl-19', studentId: 'hs-03', points: 1, category: 'Học tập', reason: 'Phát biểu hăng hái xây dựng bài', comment: 'Tích cực đóng góp ý kiến hay', date: '2026-08-20', createdAt: '2026-08-20T14:00:00Z' },
+  { id: 'sl-20', studentId: 'hs-03', points: 2, category: 'Học tập', reason: 'Tiến bộ vượt bậc môn Toán/Tiếng Việt', comment: 'Tiến bộ nhiều trong kỹ năng tính nhẩm', date: '2026-08-22', createdAt: '2026-08-22T08:30:00Z' },
+  { id: 'sl-21', studentId: 'hs-03', points: 10, category: 'Khen thưởng', reason: 'Tổ trưởng gương mẫu', comment: 'Tổ 1 đạt giải Nhất nề nếp tuần', date: '2026-08-25', createdAt: '2026-08-25T16:00:00Z' },
+
+  // hs-07 Hoàng Minh Đức (15 ⭐)
+  { id: 'sl-22', studentId: 'hs-07', points: 2, category: 'Học tập', reason: 'Làm bài xuất sắc / Đạt điểm 9-10', comment: 'Học tốt môn Toán', date: '2026-08-12', createdAt: '2026-08-12T09:00:00Z' },
+  { id: 'sl-23', studentId: 'hs-07', points: 2, category: 'Học tập', reason: 'Tiến bộ vượt bậc môn Toán/Tiếng Việt', comment: 'Giải toán nâng cao xuất sắc', date: '2026-08-18', createdAt: '2026-08-18T10:00:00Z' },
+  { id: 'sl-24', studentId: 'hs-07', points: 1, category: 'Học tập', reason: 'Phát biểu hăng hái xây dựng bài', comment: 'Hăng hái trả lời câu hỏi khó', date: '2026-08-22', createdAt: '2026-08-22T14:00:00Z' },
+  { id: 'sl-25', studentId: 'hs-07', points: 10, category: 'Khen thưởng', reason: 'Khen thưởng môn Toán', comment: 'Đạt giải cao câu đố toán tuần', date: '2026-08-26', createdAt: '2026-08-26T16:00:00Z' },
+
+  // hs-08 Bùi Khánh Hà (14 ⭐)
+  { id: 'sl-26', studentId: 'hs-08', points: 2, category: 'Học tập', reason: 'Vở sạch chữ đẹp / Chữ mẫu mực', comment: 'Chữ viết nắn nót', date: '2026-08-15', createdAt: '2026-08-15T09:00:00Z' },
+  { id: 'sl-27', studentId: 'hs-08', points: 2, category: 'Nề nếp', reason: 'Xếp hàng & nề nếp gương mẫu', comment: 'Tổ trưởng Tổ 2 nề nếp tốt', date: '2026-08-20', createdAt: '2026-08-20T10:00:00Z' },
+  { id: 'sl-28', studentId: 'hs-08', points: 10, category: 'Khen thưởng', reason: 'Sao chăm ngoan', comment: 'Luôn gương mẫu trong các hoạt động', date: '2026-08-26', createdAt: '2026-08-26T16:00:00Z' },
+
+  // hs-04 Phạm Ngọc Bảo Châu (12 ⭐)
+  { id: 'sl-29', studentId: 'hs-04', points: 2, category: 'Học tập', reason: 'Đọc diễn cảm / Kể chuyện sinh động', comment: 'Hát hay, múa đẹp', date: '2026-08-14', createdAt: '2026-08-14T10:00:00Z' },
+  { id: 'sl-30', studentId: 'hs-04', points: 10, category: 'Khen thưởng', reason: 'Tích cực phong trào văn nghệ', comment: 'Đóng góp tiết mục văn nghệ khai giảng', date: '2026-08-25', createdAt: '2026-08-25T16:00:00Z' },
+];
 
 export const INITIAL_HOMEWORKS: HomeworkAssignment[] = [
   {

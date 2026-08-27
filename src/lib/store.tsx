@@ -21,6 +21,10 @@ import {
   AIConfig,
   AIGenerationSettings,
   ClassEvent,
+  StarCriterion,
+  RewardProduct,
+  RewardRedemption,
+  RedemptionItem,
 } from '@/types';
 
 export const DEFAULT_AI_GEN_SETTINGS: AIGenerationSettings = {
@@ -54,6 +58,9 @@ import {
   INITIAL_HOMEWORKS,
   INITIAL_SCHOOL_INFO,
   INITIAL_CLASS_EVENTS,
+  INITIAL_STAR_CRITERIA,
+  INITIAL_REWARD_PRODUCTS,
+  INITIAL_REDEMPTIONS,
 } from '@/data/mock-data';
 import {
   PRIMARY_SUBJECTS,
@@ -212,6 +219,37 @@ interface AppContextType {
   deleteStarLog: (logId: string) => void;
   getStudentStars: (studentId: string) => number;
 
+  // Star Criteria Management
+  starCriteria: StarCriterion[];
+  addStarCriterion: (criterion: Omit<StarCriterion, 'id'>) => void;
+  updateStarCriterion: (criterion: StarCriterion) => void;
+  deleteStarCriterion: (id: string) => void;
+  resetStarCriteriaToDefault: () => void;
+
+  // Reward Products & Inventory Management
+  rewardProducts: RewardProduct[];
+  addRewardProduct: (product: Omit<RewardProduct, 'id' | 'createdAt'>) => void;
+  updateRewardProduct: (product: RewardProduct) => void;
+  deleteRewardProduct: (id: string) => void;
+  restockRewardProduct: (id: string, additionalStock: number) => void;
+
+  // Reward Redemptions & Cart Actions
+  rewardRedemptions: RewardRedemption[];
+  createRewardRedemption: (data: {
+    studentId: string;
+    studentName: string;
+    studentCode: string;
+    studentAvatar?: string;
+    items: RedemptionItem[];
+    totalStars: number;
+    studentNote?: string;
+    month?: string;
+  }) => { success: boolean; error?: string };
+  fulfillRewardRedemption: (redemptionId: string) => void;
+  cancelRewardRedemption: (redemptionId: string) => void;
+  getStudentMonthlyStars: (studentId: string, monthStr?: string) => { earned: number; spent: number; available: number };
+  resetMonthStars: (monthStr?: string) => void;
+
   // Full Database Backup & Restore
   exportAllDataJSON: () => string;
   importAllDataJSON: (jsonStr: string) => { success: boolean; error?: string };
@@ -234,6 +272,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [termSummaries, setTermSummaries] = useState<StudentTermSummary[]>([]);
   const [attendances, setAttendances] = useState<DailyAttendance[]>(INITIAL_DAILY_ATTENDANCE);
   const [starLogs, setStarLogs] = useState<StarLog[]>(INITIAL_STAR_LOGS);
+  const [starCriteria, setStarCriteria] = useState<StarCriterion[]>(INITIAL_STAR_CRITERIA);
+  const [rewardProducts, setRewardProducts] = useState<RewardProduct[]>(INITIAL_REWARD_PRODUCTS);
+  const [rewardRedemptions, setRewardRedemptions] = useState<RewardRedemption[]>(INITIAL_REDEMPTIONS);
   const [customSubjects, setCustomSubjects] = useState<CustomSubject[]>(INITIAL_CUSTOM_SUBJECTS);
   const [allHomeworks, setAllHomeworks] = useState<HomeworkAssignment[]>(INITIAL_HOMEWORKS);
   const [allClassEvents, setAllClassEvents] = useState<ClassEvent[]>(INITIAL_CLASS_EVENTS);
@@ -421,6 +462,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       if (savedAtt) setAttendances(JSON.parse(savedAtt));
       if (savedStars) setStarLogs(JSON.parse(savedStars));
+      
+      const savedCriteria = localStorage.getItem(STORAGE_PREFIX + 'starCriteria');
+      if (savedCriteria) {
+        try { setStarCriteria(JSON.parse(savedCriteria)); } catch (e) {}
+      } else {
+        setStarCriteria(INITIAL_STAR_CRITERIA);
+      }
+
+      const savedProducts = localStorage.getItem(STORAGE_PREFIX + 'rewardProducts');
+      if (savedProducts) {
+        try { setRewardProducts(JSON.parse(savedProducts)); } catch (e) {}
+      } else {
+        setRewardProducts(INITIAL_REWARD_PRODUCTS);
+      }
+
+      const savedRedemptions = localStorage.getItem(STORAGE_PREFIX + 'rewardRedemptions');
+      if (savedRedemptions) {
+        try { setRewardRedemptions(JSON.parse(savedRedemptions)); } catch (e) {}
+      } else {
+        setRewardRedemptions(INITIAL_REDEMPTIONS);
+      }
+
       if (savedTt) setAllTimetables(JSON.parse(savedTt));
       if (savedCs) setCustomSubjects(JSON.parse(savedCs));
       if (savedHw) setAllHomeworks(JSON.parse(savedHw));
@@ -526,6 +589,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem(STORAGE_PREFIX + 'termSummaries', JSON.stringify(termSummaries));
       localStorage.setItem(STORAGE_PREFIX + 'attendances', JSON.stringify(attendances));
       localStorage.setItem(STORAGE_PREFIX + 'starLogs', JSON.stringify(starLogs));
+      localStorage.setItem(STORAGE_PREFIX + 'starCriteria', JSON.stringify(starCriteria));
+      localStorage.setItem(STORAGE_PREFIX + 'rewardProducts', JSON.stringify(rewardProducts));
+      localStorage.setItem(STORAGE_PREFIX + 'rewardRedemptions', JSON.stringify(rewardRedemptions));
       localStorage.setItem(STORAGE_PREFIX + 'timetable', JSON.stringify(allTimetables));
       localStorage.setItem(STORAGE_PREFIX + 'customSubjects', JSON.stringify(customSubjects));
       localStorage.setItem(STORAGE_PREFIX + 'homeworks', JSON.stringify(allHomeworks));
@@ -545,6 +611,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     termSummaries,
     attendances,
     starLogs,
+    starCriteria,
+    rewardProducts,
+    rewardRedemptions,
     allTimetables,
     customSubjects,
     allHomeworks,
@@ -1188,6 +1257,195 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .reduce((sum, s) => sum + s.points, 0);
   };
 
+  // STAR CRITERIA ACTIONS
+  const addStarCriterion = (criterionData: Omit<StarCriterion, 'id'>) => {
+    const newCriterion: StarCriterion = {
+      ...criterionData,
+      id: `sc-${Date.now()}`,
+    };
+    setStarCriteria((prev) => [...prev, newCriterion]);
+    toast.success('Đã thêm tiêu chí đánh giá mới!');
+  };
+
+  const updateStarCriterion = (updated: StarCriterion) => {
+    setStarCriteria((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+    toast.success('Đã cập nhật tiêu chí!');
+  };
+
+  const deleteStarCriterion = (id: string) => {
+    setStarCriteria((prev) => prev.filter((c) => c.id !== id));
+    toast.success('Đã xóa tiêu chí!');
+  };
+
+  const resetStarCriteriaToDefault = () => {
+    setStarCriteria(INITIAL_STAR_CRITERIA);
+    toast.success('Đã khôi phục danh mục tiêu chí chuẩn Thông tư 27!');
+  };
+
+  // REWARD PRODUCTS & INVENTORY ACTIONS
+  const addRewardProduct = (productData: Omit<RewardProduct, 'id' | 'createdAt'>) => {
+    const newProduct: RewardProduct = {
+      ...productData,
+      id: `prod-${Date.now()}`,
+      classId: productData.classId || activeClassId,
+      createdAt: new Date().toISOString(),
+    };
+    setRewardProducts((prev) => [newProduct, ...prev]);
+    toast.success('Đã thêm sản phẩm mới vào Shop Quà!');
+  };
+
+  const updateRewardProduct = (updated: RewardProduct) => {
+    setRewardProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+    toast.success('Đã cập nhật thông tin sản phẩm!');
+  };
+
+  const deleteRewardProduct = (id: string) => {
+    setRewardProducts((prev) => prev.filter((p) => p.id !== id));
+    toast.success('Đã xóa sản phẩm khỏi Shop!');
+  };
+
+  const restockRewardProduct = (id: string, additionalStock: number) => {
+    setRewardProducts((prev) =>
+      prev.map((p) => {
+        if (p.id === id) {
+          const newStock = Math.max(0, p.stock + additionalStock);
+          return { ...p, stock: newStock, isAvailable: newStock > 0 };
+        }
+        return p;
+      })
+    );
+    toast.success(`Đã cập nhật số lượng tồn kho (+${additionalStock})!`);
+  };
+
+  // REWARD REDEMPTIONS & CART ACTIONS
+  const getStudentMonthlyStars = (studentId: string, monthStr?: string) => {
+    const targetMonth = monthStr || new Date().toISOString().substring(0, 7); // e.g. '2026-08'
+    
+    // Earned stars in target month
+    const earned = starLogs
+      .filter((l) => l.studentId === studentId && (l.date || l.createdAt.split('T')[0]).startsWith(targetMonth))
+      .reduce((sum, l) => sum + l.points, 0);
+
+    // Spent stars in target month (from non-cancelled redemptions)
+    const spent = rewardRedemptions
+      .filter((r) => r.studentId === studentId && r.month === targetMonth && r.status !== 'CANCELLED')
+      .reduce((sum, r) => sum + r.totalStars, 0);
+
+    const available = Math.max(0, earned - spent);
+
+    return { earned, spent, available };
+  };
+
+  const createRewardRedemption = (data: {
+    studentId: string;
+    studentName: string;
+    studentCode: string;
+    studentAvatar?: string;
+    items: RedemptionItem[];
+    totalStars: number;
+    studentNote?: string;
+    month?: string;
+  }): { success: boolean; error?: string } => {
+    const currentMonth = data.month || new Date().toISOString().substring(0, 7);
+    const balance = getStudentMonthlyStars(data.studentId, currentMonth);
+
+    if (balance.available < data.totalStars) {
+      return {
+        success: false,
+        error: `Con đang có ${balance.available} sao khả dụng trong tháng, còn thiếu ${data.totalStars - balance.available} sao nữa để đổi quà!`,
+      };
+    }
+
+    // Check inventory stock
+    for (const item of data.items) {
+      const prod = rewardProducts.find((p) => p.id === item.productId);
+      if (!prod || prod.stock < item.quantity) {
+        return {
+          success: false,
+          error: `Món quà "${item.productName}" hiện chỉ còn ${prod?.stock || 0} món trong kho!`,
+        };
+      }
+    }
+
+    // Create redemption record
+    const newRedemption: RewardRedemption = {
+      id: `rd-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      classId: activeClassId,
+      studentId: data.studentId,
+      studentName: data.studentName,
+      studentCode: data.studentCode,
+      studentAvatar: data.studentAvatar,
+      items: data.items,
+      totalStars: data.totalStars,
+      month: currentMonth,
+      status: 'PENDING',
+      studentNote: data.studentNote?.trim() || undefined,
+      requestedAt: new Date().toISOString(),
+    };
+
+    // Decrement stock
+    setRewardProducts((prev) =>
+      prev.map((p) => {
+        const matchingItem = data.items.find((item) => item.productId === p.id);
+        if (matchingItem) {
+          const remainingStock = Math.max(0, p.stock - matchingItem.quantity);
+          return { ...p, stock: remainingStock, isAvailable: remainingStock > 0 };
+        }
+        return p;
+      })
+    );
+
+    setRewardRedemptions((prev) => [newRedemption, ...prev]);
+    return { success: true };
+  };
+
+  const fulfillRewardRedemption = (redemptionId: string) => {
+    setRewardRedemptions((prev) =>
+      prev.map((r) =>
+        r.id === redemptionId
+          ? { ...r, status: 'DELIVERED', deliveredAt: new Date().toISOString() }
+          : r
+      )
+    );
+    toast.success('Đã xác nhận trao quà cho học sinh thành công! 🎉');
+  };
+
+  const cancelRewardRedemption = (redemptionId: string) => {
+    const target = rewardRedemptions.find((r) => r.id === redemptionId);
+    if (!target) return;
+
+    if (target.status === 'PENDING') {
+      // Restore inventory stock
+      setRewardProducts((prev) =>
+        prev.map((p) => {
+          const matched = target.items.find((item) => item.productId === p.id);
+          if (matched) {
+            return { ...p, stock: p.stock + matched.quantity, isAvailable: true };
+          }
+          return p;
+        })
+      );
+    }
+
+    setRewardRedemptions((prev) =>
+      prev.map((r) => (r.id === redemptionId ? { ...r, status: 'CANCELLED' } : r))
+    );
+    toast.info('Đã hủy đơn đổi quà và hoàn lại sao/tồn kho!');
+  };
+
+  const resetMonthStars = (monthStr?: string) => {
+    const targetMonth = monthStr || new Date().toISOString().substring(0, 7);
+    if (confirm(`Bạn có chắc chắn muốn reset điểm thi đua Tháng ${targetMonth.replace('-', '/')} về 0 để bắt đầu đợt mới?`)) {
+      setStarLogs((prev) =>
+        prev.filter((l) => !(l.date || l.createdAt.split('T')[0]).startsWith(targetMonth))
+      );
+      setRewardRedemptions((prev) =>
+        prev.filter((r) => r.month !== targetMonth)
+      );
+      toast.success(`Đã reset điểm thi đua tháng ${targetMonth.replace('-', '/')}!`);
+    }
+  };
+
   // BACKUP & RESTORE
   const exportAllDataJSON = (): string => {
     const payload = {
@@ -1201,6 +1459,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       termSummaries,
       attendances,
       starLogs,
+      starCriteria,
+      rewardProducts,
+      rewardRedemptions,
       timetable: allTimetables,
       customSubjects,
       homeworks: allHomeworks,
@@ -1224,6 +1485,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (Array.isArray(data.termSummaries)) setTermSummaries(data.termSummaries);
       if (Array.isArray(data.attendances)) setAttendances(data.attendances);
       if (Array.isArray(data.starLogs)) setStarLogs(data.starLogs);
+      if (Array.isArray(data.starCriteria)) setStarCriteria(data.starCriteria);
+      if (Array.isArray(data.rewardProducts)) setRewardProducts(data.rewardProducts);
+      if (Array.isArray(data.rewardRedemptions)) setRewardRedemptions(data.rewardRedemptions);
       if (Array.isArray(data.timetable)) setAllTimetables(data.timetable);
       if (Array.isArray(data.customSubjects)) setCustomSubjects(data.customSubjects);
       if (Array.isArray(data.homeworks)) setAllHomeworks(data.homeworks);
@@ -1242,6 +1506,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAllStudents(INITIAL_STUDENTS);
     setAttendances(INITIAL_DAILY_ATTENDANCE);
     setStarLogs(INITIAL_STAR_LOGS);
+    setStarCriteria(INITIAL_STAR_CRITERIA);
+    setRewardProducts(INITIAL_REWARD_PRODUCTS);
+    setRewardRedemptions(INITIAL_REDEMPTIONS);
     setCustomSubjects(INITIAL_CUSTOM_SUBJECTS);
     setAllHomeworks(INITIAL_HOMEWORKS);
     setAllTimetables(INITIAL_TIMETABLE.map((t) => ({ ...t, classId: 'class-4a1' })));
@@ -1335,6 +1602,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         termSummaries,
         attendances,
         starLogs,
+        starCriteria,
+        addStarCriterion,
+        updateStarCriterion,
+        deleteStarCriterion,
+        resetStarCriteriaToDefault,
+        rewardProducts,
+        addRewardProduct,
+        updateRewardProduct,
+        deleteRewardProduct,
+        restockRewardProduct,
+        rewardRedemptions,
+        createRewardRedemption,
+        fulfillRewardRedemption,
+        cancelRewardRedemption,
+        getStudentMonthlyStars,
+        resetMonthStars,
         customSubjects,
         addCustomSubject,
         deleteCustomSubject,

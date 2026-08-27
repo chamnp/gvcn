@@ -8,7 +8,7 @@ import { Header } from '@/components/layout/header';
 import { BottomNav } from '@/components/layout/bottom-nav';
 import { AuthGuard } from '@/components/layout/auth-guard';
 
-const STANDALONE_PREFIXES = ['/login', '/unauthorized', '/demo', '/hw', '/lookup', '/student'];
+const STANDALONE_PREFIXES = ['/login', '/unauthorized', '/demo', '/hw', '/lookup', '/student', '/rewards'];
 
 export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const pathname = usePathname();

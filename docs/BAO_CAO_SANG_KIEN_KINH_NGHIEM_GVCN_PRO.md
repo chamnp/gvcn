@@ -35,7 +35,7 @@
 1. **Tên sáng kiến:** *"Ứng dụng nền tảng chuyển đổi số GVCN Pro và Trí tuệ nhân tạo trong đổi mới công tác quản lý lớp chủ nhiệm và đánh giá học sinh theo Thông tư 27/2020/TT-BGDĐT tại Trường Tiểu học Đại Mỗ"*.
 2. **Tác giả sáng kiến:**
    - Họ và tên: **Nguyễn Thị Minh Hằng**
-   - Ngày tháng năm sinh: 15/08/1988
+   - Ngày tháng năm sinh: 04/11/1994
    - Trình độ chuyên môn: Cử nhân Giáo dục Tiểu học - Đại học Sư phạm Hà Nội
    - Chức danh nghề nghiệp: Giáo viên Tiểu học hạng II
    - Chức vụ, đơn vị công tác: Giáo viên, Khối trưởng chuyên môn Khối 4, Giáo viên Chủ nhiệm Lớp 4A1, Trường Tiểu học Đại Mỗ - Quận Nam Từ Liêm - TP. Hà Nội.
