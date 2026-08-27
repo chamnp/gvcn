@@ -42,6 +42,8 @@ import {
   Medal,
   ChevronRight,
   TrendingUp,
+  LayoutGrid,
+  List,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import {
@@ -106,6 +108,7 @@ export default function BehaviorPage() {
   } = useAppStore();
 
   const [activeTab, setActiveTab] = useState<'TABLE' | 'LEADERBOARD' | 'CRITERIA' | 'SHOP' | 'REDEMPTIONS' | 'HISTORY'>('TABLE');
+  const [tableViewMode, setTableViewMode] = useState<'TABLE' | 'CARDS'>('TABLE');
 
   // Month selector for Leaderboard (default: current month 'YYYY-MM')
   const currentMonthKey = new Date().toISOString().substring(0, 7);
@@ -255,11 +258,6 @@ export default function BehaviorPage() {
   const pendingRedemptionsCount = useMemo(() => {
     return rewardRedemptions.filter((r) => r.status === 'PENDING').length;
   }, [rewardRedemptions]);
-
-  // Metrics
-  const todayStr = new Date().toISOString().split('T')[0];
-  const todayLogs = starLogs.filter((l) => (l.date || l.createdAt.split('T')[0]) === todayStr);
-  const totalStarsGivenToday = todayLogs.reduce((sum, l) => sum + l.points, 0);
 
   // Criteria Handlers
   const handleOpenAddCriterion = () => {
@@ -430,67 +428,67 @@ export default function BehaviorPage() {
   const publicRewardsUrl = typeof window !== 'undefined' ? `${window.location.origin}/rewards/${classInfo.shareToken || classInfo.id}` : '';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2.5">
-            <Award className="w-7 h-7 text-amber-500" />
-            <span>Thi Đua Tích Sao & Shop Quà Tặng</span>
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2">
+            <Award className="w-6 h-6 sm:w-7 sm:h-7 text-amber-500 shrink-0" />
+            <span className="truncate">Thi Đua Tích Sao & Shop Quà</span>
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-slate-500 mt-0.5">
             Quản lý phong trào thi đua tháng, thang điểm sao, shop đồ dùng học tập và duyệt đổi quà cho học sinh Lớp {classInfo.name}.
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 pt-1 sm:pt-0">
           <button
             onClick={() => setIsShareModalOpen(true)}
-            className="inline-flex items-center space-x-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 px-3.5 py-2 rounded-xl text-xs font-bold border border-blue-200 shadow-2xs transition-colors cursor-pointer"
+            className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-2 rounded-xl text-xs font-bold border border-blue-200 shadow-2xs transition-colors cursor-pointer"
           >
-            <Share2 className="w-4 h-4 text-blue-600" />
-            <span>Link Thi Đua Public</span>
+            <Share2 className="w-4 h-4 text-blue-600 shrink-0" />
+            <span>Link Public</span>
           </button>
 
           <button
             onClick={handleExportExcel}
-            className="inline-flex items-center space-x-1.5 bg-white hover:bg-slate-50 text-slate-700 px-3.5 py-2 rounded-xl text-xs font-bold border border-slate-200 shadow-2xs transition-colors cursor-pointer"
+            className="flex-1 sm:flex-none inline-flex items-center justify-center space-x-1.5 bg-white hover:bg-slate-50 text-slate-700 px-3 py-2 rounded-xl text-xs font-bold border border-slate-200 shadow-2xs transition-colors cursor-pointer"
           >
-            <Download className="w-4 h-4 text-slate-600" />
+            <Download className="w-4 h-4 text-slate-600 shrink-0" />
             <span>Xuất Excel</span>
           </button>
 
           <button
             onClick={handleAwardWholeClass}
-            className="inline-flex items-center space-x-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer"
+            className="w-full sm:w-auto inline-flex items-center justify-center space-x-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white px-3.5 py-2 rounded-xl text-xs font-black shadow-xs transition-all cursor-pointer"
           >
-            <Sparkles className="w-4 h-4" />
+            <Sparkles className="w-4 h-4 shrink-0" />
             <span>Thưởng Sao Cả Lớp (+1 ⭐)</span>
           </button>
         </div>
       </div>
 
       {/* Top Metrics Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center space-x-3">
-          <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center space-x-3">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold shrink-0">
             <Star className="w-5 h-5 fill-amber-400 text-amber-500" />
           </div>
-          <div>
-            <p className="text-[11px] text-slate-500 font-semibold uppercase">Tổng Sao Lớp (Toàn Khóa)</p>
-            <p className="text-xl font-black text-slate-900">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] sm:text-[11px] text-slate-500 font-semibold uppercase truncate">Tổng Sao Toàn Khóa</p>
+            <p className="text-lg sm:text-xl font-black text-slate-900">
               {starLogs.reduce((sum, l) => sum + l.points, 0)} ⭐
             </p>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center space-x-3">
-          <div className="w-11 h-11 rounded-xl bg-yellow-50 text-yellow-600 flex items-center justify-center font-bold">
+        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center space-x-3">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-yellow-50 text-yellow-600 flex items-center justify-center font-bold shrink-0">
             <Crown className="w-5 h-5 text-amber-500 fill-amber-400" />
           </div>
-          <div className="min-w-0">
-            <p className="text-[11px] text-slate-500 font-semibold uppercase">Quán Quân Tháng Này</p>
-            <p className="text-sm font-black text-slate-900 truncate">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] sm:text-[11px] text-slate-500 font-semibold uppercase truncate">Quán Quân Tháng</p>
+            <p className="text-xs sm:text-sm font-black text-slate-900 truncate">
               {leaderboard[0] ? `${leaderboard[0].student.fullName} (${leaderboard[0].monthlyEarned} ⭐)` : 'Chưa có'}
             </p>
           </div>
@@ -498,37 +496,37 @@ export default function BehaviorPage() {
 
         <div
           onClick={() => setActiveTab('REDEMPTIONS')}
-          className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center space-x-3 cursor-pointer hover:border-purple-300 transition-colors"
+          className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center space-x-3 cursor-pointer hover:border-purple-300 transition-colors"
         >
-          <div className="w-11 h-11 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold relative">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold relative shrink-0">
             <Gift className="w-5 h-5" />
             {pendingRedemptionsCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white rounded-full text-[10px] font-black flex items-center justify-center animate-pulse">
+              <span className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-rose-500 text-white rounded-full text-[9px] sm:text-[10px] font-black flex items-center justify-center animate-pulse">
                 {pendingRedemptionsCount}
               </span>
             )}
           </div>
-          <div>
-            <p className="text-[11px] text-slate-500 font-semibold uppercase">Quà Chờ Trao Thưởng</p>
-            <p className="text-xl font-black text-purple-700">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] sm:text-[11px] text-slate-500 font-semibold uppercase truncate">Quà Chờ Trao</p>
+            <p className="text-lg sm:text-xl font-black text-purple-700">
               {pendingRedemptionsCount} Đơn
             </p>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center space-x-3">
-          <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center space-x-3">
+          <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold shrink-0">
             <ShoppingBag className="w-5 h-5" />
           </div>
-          <div>
-            <p className="text-[11px] text-slate-500 font-semibold uppercase">Shop Quà Tặng</p>
-            <p className="text-xl font-black text-slate-900">{rewardProducts.length} Đồ dùng</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] sm:text-[11px] text-slate-500 font-semibold uppercase truncate">Shop Quà Tặng</p>
+            <p className="text-lg sm:text-xl font-black text-slate-900">{rewardProducts.length} Đồ dùng</p>
           </div>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex items-center space-x-1.5 border-b border-slate-200 pb-2 overflow-x-auto no-scrollbar">
+      {/* Tabs Bar */}
+      <div className="flex items-center space-x-1.5 border-b border-slate-200 pb-2 overflow-x-auto no-scrollbar scroll-smooth">
         {[
           { id: 'TABLE', label: 'Bảng Đánh Giá & Nhận Xét', icon: FileSpreadsheet },
           { id: 'LEADERBOARD', label: 'Đua Top Tích Sao', icon: Trophy, badge: 'Tháng' },
@@ -549,15 +547,15 @@ export default function BehaviorPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${
-                isActive ? 'bg-blue-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-100'
+              className={`h-9 px-3 sm:px-3.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer whitespace-nowrap ${
+                isActive ? 'bg-blue-600 text-white shadow-xs font-black' : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
-              <Icon className="w-4 h-4" />
+              <Icon className="w-4 h-4 shrink-0" />
               <span>{tab.label}</span>
               {tab.badge && (
                 <span
-                  className={`text-[10px] px-1.5 py-0.2 rounded-full font-black ${
+                  className={`text-[9px] sm:text-[10px] px-1.5 py-0.2 rounded-full font-black ${
                     tab.badgeColor || (isActive ? 'bg-white/20 text-white' : 'bg-blue-100 text-blue-800')
                   }`}
                 >
@@ -571,11 +569,11 @@ export default function BehaviorPage() {
 
       {/* TAB 1: BẢNG ĐÁNH GIÁ & NHẬN XÉT HÀNG NGÀY */}
       {activeTab === 'TABLE' && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 sm:p-6 space-y-4">
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-4 sm:p-6 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <FileSpreadsheet className="w-5 h-5 text-blue-600" />
+              <h2 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+                <FileSpreadsheet className="w-5 h-5 text-blue-600 shrink-0" />
                 <span>Bảng Đánh Giá Chi Tiết Theo Học Sinh ({filteredStudents.length} Em)</span>
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
@@ -583,131 +581,260 @@ export default function BehaviorPage() {
               </p>
             </div>
 
-            {/* Search Bar */}
-            <div className="relative w-full sm:w-72">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tìm tên, mã học sinh..."
-                className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              />
+            <div className="flex items-center gap-2">
+              {/* View Mode Toggle: Table vs Mobile Cards */}
+              <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setTableViewMode('TABLE')}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer ${
+                    tableViewMode === 'TABLE' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                  title="Xem dạng bảng đầy đủ"
+                >
+                  <List className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Dạng Bảng</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTableViewMode('CARDS')}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer ${
+                    tableViewMode === 'CARDS' ? 'bg-white text-blue-600 shadow-2xs' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                  title="Xem dạng thẻ nhanh (tối ưu cho điện thoại)"
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Dạng Thẻ</span>
+                </button>
+              </div>
+
+              {/* Search Bar */}
+              <div className="relative flex-1 sm:w-64">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Tìm tên, mã..."
+                  className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
             </div>
           </div>
 
-          {/* Assessment Table */}
-          <div className="overflow-x-auto border border-slate-200 rounded-xl">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
-                <tr>
-                  <th className="py-3 px-4 w-12 text-center">STT</th>
-                  <th className="py-3 px-4 w-48">Học Sinh</th>
-                  <th className="py-3 px-4 text-center w-28">Tổng Sao ⭐</th>
-                  <th className="py-3 px-4 w-60">Nội Dung Đánh Giá Gần Nhất</th>
-                  <th className="py-3 px-4">Lời Nhận Xét / Dặn Dò Của Cô</th>
-                  <th className="py-3 px-4 text-right w-44">Đánh Giá & Tích Sao</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filteredStudents.map((st, idx) => {
-                  const studentLogs = starLogs.filter((l) => l.studentId === st.id);
-                  const totalStars = studentLogs.reduce((sum, l) => sum + l.points, 0);
-                  const latestLog = studentLogs[0];
+          {/* VIEW MODE: MOBILE CARDS GRID */}
+          {tableViewMode === 'CARDS' ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {filteredStudents.map((st) => {
+                const studentLogs = starLogs.filter((l) => l.studentId === st.id);
+                const totalStars = studentLogs.reduce((sum, l) => sum + l.points, 0);
+                const latestLog = studentLogs[0];
 
-                  return (
-                    <tr key={st.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="py-3 px-4 text-center font-bold text-slate-400">{idx + 1}</td>
-                      <td className="py-3 px-4">
-                        <div className="font-bold text-slate-900 text-xs">{st.fullName}</div>
-                        <div className="text-[11px] text-slate-400 font-mono">
-                          {st.studentCode} • {st.gender}
+                return (
+                  <div
+                    key={st.id}
+                    className="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-white hover:shadow-xs transition-all space-y-3 flex flex-col justify-between"
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center space-x-2.5 min-w-0">
+                          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-500 to-indigo-600 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-xs">
+                            {st.fullName.split(' ').pop()?.substring(0, 2) || 'HS'}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h4 className="font-bold text-xs sm:text-sm text-slate-900 truncate">{st.fullName}</h4>
+                            <p className="text-[10px] text-slate-400 font-mono">{st.studentCode} • {st.gender}</p>
+                          </div>
                         </div>
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <span className="inline-flex items-center space-x-1 bg-amber-50 text-amber-800 font-black px-2.5 py-1 rounded-full border border-amber-200 text-xs shadow-2xs">
+
+                        <span className="inline-flex items-center space-x-1 bg-amber-50 text-amber-900 font-black px-2.5 py-1 rounded-full border border-amber-200 text-xs shadow-2xs shrink-0">
                           <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
                           <span>{totalStars}</span>
                         </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        {latestLog ? (
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-1.5">
-                              <span
-                                className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
-                                  latestLog.points > 0
-                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                                    : latestLog.points < 0
-                                    ? 'bg-rose-50 text-rose-700 border-rose-200'
-                                    : 'bg-blue-50 text-blue-700 border-blue-200'
-                                }`}
-                              >
-                                {latestLog.points > 0 ? `+${latestLog.points} ⭐` : latestLog.points < 0 ? `${latestLog.points} ⭐` : '💬 Nhận xét'}
-                              </span>
-                              <span className="font-semibold text-slate-800 text-[11px]">{latestLog.reason}</span>
-                            </div>
-                            <p className="text-[10px] text-slate-400 flex items-center gap-1">
-                              <Clock className="w-3 h-3 text-slate-400" />
-                              <span>{new Date(logDate(latestLog)).toLocaleDateString('vi-VN')}</span>
+                      </div>
+
+                      {latestLog ? (
+                        <div className="bg-white p-2.5 rounded-xl border border-slate-100 space-y-1 text-xs">
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className={`text-[9px] font-bold px-1.5 py-0.2 rounded ${
+                                latestLog.points > 0
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : latestLog.points < 0
+                                  ? 'bg-rose-100 text-rose-800'
+                                  : 'bg-blue-100 text-blue-800'
+                              }`}
+                            >
+                              {latestLog.points > 0 ? `+${latestLog.points}⭐` : `${latestLog.points}⭐`}
+                            </span>
+                            <span className="font-semibold text-slate-800 text-[11px] truncate">{latestLog.reason}</span>
+                          </div>
+                          {latestLog.comment && (
+                            <p className="text-[11px] text-slate-600 italic line-clamp-2">
+                              &ldquo;{latestLog.comment}&rdquo;
                             </p>
-                          </div>
-                        ) : (
-                          <span className="text-slate-400 italic text-[11px]">Chưa có đánh giá</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4">
-                        {latestLog?.comment ? (
-                          <div className="bg-slate-50 p-2 rounded-xl border border-slate-200/80 text-[11px] text-slate-700 leading-relaxed">
-                            <span className="text-blue-600 font-bold mr-1">“</span>
-                            {latestLog.comment}
-                            <span className="text-blue-600 font-bold ml-1">”</span>
-                          </div>
-                        ) : (
-                          <span className="text-slate-400 text-[11px]">Chưa có nhận xét riêng</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 text-right space-x-1">
+                          )}
+                        </div>
+                      ) : (
+                        <p className="text-[11px] text-slate-400 italic">Chưa có đánh giá</p>
+                      )}
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between gap-1.5">
+                      <div className="flex items-center space-x-1">
                         <button
+                          type="button"
+                          onClick={() => handleQuickAward(st, 1, 'Học tập', 'Phát biểu hăng hái')}
+                          className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-black text-xs rounded-xl border border-emerald-200 cursor-pointer"
+                        >
+                          +1⭐
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleQuickAward(st, 2, 'Học tập', 'Làm bài xuất sắc')}
+                          className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-black text-xs rounded-xl border border-blue-200 cursor-pointer"
+                        >
+                          +2⭐
+                        </button>
+                      </div>
+
+                      <div className="flex items-center space-x-1">
+                        <button
+                          type="button"
                           onClick={() => handleOpenAssessModal(st)}
-                          className="inline-flex items-center space-x-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold px-2.5 py-1.5 rounded-lg text-xs transition-colors cursor-pointer"
-                          title="Đánh giá nội dung & ghi nhận xét"
+                          className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-2xs flex items-center gap-1 cursor-pointer"
                         >
                           <MessageSquare className="w-3.5 h-3.5" />
                           <span>Nhận xét</span>
                         </button>
                         <button
+                          type="button"
                           onClick={() => setHistoryStudent(st)}
-                          className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-                          title="Xem lịch sử nhận xét của em này"
+                          className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl"
+                          title="Lịch sử"
                         >
-                          <Eye className="w-3.5 h-3.5" />
+                          <Eye className="w-4 h-4" />
                         </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            /* VIEW MODE: DETAILED TABLE */
+            <div className="overflow-x-auto border border-slate-200 rounded-2xl">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
+                  <tr>
+                    <th className="py-3 px-3 sm:px-4 w-12 text-center">STT</th>
+                    <th className="py-3 px-3 sm:px-4 w-48">Học Sinh</th>
+                    <th className="py-3 px-3 sm:px-4 text-center w-28">Tổng Sao ⭐</th>
+                    <th className="py-3 px-3 sm:px-4 w-60">Nội Dung Đánh Giá Gần Nhất</th>
+                    <th className="py-3 px-3 sm:px-4">Lời Nhận Xét / Dặn Dò Của Cô</th>
+                    <th className="py-3 px-3 sm:px-4 text-right w-44">Đánh Giá & Tích Sao</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredStudents.map((st, idx) => {
+                    const studentLogs = starLogs.filter((l) => l.studentId === st.id);
+                    const totalStars = studentLogs.reduce((sum, l) => sum + l.points, 0);
+                    const latestLog = studentLogs[0];
+
+                    return (
+                      <tr key={st.id} className="hover:bg-slate-50 transition-colors">
+                        <td className="py-3 px-3 sm:px-4 text-center font-bold text-slate-400">{idx + 1}</td>
+                        <td className="py-3 px-3 sm:px-4">
+                          <div className="font-bold text-slate-900 text-xs">{st.fullName}</div>
+                          <div className="text-[11px] text-slate-400 font-mono">
+                            {st.studentCode} • {st.gender}
+                          </div>
+                        </td>
+                        <td className="py-3 px-3 sm:px-4 text-center">
+                          <span className="inline-flex items-center space-x-1 bg-amber-50 text-amber-800 font-black px-2.5 py-1 rounded-full border border-amber-200 text-xs shadow-2xs">
+                            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-500" />
+                            <span>{totalStars}</span>
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 sm:px-4">
+                          {latestLog ? (
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1.5">
+                                <span
+                                  className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                                    latestLog.points > 0
+                                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                      : latestLog.points < 0
+                                      ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                      : 'bg-blue-50 text-blue-700 border-blue-200'
+                                  }`}
+                                >
+                                  {latestLog.points > 0 ? `+${latestLog.points} ⭐` : latestLog.points < 0 ? `${latestLog.points} ⭐` : '💬 Nhận xét'}
+                                </span>
+                                <span className="font-semibold text-slate-800 text-[11px]">{latestLog.reason}</span>
+                              </div>
+                              <p className="text-[10px] text-slate-400 flex items-center gap-1">
+                                <Clock className="w-3 h-3 text-slate-400" />
+                                <span>{new Date(logDate(latestLog)).toLocaleDateString('vi-VN')}</span>
+                              </p>
+                            </div>
+                          ) : (
+                            <span className="text-slate-400 italic text-[11px]">Chưa có đánh giá</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-3 sm:px-4">
+                          {latestLog?.comment ? (
+                            <div className="bg-slate-50 p-2 rounded-xl border border-slate-200/80 text-[11px] text-slate-700 leading-relaxed">
+                              <span className="text-blue-600 font-bold mr-1">“</span>
+                              {latestLog.comment}
+                              <span className="text-blue-600 font-bold ml-1">”</span>
+                            </div>
+                          ) : (
+                            <span className="text-slate-400 text-[11px]">Chưa có nhận xét riêng</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-3 sm:px-4 text-right space-x-1">
+                          <button
+                            onClick={() => handleOpenAssessModal(st)}
+                            className="inline-flex items-center space-x-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold px-2.5 py-1.5 rounded-lg text-xs transition-colors cursor-pointer"
+                            title="Đánh giá nội dung & ghi nhận xét"
+                          >
+                            <MessageSquare className="w-3.5 h-3.5" />
+                            <span>Nhận xét</span>
+                          </button>
+                          <button
+                            onClick={() => setHistoryStudent(st)}
+                            className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                            title="Xem lịch sử nhận xét của em này"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 
       {/* TAB 2: ĐUA TOP TÍCH SAO & VINH DANH (LEADERBOARD THEO THÁNG) */}
       {activeTab === 'LEADERBOARD' && (
-        <div className="space-y-5">
+        <div className="space-y-4 sm:space-y-5">
           {/* Controls Bar */}
-          <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center space-x-2">
-              <Trophy className="w-5 h-5 text-amber-500" />
+          <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center space-x-2.5">
+              <Trophy className="w-5 h-5 text-amber-500 shrink-0" />
               <div>
-                <h3 className="font-bold text-sm text-slate-900">Bảng Vinh Danh Thi Đua Tích Sao</h3>
+                <h3 className="font-bold text-xs sm:text-sm text-slate-900">Bảng Vinh Danh Thi Đua Tích Sao</h3>
                 <p className="text-[11px] text-slate-500">Xếp hạng theo tổng số sao kiếm được trong tháng của học sinh Lớp {classInfo.name}</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <label className="text-xs font-bold text-slate-600">Tháng thi đua:</label>
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="text-xs font-bold text-slate-600">Tháng:</label>
               <input
                 type="month"
                 value={selectedMonth}
@@ -725,7 +852,7 @@ export default function BehaviorPage() {
           </div>
 
           {/* PODIUM TOP 1, TOP 2, TOP 3 */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4 pt-2 sm:pt-4">
             {/* TOP 2 (BẠC) */}
             <div className="order-2 md:order-1 bg-gradient-to-b from-slate-100 to-white rounded-3xl p-5 border-2 border-slate-300 shadow-md text-center space-y-3 relative overflow-hidden flex flex-col justify-between">
               <div className="absolute top-3 left-3 bg-slate-200 text-slate-700 font-black text-xs px-2.5 py-0.5 rounded-full">
@@ -735,14 +862,14 @@ export default function BehaviorPage() {
                 <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-slate-300 to-slate-100 border-4 border-slate-300 text-slate-700 font-black text-xl flex items-center justify-center mx-auto shadow-inner">
                   {leaderboard[1]?.student.fullName.split(' ').pop()?.substring(0, 2) || '2'}
                 </div>
-                <h4 className="font-black text-base text-slate-900 truncate">
+                <h4 className="font-black text-sm sm:text-base text-slate-900 truncate">
                   {leaderboard[1]?.student.fullName || 'Đang cập nhật'}
                 </h4>
                 <p className="text-xs text-slate-500 font-mono">{leaderboard[1]?.student.studentCode || ''}</p>
               </div>
 
               <div className="bg-slate-200/70 p-3 rounded-2xl space-y-1">
-                <span className="text-2xl font-black text-slate-800">{leaderboard[1]?.monthlyEarned || 0} ⭐</span>
+                <span className="text-2xl font-black text-slate-800">+{leaderboard[1]?.monthlyEarned || 0} ⭐</span>
                 <p className="text-[11px] text-slate-600 font-medium">Khả dụng: {leaderboard[1]?.monthlyAvailable || 0} sao</p>
               </div>
             </div>
@@ -757,14 +884,14 @@ export default function BehaviorPage() {
                 <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-amber-400 to-yellow-200 border-4 border-amber-400 text-amber-900 font-black text-2xl flex items-center justify-center mx-auto shadow-lg ring-4 ring-amber-200/50">
                   {leaderboard[0]?.student.fullName.split(' ').pop()?.substring(0, 2) || '1'}
                 </div>
-                <h4 className="font-black text-lg text-slate-900 truncate">
+                <h4 className="font-black text-base sm:text-lg text-slate-900 truncate">
                   {leaderboard[0]?.student.fullName || 'Đang cập nhật'}
                 </h4>
                 <p className="text-xs text-slate-600 font-mono font-bold">{leaderboard[0]?.student.studentCode || ''}</p>
               </div>
 
               <div className="bg-amber-200/80 p-3.5 rounded-2xl space-y-1 border border-amber-300">
-                <span className="text-3xl font-black text-amber-950">{leaderboard[0]?.monthlyEarned || 0} ⭐</span>
+                <span className="text-3xl font-black text-amber-950">+{leaderboard[0]?.monthlyEarned || 0} ⭐</span>
                 <p className="text-xs text-amber-900 font-semibold">Khả dụng: {leaderboard[0]?.monthlyAvailable || 0} sao</p>
               </div>
             </div>
@@ -778,22 +905,22 @@ export default function BehaviorPage() {
                 <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-amber-700 to-amber-500 border-4 border-amber-600/50 text-white font-black text-xl flex items-center justify-center mx-auto shadow-inner">
                   {leaderboard[2]?.student.fullName.split(' ').pop()?.substring(0, 2) || '3'}
                 </div>
-                <h4 className="font-black text-base text-slate-900 truncate">
+                <h4 className="font-black text-sm sm:text-base text-slate-900 truncate">
                   {leaderboard[2]?.student.fullName || 'Đang cập nhật'}
                 </h4>
                 <p className="text-xs text-slate-500 font-mono">{leaderboard[2]?.student.studentCode || ''}</p>
               </div>
 
               <div className="bg-amber-100/70 p-3 rounded-2xl space-y-1">
-                <span className="text-2xl font-black text-amber-900">{leaderboard[2]?.monthlyEarned || 0} ⭐</span>
+                <span className="text-2xl font-black text-amber-900">+{leaderboard[2]?.monthlyEarned || 0} ⭐</span>
                 <p className="text-[11px] text-amber-800 font-medium">Khả dụng: {leaderboard[2]?.monthlyAvailable || 0} sao</p>
               </div>
             </div>
           </div>
 
           {/* FULL RANKING TABLE */}
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-5 space-y-4">
-            <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-4 sm:p-5 space-y-4">
+            <h3 className="font-bold text-xs sm:text-sm text-slate-900 flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-blue-600" />
               <span>Bảng Xếp Hạng Đầy Đủ Lớp {classInfo.name} ({leaderboard.length} Học Sinh)</span>
             </h3>
@@ -802,19 +929,19 @@ export default function BehaviorPage() {
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
                   <tr>
-                    <th className="py-3 px-4 w-16 text-center">Hạng</th>
-                    <th className="py-3 px-4 w-52">Học Sinh</th>
-                    <th className="py-3 px-4 text-center">Sao Tháng Này</th>
-                    <th className="py-3 px-4 text-center">Đã Đổi Quà</th>
-                    <th className="py-3 px-4 text-center">Sao Khả Dụng</th>
-                    <th className="py-3 px-4 text-center">Tổng Sao Toàn Khóa</th>
-                    <th className="py-3 px-4 text-right">Tặng Sao Nhanh</th>
+                    <th className="py-3 px-3 sm:px-4 w-16 text-center">Hạng</th>
+                    <th className="py-3 px-3 sm:px-4 w-52">Học Sinh</th>
+                    <th className="py-3 px-3 sm:px-4 text-center">Sao Tháng Này</th>
+                    <th className="py-3 px-3 sm:px-4 text-center">Đã Đổi Quà</th>
+                    <th className="py-3 px-3 sm:px-4 text-center">Sao Khả Dụng</th>
+                    <th className="py-3 px-3 sm:px-4 text-center">Tổng Toàn Khóa</th>
+                    <th className="py-3 px-3 sm:px-4 text-right">Tặng Sao Nhanh</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {leaderboard.map((item) => (
                     <tr key={item.student.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="py-3 px-4 text-center">
+                      <td className="py-3 px-3 sm:px-4 text-center">
                         <span
                           className={`w-7 h-7 rounded-full inline-flex items-center justify-center font-black text-xs ${
                             item.rank === 1
@@ -831,25 +958,25 @@ export default function BehaviorPage() {
                           {item.rank}
                         </span>
                       </td>
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-3 sm:px-4">
                         <div className="font-bold text-slate-900 text-xs">{item.student.fullName}</div>
                         <div className="text-[11px] text-slate-400 font-mono">{item.student.studentCode}</div>
                       </td>
-                      <td className="py-3 px-4 text-center font-black text-amber-600 text-sm">
+                      <td className="py-3 px-3 sm:px-4 text-center font-black text-amber-600 text-sm">
                         +{item.monthlyEarned} ⭐
                       </td>
-                      <td className="py-3 px-4 text-center text-slate-500 font-semibold">
+                      <td className="py-3 px-3 sm:px-4 text-center text-slate-500 font-semibold">
                         {item.monthlySpent > 0 ? `-${item.monthlySpent} ⭐` : '0'}
                       </td>
-                      <td className="py-3 px-4 text-center">
+                      <td className="py-3 px-3 sm:px-4 text-center">
                         <span className="bg-emerald-50 text-emerald-800 font-black px-2.5 py-0.5 rounded-full border border-emerald-200">
                           {item.monthlyAvailable} ⭐
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-center font-bold text-slate-700">
+                      <td className="py-3 px-3 sm:px-4 text-center font-bold text-slate-700">
                         {item.allTimeStars} ⭐
                       </td>
-                      <td className="py-3 px-4 text-right space-x-1">
+                      <td className="py-3 px-3 sm:px-4 text-right space-x-1">
                         <button
                           onClick={() => handleQuickAward(item.student, 1, 'Học tập', 'Phát biểu hăng hái')}
                           className="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-xs rounded-lg border border-emerald-200 cursor-pointer"
@@ -874,11 +1001,11 @@ export default function BehaviorPage() {
 
       {/* TAB 3: TIÊU CHÍ TÍCH SAO & THANG ĐIỂM */}
       {activeTab === 'CRITERIA' && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 sm:p-6 space-y-4">
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-4 sm:p-6 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Star className="w-5 h-5 text-amber-500" />
+              <h2 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+                <Star className="w-5 h-5 text-amber-500 shrink-0" />
                 <span>Danh Mục Tiêu Chí & Thang Điểm Quy Đổi Sao ({starCriteria.length} Tiêu Chí)</span>
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
@@ -886,7 +1013,7 @@ export default function BehaviorPage() {
               </p>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={resetStarCriteriaToDefault}
                 className="inline-flex items-center space-x-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer"
@@ -964,11 +1091,11 @@ export default function BehaviorPage() {
 
       {/* TAB 4: SHOP ĐỒ DÙNG HỌC TẬP & QUẢN LÝ KHO */}
       {activeTab === 'SHOP' && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 sm:p-6 space-y-4">
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-4 sm:p-6 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <ShoppingBag className="w-5 h-5 text-emerald-600" />
+              <h2 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+                <ShoppingBag className="w-5 h-5 text-emerald-600 shrink-0" />
                 <span>Shop Đồ Dùng Học Tập & Quản Lý Tồn Kho ({rewardProducts.length} Sản Phẩm)</span>
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
@@ -986,7 +1113,7 @@ export default function BehaviorPage() {
           </div>
 
           {/* Products Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-4">
             {rewardProducts.map((prod) => (
               <div
                 key={prod.id}
@@ -1027,20 +1154,20 @@ export default function BehaviorPage() {
                   </div>
                 </div>
 
-                <div className="p-3 bg-slate-50 border-t border-slate-100 grid grid-cols-3 gap-1">
+                <div className="p-2.5 sm:p-3 bg-slate-50 border-t border-slate-100 grid grid-cols-3 gap-1">
                   <button
                     onClick={() => {
                       setRestockModalProduct(prod);
                       setRestockAddAmount(10);
                     }}
-                    className="py-1 bg-white hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 text-[11px] font-bold rounded-lg border border-slate-200 transition-colors cursor-pointer"
+                    className="py-1.5 bg-white hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 text-[11px] font-bold rounded-lg border border-slate-200 transition-colors cursor-pointer"
                     title="Nhập thêm số lượng vào kho"
                   >
                     + Nhập
                   </button>
                   <button
                     onClick={() => handleOpenEditProduct(prod)}
-                    className="py-1 bg-white hover:bg-blue-50 hover:text-blue-700 text-slate-700 text-[11px] font-bold rounded-lg border border-slate-200 transition-colors cursor-pointer"
+                    className="py-1.5 bg-white hover:bg-blue-50 hover:text-blue-700 text-slate-700 text-[11px] font-bold rounded-lg border border-slate-200 transition-colors cursor-pointer"
                     title="Sửa thông tin sản phẩm"
                   >
                     Sửa
@@ -1051,7 +1178,7 @@ export default function BehaviorPage() {
                         deleteRewardProduct(prod.id);
                       }
                     }}
-                    className="py-1 bg-white hover:bg-rose-50 hover:text-rose-700 text-slate-700 text-[11px] font-bold rounded-lg border border-slate-200 transition-colors cursor-pointer"
+                    className="py-1.5 bg-white hover:bg-rose-50 hover:text-rose-700 text-slate-700 text-[11px] font-bold rounded-lg border border-slate-200 transition-colors cursor-pointer"
                     title="Xóa món quà"
                   >
                     Xóa
@@ -1065,11 +1192,11 @@ export default function BehaviorPage() {
 
       {/* TAB 5: DUYỆT ĐỔI QUÀ & TRẢ THƯỞNG */}
       {activeTab === 'REDEMPTIONS' && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 sm:p-6 space-y-4">
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-4 sm:p-6 space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Gift className="w-5 h-5 text-purple-600" />
+              <h2 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+                <Gift className="w-5 h-5 text-purple-600 shrink-0" />
                 <span>Danh Sách Đơn Đổi Quà Của Học Sinh ({rewardRedemptions.length} Đơn)</span>
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
@@ -1120,7 +1247,7 @@ export default function BehaviorPage() {
                       </div>
 
                       <div className="space-y-1 min-w-0 flex-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <h4 className="font-bold text-sm text-slate-900">{rd.studentName}</h4>
                           <span className="text-[10px] font-mono text-slate-400 bg-white px-2 py-0.5 rounded border border-slate-200">
                             {rd.studentCode}
@@ -1137,7 +1264,7 @@ export default function BehaviorPage() {
                         </div>
 
                         {/* Items list */}
-                        <div className="flex flex-wrap gap-2 pt-1">
+                        <div className="flex flex-wrap gap-1.5 pt-1">
                           {rd.items.map((it, idx) => (
                             <div
                               key={idx}
@@ -1207,23 +1334,23 @@ export default function BehaviorPage() {
 
       {/* TAB 6: NHẬT KÝ HOẠT ĐỘNG */}
       {activeTab === 'HISTORY' && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 sm:p-6 space-y-4">
-          <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-            <History className="w-5 h-5 text-indigo-600" />
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-4 sm:p-6 space-y-4">
+          <h2 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
+            <History className="w-5 h-5 text-indigo-600 shrink-0" />
             <span>Nhật Ký Nhận Xét & Lịch Sử Tích Sao ({starLogs.length} Bản Ghi)</span>
           </h2>
 
-          <div className="overflow-x-auto border border-slate-200 rounded-xl">
+          <div className="overflow-x-auto border border-slate-200 rounded-2xl">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
                 <tr>
-                  <th className="py-3 px-4">Thời Gian</th>
-                  <th className="py-3 px-4">Học Sinh</th>
-                  <th className="py-3 px-4">Phân Loại</th>
-                  <th className="py-3 px-4">Nội Dung Đánh Giá</th>
-                  <th className="py-3 px-4">Nhận Xét / Lời Dặn Của Cô</th>
-                  <th className="py-3 px-4 text-center">Sao ⭐</th>
-                  <th className="py-3 px-4 text-right">Xóa</th>
+                  <th className="py-3 px-3 sm:px-4">Thời Gian</th>
+                  <th className="py-3 px-3 sm:px-4">Học Sinh</th>
+                  <th className="py-3 px-3 sm:px-4">Phân Loại</th>
+                  <th className="py-3 px-3 sm:px-4">Nội Dung Đánh Giá</th>
+                  <th className="py-3 px-3 sm:px-4">Nhận Xét / Lời Dặn Của Cô</th>
+                  <th className="py-3 px-3 sm:px-4 text-center">Sao ⭐</th>
+                  <th className="py-3 px-3 sm:px-4 text-right">Xóa</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -1231,18 +1358,18 @@ export default function BehaviorPage() {
                   const student = students.find((s) => s.id === log.studentId);
                   return (
                     <tr key={log.id} className="hover:bg-slate-50 transition-colors">
-                      <td className="py-3 px-4 text-slate-500 font-mono text-[11px]">
+                      <td className="py-3 px-3 sm:px-4 text-slate-500 font-mono text-[11px]">
                         {new Date(logDate(log)).toLocaleString('vi-VN')}
                       </td>
-                      <td className="py-3 px-4 font-bold text-slate-900">{student?.fullName || 'Học sinh'}</td>
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-3 sm:px-4 font-bold text-slate-900">{student?.fullName || 'Học sinh'}</td>
+                      <td className="py-3 px-3 sm:px-4">
                         <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md font-semibold text-[11px]">
                           {log.category}
                         </span>
                       </td>
-                      <td className="py-3 px-4 font-medium text-slate-800">{log.reason}</td>
-                      <td className="py-3 px-4 text-slate-600 italic">{log.comment ? `“${log.comment}”` : '-'}</td>
-                      <td className="py-3 px-4 text-center">
+                      <td className="py-3 px-3 sm:px-4 font-medium text-slate-800">{log.reason}</td>
+                      <td className="py-3 px-3 sm:px-4 text-slate-600 italic">{log.comment ? `“${log.comment}”` : '-'}</td>
+                      <td className="py-3 px-3 sm:px-4 text-center">
                         <span
                           className={`font-black px-2 py-0.5 rounded-full text-xs ${
                             log.points > 0
@@ -1255,7 +1382,7 @@ export default function BehaviorPage() {
                           {log.points > 0 ? `+${log.points}` : log.points} ⭐
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-right">
+                      <td className="py-3 px-3 sm:px-4 text-right">
                         <button
                           onClick={() => {
                             if (confirm('Bạn có chắc chắn muốn xóa bản ghi đánh giá này?')) {
@@ -1279,30 +1406,30 @@ export default function BehaviorPage() {
 
       {/* MODAL: ĐÁNH GIÁ NỘI DUNG & NHẬN XÉT HÀNG NGÀY CHO HỌC SINH (DYNAMIC STAR CRITERIA) */}
       {isAssessModalOpen && selectedStudentForAssess && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 animate-in fade-in">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-4 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center font-black">
+              <div className="flex items-center space-x-3 min-w-0">
+                <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center font-black shrink-0">
                   ⭐
                 </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-900">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-sm sm:text-base font-bold text-slate-900 truncate">
                     Đánh Giá & Nhận Xét: {selectedStudentForAssess.fullName}
                   </h3>
-                  <p className="text-xs text-slate-500">Mã: {selectedStudentForAssess.studentCode} • Lớp {classInfo.name}</p>
+                  <p className="text-xs text-slate-500 truncate">Mã: {selectedStudentForAssess.studentCode} • Lớp {classInfo.name}</p>
                 </div>
               </div>
               <button
                 onClick={() => setIsAssessModalOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-slate-700 rounded-xl"
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center shrink-0 cursor-pointer"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveAssessment} className="space-y-4 text-xs">
-              <div className="grid grid-cols-2 gap-3">
+            <form onSubmit={handleSaveAssessment} className="space-y-3.5 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">Ngày Đánh Giá</label>
                   <input
@@ -1335,7 +1462,7 @@ export default function BehaviorPage() {
                 <label className="block font-semibold text-slate-700 mb-1.5">
                   Chọn Nhanh Từ Danh Mục Tiêu Chí Của Lớp:
                 </label>
-                <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto p-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-44 overflow-y-auto p-1 border border-slate-100 rounded-2xl bg-slate-50/50">
                   {starCriteria.map((p) => (
                     <button
                       key={p.id}
@@ -1352,7 +1479,7 @@ export default function BehaviorPage() {
                       }`}
                     >
                       <span className="text-base shrink-0">{p.icon}</span>
-                      <div className="truncate min-w-0">
+                      <div className="truncate min-w-0 flex-1">
                         <p className="text-[11px] truncate">{p.title}</p>
                         <p className="text-[9px] text-slate-400">{p.points > 0 ? `+${p.points}⭐` : `${p.points}⭐`}</p>
                       </div>
@@ -1381,7 +1508,7 @@ export default function BehaviorPage() {
                   <label className="font-semibold text-slate-700">
                     Lời Nhận Xét & Dặn Dò Cụ Thể Của Cô Giáo:
                   </label>
-                  <span className="text-[10px] text-blue-600 font-medium">Bấm gợi ý để điền nhanh</span>
+                  <span className="text-[10px] text-blue-600 font-medium hidden sm:inline">Bấm gợi ý để điền nhanh</span>
                 </div>
                 <textarea
                   rows={3}
@@ -1397,9 +1524,9 @@ export default function BehaviorPage() {
                       key={i}
                       type="button"
                       onClick={() => setAssessComment(sug)}
-                      className="bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-600 px-2.5 py-1 rounded-lg text-[10px] border border-slate-200 transition-colors text-left cursor-pointer"
+                      className="bg-slate-100 hover:bg-blue-50 hover:text-blue-700 text-slate-600 px-2 py-0.8 rounded-lg text-[10px] border border-slate-200 transition-colors text-left cursor-pointer"
                     >
-                      + {sug.length > 35 ? sug.substring(0, 35) + '...' : sug}
+                      + {sug.length > 30 ? sug.substring(0, 30) + '...' : sug}
                     </button>
                   ))}
                 </div>
@@ -1428,18 +1555,18 @@ export default function BehaviorPage() {
 
       {/* MODAL: THÊM / SỬA TIÊU CHÍ */}
       {isCriterionModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 animate-in fade-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-4 sm:p-6 shadow-2xl border border-slate-200 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="font-bold text-base text-slate-900">
+              <h3 className="font-bold text-sm sm:text-base text-slate-900">
                 {editingCriterion ? 'Chỉnh Sửa Tiêu Chí' : 'Thêm Tiêu Chí Tích Sao Mới'}
               </h3>
-              <button onClick={() => setIsCriterionModalOpen(false)} className="text-slate-400 hover:text-slate-700">
-                <X className="w-5 h-5" />
+              <button onClick={() => setIsCriterionModalOpen(false)} className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center">
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveCriterion} className="space-y-4 text-xs">
+            <form onSubmit={handleSaveCriterion} className="space-y-3.5 text-xs">
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">Phân Loại Đầu Việc:</label>
                 <select
@@ -1467,7 +1594,7 @@ export default function BehaviorPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">Mức Sao Quy Đổi:</label>
                   <input
@@ -1494,13 +1621,13 @@ export default function BehaviorPage() {
                 <button
                   type="button"
                   onClick={() => setIsCriterionModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-semibold"
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-semibold cursor-pointer"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-xs"
+                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-xs cursor-pointer"
                 >
                   Lưu Tiêu Chí
                 </button>
@@ -1512,18 +1639,18 @@ export default function BehaviorPage() {
 
       {/* MODAL: THÊM / SỬA SẢN PHẨM SHOP QUÀ */}
       {isProductModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 animate-in fade-in">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-4 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="font-bold text-base text-slate-900">
+              <h3 className="font-bold text-sm sm:text-base text-slate-900">
                 {editingProduct ? 'Chỉnh Sửa Món Quà' : 'Thêm Đồ Dùng Học Tập Mới'}
               </h3>
-              <button onClick={() => setIsProductModalOpen(false)} className="text-slate-400 hover:text-slate-700">
-                <X className="w-5 h-5" />
+              <button onClick={() => setIsProductModalOpen(false)} className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center">
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveProduct} className="space-y-4 text-xs">
+            <form onSubmit={handleSaveProduct} className="space-y-3.5 text-xs">
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">Tên Đồ Dùng / Quà Tặng:</label>
                 <input
@@ -1536,7 +1663,7 @@ export default function BehaviorPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">Phân Loại:</label>
                   <select
@@ -1589,18 +1716,18 @@ export default function BehaviorPage() {
 
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">Ảnh Sản Phẩm (Chọn mẫu hoặc dán URL):</label>
-                <div className="grid grid-cols-5 gap-2 mb-2">
+                <div className="grid grid-cols-5 gap-1.5 sm:gap-2 mb-2">
                   {PRESET_SAMPLE_IMAGES.map((img, idx) => (
                     <button
                       key={idx}
                       type="button"
                       onClick={() => setProductImageUrl(img.url)}
-                      className={`relative rounded-xl overflow-hidden border-2 h-14 transition-all cursor-pointer ${
+                      className={`relative rounded-xl overflow-hidden border-2 h-12 sm:h-14 transition-all cursor-pointer ${
                         productImageUrl === img.url ? 'border-emerald-500 ring-2 ring-emerald-300' : 'border-slate-200'
                       }`}
                     >
                       <img src={img.url} alt={img.name} className="w-full h-full object-cover" />
-                      <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[8px] truncate px-1 text-center">
+                      <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[7px] sm:text-[8px] truncate px-0.5 text-center">
                         {img.name}
                       </span>
                     </button>
@@ -1619,13 +1746,13 @@ export default function BehaviorPage() {
                 <button
                   type="button"
                   onClick={() => setIsProductModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-semibold"
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-semibold cursor-pointer"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs"
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs cursor-pointer"
                 >
                   Lưu Sản Phẩm
                 </button>
@@ -1637,14 +1764,14 @@ export default function BehaviorPage() {
 
       {/* MODAL: NHẬP THÊM HÀNG VÀO KHO (RESTOCK) */}
       {restockModalProduct && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 space-y-4">
-            <h3 className="font-bold text-base text-slate-900">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 animate-in fade-in">
+          <div className="bg-white rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4">
+            <h3 className="font-bold text-sm sm:text-base text-slate-900">
               Nhập Thêm Hàng Vào Kho: {restockModalProduct.name}
             </h3>
             <p className="text-xs text-slate-500">Tồn kho hiện tại: <strong>{restockModalProduct.stock} cái</strong></p>
 
-            <form onSubmit={handleSaveRestock} className="space-y-4 text-xs">
+            <form onSubmit={handleSaveRestock} className="space-y-3.5 text-xs">
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">Số lượng nhập thêm:</label>
                 <input
@@ -1661,13 +1788,13 @@ export default function BehaviorPage() {
                 <button
                   type="button"
                   onClick={() => setRestockModalProduct(null)}
-                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-semibold"
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-semibold cursor-pointer"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs"
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs cursor-pointer"
                 >
                   Xác Nhận Nhập Kho
                 </button>
@@ -1679,22 +1806,22 @@ export default function BehaviorPage() {
 
       {/* MODAL: XEM TOÀN BỘ LỊCH SỬ ĐÁNH GIÁ CỦA 1 HỌC SINH */}
       {historyStudent && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[85vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 animate-in fade-in">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-4 sm:p-6 shadow-2xl border border-slate-200 space-y-4 max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-black">
+              <div className="flex items-center space-x-2.5 min-w-0">
+                <div className="w-10 h-10 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center font-black shrink-0">
                   👤
                 </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-900">{historyStudent.fullName}</h3>
-                  <p className="text-xs text-slate-500">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-sm sm:text-base font-bold text-slate-900 truncate">{historyStudent.fullName}</h3>
+                  <p className="text-xs text-slate-500 truncate">
                     Mã: {historyStudent.studentCode} • Tổng tích lũy: <strong>{getStudentStars(historyStudent.id)} ⭐</strong>
                   </p>
                 </div>
               </div>
-              <button onClick={() => setHistoryStudent(null)} className="text-slate-400 hover:text-slate-700">
-                <X className="w-5 h-5" />
+              <button onClick={() => setHistoryStudent(null)} className="w-8 h-8 rounded-full bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center">
+                <X className="w-4 h-4" />
               </button>
             </div>
 
@@ -1707,7 +1834,7 @@ export default function BehaviorPage() {
                 starLogs
                   .filter((l) => l.studentId === historyStudent.id)
                   .map((l) => (
-                    <div key={l.id} className="p-3 rounded-xl border border-slate-200 bg-slate-50/60 space-y-1">
+                    <div key={l.id} className="p-3 rounded-2xl border border-slate-200 bg-slate-50/60 space-y-1">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1.5 font-bold text-slate-900">
                           <span
@@ -1724,7 +1851,7 @@ export default function BehaviorPage() {
                         </span>
                       </div>
                       {l.comment && (
-                        <p className="text-[11px] text-slate-600 italic bg-white p-2 rounded-lg border border-slate-200/80">
+                        <p className="text-[11px] text-slate-600 italic bg-white p-2 rounded-xl border border-slate-200/80">
                           &ldquo;{l.comment}&rdquo;
                         </p>
                       )}
@@ -1738,9 +1865,9 @@ export default function BehaviorPage() {
 
       {/* MODAL: LINK SHARE PUBLIC CHO PHỤ HUYNH */}
       {isShareModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto text-2xl">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-3 sm:p-4 animate-in fade-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4 text-center">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto text-2xl shadow-inner">
               🏆
             </div>
             <h3 className="text-base font-bold text-slate-900">
@@ -1750,7 +1877,7 @@ export default function BehaviorPage() {
               Thầy/Cô gửi liên kết này vào nhóm Zalo để Phụ huynh & Học sinh theo dõi Bảng vinh danh Top 1-2-3, Tiêu chí kiếm sao và Danh mục quà tặng của lớp.
             </p>
 
-            <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between gap-2">
+            <div className="p-2.5 sm:p-3 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between gap-2">
               <input
                 type="text"
                 readOnly
@@ -1774,13 +1901,13 @@ export default function BehaviorPage() {
                 target="_blank"
                 className="text-xs text-blue-600 hover:underline font-bold flex items-center gap-1"
               >
-                <span>Xem trang public này</span>
+                <span>Xem trang public</span>
                 <ExternalLink className="w-3.5 h-3.5" />
               </Link>
 
               <button
                 onClick={() => setIsShareModalOpen(false)}
-                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl"
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer"
               >
                 Đóng
               </button>
