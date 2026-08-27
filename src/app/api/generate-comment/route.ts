@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
-import { Student, SubjectAssessment, TraitAssessment, StarLog, DailyAttendance, AIConfig } from '@/types';
+import { Student, SubjectAssessment, TraitAssessment, StarLog, DailyAttendance, AIConfig, AIGenerationSettings } from '@/types';
 import { generateSmartComment } from '@/lib/comment-bank';
 
 export const runtime = 'nodejs';
@@ -15,6 +15,7 @@ export async function POST(req: NextRequest) {
       starLogs = [],
       attendances = [],
       aiConfig,
+      aiGenSettings,
       apiKey,
       tone = 'standard',
       extraNotes,
@@ -25,8 +26,9 @@ export async function POST(req: NextRequest) {
       starLogs?: StarLog[];
       attendances?: DailyAttendance[];
       aiConfig?: AIConfig;
+      aiGenSettings?: AIGenerationSettings;
       apiKey?: string;
-      tone?: 'standard' | 'encouraging' | 'detailed' | 'concise';
+      tone?: string;
       extraNotes?: string;
     };
 
@@ -48,60 +50,94 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Determine generation parameters
+    const targetWordCount = aiGenSettings?.targetWordCount || 60;
+    const targetSentenceCount = aiGenSettings?.targetSentenceCount || 3;
+    const effectiveTone = aiGenSettings?.tone || tone || 'standard';
+    const customToneDescription = aiGenSettings?.customToneText || '';
+
+    const incSubjects = aiGenSettings?.includeSubjectGrades !== false;
+    const incTraits = aiGenSettings?.includeTraitsAndCompetencies !== false;
+    const incStars = aiGenSettings?.includeDailyStarsAndComments !== false;
+    const incAttendance = aiGenSettings?.includeAttendanceAndBoarding !== false;
+
     // Nếu không có API Key, sử dụng smart offline pedagogical engine
     if (!effectiveKey) {
       const fallbackComment = generateSmartComment(student, subjects, traits, extraNotes);
-      return NextResponse.json({ success: true, comment: fallbackComment, source: 'offline_bank' });
+      return NextResponse.json({ success: true, comment: fallbackComment, source: 'Ngân hàng sư phạm offline', isRealAI: false });
     }
 
     // Build comprehensive context for the student
-    const subjectSummary = subjects
-      .map((s) => `${s.subjectCode}: mức ${s.level}${s.score !== undefined && s.score !== null ? ` (điểm ${s.score})` : ''}`)
-      .join(', ');
+    const subjectSummary = incSubjects && subjects.length > 0
+      ? subjects
+          .map((s) => `${s.subjectCode}: mức ${s.level}${s.score !== undefined && s.score !== null ? ` (điểm ${s.score})` : ''}`)
+          .join(', ')
+      : 'Không bắt buộc phân tích chi tiết từng môn.';
 
-    const traitSummary = traits
-      .map((t) => `${t.traitCode}: mức ${t.level}`)
-      .join(', ');
+    const traitSummary = incTraits && traits.length > 0
+      ? traits
+          .map((t) => `${t.traitCode}: mức ${t.level}`)
+          .join(', ')
+      : 'Không bắt buộc phân tích chi tiết từng phẩm chất.';
 
     // Extract behavior & star logs for this student
     const studentStars = starLogs.filter((l) => l.studentId === student.id);
     const totalStars = studentStars.reduce((sum, l) => sum + l.points, 0);
     const recentPraises = studentStars
       .filter((l) => l.reason)
-      .slice(0, 4)
+      .slice(0, 5)
       .map((l) => l.reason + (l.comment ? ` ("${l.comment}")` : ''))
       .join('; ');
 
-    const behaviorHistorySummary = studentStars.length > 0
-      ? `Tổng ${totalStars} sao nề nếp thi đua. Các biểu hiện và nhận xét hàng ngày gần nhất của cô giáo: ${recentPraises || 'Ngoan ngoãn, chấp hành tốt nội quy'}`
-      : 'Ý thức nề nếp tốt, tích cực tham gia các phong trào học tập của lớp.';
+    const behaviorHistorySummary = incStars && studentStars.length > 0
+      ? `Tổng ${totalStars} sao nề nếp thi đua. Các biểu hiện và nhận xét hàng ngày của cô giáo: ${recentPraises || 'Ngoan ngoãn, chấp hành tốt nội quy'}`
+      : incStars
+      ? 'Ý thức nề nếp tốt, tích cực tham gia các phong trào học tập của lớp.'
+      : 'Bỏ qua chi tiết sao nề nếp.';
 
     // Attendance summary
     const studentAtt = attendances.filter((a) => a.studentId === student.id);
     const absentCount = studentAtt.filter((a) => a.status !== 'CO_MAT').length;
-    const attendanceSummary = absentCount === 0
-      ? 'Đi học chuyên cần, đúng giờ, tham gia đầy đủ các buổi học.'
-      : `Đi học đều, có ${absentCount} buổi nghỉ học có lý do.`;
+    const attendanceSummary = incAttendance
+      ? absentCount === 0
+        ? 'Đi học chuyên cần, đúng giờ, tham gia đầy đủ các buổi học.'
+        : `Đi học đều, có ${absentCount} buổi nghỉ học có lý do.`
+      : 'Bỏ qua chi tiết chuyên cần.';
+
+    // Tone instructions
+    let toneInstruction = 'Chuẩn mực sư phạm Thông tư 27/2020/TT-BGDĐT, ấm áp và khích lệ sự tiến bộ của học sinh.';
+    if (effectiveTone === 'encouraging') {
+      toneInstruction = 'Thân mật, ấm áp, chan chứa tình yêu thương và truyền cảm hứng tự tin cho học sinh.';
+    } else if (effectiveTone === 'detailed') {
+      toneInstruction = 'Tỉ mỉ, chi tiết, phân tích rõ ràng điểm mạnh vượt trội và khía cạnh cần tiếp tục phát huy.';
+    } else if (effectiveTone === 'concise') {
+      toneInstruction = 'Rất ngắn gọn, súc tích, câu chữ cô đọng vừa vặn in vào sổ học bạ điện tử.';
+    } else if (effectiveTone === 'custom' && customToneDescription) {
+      toneInstruction = `Tùy chỉnh riêng theo giáo viên: ${customToneDescription}`;
+    }
 
     const prompt = `
 Bạn là một Giáo viên Chủ nhiệm Tiểu học chuẩn mực, giàu tình yêu thương và thấu hiểu học sinh tại Việt Nam.
-Nhiệm vụ của bạn là viết một đoạn LỜI NHẬN XÉT HỌC BẠ / ĐÁNH GIÁ ĐỊNH KỲ (độ dài chuẩn mực 3 - 4 câu, khoảng 45 - 80 từ) cho học sinh tiểu học theo đúng tinh thần và quy định của THÔNG TƯ 27/2020/TT-BGDĐT.
+Nhiệm vụ của bạn là viết một đoạn LỜI NHẬN XÉT HỌC BẠ / ĐÁNH GIÁ ĐỊNH KỲ cho học sinh tiểu học theo đúng tinh thần và quy định của THÔNG TƯ 27/2020/TT-BGDĐT.
 
-=== HỒ SƠ & DỮ LIỆU THỰC TẾ CỦA HỌC SINH ===
-- Họ và tên: ${student.fullName} (Giới tính: ${student.gender})
+=== THAM SỐ CẤU HÌNH BẮT BUỘC ===
+- Độ dài mục tiêu: Khoảng ${targetWordCount} từ (đúng ${targetSentenceCount} câu).
+- Phong cách & Văn phong yêu cầu: ${toneInstruction}
+
+=== DỮ LIỆU ĐẦU VÀO CỦA HỌC SINH ===
+- Họ và tên học sinh: ${student.fullName} (Giới tính: ${student.gender})
 - Xưng hô phù hợp: "Em", "Em ${student.fullName.split(' ').pop()}"
-- Kết quả học tập các môn học (T/H/C): ${subjectSummary || 'Hoàn thành tốt các môn học'}
-- Đánh giá Phẩm chất & Năng lực (T/Đ/C): ${traitSummary || 'Đạt yêu cầu rèn luyện phẩm chất và năng lực'}
-- Lịch sử nề nếp, tích sao & nhận xét hàng ngày: ${behaviorHistorySummary}
-- Tình hình chuyên cần: ${attendanceSummary}
-- Ghi chú riêng của cô giáo: ${extraNotes || 'Không có'}
-- Phong cách nhận xét mong muốn: ${tone}
+- Kết quả học tập các môn học (T/H/C & Điểm số): ${subjectSummary}
+- Đánh giá Năng lực & Phẩm chất (T/Đ/C): ${traitSummary}
+- Lịch sử nề nếp, tích sao & nhận xét hàng ngày của cô giáo: ${behaviorHistorySummary}
+- Tình hình chuyên cần & sinh hoạt: ${attendanceSummary}
+- Định hướng bổ sung của giáo viên: ${extraNotes || 'Không có'}
 
-=== QUY TẮC BẮT BUỘC THEO THÔNG TƯ 27/2020/TT-BGDĐT ===
-1. NGẮN GỌN & SÚC TÍCH: Viết đúng 3 - 4 câu, lời văn cô đọng, tự nhiên, vừa vặn để in vào sổ học bạ điện tử hoặc bảng đánh giá định kỳ.
-2. KHÍCH LỆ & ĐỘNG VIÊN: Luôn nêu bật ưu điểm, sự tiến bộ nổi bật (trong học tập hoặc nề nếp/phẩm chất); sau đó nhẹ nhàng chỉ dẫn biện pháp khắc phục nếu có điểm cần cố gắng.
-3. CÁ NHÂN HÓA: Dựa trên lịch sử nhận xét hàng ngày và điểm số môn học cụ thể của chính em đó, tránh nhận xét chung chung sáo rỗng.
-4. TUYỆT ĐỐI KHÔNG so sánh em với học sinh khác, không dùng từ ngữ tiêu cực, không phán xét nặng nề.
+=== QUY TẮC SƯ PHẠM THEO THÔNG TƯ 27/2020/TT-BGDĐT ===
+1. NGẮN GỌN & ĐÚNG ĐỘ DÀI: Viết đúng ${targetSentenceCount} câu (khoảng ${targetWordCount} từ), tự nhiên, cô đọng.
+2. TÍCH CỰC & KHÍCH LỆ: Luôn ghi nhận ưu điểm và sự nỗ lực trước; chỉ rõ điểm cần rèn luyện thêm (nếu có) một cách nhẹ nhàng, xây dựng.
+3. KẾT HỢP DỮ LIỆU THỰC TẾ: Lồng ghép khéo léo nhận xét từ lịch sử nề nếp hàng ngày, điểm kiểm tra môn học và định hướng riêng của giáo viên.
+4. TUYỆT ĐỐI KHÔNG: Không so sánh học sinh này với học sinh khác, không dùng từ ngữ tiêu cực hay phán xét nặng nề.
 5. ĐỊNH DẠNG ĐẦU RA: Chỉ trả về DUY NHẤT đoạn văn nhận xét bằng tiếng Việt. Tuyệt đối không thêm tiêu đề, không có "Lời nhận xét:", không bọc trong dấu ngoặc kép.
 `;
 
@@ -135,13 +171,13 @@ Nhiệm vụ của bạn là viết một đoạn LỜI NHẬN XÉT HỌC BẠ /
               },
             ],
             temperature,
-            max_tokens: 400,
+            max_tokens: 500,
           }),
         });
 
         if (aiResponse.ok) {
           const resJson = await aiResponse.json();
-          const text = resJson.choices?.[0]?.message?.content?.trim();
+          const text = resJson.choices?.[0]?.message?.content?.trim() || resJson.choices?.[0]?.message?.reasoning_content?.trim();
           if (text) {
             return NextResponse.json({
               success: true,

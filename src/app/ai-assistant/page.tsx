@@ -24,9 +24,19 @@ import {
   X,
   Lightbulb,
   FileText,
+  SlidersHorizontal,
+  CheckSquare,
+  Square,
+  BookOpen,
+  Heart,
+  FileCheck,
+  CalendarCheck,
+  Edit3,
+  AlignLeft,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { generateStudentAICommentFull, GeneratedCommentResult } from '@/lib/ai-service';
+import { AIToneType, AILengthPreset, AIGenerationSettings } from '@/types';
 import { TERMS, evaluateStudentTT27, getAwardBadgeClass } from '@/lib/tt27-engine';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -38,6 +48,12 @@ const PROMPT_DIRECTIVE_SUGGESTIONS = [
   '🎯 Lời văn cô đọng đúng 3 câu, ấm áp và truyền cảm hứng',
   '🎨 Nhắc nhở rèn luyện thêm tính cẩn thận và kiên nhẫn',
   '🚀 Khích lệ tự tin tham gia các hoạt động tập thể của lớp',
+];
+
+const LENGTH_PRESETS: { id: AILengthPreset; label: string; words: number; sentences: number; desc: string }[] = [
+  { id: 'short', label: 'Ngắn gọn', words: 35, sentences: 2, desc: '~35 từ (2 câu, tối ưu học bạ điện tử)' },
+  { id: 'standard', label: 'Chuẩn mực', words: 60, sentences: 3, desc: '~60 từ (3 câu, chuẩn Bộ GD&ĐT)' },
+  { id: 'detailed', label: 'Chi tiết', words: 95, sentences: 4, desc: '~95 từ (4-5 câu, phong phú cho họp PH)' },
 ];
 
 export default function AIAssistantPage() {
@@ -53,11 +69,11 @@ export default function AIAssistantPage() {
     attendances,
     aiConfig,
     setAiConfig,
+    aiGenSettings,
+    setAiGenSettings,
     apiKey,
   } = useAppStore();
 
-  const [selectedTone, setSelectedTone] = useState<'standard' | 'encouraging' | 'detailed' | 'concise'>('standard');
-  const [classPromptDirective, setClassPromptDirective] = useState('');
   const [isGeneratingAll, setIsGeneratingAll] = useState(false);
   const [generatingStudentId, setGeneratingStudentId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -65,6 +81,7 @@ export default function AIAssistantPage() {
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [isFetchingModels, setIsFetchingModels] = useState(false);
   const [commentSources, setCommentSources] = useState<Record<string, GeneratedCommentResult>>({});
+  const [isCustomToneInput, setIsCustomToneInput] = useState(false);
 
   const termName = TERMS.find((t) => t.id === currentTerm)?.name || currentTerm;
   const activeProviderLabel =
@@ -76,27 +93,27 @@ export default function AIAssistantPage() {
       ? 'Anthropic Claude'
       : 'Xiaomi MIMO AI';
 
-  // Load saved class prompt directive from localStorage
-  useEffect(() => {
-    try {
-      const savedDirective = localStorage.getItem('gvcn_class_prompt_directive');
-      if (savedDirective) setClassPromptDirective(savedDirective);
-    } catch (e) {}
-  }, []);
+  // Update Generation Settings helper
+  const updateSettings = (partial: Partial<AIGenerationSettings>) => {
+    const updated = { ...aiGenSettings, ...partial };
+    setAiGenSettings(updated);
+  };
 
-  const handleDirectiveChange = (val: string) => {
-    setClassPromptDirective(val);
-    try {
-      localStorage.setItem('gvcn_class_prompt_directive', val);
-    } catch (e) {}
+  const handleApplyLengthPreset = (preset: typeof LENGTH_PRESETS[0]) => {
+    updateSettings({
+      lengthPreset: preset.id,
+      targetWordCount: preset.words,
+      targetSentenceCount: preset.sentences,
+    });
   };
 
   const handleAddSuggestion = (text: string) => {
     const cleanText = text.replace(/^[^\w\s\u00C0-\u1EF9]+/, '').trim();
-    if (!classPromptDirective) {
-      handleDirectiveChange(cleanText);
-    } else if (!classPromptDirective.includes(cleanText)) {
-      handleDirectiveChange(`${classPromptDirective}; ${cleanText}`);
+    const current = aiGenSettings.classDirectivePrompt || '';
+    if (!current) {
+      updateSettings({ classDirectivePrompt: cleanText });
+    } else if (!current.includes(cleanText)) {
+      updateSettings({ classDirectivePrompt: `${current}; ${cleanText}` });
     }
   };
 
@@ -146,10 +163,6 @@ export default function AIAssistantPage() {
     const studentStars = starLogs.filter((l) => l.studentId === studentId);
     const studentAtt = attendances.filter((a) => a.studentId === studentId);
 
-    const combinedExtraNotes = [classPromptDirective.trim(), customNotes[studentId]?.trim()]
-      .filter(Boolean)
-      .join('; ');
-
     try {
       const result = await generateStudentAICommentFull({
         student,
@@ -158,9 +171,9 @@ export default function AIAssistantPage() {
         starLogs: studentStars,
         attendances: studentAtt,
         aiConfig,
+        aiGenSettings,
         apiKey,
-        tone: selectedTone,
-        extraNotes: combinedExtraNotes,
+        extraNotes: customNotes[studentId],
       });
 
       updateTermSummary(studentId, currentTerm, { teacherComment: result.comment });
@@ -192,10 +205,6 @@ export default function AIAssistantPage() {
       const studentStars = starLogs.filter((l) => l.studentId === student.id);
       const studentAtt = attendances.filter((a) => a.studentId === student.id);
 
-      const combinedExtraNotes = [classPromptDirective.trim(), customNotes[student.id]?.trim()]
-        .filter(Boolean)
-        .join('; ');
-
       const result = await generateStudentAICommentFull({
         student,
         subjects: sAss,
@@ -203,9 +212,9 @@ export default function AIAssistantPage() {
         starLogs: studentStars,
         attendances: studentAtt,
         aiConfig,
+        aiGenSettings,
         apiKey,
-        tone: selectedTone,
-        extraNotes: combinedExtraNotes,
+        extraNotes: customNotes[student.id],
       });
 
       updateTermSummary(student.id, currentTerm, { teacherComment: result.comment });
@@ -225,6 +234,14 @@ export default function AIAssistantPage() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  // Count active input sources
+  const activeInputCount = [
+    aiGenSettings.includeSubjectGrades,
+    aiGenSettings.includeTraitsAndCompetencies,
+    aiGenSettings.includeDailyStarsAndComments,
+    aiGenSettings.includeAttendanceAndBoarding,
+  ].filter(Boolean).length;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -235,10 +252,11 @@ export default function AIAssistantPage() {
             <span>Trợ Lý Sư Phạm AI — Viết Lời Nhận Xét Học Bạ</span>
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Tổng hợp dữ liệu điểm số TT27, nề nếp tích sao và lịch sử nhận xét hàng ngày để tạo lời nhận xét ấm áp, súc tích (3-4 câu).
+            Tổng hợp dữ liệu điểm số TT27, nề nếp tích sao và lịch sử nhận xét hàng ngày để tạo lời nhận xét ấm áp, chuẩn mực.
           </p>
         </div>
 
+        {/* Action Button */}
         <button
           onClick={handleGenerateAll}
           disabled={isGeneratingAll}
@@ -258,54 +276,33 @@ export default function AIAssistantPage() {
         </button>
       </div>
 
-      {/* AI Provider Status & Style Toolbar */}
-      <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        {/* Style Selector */}
-        <div className="space-y-1.5 flex-1 min-w-[280px]">
-          <label className="block text-xs font-bold text-slate-700 uppercase flex items-center gap-1.5">
-            <Sliders className="w-3.5 h-3.5 text-purple-600" />
-            <span>Phong cách nhận xét mong muốn:</span>
-          </label>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {[
-              { id: 'standard', label: 'Chuẩn Sư Phạm' },
-              { id: 'encouraging', label: 'Ấm Áp - Động Viên' },
-              { id: 'detailed', label: 'Đầy Đủ - Chi Tiết' },
-              { id: 'concise', label: 'Ngắn Gọn (3-4 câu)' },
-            ].map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setSelectedTone(t.id as any)}
-                className={`py-2 px-2.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer text-center ${
-                  selectedTone === t.id
-                    ? 'bg-purple-600 text-white border-purple-600 shadow-xs font-bold'
-                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
+      {/* AI ENGINE & MODEL BAR */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
+            <Bot className="w-4 h-4" />
+          </div>
+          <div className="text-xs">
+            <p className="font-bold text-slate-900 flex items-center gap-1.5">
+              <span>Đang kết nối: {activeProviderLabel}</span>
+              <span className="bg-purple-100 text-purple-800 text-[10px] font-mono px-2 py-0.5 rounded font-bold">
+                {aiConfig?.modelName || 'mimo-v2.5'}
+              </span>
+            </p>
+            <p className="text-[11px] text-slate-500">
+              {aiConfig?.apiKey ? 'Đã cài đặt API Key cá nhân' : 'Khóa mặc định hệ thống / Offline Bank'}
+            </p>
           </div>
         </div>
 
-        {/* AI Provider Live Badge & Dynamic Model Dropdown */}
-        <div className="flex items-center space-x-3 bg-purple-50/80 border border-purple-200 p-3 rounded-2xl shrink-0">
-          <div className="w-9 h-9 rounded-xl bg-purple-600 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
-            <Bot className="w-5 h-5" />
-          </div>
-
-          <div className="text-xs min-w-[170px] space-y-1">
-            <div className="flex items-center justify-between">
-              <span className="font-bold text-purple-950">{activeProviderLabel}</span>
-              <span className="text-[10px] text-purple-600 font-medium">Mô hình:</span>
-            </div>
-
-            {availableModels.length > 0 ? (
+        <div className="flex items-center space-x-2">
+          {availableModels.length > 0 && (
+            <div className="flex items-center space-x-1.5 text-xs">
+              <span className="text-[11px] text-slate-500 font-medium hidden sm:inline">Mô hình:</span>
               <select
                 value={aiConfig?.modelName || 'mimo-v2.5'}
                 onChange={(e) => handleModelChange(e.target.value)}
-                className="w-full bg-white text-purple-900 border border-purple-200 rounded-lg px-2 py-1 text-[11px] font-mono font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none cursor-pointer"
+                className="bg-slate-50 text-slate-900 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-mono font-bold focus:ring-2 focus:ring-purple-500 focus:outline-none cursor-pointer"
               >
                 {availableModels.map((m) => (
                   <option key={m} value={m}>
@@ -313,90 +310,328 @@ export default function AIAssistantPage() {
                   </option>
                 ))}
               </select>
-            ) : (
-              <span className="bg-purple-200 text-purple-800 text-[10px] font-mono px-2 py-0.5 rounded font-bold block">
-                {aiConfig?.modelName || 'mimo-v2.5'}
-              </span>
-            )}
-          </div>
+            </div>
+          )}
 
           <Link
             href="/settings"
-            className="inline-flex items-center space-x-1 bg-white hover:bg-purple-100 text-purple-800 border border-purple-200 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-colors shrink-0"
-            title="Đổi nhà cung cấp hoặc cấu hình khóa API"
+            className="inline-flex items-center space-x-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors"
           >
             <Settings className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Cài đặt</span>
+            <span className="hidden sm:inline">Cài đặt AI</span>
           </Link>
         </div>
       </div>
 
-      {/* NEW: CLASS-WIDE BATCH PROMPT DIRECTIVE PANEL */}
-      <div className="bg-gradient-to-br from-purple-900/90 via-indigo-900 to-slate-900 text-white p-5 rounded-3xl border border-purple-800/60 shadow-lg space-y-3 relative overflow-hidden">
-        {/* Subtle background glow */}
-        <div className="absolute right-0 top-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-2.5">
-          <div className="flex items-center space-x-2">
-            <div className="w-7 h-7 rounded-lg bg-purple-500/30 text-purple-300 flex items-center justify-center font-bold">
-              <FileText className="w-4 h-4" />
+      {/* MASTER AI GENERATION CONFIGURATION PANEL */}
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-6">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="flex items-center space-x-2.5">
+            <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
+              <SlidersHorizontal className="w-4 h-4" />
             </div>
             <div>
-              <h2 className="text-xs font-bold uppercase tracking-wider text-purple-200 flex items-center gap-1.5">
-                <span>Định Hướng & Yêu Cầu Bổ Sung Cho Toàn Lớp (Prompt Directive)</span>
-                <span className="bg-purple-500/30 text-purple-300 border border-purple-400/30 text-[9px] px-2 py-0.5 rounded-full font-semibold">
-                  Áp dụng cho {students.length} học sinh
-                </span>
+              <h2 className="text-base font-bold text-slate-900">
+                Cấu Hình Tham Số Nhận Xét AI Cho Lớp {classInfo.name}
               </h2>
+              <p className="text-xs text-slate-500">
+                Thiết lập văn phong sư phạm, độ dài mong muốn và chọn lọc dữ liệu đầu vào đưa vào Prompt.
+              </p>
             </div>
           </div>
 
-          {classPromptDirective && (
-            <button
-              type="button"
-              onClick={() => handleDirectiveChange('')}
-              className="text-[11px] text-purple-300 hover:text-white flex items-center gap-1 cursor-pointer self-start sm:self-auto"
-            >
-              <X className="w-3.5 h-3.5" />
-              <span>Xóa định hướng</span>
-            </button>
-          )}
+          <span className="bg-purple-50 text-purple-700 border border-purple-200 text-[11px] font-bold px-3 py-1 rounded-full hidden sm:inline-flex items-center gap-1">
+            <Sparkles className="w-3 h-3" />
+            <span>{activeInputCount}/4 nguồn dữ liệu kích hoạt</span>
+          </span>
         </div>
 
-        <div className="space-y-2 text-xs">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* SECTION 1: VĂN PHONG NHẬN XÉT (TONE) */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5">
+                <Heart className="w-3.5 h-3.5 text-rose-500" />
+                <span>1. Văn phong & Phong thái:</span>
+              </label>
+              <button
+                type="button"
+                onClick={() => setIsCustomToneInput(!isCustomToneInput)}
+                className="text-[11px] text-purple-600 hover:text-purple-800 font-bold flex items-center gap-0.5 cursor-pointer"
+              >
+                <Edit3 className="w-3 h-3" />
+                <span>{isCustomToneInput ? 'Mẫu có sẵn' : 'Tùy chỉnh'}</span>
+              </button>
+            </div>
+
+            {!isCustomToneInput ? (
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                {[
+                  { id: 'standard', label: 'Chuẩn Sư Phạm', desc: 'Mẫu mực Thông tư 27' },
+                  { id: 'encouraging', label: 'Ấm Áp - Động Viên', desc: 'Thân mật, khích lệ' },
+                  { id: 'detailed', label: 'Đầy Đủ - Chi Tiết', desc: 'Phân tích sâu môn học' },
+                  { id: 'concise', label: 'Ngắn Gọn Súc Tích', desc: 'Dễ đọc, tối giản' },
+                ].map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => updateSettings({ tone: t.id as AIToneType })}
+                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                      aiGenSettings.tone === t.id
+                        ? 'bg-purple-600 text-white border-purple-600 shadow-xs font-bold'
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    <p className="font-bold text-xs">{t.label}</p>
+                    <p className={`text-[10px] mt-0.5 ${aiGenSettings.tone === t.id ? 'text-purple-100' : 'text-slate-400'}`}>
+                      {t.desc}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <textarea
+                  rows={3}
+                  value={aiGenSettings.customToneText || ''}
+                  onChange={(e) => updateSettings({ tone: 'custom', customToneText: e.target.value })}
+                  placeholder="Mô tả văn phong của cô giáo (Ví dụ: giọng văn dịu dàng, khuyên nhủ ân cần, xưng hô 'cô khen em'...)"
+                  className="w-full p-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:ring-2 focus:ring-purple-500 focus:outline-none resize-none"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* SECTION 2: ĐỘ DÀI & SỐ LƯỢNG TỪ (LENGTH) */}
+          <div className="space-y-3">
+            <label className="text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5">
+              <AlignLeft className="w-3.5 h-3.5 text-blue-500" />
+              <span>2. Độ dài mong muốn:</span>
+            </label>
+
+            <div className="space-y-2">
+              <div className="grid grid-cols-3 gap-2">
+                {LENGTH_PRESETS.map((lp) => (
+                  <button
+                    key={lp.id}
+                    type="button"
+                    onClick={() => handleApplyLengthPreset(lp)}
+                    className={`p-2 rounded-xl border text-center transition-all cursor-pointer ${
+                      aiGenSettings.lengthPreset === lp.id
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-xs font-bold'
+                        : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    <p className="font-bold text-xs">{lp.label}</p>
+                    <p className={`text-[10px] mt-0.5 font-mono ${aiGenSettings.lengthPreset === lp.id ? 'text-blue-100' : 'text-slate-400'}`}>
+                      ~{lp.words} từ
+                    </p>
+                  </button>
+                ))}
+              </div>
+
+              {/* Slider for fine-tuning word count */}
+              <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-1.5 text-xs">
+                <div className="flex items-center justify-between font-semibold text-slate-700">
+                  <span>Khoảng từ:</span>
+                  <span className="font-mono font-bold text-blue-600">
+                    ~{aiGenSettings.targetWordCount} từ ({aiGenSettings.targetSentenceCount} câu)
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={25}
+                  max={120}
+                  step={5}
+                  value={aiGenSettings.targetWordCount}
+                  onChange={(e) => {
+                    const words = Number(e.target.value);
+                    const sentences = words <= 40 ? 2 : words <= 70 ? 3 : words <= 95 ? 4 : 5;
+                    updateSettings({
+                      lengthPreset: 'custom',
+                      targetWordCount: words,
+                      targetSentenceCount: sentences,
+                    });
+                  }}
+                  className="w-full accent-blue-600 cursor-pointer"
+                />
+                <div className="flex justify-between text-[10px] text-slate-400 font-mono">
+                  <span>25 từ (2 câu)</span>
+                  <span>60 từ (3 câu)</span>
+                  <span>120 từ (5 câu)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION 3: DỮ LIỆU HỌC SINH ĐƯA VÀO PROMPT (INPUT SOURCES) */}
+          <div className="space-y-3">
+            <label className="text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5">
+              <FileCheck className="w-3.5 h-3.5 text-emerald-500" />
+              <span>3. Dữ liệu học sinh đưa vào Input:</span>
+            </label>
+
+            <div className="space-y-2 text-xs">
+              <label
+                onClick={() => updateSettings({ includeSubjectGrades: !aiGenSettings.includeSubjectGrades })}
+                className={`p-2.5 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
+                  aiGenSettings.includeSubjectGrades
+                    ? 'bg-emerald-50/70 border-emerald-300 text-emerald-950 font-semibold'
+                    : 'bg-slate-50 border-slate-200 text-slate-400'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  {aiGenSettings.includeSubjectGrades ? (
+                    <CheckSquare className="w-4 h-4 text-emerald-600 shrink-0" />
+                  ) : (
+                    <Square className="w-4 h-4 text-slate-300 shrink-0" />
+                  )}
+                  <span>Điểm số & Đánh giá môn học (T/H/C)</span>
+                </div>
+                <span className="text-[10px] font-mono text-emerald-700 bg-white px-1.5 py-0.5 rounded border border-emerald-200">
+                  Toán, TV...
+                </span>
+              </label>
+
+              <label
+                onClick={() => updateSettings({ includeDailyStarsAndComments: !aiGenSettings.includeDailyStarsAndComments })}
+                className={`p-2.5 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
+                  aiGenSettings.includeDailyStarsAndComments
+                    ? 'bg-amber-50/70 border-amber-300 text-amber-950 font-semibold'
+                    : 'bg-slate-50 border-slate-200 text-slate-400'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  {aiGenSettings.includeDailyStarsAndComments ? (
+                    <CheckSquare className="w-4 h-4 text-amber-600 shrink-0" />
+                  ) : (
+                    <Square className="w-4 h-4 text-slate-300 shrink-0" />
+                  )}
+                  <span>Lịch sử nề nếp & Nhận xét hàng ngày</span>
+                </div>
+                <span className="text-[10px] font-mono text-amber-700 bg-white px-1.5 py-0.5 rounded border border-amber-200">
+                  ⭐ Sao & Ghi chú
+                </span>
+              </label>
+
+              <label
+                onClick={() => updateSettings({ includeTraitsAndCompetencies: !aiGenSettings.includeTraitsAndCompetencies })}
+                className={`p-2.5 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
+                  aiGenSettings.includeTraitsAndCompetencies
+                    ? 'bg-purple-50/70 border-purple-300 text-purple-950 font-semibold'
+                    : 'bg-slate-50 border-slate-200 text-slate-400'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  {aiGenSettings.includeTraitsAndCompetencies ? (
+                    <CheckSquare className="w-4 h-4 text-purple-600 shrink-0" />
+                  ) : (
+                    <Square className="w-4 h-4 text-slate-300 shrink-0" />
+                  )}
+                  <span>Phẩm chất & Năng lực chủ yếu (T/Đ/C)</span>
+                </div>
+                <span className="text-[10px] font-mono text-purple-700 bg-white px-1.5 py-0.5 rounded border border-purple-200">
+                  Chăm học, Tự chủ
+                </span>
+              </label>
+
+              <label
+                onClick={() => updateSettings({ includeAttendanceAndBoarding: !aiGenSettings.includeAttendanceAndBoarding })}
+                className={`p-2.5 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
+                  aiGenSettings.includeAttendanceAndBoarding
+                    ? 'bg-blue-50/70 border-blue-300 text-blue-950 font-semibold'
+                    : 'bg-slate-50 border-slate-200 text-slate-400'
+                }`}
+              >
+                <div className="flex items-center space-x-2">
+                  {aiGenSettings.includeAttendanceAndBoarding ? (
+                    <CheckSquare className="w-4 h-4 text-blue-600 shrink-0" />
+                  ) : (
+                    <Square className="w-4 h-4 text-slate-300 shrink-0" />
+                  )}
+                  <span>Chuyên cần & Sinh hoạt bán trú</span>
+                </div>
+                <span className="text-[10px] font-mono text-blue-700 bg-white px-1.5 py-0.5 rounded border border-blue-200">
+                  Nghỉ học & Bán trú
+                </span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* SECTION 4: YÊU CẦU BỔ SUNG & ĐỊNH HƯỚNG CHUNG TOÀN LỚP */}
+        <div className="pt-4 border-t border-slate-100 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5">
+              <FileText className="w-3.5 h-3.5 text-indigo-500" />
+              <span>4. Yêu cầu & Định hướng bổ sung chung cho đợt thi đua này:</span>
+            </label>
+            {aiGenSettings.classDirectivePrompt && (
+              <button
+                type="button"
+                onClick={() => updateSettings({ classDirectivePrompt: '' })}
+                className="text-[11px] text-slate-400 hover:text-rose-600 flex items-center gap-1 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>Xóa định hướng</span>
+              </button>
+            )}
+          </div>
+
           <textarea
             rows={2}
-            value={classPromptDirective}
-            onChange={(e) => handleDirectiveChange(e.target.value)}
-            placeholder="Nhập yêu cầu bổ sung chung cho cả lớp (Ví dụ: Lớp vừa hoàn thành đợt thi đua 20/11 xuất sắc, hãy lồng ghép lời khen về tinh thần chăm ngoan, giữ vở sạch chữ đẹp và nhắc nhở chuẩn bị bài chu đáo...)"
-            className="w-full p-3 rounded-2xl bg-white/10 border border-white/20 text-white placeholder:text-purple-200/50 text-xs focus:ring-2 focus:ring-purple-400 focus:outline-none resize-none leading-relaxed backdrop-blur-sm"
+            value={aiGenSettings.classDirectivePrompt || ''}
+            onChange={(e) => updateSettings({ classDirectivePrompt: e.target.value })}
+            placeholder="Ví dụ: Đợt thi đua chào mừng 20/11 vừa qua lớp đạt kết quả rất tốt, hãy lồng ghép lời khen tinh thần nề nếp và nhắc nhở chuẩn bị bài chu đáo..."
+            className="w-full p-3 rounded-2xl border border-slate-200 bg-slate-50/50 text-xs text-slate-800 focus:ring-2 focus:ring-purple-500 focus:outline-none resize-none leading-relaxed"
           />
 
           {/* Quick Suggestion Chips */}
-          <div className="space-y-1.5 pt-0.5">
-            <div className="flex items-center gap-1 text-[11px] text-purple-300 font-medium">
-              <Lightbulb className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span>Gợi ý nhanh chủ đề định hướng (nhấp để thêm vào prompt):</span>
-            </div>
-
-            <div className="flex flex-wrap gap-1.5">
-              {PROMPT_DIRECTIVE_SUGGESTIONS.map((sug, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => handleAddSuggestion(sug)}
-                  className="inline-flex items-center gap-1 text-[10px] bg-white/10 hover:bg-white/20 border border-white/15 px-2.5 py-1 rounded-full text-purple-100 transition-all cursor-pointer active:scale-95"
-                >
-                  <Plus className="w-2.5 h-2.5 opacity-70" />
-                  <span>{sug}</span>
-                </button>
-              ))}
-            </div>
+          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+            <span className="text-[11px] text-slate-400 flex items-center gap-1 font-medium">
+              <Lightbulb className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+              <span>Gợi ý nhanh:</span>
+            </span>
+            {PROMPT_DIRECTIVE_SUGGESTIONS.map((sug, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => handleAddSuggestion(sug)}
+                className="text-[10px] bg-slate-100 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 border border-slate-200 px-2.5 py-1 rounded-full text-slate-600 transition-all cursor-pointer active:scale-95"
+              >
+                {sug}
+              </button>
+            ))}
           </div>
+        </div>
+
+        {/* LIVE BLUEPRINT FOOTER SUMMARY */}
+        <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="flex flex-wrap items-center gap-2 text-slate-600">
+            <span className="font-bold text-slate-800">Tóm tắt cấu hình:</span>
+            <span className="bg-purple-50 text-purple-800 px-2 py-0.5 rounded-md font-semibold border border-purple-200 text-[11px]">
+              Văn phong: {aiGenSettings.tone === 'encouraging' ? 'Ấm áp - Động viên' : aiGenSettings.tone === 'detailed' ? 'Chi tiết' : aiGenSettings.tone === 'concise' ? 'Ngắn gọn' : aiGenSettings.tone === 'custom' ? 'Tùy chỉnh' : 'Chuẩn Sư Phạm'}
+            </span>
+            <span className="bg-blue-50 text-blue-800 px-2 py-0.5 rounded-md font-semibold border border-blue-200 text-[11px]">
+              Độ dài: ~{aiGenSettings.targetWordCount} từ ({aiGenSettings.targetSentenceCount} câu)
+            </span>
+            <span className="bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded-md font-semibold border border-emerald-200 text-[11px]">
+              {activeInputCount} nguồn dữ liệu
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => toast.success('Cấu hình sinh nhận xét AI đã được lưu thành công!')}
+            className="inline-flex items-center space-x-1.5 text-purple-700 font-bold hover:underline cursor-pointer self-start sm:self-auto"
+          >
+            <CheckCheck className="w-4 h-4 text-purple-600" />
+            <span>Tự động lưu cấu hình</span>
+          </button>
         </div>
       </div>
 
-      {/* Student Cards List */}
+      {/* STUDENT CARDS LIST */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {students.map((st, idx) => {
           const sAss = subjectAssessments.filter((a) => a.studentId === st.id && a.term === currentTerm);

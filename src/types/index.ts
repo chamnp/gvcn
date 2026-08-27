@@ -23,13 +23,30 @@ export type UserRole = 'ADMIN' | 'TEACHER' | 'ADMIN_TEACHER' | 'PENDING';
 
 export type AIProviderType = 'GEMINI' | 'OPENAI' | 'ANTHROPIC' | 'CUSTOM_OPENAI';
 
+export type AIToneType = 'standard' | 'encouraging' | 'detailed' | 'concise' | 'custom';
+export type AILengthPreset = 'short' | 'standard' | 'detailed' | 'custom';
+
+export interface AIGenerationSettings {
+  tone: AIToneType;
+  customToneText?: string;
+  lengthPreset: AILengthPreset;
+  targetWordCount: number; // e.g. 35, 60, 95
+  targetSentenceCount: number; // e.g. 2, 3, 4, 5
+  includeSubjectGrades: boolean;
+  includeTraitsAndCompetencies: boolean;
+  includeDailyStarsAndComments: boolean;
+  includeAttendanceAndBoarding: boolean;
+  classDirectivePrompt?: string;
+}
+
 export interface AIConfig {
   provider: AIProviderType;
   apiKey: string;
   baseUrl?: string; // e.g. 'https://api.openai.com/v1', 'https://api.anthropic.com/v1', 'https://api.xiaomimimo.com/v1', 'https://api.deepseek.com/v1', 'https://openrouter.ai/api/v1'
-  modelName: string; // e.g. 'gemini-2.5-flash', 'gpt-4o-mini', 'claude-3-5-haiku-20241022', 'mimo-v1', 'deepseek-chat'
+  modelName: string; // e.g. 'gemini-2.5-flash', 'gpt-4o-mini', 'claude-3-5-haiku-20241022', 'mimo-v2.5', 'deepseek-chat'
   temperature?: number; // 0.0 - 1.0 (default 0.7)
   maxTokens?: number;
+  generationSettings?: AIGenerationSettings;
 }
 
 export interface TeacherProfile {

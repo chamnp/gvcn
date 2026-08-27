@@ -1,4 +1,4 @@
-import { Student, SubjectAssessment, TraitAssessment, StarLog, DailyAttendance, AIConfig } from '@/types';
+import { Student, SubjectAssessment, TraitAssessment, StarLog, DailyAttendance, AIConfig, AIGenerationSettings } from '@/types';
 import { generateSmartComment } from './comment-bank';
 
 export interface GenerateCommentRequest {
@@ -8,8 +8,9 @@ export interface GenerateCommentRequest {
   starLogs?: StarLog[];
   attendances?: DailyAttendance[];
   aiConfig?: AIConfig;
+  aiGenSettings?: AIGenerationSettings;
   apiKey?: string;
-  tone?: 'standard' | 'encouraging' | 'detailed' | 'concise';
+  tone?: string;
   extraNotes?: string;
 }
 
@@ -21,7 +22,7 @@ export interface GeneratedCommentResult {
 }
 
 export async function generateStudentAICommentFull(req: GenerateCommentRequest): Promise<GeneratedCommentResult> {
-  const { student, subjects, traits, starLogs, attendances, aiConfig, apiKey, tone = 'standard', extraNotes } = req;
+  const { student, subjects, traits, starLogs, attendances, aiConfig, aiGenSettings, apiKey, tone = 'standard', extraNotes } = req;
 
   // Gọi qua API Route để bảo mật API key và thực hiện gọi các AI provider
   try {
@@ -37,9 +38,10 @@ export async function generateStudentAICommentFull(req: GenerateCommentRequest):
         starLogs,
         attendances,
         aiConfig,
+        aiGenSettings,
         apiKey: aiConfig?.apiKey || apiKey,
-        tone,
-        extraNotes,
+        tone: aiGenSettings?.tone || tone,
+        extraNotes: [aiGenSettings?.classDirectivePrompt, extraNotes].filter(Boolean).join('; '),
       }),
     });
 

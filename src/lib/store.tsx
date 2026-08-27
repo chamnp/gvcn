@@ -20,14 +20,29 @@ import {
   DayOfWeek,
   SchoolInfo,
   AIConfig,
+  AIGenerationSettings,
 } from '@/types';
+
+export const DEFAULT_AI_GEN_SETTINGS: AIGenerationSettings = {
+  tone: 'standard',
+  customToneText: '',
+  lengthPreset: 'standard',
+  targetWordCount: 60,
+  targetSentenceCount: 3,
+  includeSubjectGrades: true,
+  includeTraitsAndCompetencies: true,
+  includeDailyStarsAndComments: true,
+  includeAttendanceAndBoarding: true,
+  classDirectivePrompt: '',
+};
 
 export const DEFAULT_AI_CONFIG: AIConfig = {
   provider: 'CUSTOM_OPENAI',
   apiKey: 'sk-sjozamgxafx93e1ut7zizxetbf653tx3amguacizr6c40jby',
   baseUrl: 'https://api.xiaomimimo.com/v1',
-  modelName: 'mimo-v1',
+  modelName: 'mimo-v2.5',
   temperature: 0.7,
+  generationSettings: DEFAULT_AI_GEN_SETTINGS,
 };
 import {
   INITIAL_CLASS,
@@ -80,6 +95,8 @@ interface AppContextType {
   setApiKey: (key: string) => void;
   aiConfig: AIConfig;
   setAiConfig: (config: AIConfig) => void;
+  aiGenSettings: AIGenerationSettings;
+  setAiGenSettings: (settings: AIGenerationSettings) => void;
 
   // Custom Subjects Management
   customSubjects: CustomSubject[];
@@ -195,6 +212,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   );
   const [apiKey, setApiKeyState] = useState<string>('');
   const [aiConfig, setAiConfigState] = useState<AIConfig>(DEFAULT_AI_CONFIG);
+  const [aiGenSettings, setAiGenSettingsState] = useState<AIGenerationSettings>(DEFAULT_AI_GEN_SETTINGS);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Active Class Info
@@ -328,6 +346,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } else if (savedKey) {
         setApiKeyState(savedKey);
         setAiConfigState({ ...DEFAULT_AI_CONFIG, apiKey: savedKey });
+      }
+
+      const savedGenSettings = localStorage.getItem(STORAGE_PREFIX + 'aiGenSettings');
+      if (savedGenSettings) {
+        try {
+          const parsed = JSON.parse(savedGenSettings);
+          setAiGenSettingsState({ ...DEFAULT_AI_GEN_SETTINGS, ...parsed });
+        } catch (e) {}
       }
 
       // Nếu chưa có bảng đánh giá, tự động sinh dữ liệu mẫu ban đầu cho các môn
@@ -944,6 +970,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (e) {}
   };
 
+  const setAiGenSettings = (settings: AIGenerationSettings) => {
+    setAiGenSettingsState(settings);
+    try {
+      localStorage.setItem(STORAGE_PREFIX + 'aiGenSettings', JSON.stringify(settings));
+    } catch (e) {}
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -987,6 +1020,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setApiKey,
         aiConfig,
         setAiConfig,
+        aiGenSettings,
+        setAiGenSettings,
         addStudent,
         updateStudent,
         deleteStudent,
