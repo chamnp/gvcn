@@ -28,37 +28,22 @@ export default function LoginPage() {
   const [fullName, setFullName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Nếu đã đăng nhập
+  // Auto redirect immediately if already logged in (skip manual click screen)
+  React.useEffect(() => {
+    if (user) {
+      if (profile?.role === 'ADMIN') {
+        router.replace('/admin');
+      } else {
+        router.replace('/');
+      }
+    }
+  }, [user, profile, router]);
+
   if (user) {
     return (
-      <div className="max-w-md mx-auto my-12 bg-white p-8 rounded-2xl border border-slate-200 shadow-md text-center space-y-4">
-        <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-2xl">
-          ✓
-        </div>
-        <h2 className="text-xl font-bold text-slate-900">Bạn đã đăng nhập!</h2>
-        <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-left text-xs space-y-1">
-          <p className="text-slate-600">
-            Họ tên: <strong className="text-slate-900">{profile?.fullName || user.user_metadata?.full_name || 'Giáo viên'}</strong>
-          </p>
-          <p className="text-slate-600">
-            Email: <strong className="text-slate-900">{user.email}</strong>
-          </p>
-          <p className="text-slate-600">
-            Vai trò: <span className="bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded text-[11px]">{profile?.role === 'ADMIN' ? 'Quản Trị Viên (Admin)' : 'Giáo Viên Chủ Nhiệm'}</span>
-          </p>
-          <p className="text-slate-600">
-            Phân công: <strong className="text-emerald-700">{profile?.assignedClassName || 'Lớp 4A1'}</strong>
-          </p>
-        </div>
-        <div className="pt-2">
-          <Link
-            href="/"
-            className="inline-flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-xs transition-colors"
-          >
-            <span>Vào Bảng Điều Khiển Lớp Học</span>
-            <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
+      <div className="min-h-[50vh] flex flex-col items-center justify-center space-y-3">
+        <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin" />
+        <p className="text-xs font-semibold text-slate-500">Đang chuyển tiếp vào bảng điều khiển...</p>
       </div>
     );
   }

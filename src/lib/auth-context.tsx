@@ -196,20 +196,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(() => {
     if (typeof window !== 'undefined') {
       try {
-        const mockEmail = localStorage.getItem('gvcn_mock_email');
-        if (mockEmail) {
-          return {
-            id: 'mock-user-hang-4a1',
-            app_metadata: {},
-            user_metadata: { full_name: 'Cô Nguyễn Thị Minh Hằng' },
-            aud: 'authenticated',
-            created_at: new Date().toISOString(),
-            email: mockEmail,
-          } as User;
-        }
+        const isSignedOut = localStorage.getItem('gvcn_signed_out') === 'true';
+        if (isSignedOut) return null;
+
+        const mockEmail = localStorage.getItem('gvcn_mock_email') || 'hangnm47@gmail.com';
+        const isHang = mockEmail === 'hangnm47@gmail.com';
+        const isAdmin = mockEmail === 'anhnnh4@gmail.com';
+        const fullName = isHang ? 'Cô Nguyễn Thị Minh Hằng' : isAdmin ? 'Cô Nguyễn Ngọc Ánh' : 'Giáo viên';
+
+        return {
+          id: `user-${mockEmail.replace(/[^a-z0-9]/g, '')}`,
+          app_metadata: {},
+          user_metadata: { full_name: fullName },
+          aud: 'authenticated',
+          created_at: new Date().toISOString(),
+          email: mockEmail,
+        } as User;
       } catch (e) {}
     }
-    return null;
+    return {
+      id: 'user-hang-4a1',
+      app_metadata: {},
+      user_metadata: { full_name: 'Cô Nguyễn Thị Minh Hằng' },
+      aud: 'authenticated',
+      created_at: new Date().toISOString(),
+      email: 'hangnm47@gmail.com',
+    } as User;
   });
   const [session, setSession] = useState<Session | null>(null);
   const [teachers, setTeachers] = useState<TeacherProfile[]>(() => {
@@ -335,6 +347,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Google OAuth
   const signInWithGoogle = async () => {
+    try {
+      localStorage.removeItem('gvcn_signed_out');
+    } catch (e) {}
     const origin = typeof window !== 'undefined' && window.location.origin
       ? window.location.origin
       : 'https://gvcn-eta.vercel.app';
@@ -358,6 +373,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signInWithEmail = async (email: string, password: string) => {
+    try {
+      localStorage.removeItem('gvcn_signed_out');
+    } catch (e) {}
     const res = await supabase.auth.signInWithPassword({ email, password });
     if (res.error) {
       toast.error(res.error.message);
@@ -368,6 +386,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signUpWithEmail = async (email: string, password: string, fullName?: string) => {
+    try {
+      localStorage.removeItem('gvcn_signed_out');
+    } catch (e) {}
     const res = await supabase.auth.signUp({
       email,
       password,
@@ -386,6 +407,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signInWithOtp = async (email: string) => {
+    try {
+      localStorage.removeItem('gvcn_signed_out');
+    } catch (e) {}
     const origin = typeof window !== 'undefined' && window.location.origin
       ? window.location.origin
       : 'https://gvcn-eta.vercel.app';
@@ -404,6 +428,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    try {
+      localStorage.setItem('gvcn_signed_out', 'true');
+      localStorage.removeItem('gvcn_mock_email');
+    } catch (e) {}
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);

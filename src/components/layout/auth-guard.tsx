@@ -21,11 +21,11 @@ export const AuthGuard: React.FC<{ children: React.ReactNode }> = ({ children })
 
     if (!isPublicRoute) {
       if (!user) {
-        router.push('/login');
+        router.replace('/login');
       } else if (!isAuthorized) {
-        router.push('/unauthorized');
+        router.replace('/unauthorized');
       } else if (pathname === '/admin' && !isAdmin) {
-        router.push('/');
+        router.replace('/');
       }
     }
   }, [user, isAuthorized, isAdmin, profile, loading, pathname, isPublicRoute, router]);
