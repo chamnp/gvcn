@@ -18,6 +18,7 @@ import {
   Layers,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
+import { useAuth } from '@/lib/auth-context';
 import {
   DAYS_OF_WEEK,
   PERIODS,
@@ -31,6 +32,7 @@ import Link from 'next/link';
 
 export default function TimetablePage() {
   const { classInfo, timetable, updateTimetableSlot, resetTimetableToStandard, customSubjects } = useAppStore();
+  const { profile, teachers } = useAuth();
 
   // Combine default subjects & custom subjects
   const allThemes = [
@@ -61,6 +63,7 @@ export default function TimetablePage() {
     subjectCode: string;
     subjectName: string;
     note: string;
+    teacherName: string;
   } | null>(null);
 
   // Lấy dữ liệu tiết học
@@ -78,6 +81,7 @@ export default function TimetablePage() {
       subjectCode: slot ? slot.subjectCode : 'TIENG_VIET',
       subjectName: slot ? slot.subjectName : theme.name,
       note: slot?.note || '',
+      teacherName: slot?.teacherName || classInfo.teacherName || '',
     });
   };
 
@@ -91,7 +95,8 @@ export default function TimetablePage() {
       editingSlot.period,
       editingSlot.subjectCode,
       editingSlot.subjectName,
-      editingSlot.note
+      editingSlot.note,
+      editingSlot.teacherName
     );
 
     toast.success(`Đã cập nhật Tiết ${editingSlot.period} (${DAYS_OF_WEEK.find((d) => d.id === editingSlot.day)?.name})`);
@@ -490,6 +495,34 @@ Kính nhờ quý phụ huynh nhắc nhở các em chuẩn bị đầy đủ sác
                   onChange={(e) => setEditingSlot({ ...editingSlot, subjectName: e.target.value })}
                   className="w-full px-3 py-2 rounded-lg border border-slate-200 font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 />
+              </div>
+
+              {/* Teacher Selector (Refer user profile & faculty list) */}
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  Giáo viên giảng dạy / GV Bộ Môn
+                </label>
+                <select
+                  value={editingSlot.teacherName}
+                  onChange={(e) => setEditingSlot({ ...editingSlot, teacherName: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-200 text-slate-900 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none font-medium"
+                >
+                  <option value={classInfo.teacherName}>
+                    👩‍🏫 {classInfo.teacherName} (GVCN Lớp)
+                  </option>
+                  {profile && profile.fullName !== classInfo.teacherName && (
+                    <option value={profile.fullName}>
+                      ✨ [Tôi] {profile.fullName} ({profile.title || 'Tôi'})
+                    </option>
+                  )}
+                  {teachers
+                    .filter((t) => t.fullName !== classInfo.teacherName && t.fullName !== profile?.fullName)
+                    .map((t) => (
+                      <option key={t.id} value={t.fullName}>
+                        {t.fullName} ({t.title || 'Giáo viên'} - {t.department || 'Tổ chuyên môn'})
+                      </option>
+                    ))}
+                </select>
               </div>
 
               {/* Note / Dặn dò học sinh */}

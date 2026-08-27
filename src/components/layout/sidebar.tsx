@@ -155,22 +155,37 @@ const SidebarContent: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
       </nav>
 
       {/* User Auth Footer */}
-      <div className="p-3 mx-3 mb-2 rounded-xl bg-slate-800/60 border border-slate-800">
+      <div className="p-2.5 mx-3 mb-2 rounded-xl bg-slate-800/60 border border-slate-800">
         {user ? (
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2 overflow-hidden">
-              <UserCircle className="w-6 h-6 text-blue-400 shrink-0" />
+            <Link
+              href="/settings"
+              onClick={onClose}
+              className="flex items-center space-x-2.5 overflow-hidden hover:opacity-80 transition-opacity flex-1 min-w-0"
+              title="Chỉnh sửa hồ sơ cá nhân"
+            >
+              {profile?.avatarUrl ? (
+                <img
+                  src={profile.avatarUrl}
+                  alt={profile.fullName}
+                  className="w-8 h-8 rounded-xl object-cover border border-slate-700 shrink-0"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-xl bg-blue-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
+                  {profile?.fullName.split(' ').pop()?.substring(0, 2).toUpperCase() || 'GV'}
+                </div>
+              )}
               <div className="overflow-hidden">
                 <p className="text-xs font-bold text-white truncate">
                   {profile?.fullName || user.user_metadata?.full_name || 'Giáo viên'}
                 </p>
-                <p className="text-[10px] text-slate-400 truncate">{user.email}</p>
+                <p className="text-[10px] text-slate-400 truncate">{profile?.title || user.email}</p>
               </div>
-            </div>
+            </Link>
             <button
               onClick={() => signOut()}
               title="Đăng xuất"
-              className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-700/60 rounded-lg transition-colors shrink-0 cursor-pointer"
+              className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-slate-700/60 rounded-lg transition-colors shrink-0 cursor-pointer ml-1"
             >
               <LogOut className="w-4 h-4" />
             </button>

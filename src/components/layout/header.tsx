@@ -226,6 +226,30 @@ export const Header: React.FC = () => {
           <span className="hidden sm:inline">Xuất Báo Cáo TT27</span>
           <span className="sm:hidden">Xuất</span>
         </Link>
+
+        {/* User Profile Quick Link */}
+        {profile && (
+          <Link
+            href="/settings"
+            className="flex items-center space-x-2 pl-1.5 pr-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 transition-all border border-slate-200/80"
+            title="Xem và chỉnh sửa hồ sơ cá nhân"
+          >
+            {profile.avatarUrl ? (
+              <img
+                src={profile.avatarUrl}
+                alt={profile.fullName}
+                className="w-6 h-6 rounded-lg object-cover shadow-2xs"
+              />
+            ) : (
+              <div className="w-6 h-6 rounded-lg bg-blue-600 text-white font-bold text-[11px] flex items-center justify-center">
+                {profile.fullName.split(' ').pop()?.substring(0, 1) || 'G'}
+              </div>
+            )}
+            <span className="hidden md:inline text-xs font-bold truncate max-w-[120px]">
+              {profile.fullName}
+            </span>
+          </Link>
+        )}
       </div>
     </header>
   );

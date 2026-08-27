@@ -77,7 +77,14 @@ interface AppContextType {
 
   // Timetable
   timetable: TimetableSlot[];
-  updateTimetableSlot: (day: DayOfWeek, period: number, subjectCode: string, subjectName: string, note?: string) => void;
+  updateTimetableSlot: (
+    day: DayOfWeek,
+    period: number,
+    subjectCode: string,
+    subjectName: string,
+    note?: string,
+    teacherName?: string
+  ) => void;
   setTimetable: (slots: TimetableSlot[]) => void;
   resetTimetableToStandard: () => void;
 
@@ -502,7 +509,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     period: number,
     subjectCode: string,
     subjectName: string,
-    note?: string
+    note?: string,
+    teacherName?: string
   ) => {
     setAllTimetables((prev) => {
       const idx = prev.findIndex(
@@ -516,6 +524,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           subjectCode,
           subjectName,
           note: note !== undefined ? note : copy[idx].note,
+          teacherName: teacherName !== undefined ? teacherName : copy[idx].teacherName,
         };
         return copy;
       }
@@ -530,6 +539,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           subjectCode,
           subjectName,
           note: note || '',
+          teacherName: teacherName || undefined,
         },
       ];
     });

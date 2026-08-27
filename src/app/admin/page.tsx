@@ -796,15 +796,46 @@ export default function AdminPortalPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Giáo Viên Chủ Nhiệm (*)</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ví dụ: Cô Nguyễn Thị Mai"
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="font-semibold text-slate-700">Giáo Viên Chủ Nhiệm (*)</label>
+                  {profile && (
+                    <button
+                      type="button"
+                      onClick={() => setClassForm({ ...classForm, teacherName: profile.fullName })}
+                      className="text-[10px] text-blue-600 font-bold hover:underline"
+                    >
+                      ✨ Gán tôi ({profile.fullName})
+                    </button>
+                  )}
+                </div>
+
+                <select
                   value={classForm.teacherName}
                   onChange={(e) => setClassForm({ ...classForm, teacherName: e.target.value })}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
+                >
+                  <option value="">-- Chọn Giáo viên Chủ nhiệm từ danh sách --</option>
+                  {profile && (
+                    <option value={profile.fullName}>
+                      ✨ [Tôi] {profile.fullName} ({profile.title || 'Tôi'})
+                    </option>
+                  )}
+                  {teachers
+                    .filter((t) => t.fullName !== profile?.fullName)
+                    .map((t) => (
+                      <option key={t.id} value={t.fullName}>
+                        {t.fullName} ({t.title || 'Giáo viên'} - {t.department || 'Tổ chuyên môn'})
+                      </option>
+                    ))}
+                </select>
+
+                <input
+                  type="text"
+                  placeholder="Hoặc tự nhập tên nếu chưa có trong danh sách..."
+                  value={classForm.teacherName}
+                  onChange={(e) => setClassForm({ ...classForm, teacherName: e.target.value })}
+                  className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-700"
                 />
               </div>
 

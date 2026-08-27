@@ -20,6 +20,9 @@ interface AuthContextType {
   signInWithOtp: (email: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   
+  // Profile Management for Current User
+  updateProfile: (partial: Partial<TeacherProfile>) => Promise<void>;
+
   // Whitelist & Teacher Management (Synchronized with Supabase)
   teachers: TeacherProfile[];
   refreshTeachers: () => Promise<TeacherProfile[]>;
@@ -31,6 +34,7 @@ interface AuthContextType {
     department?: string;
     assignedClassName?: string;
     phone?: string;
+    avatarUrl?: string;
   }) => Promise<void>;
   updateTeacher: (id: string, partial: Partial<TeacherProfile>) => Promise<void>;
   deleteTeacher: (id: string) => Promise<void>;
@@ -40,12 +44,14 @@ const DEFAULT_TEACHERS: TeacherProfile[] = [
   {
     id: 't-admin-1',
     email: 'anhnnh4@gmail.com',
-    fullName: 'Admin Quản Trị Viên (Hiệu Trưởng)',
+    fullName: 'Cô Giang Thanh Thủy',
     role: 'ADMIN_TEACHER',
     title: 'Hiệu trưởng kiêm GVCN',
     department: 'Ban Giám Hiệu',
     assignedClassId: 'class-4a1',
     assignedClassName: 'Lớp 4A1',
+    phone: '024 3839 0134',
+    avatarUrl: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=150&auto=format&fit=crop&q=80',
     isActive: true,
     createdAt: new Date().toISOString(),
   },
@@ -58,6 +64,8 @@ const DEFAULT_TEACHERS: TeacherProfile[] = [
     department: 'Tổ Khối 4',
     assignedClassId: 'class-4a1',
     assignedClassName: 'Lớp 4A1',
+    phone: '0912 345 678',
+    avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80',
     isActive: true,
     createdAt: new Date().toISOString(),
   },
@@ -70,6 +78,8 @@ const DEFAULT_TEACHERS: TeacherProfile[] = [
     department: 'Tổ Khối 1',
     assignedClassId: 'class-1a1',
     assignedClassName: 'Lớp 1A1',
+    phone: '0988 123 456',
+    avatarUrl: 'https://images.unsplash.com/photo-1580894732444-8ecded7900cd?w=150&auto=format&fit=crop&q=80',
     isActive: true,
     createdAt: new Date().toISOString(),
   },
@@ -82,6 +92,8 @@ const DEFAULT_TEACHERS: TeacherProfile[] = [
     department: 'Tổ Khối 2',
     assignedClassId: 'class-2a1',
     assignedClassName: 'Lớp 2A1',
+    phone: '0977 234 567',
+    avatarUrl: 'https://images.unsplash.com/photo-1594744803329-e58b31de8bf5?w=150&auto=format&fit=crop&q=80',
     isActive: true,
     createdAt: new Date().toISOString(),
   },
@@ -94,6 +106,8 @@ const DEFAULT_TEACHERS: TeacherProfile[] = [
     department: 'Tổ Khối 3',
     assignedClassId: 'class-3a1',
     assignedClassName: 'Lớp 3A1',
+    phone: '0966 345 678',
+    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
     isActive: true,
     createdAt: new Date().toISOString(),
   },
@@ -106,6 +120,8 @@ const DEFAULT_TEACHERS: TeacherProfile[] = [
     department: 'Tổ Khối 5',
     assignedClassId: 'class-5a1',
     assignedClassName: 'Lớp 5A1',
+    phone: '0944 567 890',
+    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
     isActive: true,
     createdAt: new Date().toISOString(),
   },
@@ -122,12 +138,14 @@ function resolveUserProfile(user: User | null, teachersList: TeacherProfile[]): 
     return {
       id: matched?.id || `admin-${user.id}`,
       email,
-      fullName: matched?.fullName || user.user_metadata?.full_name || 'Admin Quản Trị Viên (Hiệu Trưởng)',
+      fullName: matched?.fullName || user.user_metadata?.full_name || 'Cô Giang Thanh Thủy',
       role: matched?.role || 'ADMIN_TEACHER',
       title: matched?.title || 'Hiệu trưởng kiêm GVCN',
       department: matched?.department || 'Ban Giám Hiệu',
       assignedClassId: matched?.assignedClassId || 'class-4a1',
       assignedClassName: matched?.assignedClassName || 'Lớp 4A1',
+      phone: matched?.phone || '024 3839 0134',
+      avatarUrl: matched?.avatarUrl || user.user_metadata?.avatar_url || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=150&auto=format&fit=crop&q=80',
       isActive: true,
       createdAt: matched?.createdAt || new Date().toISOString(),
     };
@@ -136,7 +154,10 @@ function resolveUserProfile(user: User | null, teachersList: TeacherProfile[]): 
   // Whitelist match
   const matched = teachersList.find((t) => t.email.toLowerCase() === email);
   if (matched) {
-    return matched;
+    return {
+      ...matched,
+      avatarUrl: matched.avatarUrl || user.user_metadata?.avatar_url,
+    };
   }
 
   // Not in whitelist -> Pending request
@@ -148,6 +169,7 @@ function resolveUserProfile(user: User | null, teachersList: TeacherProfile[]): 
     title: 'Chờ duyệt',
     department: 'Chưa phân bổ',
     assignedClassName: undefined,
+    avatarUrl: user.user_metadata?.avatar_url,
     isActive: false,
     createdAt: new Date().toISOString(),
   };
@@ -328,6 +350,69 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     toast.info('Đã đăng xuất');
   };
 
+  // USER PROFILE UPDATE (Synchronized with Supabase & App State)
+  const updateProfile = async (partial: Partial<TeacherProfile>) => {
+    if (!profile) return;
+    const cleanEmail = (profile.email || user?.email || '').toLowerCase().trim();
+
+    // 1. Update in Supabase Teacher table
+    try {
+      await supabase.from('Teacher').upsert(
+        {
+          email: cleanEmail,
+          fullName: partial.fullName || profile.fullName,
+          title: partial.title !== undefined ? partial.title : profile.title,
+          department: partial.department !== undefined ? partial.department : profile.department,
+          phone: partial.phone !== undefined ? partial.phone : profile.phone,
+          avatarUrl: partial.avatarUrl !== undefined ? partial.avatarUrl : profile.avatarUrl,
+          role: profile.role,
+          assignedClassId: partial.assignedClassId !== undefined ? partial.assignedClassId : profile.assignedClassId,
+          isActive: profile.isActive,
+        },
+        { onConflict: 'email' }
+      );
+    } catch (e) {
+      console.warn('Supabase update profile error:', e);
+    }
+
+    // 2. Also update Supabase auth metadata if full_name or avatar_url changed
+    if (partial.fullName || partial.avatarUrl) {
+      try {
+        await supabase.auth.updateUser({
+          data: {
+            full_name: partial.fullName || profile.fullName,
+            avatar_url: partial.avatarUrl || profile.avatarUrl,
+          },
+        });
+      } catch (e) {}
+    }
+
+    // 3. Update local teachers array
+    let found = false;
+    const updatedTeachers = teachers.map((t) => {
+      if (t.email.toLowerCase() === cleanEmail) {
+        found = true;
+        return { ...t, ...partial };
+      }
+      return t;
+    });
+
+    if (!found) {
+      updatedTeachers.push({
+        ...profile,
+        ...partial,
+        email: cleanEmail,
+      });
+    }
+
+    setTeachers(updatedTeachers);
+    try {
+      localStorage.setItem('gvcn_teachers', JSON.stringify(updatedTeachers));
+    } catch (e) {}
+
+    toast.success('Đã cập nhật thông tin hồ sơ của bạn!');
+  };
+
   // TEACHER MANAGEMENT ACTIONS (Synced with Supabase)
   const addTeacher = async (data: {
     email: string;
@@ -337,6 +422,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     department?: string;
     assignedClassName?: string;
     phone?: string;
+    avatarUrl?: string;
   }) => {
     const cleanEmail = data.email.trim().toLowerCase();
     const cleanName = data.fullName.trim();
@@ -353,6 +439,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           department: data.department,
           assignedClassId: classId,
           phone: data.phone,
+          avatarUrl: data.avatarUrl,
           isActive: true,
         },
         { onConflict: 'email' }
@@ -371,6 +458,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       assignedClassId: classId,
       assignedClassName: data.assignedClassName || (classId ? `Lớp ${data.assignedClassName}` : undefined),
       phone: data.phone,
+      avatarUrl: data.avatarUrl,
       isActive: true,
       createdAt: new Date().toISOString(),
     };
@@ -405,6 +493,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           title: partial.title !== undefined ? partial.title : existing.title,
           department: partial.department !== undefined ? partial.department : existing.department,
           phone: partial.phone !== undefined ? partial.phone : existing.phone,
+          avatarUrl: partial.avatarUrl !== undefined ? partial.avatarUrl : existing.avatarUrl,
         })
         .eq('email', existing.email.toLowerCase());
     } catch (e) {
@@ -477,6 +566,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signUpWithEmail,
         signInWithOtp,
         signOut,
+        updateProfile,
         teachers,
         refreshTeachers,
         addTeacher,
