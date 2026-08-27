@@ -1,4 +1,16 @@
-import { ClassInfo, Student, SubjectAssessment, TraitAssessment, StudentTermSummary, DailyAttendance, StarLog, HomeworkAssignment } from '@/types';
+import { ClassInfo, Student, SubjectAssessment, TraitAssessment, StudentTermSummary, DailyAttendance, StarLog, HomeworkAssignment, SchoolInfo } from '@/types';
+
+export const INITIAL_SCHOOL_INFO: SchoolInfo = {
+  id: 'school-1',
+  name: 'Trường Tiểu học Chu Văn An',
+  departmentName: 'Phòng GD&ĐT Quận Tây Hồ - TP. Hà Nội',
+  schoolYear: '2025-2026',
+  principalName: 'Thầy/Cô Hiệu Trưởng',
+  address: 'Số 260 Thụy Khuê, Tây Hồ, Hà Nội',
+  phone: '024 3847 2596',
+  email: 'thchuvanan@hanoiedu.vn',
+  website: 'thchuvanan.edu.vn',
+};
 
 export const INITIAL_SCHOOL_CLASSES: ClassInfo[] = [
   {

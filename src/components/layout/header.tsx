@@ -19,7 +19,7 @@ import Link from 'next/link';
 import { useMobileNav } from './mobile-nav-context';
 
 export const Header: React.FC = () => {
-  const { schoolClasses, activeClassId, classInfo, switchClass, currentTerm, setCurrentTerm } = useAppStore();
+  const { schoolClasses, activeClassId, classInfo, switchClass, currentTerm, setCurrentTerm, autoCalendarTerm } = useAppStore();
   const { profile } = useAuth();
   const { toggleMobileNav } = useMobileNav();
   const [showTermDropdown, setShowTermDropdown] = useState(false);
@@ -109,19 +109,32 @@ export const Header: React.FC = () => {
         <div className="hidden md:flex items-center space-x-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200">
           <Calendar className="w-4 h-4 text-slate-500 ml-1.5" />
           <span className="text-[11px] font-semibold text-slate-600 uppercase pr-1">Kỳ:</span>
-          {TERMS.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setCurrentTerm(t.id)}
-              className={`px-2.5 py-1 text-xs font-medium rounded-lg transition-all ${
-                currentTerm === t.id
-                  ? 'bg-blue-600 text-white shadow-xs font-bold'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
-              }`}
-            >
-              {t.name}
-            </button>
-          ))}
+          {TERMS.map((t) => {
+            const isCurrent = currentTerm === t.id;
+            const isCalendarNow = t.id === autoCalendarTerm;
+            return (
+              <button
+                key={t.id}
+                onClick={() => setCurrentTerm(t.id)}
+                title={`${t.name} (${t.monthsDescription})`}
+                className={`relative px-2.5 py-1 text-xs font-medium rounded-lg transition-all flex items-center gap-1 ${
+                  isCurrent
+                    ? 'bg-blue-600 text-white shadow-xs font-bold'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+                }`}
+              >
+                <span>{t.name}</span>
+                {isCalendarNow && (
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      isCurrent ? 'bg-emerald-300' : 'bg-blue-500'
+                    } animate-pulse`}
+                    title="Kỳ học tương ứng thời gian thực tế"
+                  />
+                )}
+              </button>
+            );
+          })}
         </div>
 
         {/* Mobile Term Selector Dropdown */}
@@ -132,6 +145,9 @@ export const Header: React.FC = () => {
           >
             <Calendar className="w-3.5 h-3.5 text-blue-600" />
             <span className="truncate max-w-[80px]">{activeTermObj?.name}</span>
+            {activeTermObj?.id === autoCalendarTerm && (
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+            )}
             <ChevronDown className="w-3 h-3 text-slate-500" />
           </button>
 
@@ -141,27 +157,40 @@ export const Header: React.FC = () => {
                 className="fixed inset-0 z-40"
                 onClick={() => setShowTermDropdown(false)}
               />
-              <div className="absolute left-0 mt-1 w-44 bg-white rounded-xl shadow-xl border border-slate-200 p-1.5 z-50 animate-in fade-in zoom-in-95">
-                <p className="text-[10px] font-bold text-slate-400 uppercase px-2 py-1">
+              <div className="absolute left-0 mt-1 w-52 bg-white rounded-xl shadow-xl border border-slate-200 p-1.5 z-50 animate-in fade-in zoom-in-95">
+                <p className="text-[10px] font-bold text-slate-400 uppercase px-2.5 py-1">
                   Chọn kỳ đánh giá TT27:
                 </p>
-                {TERMS.map((t) => (
-                  <button
-                    key={t.id}
-                    onClick={() => {
-                      setCurrentTerm(t.id);
-                      setShowTermDropdown(false);
-                    }}
-                    className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs transition-colors flex items-center justify-between ${
-                      currentTerm === t.id
-                        ? 'bg-blue-50 text-blue-700 font-bold'
-                        : 'text-slate-700 hover:bg-slate-100'
-                    }`}
-                  >
-                    <span>{t.name}</span>
-                    {currentTerm === t.id && <span className="text-blue-600">✓</span>}
-                  </button>
-                ))}
+                {TERMS.map((t) => {
+                  const isCalendarNow = t.id === autoCalendarTerm;
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => {
+                        setCurrentTerm(t.id);
+                        setShowTermDropdown(false);
+                      }}
+                      className={`w-full text-left px-2.5 py-2 rounded-lg text-xs transition-colors flex items-center justify-between ${
+                        currentTerm === t.id
+                          ? 'bg-blue-50 text-blue-700 font-bold'
+                          : 'text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span>{t.name}</span>
+                          {isCalendarNow && (
+                            <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-1.5 py-0.2 rounded-full">
+                              Hiện tại
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-slate-400 font-normal">{t.monthsDescription}</p>
+                      </div>
+                      {currentTerm === t.id && <span className="text-blue-600 font-bold">✓</span>}
+                    </button>
+                  );
+                })}
               </div>
             </>
           )}

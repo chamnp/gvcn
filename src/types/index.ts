@@ -186,4 +186,16 @@ export interface HomeworkAssignment {
   createdAt: string;
 }
 
+export interface SchoolInfo {
+  id: string;
+  name: string; // Tên trường (e.g. Trường Tiểu học Chu Văn An)
+  departmentName: string; // Phòng / Sở GD&ĐT quản lý (e.g. Phòng GD&ĐT Quận Tây Hồ - TP. Hà Nội)
+  schoolYear: string; // Năm học (e.g. 2025-2026)
+  principalName: string; // Hiệu trưởng / Đại diện BGH
+  address?: string; // Địa chỉ trường
+  phone?: string; // Số điện thoại liên hệ
+  email?: string;
+  website?: string;
+}
+
 

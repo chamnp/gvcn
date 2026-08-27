@@ -18,6 +18,7 @@ import {
   AttendanceStatus,
   TimetableSlot,
   DayOfWeek,
+  SchoolInfo,
 } from '@/types';
 import {
   INITIAL_CLASS,
@@ -27,12 +28,25 @@ import {
   INITIAL_STAR_LOGS,
   INITIAL_TRANSACTIONS,
   INITIAL_HOMEWORKS,
+  INITIAL_SCHOOL_INFO,
 } from '@/data/mock-data';
-import { PRIMARY_SUBJECTS, TRAIT_DEFINITIONS, evaluateStudentTT27 } from './tt27-engine';
+import {
+  PRIMARY_SUBJECTS,
+  TRAIT_DEFINITIONS,
+  evaluateStudentTT27,
+  getCurrentTermByDate,
+  getAcademicYearByDate,
+} from './tt27-engine';
 import { INITIAL_TIMETABLE, INITIAL_CUSTOM_SUBJECTS } from './timetable-data';
 import { useAuth } from './auth-context';
+import { toast } from 'sonner';
 
 interface AppContextType {
+  // School Profile & Settings
+  schoolInfo: SchoolInfo;
+  updateSchoolInfo: (partial: Partial<SchoolInfo>) => void;
+  autoCalendarTerm: TermType;
+
   // Multi-Class Management
   schoolClasses: ClassInfo[];
   activeClassId: string;
@@ -134,10 +148,12 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 const STORAGE_PREFIX = 'gvcn_pro_';
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const autoCalendarTerm = useMemo(() => getCurrentTermByDate(), []);
+  const [schoolInfo, setSchoolInfo] = useState<SchoolInfo>(INITIAL_SCHOOL_INFO);
   const [schoolClasses, setSchoolClasses] = useState<ClassInfo[]>(INITIAL_SCHOOL_CLASSES);
   const [activeClassId, setActiveClassId] = useState<string>('class-4a1');
   const [allStudents, setAllStudents] = useState<Student[]>(INITIAL_STUDENTS);
-  const [currentTerm, setCurrentTerm] = useState<TermType>('CUOI_HK1');
+  const [currentTerm, setCurrentTerm] = useState<TermType>(() => getCurrentTermByDate());
   const [subjectAssessments, setSubjectAssessments] = useState<SubjectAssessment[]>([]);
   const [traitAssessments, setTraitAssessments] = useState<TraitAssessment[]>([]);
   const [termSummaries, setTermSummaries] = useState<StudentTermSummary[]>([]);
@@ -193,11 +209,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setActiveClassId(matchedClass.id);
       }
     }
-  }, [profile, schoolClasses]);
+  }, [profile, schoolClasses, activeClassId]);
 
   // Khởi tạo và load từ LocalStorage
   useEffect(() => {
     try {
+      const savedSchool = localStorage.getItem(STORAGE_PREFIX + 'schoolInfo');
       const savedClasses = localStorage.getItem(STORAGE_PREFIX + 'schoolClasses');
       const savedActiveId = localStorage.getItem(STORAGE_PREFIX + 'activeClassId');
       const savedStudents = localStorage.getItem(STORAGE_PREFIX + 'students');
@@ -213,6 +230,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const savedHw = localStorage.getItem(STORAGE_PREFIX + 'homeworks');
       const savedKey = localStorage.getItem(STORAGE_PREFIX + 'apiKey');
 
+      if (savedSchool) setSchoolInfo(JSON.parse(savedSchool));
       if (savedClasses) setSchoolClasses(JSON.parse(savedClasses));
       if (savedActiveId) setActiveClassId(savedActiveId);
       if (savedStudents) setAllStudents(JSON.parse(savedStudents));
@@ -288,6 +306,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     if (!isLoaded) return;
     try {
+      localStorage.setItem(STORAGE_PREFIX + 'schoolInfo', JSON.stringify(schoolInfo));
       localStorage.setItem(STORAGE_PREFIX + 'schoolClasses', JSON.stringify(schoolClasses));
       localStorage.setItem(STORAGE_PREFIX + 'activeClassId', activeClassId);
       localStorage.setItem(STORAGE_PREFIX + 'students', JSON.stringify(allStudents));
@@ -307,6 +326,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [
     isLoaded,
+    schoolInfo,
     schoolClasses,
     activeClassId,
     allStudents,
@@ -322,6 +342,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     allHomeworks,
     apiKey,
   ]);
+
+  // SCHOOL PROFILE ACTIONS
+  const updateSchoolInfo = (partial: Partial<SchoolInfo>) => {
+    setSchoolInfo((prev) => {
+      const updated = { ...prev, ...partial };
+      // Đồng bộ tên trường và năm học sang tất cả các lớp trong trường
+      if (partial.name || partial.schoolYear) {
+        setSchoolClasses((classes) =>
+          classes.map((c) => ({
+            ...c,
+            schoolName: partial.name || c.schoolName,
+            schoolYear: partial.schoolYear || c.schoolYear,
+          }))
+        );
+      }
+      return updated;
+    });
+    toast.success('Đã cập nhật thông tin nhà trường!');
+  };
 
   // CLASS ACTIONS
   const setClassInfo = (info: ClassInfo) => {
@@ -767,6 +806,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   return (
     <AppContext.Provider
       value={{
+        schoolInfo,
+        updateSchoolInfo,
+        autoCalendarTerm,
         schoolClasses,
         activeClassId,
         classInfo,

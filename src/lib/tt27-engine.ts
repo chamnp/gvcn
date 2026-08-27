@@ -1,11 +1,55 @@
 import { GradeLevel, SubjectInfo, SubjectAssessment, TraitAssessment, StudentTermSummary, TermType, AwardTitle, SubjectLevel, TraitLevel } from '@/types';
 
-export const TERMS: { id: TermType; name: string; shortName: string }[] = [
-  { id: 'GIUA_HK1', name: 'Giữa Học kỳ I', shortName: 'G.HK1' },
-  { id: 'CUOI_HK1', name: 'Cuối Học kỳ I', shortName: 'C.HK1' },
-  { id: 'GIUA_HK2', name: 'Giữa Học kỳ II', shortName: 'G.HK2' },
-  { id: 'CUOI_NAM', name: 'Cuối Năm học', shortName: 'C.Năm' },
+export const TERMS: {
+  id: TermType;
+  name: string;
+  shortName: string;
+  monthsDescription: string;
+}[] = [
+  { id: 'GIUA_HK1', name: 'Giữa Học kỳ I', shortName: 'G.HK1', monthsDescription: 'Tháng 9 - Đầu T11' },
+  { id: 'CUOI_HK1', name: 'Cuối Học kỳ I', shortName: 'C.HK1', monthsDescription: 'Giữa T11 - T1' },
+  { id: 'GIUA_HK2', name: 'Giữa Học kỳ II', shortName: 'G.HK2', monthsDescription: 'Giữa T1 - T3' },
+  { id: 'CUOI_NAM', name: 'Cuối Năm học', shortName: 'C.Năm', monthsDescription: 'Tháng 4 - T8' },
 ];
+
+/**
+ * Tự động xác định kỳ đánh giá TT27 dựa trên thời gian thực tế của năm học:
+ * - Tháng 9 -> 15/11: Giữa Học kỳ 1 (GIUA_HK1)
+ * - 16/11 -> 15/01: Cuối Học kỳ 1 (CUOI_HK1)
+ * - 16/01 -> 31/03: Giữa Học kỳ 2 (GIUA_HK2)
+ * - 01/04 -> 31/08: Cuối Năm học / Cuối Học kỳ 2 (CUOI_NAM)
+ */
+export function getCurrentTermByDate(date: Date = new Date()): TermType {
+  const month = date.getMonth() + 1; // 1 -> 12
+  const day = date.getDate();
+
+  if (month === 9 || month === 10 || (month === 11 && day <= 15)) {
+    return 'GIUA_HK1';
+  } else if ((month === 11 && day > 15) || month === 12 || (month === 1 && day <= 15)) {
+    return 'CUOI_HK1';
+  } else if ((month === 1 && day > 15) || month === 2 || month === 3) {
+    return 'GIUA_HK2';
+  } else {
+    // Tháng 4, 5, 6, 7, 8
+    return 'CUOI_NAM';
+  }
+}
+
+/**
+ * Tự động xác định năm học (School Year) theo lịch thực tế:
+ * - Nếu tháng >= 8 (Tháng 8 -> 12): Năm hiện tại - Năm sau (ví dụ: 2025-2026 hoặc 2026-2027)
+ * - Nếu tháng < 8 (Tháng 1 -> 7): Năm trước - Năm hiện tại
+ */
+export function getAcademicYearByDate(date: Date = new Date()): string {
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+
+  if (month >= 8) {
+    return `${year}-${year + 1}`;
+  } else {
+    return `${year - 1}-${year}`;
+  }
+}
 
 export const PRIMARY_SUBJECTS: SubjectInfo[] = [
   { code: 'TIENG_VIET', name: 'Tiếng Việt', shortName: 'Tiếng Việt', hasPeriodicTest: true, applicableGrades: [1, 2, 3, 4, 5] },

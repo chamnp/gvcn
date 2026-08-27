@@ -21,6 +21,8 @@ import {
   Upload,
   Download,
   FileSpreadsheet,
+  Building,
+  Save,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useAuth } from '@/lib/auth-context';
@@ -32,13 +34,34 @@ import Link from 'next/link';
 
 export default function AdminPortalPage() {
   const router = useRouter();
-  const { schoolClasses, activeClassId, switchClass, addClass, updateClass, deleteClass, allStudents } = useAppStore();
+  const {
+    schoolInfo,
+    updateSchoolInfo,
+    schoolClasses,
+    activeClassId,
+    switchClass,
+    addClass,
+    updateClass,
+    deleteClass,
+    allStudents,
+  } = useAppStore();
   const { user, profile, teachers, refreshTeachers, addTeacher, updateTeacher, deleteTeacher } = useAuth();
 
   // Load latest teacher requests on mount
   React.useEffect(() => {
     refreshTeachers();
   }, [refreshTeachers]);
+
+  // Modal State for School Profile
+  const [isSchoolModalOpen, setIsSchoolModalOpen] = useState(false);
+  const [schoolForm, setSchoolForm] = useState({
+    name: schoolInfo.name,
+    departmentName: schoolInfo.departmentName,
+    schoolYear: schoolInfo.schoolYear,
+    principalName: schoolInfo.principalName,
+    address: schoolInfo.address || '',
+    phone: schoolInfo.phone || '',
+  });
 
   // Modal State for Class
   const [isClassModalOpen, setIsClassModalOpen] = useState(false);
@@ -54,8 +77,8 @@ export default function AdminPortalPage() {
   }>({
     name: '',
     grade: 1,
-    schoolYear: '2025-2026',
-    schoolName: 'Trường Tiểu học Chu Văn An',
+    schoolYear: schoolInfo.schoolYear,
+    schoolName: schoolInfo.name,
     teacherName: '',
     seatingGridRows: 5,
     seatingGridCols: 8,
@@ -258,14 +281,31 @@ export default function AdminPortalPage() {
               <span>CỔNG QUẢN TRỊ TRƯỜNG TIỂU HỌC (ADMIN PORTAL)</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
-              Quản Trị Trường Chu Văn An
+              {schoolInfo.name}
             </h1>
             <p className="text-slate-300 text-xs sm:text-sm">
-              Tài khoản quản lý: <strong>{user?.email || 'anhnnh4@gmail.com'}</strong> • Phân bổ {totalClasses} lớp học & {totalTeachers} giáo viên
+              {schoolInfo.departmentName} • Năm học: <strong>{schoolInfo.schoolYear}</strong> • Quản lý: <strong>{schoolInfo.principalName}</strong>
             </p>
           </div>
 
-          <div className="flex items-center space-x-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <button
+              onClick={() => {
+                setSchoolForm({
+                  name: schoolInfo.name,
+                  departmentName: schoolInfo.departmentName,
+                  schoolYear: schoolInfo.schoolYear,
+                  principalName: schoolInfo.principalName,
+                  address: schoolInfo.address || '',
+                  phone: schoolInfo.phone || '',
+                });
+                setIsSchoolModalOpen(true);
+              }}
+              className="inline-flex items-center space-x-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-xs transition-colors"
+            >
+              <Building className="w-4 h-4" />
+              <span>Cấu Hình Trường</span>
+            </button>
             <button
               onClick={() => {
                 if (!isAdmin) {
@@ -274,10 +314,10 @@ export default function AdminPortalPage() {
                 }
                 handleOpenClassModal();
               }}
-              className="inline-flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs transition-colors"
+              className="inline-flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-xs transition-colors"
             >
               <Plus className="w-4 h-4" />
-              <span>Thêm Lớp Học Mới</span>
+              <span>Thêm Lớp Học</span>
             </button>
             <button
               onClick={() => {
@@ -287,7 +327,7 @@ export default function AdminPortalPage() {
                 }
                 setIsTeacherModalOpen(true);
               }}
-              className="inline-flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs transition-colors"
+              className="inline-flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-xs transition-colors"
             >
               <UserPlus className="w-4 h-4" />
               <span>Phân Công Giáo Viên</span>
@@ -763,6 +803,123 @@ export default function AdminPortalPage() {
                   className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs"
                 >
                   Cấp Quyền & Phân Công
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Edit School Profile */}
+      {isSchoolModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">
+                  <Building className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Cấu Hình Thông Tin Nhà Trường</h3>
+                  <p className="text-xs text-slate-500">Đồng bộ sang tất cả lớp học, học bạ và báo cáo</p>
+                </div>
+              </div>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                updateSchoolInfo(schoolForm);
+                setIsSchoolModalOpen(false);
+              }}
+              className="space-y-3 text-xs"
+            >
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Tên Trường Tiểu Học</label>
+                <input
+                  type="text"
+                  required
+                  value={schoolForm.name}
+                  onChange={(e) => setSchoolForm({ ...schoolForm, name: e.target.value })}
+                  placeholder="Ví dụ: Trường Tiểu học Chu Văn An"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Cơ Quan Quản Lý (Phòng/Sở)</label>
+                  <input
+                    type="text"
+                    required
+                    value={schoolForm.departmentName}
+                    onChange={(e) => setSchoolForm({ ...schoolForm, departmentName: e.target.value })}
+                    placeholder="Ví dụ: Phòng GD&ĐT Quận Ba Đình"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Năm Học Hiện Tại</label>
+                  <input
+                    type="text"
+                    required
+                    value={schoolForm.schoolYear}
+                    onChange={(e) => setSchoolForm({ ...schoolForm, schoolYear: e.target.value })}
+                    placeholder="Ví dụ: 2025-2026"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 font-mono font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Họ Tên Hiệu Trưởng / Đại Diện BGH</label>
+                <input
+                  type="text"
+                  required
+                  value={schoolForm.principalName}
+                  onChange={(e) => setSchoolForm({ ...schoolForm, principalName: e.target.value })}
+                  placeholder="Ví dụ: Thầy Nguyễn Văn A"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Địa Chỉ Trường</label>
+                  <input
+                    type="text"
+                    value={schoolForm.address}
+                    onChange={(e) => setSchoolForm({ ...schoolForm, address: e.target.value })}
+                    placeholder="Ví dụ: 260 Thụy Khuê, Hà Nội"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Số Điện Thoại</label>
+                  <input
+                    type="text"
+                    value={schoolForm.phone}
+                    onChange={(e) => setSchoolForm({ ...schoolForm, phone: e.target.value })}
+                    placeholder="Ví dụ: 024 3847 2596"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsSchoolModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 font-semibold"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-xs flex items-center gap-1.5"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>Lưu & Đồng Bộ Toàn Trường</span>
                 </button>
               </div>
             </form>

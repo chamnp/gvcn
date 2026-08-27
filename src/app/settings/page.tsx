@@ -17,16 +17,29 @@ import {
   UserPlus,
   Trash2,
   Lock,
+  Building,
+  Calendar,
+  Phone,
+  Mail,
+  MapPin,
+  Sparkles,
+  Clock,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useAuth } from '@/lib/auth-context';
 import { GradeLevel, UserRole } from '@/types';
+import { TERMS, getCurrentTermByDate, getAcademicYearByDate } from '@/lib/tt27-engine';
 import { toast } from 'sonner';
 
 export default function SettingsPage() {
   const {
+    schoolInfo,
+    updateSchoolInfo,
+    autoCalendarTerm,
     classInfo,
     setClassInfo,
+    currentTerm,
+    setCurrentTerm,
     apiKey,
     setApiKey,
     resetData,
@@ -34,23 +47,50 @@ export default function SettingsPage() {
     exportAllDataJSON,
     importAllDataJSON,
   } = useAppStore();
-  const { user, profile, teachers, addTeacher, updateTeacher, deleteTeacher } = useAuth();
+  const { user, profile, isAdmin } = useAuth();
 
+  // School Form State
+  const [schoolName, setSchoolName] = useState(schoolInfo.name);
+  const [departmentName, setDepartmentName] = useState(schoolInfo.departmentName);
+  const [schoolYear, setSchoolYear] = useState(schoolInfo.schoolYear);
+  const [principalName, setPrincipalName] = useState(schoolInfo.principalName);
+  const [address, setAddress] = useState(schoolInfo.address || '');
+  const [phone, setPhone] = useState(schoolInfo.phone || '');
+
+  // Class Form State
   const [className, setClassName] = useState(classInfo.name);
   const [grade, setGrade] = useState<GradeLevel>(classInfo.grade);
-  const [schoolYear, setSchoolYear] = useState(classInfo.schoolYear);
-  const [schoolName, setSchoolName] = useState(classInfo.schoolName);
   const [teacherName, setTeacherName] = useState(classInfo.teacherName);
   const [rows, setRows] = useState(classInfo.seatingGridRows || 5);
   const [cols, setCols] = useState(classInfo.seatingGridCols || 8);
   const [inputApiKey, setInputApiKey] = useState(apiKey);
 
-  // New Teacher Modal Form State
-  const [isAddTeacherOpen, setIsAddTeacherOpen] = useState(false);
-  const [newTeacherEmail, setNewTeacherEmail] = useState('');
-  const [newTeacherName, setNewTeacherName] = useState('');
-  const [newTeacherRole, setNewTeacherRole] = useState<UserRole>('TEACHER');
-  const [newTeacherClass, setNewTeacherClass] = useState('Lớp 4A1');
+  const handleSaveSchool = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isAdmin) {
+      toast.error('Chỉ Quản trị viên / Ban Giám Hiệu mới có quyền thay đổi thông tin toàn trường!');
+      return;
+    }
+    updateSchoolInfo({
+      name: schoolName,
+      departmentName,
+      schoolYear,
+      principalName,
+      address,
+      phone,
+    });
+  };
+
+  const handleSyncRealDate = () => {
+    const realTerm = getCurrentTermByDate();
+    const realYear = getAcademicYearByDate();
+    setCurrentTerm(realTerm);
+    if (isAdmin) {
+      setSchoolYear(realYear);
+      updateSchoolInfo({ schoolYear: realYear });
+    }
+    toast.success(`Đã đồng bộ về ${TERMS.find((t) => t.id === realTerm)?.name} (${realYear})!`);
+  };
 
   const handleSaveClass = (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,8 +98,8 @@ export default function SettingsPage() {
       ...classInfo,
       name: className,
       grade,
-      schoolYear,
-      schoolName,
+      schoolYear: schoolInfo.schoolYear,
+      schoolName: schoolInfo.name,
       teacherName,
       seatingGridRows: Number(rows),
       seatingGridCols: Number(cols),
@@ -71,23 +111,6 @@ export default function SettingsPage() {
     e.preventDefault();
     setApiKey(inputApiKey);
     toast.success('Đã lưu khóa Gemini API!');
-  };
-
-  const handleCreateTeacher = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (profile && profile.role !== 'ADMIN') {
-      toast.error('Chỉ Quản trị viên / Ban Giám Hiệu mới có quyền thêm và phân công giáo viên!');
-      return;
-    }
-    if (!newTeacherEmail.trim() || !newTeacherName.trim()) {
-      toast.error('Vui lòng điền đầy đủ email và họ tên');
-      return;
-    }
-
-    await addTeacher(newTeacherEmail, newTeacherName, newTeacherRole, newTeacherClass);
-    setIsAddTeacherOpen(false);
-    setNewTeacherEmail('');
-    setNewTeacherName('');
   };
 
   const handleExportBackup = () => {
@@ -129,41 +152,252 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6 max-w-4xl">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2.5">
-          <Settings className="w-7 h-7 text-blue-600" />
-          <span>Cài Đặt & Cấu Hình Hệ Thống</span>
-        </h1>
-        <p className="text-xs text-slate-500 mt-1">
-          Quản lý thông tin lớp chủ nhiệm, phân quyền giáo viên, kết nối Supabase và khóa AI.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2.5">
+            <Settings className="w-7 h-7 text-blue-600" />
+            <span>Cài Đặt & Cấu Hình Hệ Thống</span>
+          </h1>
+          <p className="text-xs text-slate-500 mt-1">
+            Quản lý thông tin nhà trường, đồng bộ kỳ học theo thời gian thực, cấu hình lớp và AI.
+          </p>
+        </div>
+
+        {/* Quick Sync Button */}
+        <button
+          onClick={handleSyncRealDate}
+          className="inline-flex items-center space-x-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs px-3.5 py-2 rounded-xl border border-blue-200 shadow-xs transition-colors self-start sm:self-auto"
+        >
+          <Clock className="w-4 h-4 text-blue-600" />
+          <span>Đồng Bộ Lịch Thực Tế</span>
+        </button>
       </div>
 
-      {/* Section 1: Class Configuration */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
-        <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-          <School className="w-5 h-5 text-blue-600" />
-          <span>Cấu Hình Lớp Học Phụ Trách</span>
-        </h2>
-
-        <form onSubmit={handleSaveClass} className="space-y-4 text-xs">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      {/* SECTION 1: THÔNG TIN TOÀN TRƯỜNG (SCHOOL PROFILE) */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        <div className="p-5 sm:p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
+              <Building className="w-5 h-5" />
+            </div>
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Tên Lớp Chủ Nhiệm</label>
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <span>Thông Tin Toàn Trường (School Profile)</span>
+                {isAdmin ? (
+                  <span className="bg-purple-100 text-purple-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-purple-200">
+                    Toàn Quyền Admin
+                  </span>
+                ) : (
+                  <span className="bg-slate-100 text-slate-600 text-[10px] font-medium px-2 py-0.5 rounded-full">
+                    Chỉ Xem
+                  </span>
+                )}
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Thông tin này sẽ tự động xuất hiện trên tất cả bảng điểm TT27, học bạ, báo cáo xuất Excel và cổng bài tập.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <form onSubmit={handleSaveSchool} className="p-5 sm:p-6 space-y-4 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">
+                Tên Trường Tiểu Học
+              </label>
+              <input
+                type="text"
+                required
+                disabled={!isAdmin}
+                value={schoolName}
+                onChange={(e) => setSchoolName(e.target.value)}
+                placeholder="Ví dụ: Trường Tiểu học Chu Văn An"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:bg-slate-50 disabled:text-slate-600"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">
+                Cơ Quan Quản Lý Cấp Trên (Phòng / Sở GD&ĐT)
+              </label>
+              <input
+                type="text"
+                required
+                disabled={!isAdmin}
+                value={departmentName}
+                onChange={(e) => setDepartmentName(e.target.value)}
+                placeholder="Ví dụ: Phòng GD&ĐT Quận Tây Hồ - TP. Hà Nội"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:bg-slate-50 disabled:text-slate-600"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">
+                Năm Học Hiện Tại
+              </label>
+              <input
+                type="text"
+                required
+                disabled={!isAdmin}
+                value={schoolYear}
+                onChange={(e) => setSchoolYear(e.target.value)}
+                placeholder="Ví dụ: 2025-2026"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 font-mono font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:bg-slate-50 disabled:text-slate-600"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">
+                Họ Tên Hiệu Trưởng / Đại Diện BGH
+              </label>
+              <input
+                type="text"
+                required
+                disabled={!isAdmin}
+                value={principalName}
+                onChange={(e) => setPrincipalName(e.target.value)}
+                placeholder="Ví dụ: Thầy Nguyễn Văn A"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:bg-slate-50 disabled:text-slate-600"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">
+                Địa Chỉ Trường
+              </label>
+              <input
+                type="text"
+                disabled={!isAdmin}
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Ví dụ: Số 260 Thụy Khuê, Tây Hồ, Hà Nội"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:bg-slate-50 disabled:text-slate-600"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">
+                Số Điện Thoại Liên Hệ
+              </label>
+              <input
+                type="text"
+                disabled={!isAdmin}
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="Ví dụ: 024 3847 2596"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:bg-slate-50 disabled:text-slate-600"
+              />
+            </div>
+          </div>
+
+          {isAdmin && (
+            <div className="flex justify-end pt-3 border-t border-slate-100">
+              <button
+                type="submit"
+                className="inline-flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-xs transition-colors"
+              >
+                <Save className="w-4 h-4" />
+                <span>Lưu & Đồng Bộ Toàn Trường</span>
+              </button>
+            </div>
+          )}
+        </form>
+      </div>
+
+      {/* SECTION 2: ĐỒNG BỘ THỜI GIAN & KỲ HỌC THÔNG TƯ 27 */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 sm:p-6 space-y-4">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">
+            <Calendar className="w-5 h-5" />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-slate-900">
+              Kỳ Đánh Giá & Đồng Bộ Thời Gian Thực
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Hệ thống tự động nhận diện học kỳ tương ứng theo lịch năm học của Bộ Giáo dục & Đào tạo.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 pt-2">
+          {TERMS.map((t) => {
+            const isSelected = currentTerm === t.id;
+            const isCalendarNow = autoCalendarTerm === t.id;
+            return (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setCurrentTerm(t.id)}
+                className={`p-3.5 rounded-2xl border text-left transition-all ${
+                  isSelected
+                    ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                    : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-800'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-xs">{t.name}</span>
+                  {isCalendarNow && (
+                    <span
+                      className={`text-[9px] font-bold px-1.5 py-0.2 rounded-full ${
+                        isSelected ? 'bg-white text-blue-700' : 'bg-emerald-100 text-emerald-800'
+                      }`}
+                    >
+                      Hiện tại
+                    </span>
+                  )}
+                </div>
+                <p className={`text-[11px] mt-1 ${isSelected ? 'text-blue-100' : 'text-slate-500'}`}>
+                  {t.monthsDescription}
+                </p>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* SECTION 3: CẤU HÌNH LỚP CHỦ NHIỆM */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        <div className="p-5 sm:p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+              <School className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold text-slate-900">
+                Cấu Hình Lớp Chủ Nhiệm ({classInfo.name})
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Thiết lập thông tin tên lớp, khối lớp và kích thước sơ đồ chỗ ngồi.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <form onSubmit={handleSaveClass} className="p-5 sm:p-6 space-y-4 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">
+                Tên Lớp Học
+              </label>
               <input
                 type="text"
                 required
                 value={className}
                 onChange={(e) => setClassName(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold text-slate-900"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
             </div>
+
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Khối Lớp</label>
+              <label className="block font-semibold text-slate-700 mb-1">
+                Khối Lớp (Tiểu học)
+              </label>
               <select
                 value={grade}
                 onChange={(e) => setGrade(Number(e.target.value) as GradeLevel)}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold text-slate-900"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
               >
                 <option value={1}>Khối 1</option>
                 <option value={2}>Khối 2</option>
@@ -172,70 +406,50 @@ export default function SettingsPage() {
                 <option value={5}>Khối 5</option>
               </select>
             </div>
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">Năm Học</label>
-              <input
-                type="text"
-                required
-                value={schoolYear}
-                onChange={(e) => setSchoolYear(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              />
-            </div>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Tên Trường Tiểu Học</label>
-              <input
-                type="text"
-                required
-                value={schoolName}
-                onChange={(e) => setSchoolName(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">Giáo Viên Chủ Nhiệm (Hiển thị trên Học bạ)</label>
+              <label className="block font-semibold text-slate-700 mb-1">
+                Giáo Viên Chủ Nhiệm
+              </label>
               <input
                 type="text"
                 required
                 value={teacherName}
                 onChange={(e) => setTeacherName(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
+            </div>
+
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">
+                Sơ Đồ Chỗ Ngồi (Hàng x Cột)
+              </label>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="number"
+                  min={3}
+                  max={8}
+                  value={rows}
+                  onChange={(e) => setRows(Number(e.target.value))}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-center font-bold text-slate-900"
+                />
+                <span className="text-slate-400 font-bold">x</span>
+                <input
+                  type="number"
+                  min={4}
+                  max={12}
+                  value={cols}
+                  onChange={(e) => setCols(Number(e.target.value))}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-center font-bold text-slate-900"
+                />
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">Số Hàng Ghế (Sơ đồ lớp)</label>
-              <input
-                type="number"
-                min={3}
-                max={10}
-                value={rows}
-                onChange={(e) => setRows(Number(e.target.value))}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block font-semibold text-slate-700 mb-1">Số Cột Ghế (Sơ đồ lớp)</label>
-              <input
-                type="number"
-                min={4}
-                max={12}
-                value={cols}
-                onChange={(e) => setCols(Number(e.target.value))}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-end pt-2">
+          <div className="flex justify-end pt-3 border-t border-slate-100">
             <button
               type="submit"
-              className="inline-flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-xl shadow-xs transition-colors"
+              className="inline-flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl font-bold shadow-xs transition-colors"
             >
               <Save className="w-4 h-4" />
               <span>Lưu Cấu Hình Lớp</span>
@@ -244,272 +458,96 @@ export default function SettingsPage() {
         </form>
       </div>
 
-      {/* Section 2: Teacher Whitelist & RBAC Management */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+      {/* SECTION 4: AI & GEMINI API KEY */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 sm:p-6 space-y-4">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold">
+            <Key className="w-5 h-5" />
+          </div>
           <div>
-            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-emerald-600" />
-              <span>Quản Lý Giáo Viên & Phân Quyền Lớp Học</span>
+            <h2 className="text-base font-bold text-slate-900">
+              Khóa API Trợ Lý Nhận Xét AI (Google Gemini)
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Chỉ các tài khoản email được cấp quyền mới có thể truy cập và chỉnh sửa lớp học tương ứng.
+              Hệ thống sử dụng Gemini Pro để sinh nhận xét học bạ Thông tư 27 chuẩn xác theo từng em.
             </p>
           </div>
-
-          <button
-            type="button"
-            onClick={() => setIsAddTeacherOpen(true)}
-            className="inline-flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs transition-colors self-start sm:self-auto"
-          >
-            <UserPlus className="w-4 h-4" />
-            <span>Thêm Giáo Viên Mới</span>
-          </button>
         </div>
-
-        {/* Current Active Account Status */}
-        {user && (
-          <div className="bg-blue-50/70 p-3 rounded-xl border border-blue-200 flex items-center justify-between text-xs">
-            <div>
-              <span className="font-semibold text-blue-900">Tài khoản đang đăng nhập: </span>
-              <strong className="text-blue-950">{user.email}</strong>
-              <span className="ml-2 bg-blue-600 text-white px-2 py-0.5 rounded-full text-[10px] font-bold">
-                {profile?.role === 'ADMIN' ? 'Admin' : 'Giáo viên'}
-              </span>
-            </div>
-            <span className="text-blue-800 font-semibold">{profile?.assignedClassName || 'Lớp 4A1'}</span>
-          </div>
-        )}
-
-        {/* Teachers Whitelist Table */}
-        <div className="overflow-x-auto border border-slate-200 rounded-xl">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
-              <tr>
-                <th className="py-2.5 px-3">Họ và Tên</th>
-                <th className="py-2.5 px-3">Email Xác Thực</th>
-                <th className="py-2.5 px-3 text-center">Vai Trò</th>
-                <th className="py-2.5 px-3 text-center">Lớp Phân Công</th>
-                <th className="py-2.5 px-3 text-center">Trạng Thái</th>
-                <th className="py-2.5 px-3 text-right">Thao Tác</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {teachers.map((t) => (
-                <tr key={t.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="py-2.5 px-3 font-bold text-slate-900">{t.fullName}</td>
-                  <td className="py-2.5 px-3 font-mono text-slate-600">{t.email}</td>
-                  <td className="py-2.5 px-3 text-center">
-                    <span
-                      className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        t.role === 'ADMIN'
-                          ? 'bg-purple-100 text-purple-800 border border-purple-300'
-                          : 'bg-blue-100 text-blue-800 border border-blue-300'
-                      }`}
-                    >
-                      {t.role === 'ADMIN' ? 'Quản trị viên' : 'Giáo viên'}
-                    </span>
-                  </td>
-                  <td className="py-2.5 px-3 text-center font-semibold text-slate-800">
-                    {t.assignedClassName || 'Lớp 4A1'}
-                  </td>
-                  <td className="py-2.5 px-3 text-center">
-                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                      <CheckCircle className="w-3 h-3" />
-                      <span>Được phép</span>
-                    </span>
-                  </td>
-                  <td className="py-2.5 px-4 text-right">
-                    {t.email !== 'anhnnh4@gmail.com' && (
-                      <button
-                        onClick={() => {
-                          if (profile && profile.role !== 'ADMIN') {
-                            toast.error('Chỉ Quản trị viên / Ban Giám Hiệu mới có quyền xóa giáo viên!');
-                            return;
-                          }
-                          deleteTeacher(t.id);
-                        }}
-                        className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
-                        title="Xóa quyền"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Section 3: Supabase Database Info */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
-        <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-          <Database className="w-5 h-5 text-emerald-600" />
-          <span>Cơ Sở Dữ Liệu Supabase PostgreSQL</span>
-        </h2>
-
-        <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2 text-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-slate-500">Supabase Project Ref:</span>
-            <span className="font-mono font-bold text-slate-900">lgyoekaaefzpymfxfggf</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-slate-500">API Endpoint:</span>
-            <span className="font-mono text-slate-700">https://lgyoekaaefzpymfxfggf.supabase.co</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-slate-500">Trạng Thái Kết Nối:</span>
-            <span className="inline-flex items-center gap-1 text-emerald-600 font-bold">
-              <CheckCircle className="w-3.5 h-3.5" />
-              <span>Đang hoạt động (8 Bảng đã sẵn sàng)</span>
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Section 4: Gemini AI Key */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
-        <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-          <Key className="w-5 h-5 text-purple-600" />
-          <span>Khóa Gemini AI (Tùy chọn)</span>
-        </h2>
-        <p className="text-xs text-slate-500">
-          Mặc định hệ thống sử dụng kho từ vựng sư phạm ngoại tuyến 200+ mẫu câu. Bạn có thể thêm Gemini API Key nếu muốn AI tạo nhận xét phong phú hơn.
-        </p>
 
         <form onSubmit={handleSaveApiKey} className="space-y-3 text-xs">
           <div>
-            <input
-              type="password"
-              placeholder="AIzaSy..."
-              value={inputApiKey}
-              onChange={(e) => setInputApiKey(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-purple-500 focus:outline-none font-mono"
-            />
-          </div>
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              className="inline-flex items-center space-x-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold px-4 py-2 rounded-xl shadow-xs transition-colors"
-            >
-              <Save className="w-4 h-4" />
-              <span>Lưu API Key</span>
-            </button>
+            <label className="block font-semibold text-slate-700 mb-1">
+              Google Gemini API Key (Tùy chọn ghi đè)
+            </label>
+            <div className="flex items-center space-x-2">
+              <input
+                type="password"
+                placeholder="AIzaSy..."
+                value={inputApiKey}
+                onChange={(e) => setInputApiKey(e.target.value)}
+                className="flex-1 px-3 py-2 rounded-xl border border-slate-200 font-mono text-slate-900 focus:ring-2 focus:ring-purple-500 focus:outline-none"
+              />
+              <button
+                type="submit"
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-bold shadow-xs transition-colors"
+              >
+                Lưu Khóa AI
+              </button>
+            </div>
+            <p className="text-[11px] text-slate-400 mt-1">
+              Mặc định hệ thống đã tích hợp sẵn khóa AI từ máy chủ Vercel.
+            </p>
           </div>
         </form>
       </div>
 
-      {/* Section 5: Backup & Reset */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
-        <div>
-          <h2 className="text-base font-bold text-slate-900">Sao Lưu & Quản Lý Dữ Liệu Toàn Hệ Thống</h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Xuất file JSON sao lưu đầy đủ tất cả các lớp, học sinh, điểm số TT27, thời khóa biểu hoặc khôi phục dữ liệu khi đổi thiết bị.
-          </p>
+      {/* SECTION 5: SAO LƯU & KHÔI PHỤC DỮ LIỆU */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 sm:p-6 space-y-4">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold">
+            <Database className="w-5 h-5" />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-slate-900">
+              Sao Lưu & Khôi Phục Dữ Liệu Lớp Học
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Xuất file JSON an toàn để lưu trữ vào máy tính hoặc khôi phục dữ liệu khi chuyển thiết bị.
+            </p>
+          </div>
         </div>
 
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap items-center gap-3 pt-2">
           <button
+            type="button"
             onClick={handleExportBackup}
-            className="inline-flex items-center space-x-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-4 py-2.5 rounded-xl border border-slate-300 transition-colors"
+            className="inline-flex items-center space-x-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs transition-colors"
           >
-            <Download className="w-4 h-4 text-slate-600" />
-            <span>Sao Lưu Toàn Bộ Dữ Liệu (JSON)</span>
+            <Download className="w-4 h-4" />
+            <span>Xuất File Sao Lưu (.JSON)</span>
           </button>
 
-          <label className="cursor-pointer inline-flex items-center space-x-2 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs px-4 py-2.5 rounded-xl border border-blue-300 transition-colors">
-            <Upload className="w-4 h-4 text-blue-600" />
-            <span>Khôi Phục Từ File Sao Lưu</span>
-            <input type="file" accept=".json" onChange={handleImportBackupFile} className="hidden" />
+          <label className="inline-flex items-center space-x-2 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs px-4 py-2.5 rounded-xl border border-slate-200 shadow-xs cursor-pointer transition-colors">
+            <Upload className="w-4 h-4 text-slate-500" />
+            <span>Khôi Phục Từ File JSON</span>
+            <input
+              type="file"
+              accept=".json"
+              onChange={handleImportBackupFile}
+              className="hidden"
+            />
           </label>
 
           <button
+            type="button"
             onClick={handleReset}
-            className="inline-flex items-center space-x-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs px-4 py-2.5 rounded-xl border border-rose-200 transition-colors"
+            className="inline-flex items-center space-x-2 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs px-4 py-2.5 rounded-xl border border-rose-200 transition-colors ml-auto"
           >
             <RotateCcw className="w-4 h-4" />
-            <span>Khôi Phục Dữ Liệu Mẫu Ban Đầu</span>
+            <span>Khôi Phục Mẫu Ban Đầu</span>
           </button>
         </div>
       </div>
-
-      {/* Modal Add Teacher */}
-      {isAddTeacherOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
-            <h3 className="text-base font-bold text-slate-900">Thêm & Cấp Quyền Cho Giáo Viên</h3>
-
-            <form onSubmit={handleCreateTeacher} className="space-y-3 text-xs">
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Họ và Tên Giáo Viên</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Cô Trần Thu Hà"
-                  value={newTeacherName}
-                  onChange={(e) => setNewTeacherName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Email Google / Đăng Nhập</label>
-                <input
-                  type="email"
-                  required
-                  placeholder="giaovien@gmail.com"
-                  value={newTeacherEmail}
-                  onChange={(e) => setNewTeacherEmail(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Vai Trò</label>
-                  <select
-                    value={newTeacherRole}
-                    onChange={(e) => setNewTeacherRole(e.target.value as UserRole)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none font-bold"
-                  >
-                    <option value="TEACHER">Giáo Viên</option>
-                    <option value="ADMIN">Quản Trị Viên (Admin)</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Lớp Phụ Trách</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Lớp 4A1"
-                    value={newTeacherClass}
-                    onChange={(e) => setNewTeacherClass(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsAddTeacherOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 font-semibold"
-                >
-                  Hủy
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-xs"
-                >
-                  Cấp Quyền Ngay
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
