@@ -36,12 +36,20 @@ import {
   FileText,
   Eye,
   MapPin,
+  ShoppingBag,
+  ShoppingCart,
+  Gift,
+  Minus,
+  Plus,
+  Trash2,
+  Crown,
 } from 'lucide-react';
 import { useAppStore, getDefaultPinForStudent } from '@/lib/store';
 import { TERMS, PRIMARY_SUBJECTS, TRAIT_DEFINITIONS } from '@/lib/tt27-engine';
 import { getSubjectTheme, DAYS_OF_WEEK, PERIODS } from '@/lib/timetable-data';
-import { TermType, DayOfWeek, ClassEvent } from '@/types';
+import { TermType, DayOfWeek, ClassEvent, RewardProduct, RedemptionItem } from '@/types';
 import { toast } from 'sonner';
+import confetti from 'canvas-confetti';
 
 // Helper to check birthday for this specific student
 function getStudentBirthdayStatus(dobStr: string) {
@@ -93,6 +101,11 @@ export default function StudentPrivateReportPage({
     termSummaries,
     attendances,
     starLogs,
+    starCriteria,
+    rewardProducts,
+    rewardRedemptions,
+    createRewardRedemption,
+    getStudentMonthlyStars,
     allHomeworks,
     customSubjects,
     timetable,
@@ -118,7 +131,7 @@ export default function StudentPrivateReportPage({
   }, [student, schoolClasses]);
 
   // Main Active Tab for Child Hub
-  const [activeTab, setActiveTab] = useState<'REPORT' | 'HOMEWORK' | 'BACKPACK' | 'TIMETABLE' | 'EVENTS'>('REPORT');
+  const [activeTab, setActiveTab] = useState<'REPORT' | 'REWARDS' | 'HOMEWORK' | 'BACKPACK' | 'TIMETABLE' | 'EVENTS'>('REPORT');
 
   // Selected Term for Assessment Report
   const [selectedTerm, setSelectedTerm] = useState<TermType>(globalTerm || 'GIUA_HK1');
@@ -134,7 +147,14 @@ export default function StudentPrivateReportPage({
   const [packedSubjectCodes, setPackedSubjectCodes] = useState<string[]>([]);
   const [selectedTimetableDay, setSelectedTimetableDay] = useState<DayOfWeek>('T2');
 
+  // Cart State for Reward Shop
+  const [cartItems, setCartItems] = useState<{ product: RewardProduct; quantity: number }[]>([]);
+  const [studentNoteInput, setStudentNoteInput] = useState('');
+  const [isCriteriaModalOpen, setIsCriteriaModalOpen] = useState(false);
+  const [shopCategoryFilter, setShopCategoryFilter] = useState('ALL');
+
   const todayStr = new Date().toISOString().split('T')[0];
+  const currentMonthKey = todayStr.substring(0, 7); // 'YYYY-MM'
 
   useEffect(() => {
     if (!student) return;
@@ -164,6 +184,114 @@ export default function StudentPrivateReportPage({
   useEffect(() => {
     setSelectedTimetableDay(tomorrowDayCode);
   }, [tomorrowDayCode]);
+
+  // Student monthly stars balance & class rank
+  const studentMonthlyStars = useMemo(() => {
+    if (!student) return { earned: 0, spent: 0, available: 0 };
+    return getStudentMonthlyStars(student.id, currentMonthKey);
+  }, [student, currentMonthKey, getStudentMonthlyStars, starLogs, rewardRedemptions]);
+
+  const studentRankInClass = useMemo(() => {
+    if (!student || !studentClass) return 1;
+    const classStudents = allStudents.filter((s) => (s.classId || 'class-4a1') === studentClass.id);
+    const ranked = classStudents
+      .map((st) => ({
+        id: st.id,
+        earned: getStudentMonthlyStars(st.id, currentMonthKey).earned,
+      }))
+      .sort((a, b) => b.earned - a.earned);
+
+    const idx = ranked.findIndex((r) => r.id === student.id);
+    return idx >= 0 ? idx + 1 : 1;
+  }, [student, studentClass, allStudents, currentMonthKey, getStudentMonthlyStars, starLogs]);
+
+  // Total cart stars
+  const totalCartStars = useMemo(() => {
+    return cartItems.reduce((sum, item) => sum + item.product.starPrice * item.quantity, 0);
+  }, [cartItems]);
+
+  // Cart actions
+  const addToCart = (product: RewardProduct) => {
+    if (product.stock <= 0) {
+      toast.error('Món quà này tạm thời đã hết hàng trong kho!');
+      return;
+    }
+
+    setCartItems((prev) => {
+      const existing = prev.find((item) => item.product.id === product.id);
+      if (existing) {
+        if (existing.quantity >= product.stock) {
+          toast.error(`Kho chỉ còn ${product.stock} món quà này!`);
+          return prev;
+        }
+        toast.success(`Đã tăng số lượng ${product.name} trong giỏ!`);
+        return prev.map((item) =>
+          item.product.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+        );
+      }
+      toast.success(`Đã thêm ${product.name} vào giỏ quà!`);
+      return [...prev, { product, quantity: 1 }];
+    });
+  };
+
+  const updateCartQuantity = (productId: string, delta: number) => {
+    setCartItems((prev) => {
+      const existing = prev.find((item) => item.product.id === productId);
+      if (!existing) return prev;
+
+      const newQty = existing.quantity + delta;
+      if (newQty <= 0) {
+        return prev.filter((item) => item.product.id !== productId);
+      }
+
+      if (newQty > existing.product.stock) {
+        toast.error(`Kho chỉ còn tối đa ${existing.product.stock} món!`);
+        return prev;
+      }
+
+      return prev.map((item) =>
+        item.product.id === productId ? { ...item, quantity: newQty } : item
+      );
+    });
+  };
+
+  const handleCheckout = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!student || cartItems.length === 0) return;
+
+    if (studentMonthlyStars.available < totalCartStars) {
+      toast.error(`Con chỉ có ${studentMonthlyStars.available} sao khả dụng, còn thiếu ${totalCartStars - studentMonthlyStars.available} sao nữa!`);
+      return;
+    }
+
+    const items: RedemptionItem[] = cartItems.map((c) => ({
+      productId: c.product.id,
+      productName: c.product.name,
+      quantity: c.quantity,
+      unitStarPrice: c.product.starPrice,
+      imageUrl: c.product.imageUrl,
+    }));
+
+    const result = createRewardRedemption({
+      studentId: student.id,
+      studentName: student.fullName,
+      studentCode: student.studentCode,
+      studentAvatar: student.avatarUrl,
+      items,
+      totalStars: totalCartStars,
+      studentNote: studentNoteInput,
+      month: currentMonthKey,
+    });
+
+    if (result.success) {
+      confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+      toast.success('🎉 Chúc mừng con đã gửi yêu cầu đổi quà thành công! Cô giáo sẽ trao quà cho con sớm nhất nhé!');
+      setCartItems([]);
+      setStudentNoteInput('');
+    } else {
+      toast.error(result.error || 'Có lỗi xảy ra khi đổi quà!');
+    }
+  };
 
   // If student not found
   if (!student || !studentClass) {
@@ -201,10 +329,13 @@ export default function StudentPrivateReportPage({
     (s) => s.studentId === student.id && s.term === selectedTerm
   );
 
-  // Star points
+  // Total all time stars
   const studentStars = starLogs
     .filter((s) => s.studentId === student.id)
     .reduce((sum, s) => sum + s.points, 0);
+
+  // Student Redemptions
+  const studentRedemptions = rewardRedemptions.filter((r) => r.studentId === student.id);
 
   // Attendance stats
   const studentAtt = attendances.filter((a) => a.studentId === student.id);
@@ -278,8 +409,14 @@ export default function StudentPrivateReportPage({
     toast.success('Đã sao chép liên kết riêng tư của con vào bộ nhớ tạm!');
   };
 
+  // Filtered shop products
+  const filteredShopProducts = rewardProducts.filter((p) => {
+    if (shopCategoryFilter === 'ALL') return true;
+    return p.category === shopCategoryFilter;
+  });
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-16">
+    <div className="min-h-screen bg-slate-50 text-slate-900 pb-20">
       {/* 1. BRAND HEADER BAR */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
         <div className="max-w-5xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2">
@@ -372,7 +509,7 @@ export default function StudentPrivateReportPage({
           </div>
         )}
 
-        {/* 3. BIRTHDAY SPECIAL GREETING CARD (ONLY FOR THIS CHILD) */}
+        {/* 3. BIRTHDAY SPECIAL GREETING CARD */}
         {birthdayInfo && (birthdayInfo.isToday || birthdayInfo.isThisMonth) && (
           <div className="bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 rounded-3xl p-4 sm:p-5 text-white shadow-lg flex items-center space-x-3.5 animate-in fade-in">
             <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl shadow-inner shrink-0">
@@ -433,16 +570,14 @@ export default function StudentPrivateReportPage({
 
             {/* Badges / Honors */}
             <div className="flex flex-wrap sm:flex-col items-start sm:items-end gap-1.5 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-              {studentSummary?.awardTitle && (
-                <div className="h-8 px-3 inline-flex items-center space-x-1.5 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-300 text-amber-900 rounded-xl shadow-xs text-xs font-black">
-                  <Award className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                  <span className="truncate max-w-[180px]">{studentSummary.awardTitle}</span>
-                </div>
-              )}
+              <div className="h-8 px-3 inline-flex items-center space-x-1.5 bg-amber-50 border border-amber-300 text-amber-900 rounded-xl shadow-xs text-xs font-black">
+                <Crown className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <span>Hạng #{studentRankInClass} Thi Đua Tháng</span>
+              </div>
 
               <div className="h-8 px-3 inline-flex items-center space-x-1.5 bg-purple-50 border border-purple-200 text-purple-800 rounded-xl text-xs font-bold">
                 <Star className="w-3.5 h-3.5 text-purple-600 fill-purple-600 shrink-0" />
-                <span>{studentStars} Ngôi Sao Thi Đua</span>
+                <span>{studentMonthlyStars.available} ⭐ Khả Dụng Đổi Quà</span>
               </div>
             </div>
           </div>
@@ -452,6 +587,7 @@ export default function StudentPrivateReportPage({
         <div className="flex overflow-x-auto no-scrollbar gap-1.5 bg-white p-1 rounded-2xl border border-slate-200 shadow-xs text-xs font-bold scroll-smooth">
           {[
             { id: 'REPORT', label: '📊 Điểm & Nhận Xét TT27' },
+            { id: 'REWARDS', label: `🎁 Shop Đổi Quà (${studentMonthlyStars.available} ⭐)` },
             { id: 'HOMEWORK', label: `📝 Bài Tập (${classHomeworks.length})` },
             { id: 'BACKPACK', label: '🎒 Soạn Sách Vở' },
             { id: 'TIMETABLE', label: '🗓️ Thời Khóa Biểu' },
@@ -672,7 +808,295 @@ export default function StudentPrivateReportPage({
           </div>
         )}
 
-        {/* 7. TAB 2: HOMEWORK FOR THIS CHILD */}
+        {/* 7. TAB: SHOP ĐỔI QUÀ & GIỎ HÀNG THÔNG MINH */}
+        {activeTab === 'REWARDS' && (
+          <div className="space-y-5">
+            {/* Balance Hero Card */}
+            <div className="bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 rounded-3xl p-5 sm:p-6 text-white shadow-lg space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="space-y-1 min-w-0">
+                  <span className="bg-white/20 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                    🌟 Phong Trào Tích Sao Tháng {currentMonthKey.replace('-', '/')}
+                  </span>
+                  <h3 className="text-lg sm:text-xl font-black truncate">
+                    Góc Đổi Quà Của Em {student.fullName}
+                  </h3>
+                  <p className="text-xs text-white/80">
+                    Dùng số sao thi đua kiếm được trong tháng để lựa chọn những món đồ dùng học tập xinh xắn!
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsCriteriaModalOpen(true)}
+                  className="h-9 px-3.5 inline-flex items-center space-x-1.5 bg-white/20 hover:bg-white/30 text-white text-xs font-black rounded-2xl backdrop-blur-md transition-all cursor-pointer shrink-0"
+                >
+                  <Star className="w-3.5 h-3.5 text-yellow-300 fill-yellow-300" />
+                  <span>Xem Tiêu Chí Kiếm Sao</span>
+                </button>
+              </div>
+
+              {/* Metrics Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2">
+                <div className="bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/10">
+                  <span className="text-[10px] text-white/70 uppercase font-bold">Sao Tháng Này</span>
+                  <p className="text-xl font-black text-yellow-300">+{studentMonthlyStars.earned} ⭐</p>
+                </div>
+                <div className="bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/10">
+                  <span className="text-[10px] text-white/70 uppercase font-bold">Đã Đổi Quà</span>
+                  <p className="text-xl font-black text-rose-200">-{studentMonthlyStars.spent} ⭐</p>
+                </div>
+                <div className="bg-white/20 backdrop-blur-md p-3 rounded-2xl border border-yellow-300/40">
+                  <span className="text-[10px] text-yellow-200 uppercase font-black">Khả Dụng Đổi Quà</span>
+                  <p className="text-2xl font-black text-yellow-300">{studentMonthlyStars.available} ⭐</p>
+                </div>
+                <div className="bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/10">
+                  <span className="text-[10px] text-white/70 uppercase font-bold">Hạng Thi Đua</span>
+                  <p className="text-xl font-black text-white flex items-center gap-1">
+                    <Crown className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                    <span>#{studentRankInClass}</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* SHOPPING CATALOG & CART WRAPPER */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+              {/* Product Catalog (2 Cols on lg) */}
+              <div className="lg:col-span-2 space-y-4">
+                {/* Category Filter */}
+                <div className="flex items-center space-x-1.5 overflow-x-auto no-scrollbar pb-1">
+                  {['ALL', 'Bút viết', 'Vở & Sổ', 'Hộp bút & Thước', 'Dụng cụ học tập', 'Phụ kiện dễ thương'].map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setShopCategoryFilter(cat)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-colors cursor-pointer ${
+                        shopCategoryFilter === cat
+                          ? 'bg-purple-600 text-white shadow-xs'
+                          : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                      }`}
+                    >
+                      {cat === 'ALL' ? '✨ Tất Cả Quà' : cat}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Product Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  {filteredShopProducts.map((prod) => (
+                    <div
+                      key={prod.id}
+                      className="bg-white rounded-3xl border border-slate-200 overflow-hidden shadow-2xs hover:shadow-md transition-all flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="relative h-32 bg-slate-100 overflow-hidden">
+                          <img src={prod.imageUrl} alt={prod.name} className="w-full h-full object-cover" />
+                          <div
+                            className={`absolute top-2 right-2 px-2.5 py-0.5 rounded-full text-[10px] font-black shadow-xs ${
+                              prod.stock > 0 ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'
+                            }`}
+                          >
+                            {prod.stock > 0 ? `Còn ${prod.stock}` : 'Hết hàng'}
+                          </div>
+                        </div>
+
+                        <div className="p-3.5 space-y-1">
+                          <h4 className="font-bold text-xs text-slate-900 line-clamp-2" title={prod.name}>
+                            {prod.name}
+                          </h4>
+                          <p className="text-[11px] text-slate-500 line-clamp-2 leading-relaxed">
+                            {prod.description}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="p-3.5 pt-0 flex items-center justify-between border-t border-slate-100 mt-2">
+                        <span className="text-amber-600 font-black text-sm">{prod.starPrice} ⭐</span>
+
+                        <button
+                          type="button"
+                          disabled={prod.stock <= 0}
+                          onClick={() => addToCart(prod)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                            prod.stock > 0
+                              ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-xs'
+                              : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                          }`}
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>{prod.stock > 0 ? 'Đổi Quà' : 'Hết Hàng'}</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* CART SIDEBAR / CHECKOUT SECTION */}
+              <div className="space-y-4">
+                <div className="bg-white rounded-3xl border-2 border-purple-200 p-4 sm:p-5 shadow-md space-y-4 sticky top-20">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div className="flex items-center space-x-2">
+                      <ShoppingCart className="w-5 h-5 text-purple-600" />
+                      <h3 className="font-black text-sm text-slate-900">Giỏ Quà Của Con</h3>
+                    </div>
+                    <span className="text-xs font-bold text-purple-700 bg-purple-100 px-2.5 py-0.5 rounded-full">
+                      {cartItems.reduce((sum, item) => sum + item.quantity, 0)} Món
+                    </span>
+                  </div>
+
+                  {cartItems.length === 0 ? (
+                    <div className="py-8 text-center text-slate-400 space-y-1.5">
+                      <Gift className="w-8 h-8 mx-auto text-slate-300" />
+                      <p className="text-xs font-semibold">Giỏ quà đang trống</p>
+                      <p className="text-[11px] text-slate-400">Hãy chọn các món quà xinh xắn bên cạnh để thêm vào giỏ nhé!</p>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleCheckout} className="space-y-3.5 text-xs">
+                      {/* Items in cart */}
+                      <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                        {cartItems.map((item) => (
+                          <div
+                            key={item.product.id}
+                            className="p-2.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-2"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <h5 className="font-bold text-xs text-slate-900 truncate" title={item.product.name}>
+                                {item.product.name}
+                              </h5>
+                              <p className="text-[10px] text-amber-600 font-bold">
+                                {item.product.starPrice * item.quantity} ⭐ ({item.product.starPrice}⭐/cái)
+                              </p>
+                            </div>
+
+                            <div className="flex items-center space-x-1.5 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => updateCartQuantity(item.product.id, -1)}
+                                className="w-6 h-6 rounded-lg bg-white border border-slate-200 text-slate-700 flex items-center justify-center font-bold hover:bg-slate-100 cursor-pointer"
+                              >
+                                <Minus className="w-3 h-3" />
+                              </button>
+                              <span className="w-5 text-center font-black text-xs text-slate-900">
+                                {item.quantity}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => updateCartQuantity(item.product.id, 1)}
+                                className="w-6 h-6 rounded-lg bg-white border border-slate-200 text-slate-700 flex items-center justify-center font-bold hover:bg-slate-100 cursor-pointer"
+                              >
+                                <Plus className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Note to teacher */}
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Lời nhắn gửi cô giáo (Tùy chọn):</label>
+                        <input
+                          type="text"
+                          placeholder="VD: Em xin cô màu xanh dương ạ..."
+                          value={studentNoteInput}
+                          onChange={(e) => setStudentNoteInput(e.target.value)}
+                          className="w-full p-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-purple-500 bg-slate-50"
+                        />
+                      </div>
+
+                      {/* Stars summary */}
+                      <div className="bg-purple-50/80 p-3 rounded-2xl border border-purple-200 space-y-1.5">
+                        <div className="flex items-center justify-between text-slate-600">
+                          <span>Sao khả dụng của con:</span>
+                          <span className="font-bold text-slate-900">{studentMonthlyStars.available} ⭐</span>
+                        </div>
+                        <div className="flex items-center justify-between text-slate-600">
+                          <span>Tổng sao giỏ quà:</span>
+                          <span className="font-black text-purple-700 text-sm">-{totalCartStars} ⭐</span>
+                        </div>
+
+                        {studentMonthlyStars.available < totalCartStars ? (
+                          <p className="text-[11px] text-rose-600 font-bold pt-1 border-t border-purple-200">
+                            ⚠️ Con đang thiếu {totalCartStars - studentMonthlyStars.available} sao để đổi đơn quà này!
+                          </p>
+                        ) : (
+                          <p className="text-[11px] text-emerald-700 font-bold pt-1 border-t border-purple-200">
+                            ✅ Số sao của con đủ để đổi toàn bộ giỏ quà này!
+                          </p>
+                        )}
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={studentMonthlyStars.available < totalCartStars || totalCartStars === 0}
+                        className="w-full py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50 text-white font-black text-xs rounded-2xl shadow-md transition-all flex items-center justify-center space-x-1.5 cursor-pointer"
+                      >
+                        <Gift className="w-4 h-4" />
+                        <span>Xác Nhận Đổi Quà Ngay</span>
+                      </button>
+                    </form>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* SECTION: LỊCH SỬ ĐỔI QUÀ CỦA EM */}
+            <div className="bg-white rounded-3xl border border-slate-200 p-5 space-y-3 shadow-xs">
+              <h3 className="font-black text-sm text-slate-900 flex items-center gap-2">
+                <Clock className="w-4 h-4 text-blue-600" />
+                <span>Lịch Sử Đổi Quà Của Con ({studentRedemptions.length} Đơn)</span>
+              </h3>
+
+              {studentRedemptions.length === 0 ? (
+                <p className="text-xs text-slate-400 py-4 text-center">Con chưa có đơn đổi quà nào. Hãy tích sao chăm chỉ để đổi những món quà đầu tiên nhé!</p>
+              ) : (
+                <div className="space-y-2.5">
+                  {studentRedemptions.map((rd) => (
+                    <div
+                      key={rd.id}
+                      className={`p-3.5 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                        rd.status === 'PENDING' ? 'bg-amber-50/40 border-amber-200' : 'bg-slate-50/50 border-slate-200'
+                      }`}
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`text-[10px] font-black px-2.5 py-0.5 rounded-full ${
+                              rd.status === 'PENDING'
+                                ? 'bg-amber-100 text-amber-800'
+                                : 'bg-emerald-100 text-emerald-800'
+                            }`}
+                          >
+                            {rd.status === 'PENDING' ? '⏳ Đang chờ cô trao quà' : '🎉 Đã nhận quà'}
+                          </span>
+                          <span className="text-xs text-slate-400">
+                            Ngày {new Date(rd.requestedAt).toLocaleDateString('vi-VN')}
+                          </span>
+                        </div>
+
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {rd.items.map((it, idx) => (
+                            <span
+                              key={idx}
+                              className="bg-white px-2 py-0.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-800"
+                            >
+                              {it.productName} (x{it.quantity})
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <span className="font-black text-amber-600 text-sm shrink-0">-{rd.totalStars} ⭐</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* 8. TAB: HOMEWORK */}
         {activeTab === 'HOMEWORK' && (
           <div className="space-y-3">
             <div className="flex items-center justify-between bg-white p-3.5 rounded-2xl border border-slate-200 text-xs">
@@ -713,7 +1137,6 @@ export default function StudentPrivateReportPage({
                         </div>
                       </div>
 
-                      {/* FIXED SIZE BUTTON: NEVER JUMPS OR WRAPS */}
                       <button
                         type="button"
                         onClick={() => toggleCompleteHw(hw.id)}
@@ -738,7 +1161,7 @@ export default function StudentPrivateReportPage({
           </div>
         )}
 
-        {/* 8. TAB 3: BACKPACK PACKING */}
+        {/* 9. TAB: BACKPACK PACKING */}
         {activeTab === 'BACKPACK' && (
           <div className="bg-white rounded-3xl border border-slate-200 p-4 sm:p-5 space-y-3 shadow-xs">
             <div className="border-b border-slate-100 pb-3">
@@ -779,7 +1202,6 @@ export default function StudentPrivateReportPage({
                         </div>
                       </div>
 
-                      {/* FIXED SIZE BUTTON */}
                       <button
                         type="button"
                         onClick={() => togglePackSubject(slot.subjectCode)}
@@ -800,7 +1222,7 @@ export default function StudentPrivateReportPage({
           </div>
         )}
 
-        {/* 9. TAB 4: TIMETABLE */}
+        {/* 10. TAB: TIMETABLE */}
         {activeTab === 'TIMETABLE' && (
           <div className="bg-white rounded-3xl border border-slate-200 p-4 sm:p-5 space-y-3 shadow-xs">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
@@ -866,7 +1288,7 @@ export default function StudentPrivateReportPage({
           </div>
         )}
 
-        {/* 10. TAB 5: CLASS EVENTS */}
+        {/* 11. TAB: CLASS EVENTS */}
         {activeTab === 'EVENTS' && (
           <div className="bg-white rounded-3xl border border-slate-200 p-4 sm:p-5 space-y-3 shadow-xs">
             <div className="border-b border-slate-100 pb-3">
@@ -900,7 +1322,56 @@ export default function StudentPrivateReportPage({
         )}
       </main>
 
-      {/* 11. PIN CHANGE / SETUP MODAL */}
+      {/* 12. CRITERIA MODAL FOR STUDENTS */}
+      {isCriteriaModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white max-w-lg w-full rounded-3xl shadow-2xl border border-slate-200 p-6 space-y-4 max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center space-x-2">
+                <Star className="w-5 h-5 text-amber-500 fill-amber-400" />
+                <h3 className="font-black text-base text-slate-900">Bảng Tiêu Chí Kiếm Sao Của Lớp</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCriteriaModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500">
+              Các việc tốt và nề nếp gương mẫu con thực hiện mỗi ngày để được cô giáo cộng sao thi đua:
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+              {starCriteria.map((c) => (
+                <div key={c.id} className="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-center space-x-2">
+                  <span className="text-xl shrink-0">{c.icon}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-slate-900 truncate">{c.title}</p>
+                    <span className="text-amber-600 font-black text-[11px]">
+                      {c.points > 0 ? `+${c.points} ⭐` : `${c.points} ⭐`}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setIsCriteriaModalOpen(false)}
+                className="px-5 py-2 bg-blue-600 text-white font-bold text-xs rounded-xl shadow-xs"
+              >
+                Đã Hiểu
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 13. PIN CHANGE / SETUP MODAL */}
       {isPinModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white max-w-md w-full rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
