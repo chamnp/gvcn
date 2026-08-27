@@ -6,7 +6,7 @@ import { useAppStore } from '@/lib/store';
 import { BookOpen, GraduationCap, School, ChevronRight, Sun } from 'lucide-react';
 
 export default function HomeworkPortalIndex() {
-  const { schoolClasses } = useAppStore();
+  const { schoolClasses, schoolInfo } = useAppStore();
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col items-center justify-center p-4">
@@ -55,7 +55,7 @@ export default function HomeworkPortalIndex() {
         </div>
 
         <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-          <span className="text-slate-400 font-medium">Trường Tiểu học Chu Văn An</span>
+          <span className="text-slate-400 font-medium">{schoolInfo.name}</span>
           <Link href="/login" className="font-bold text-blue-600 hover:underline">
             Giáo viên đăng nhập →
           </Link>

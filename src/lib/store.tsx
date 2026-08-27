@@ -238,11 +238,46 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const savedHw = localStorage.getItem(STORAGE_PREFIX + 'homeworks');
       const savedKey = localStorage.getItem(STORAGE_PREFIX + 'apiKey');
 
-      if (savedSchool) setSchoolInfo(JSON.parse(savedSchool));
-      if (savedClasses) setSchoolClasses(JSON.parse(savedClasses));
+      if (savedSchool) {
+        const parsedSchool = JSON.parse(savedSchool);
+        if (parsedSchool.name === 'Trường Tiểu học Chu Văn An' || parsedSchool.schoolYear === '2025-2026' || !parsedSchool.name) {
+          setSchoolInfo(INITIAL_SCHOOL_INFO);
+          localStorage.setItem(STORAGE_PREFIX + 'schoolInfo', JSON.stringify(INITIAL_SCHOOL_INFO));
+        } else {
+          setSchoolInfo(parsedSchool);
+        }
+      } else {
+        setSchoolInfo(INITIAL_SCHOOL_INFO);
+      }
+
+      if (savedClasses) {
+        const parsedClasses = JSON.parse(savedClasses);
+        const upgradedClasses = parsedClasses.map((c: any) => ({
+          ...c,
+          schoolName: c.schoolName === 'Trường Tiểu học Chu Văn An' ? INITIAL_SCHOOL_INFO.name : c.schoolName || INITIAL_SCHOOL_INFO.name,
+          schoolYear: c.schoolYear === '2025-2026' ? '2026-2027' : c.schoolYear || '2026-2027',
+        }));
+        setSchoolClasses(upgradedClasses);
+      } else {
+        setSchoolClasses(INITIAL_SCHOOL_CLASSES);
+      }
+
       if (savedActiveId) setActiveClassId(savedActiveId);
       if (savedStudents) setAllStudents(JSON.parse(savedStudents));
-      if (savedTerm) setCurrentTerm(savedTerm as TermType);
+
+      const realCalendarTerm = getCurrentTermByDate();
+      if (savedTerm) {
+        // If old cached term was CUOI_NAM from previous bug while currently in GIUA_HK1, auto-sync to real calendar term
+        if (savedTerm === 'CUOI_NAM' && realCalendarTerm === 'GIUA_HK1') {
+          setCurrentTerm('GIUA_HK1');
+          localStorage.setItem(STORAGE_PREFIX + 'currentTerm', 'GIUA_HK1');
+        } else {
+          setCurrentTerm(savedTerm as TermType);
+        }
+      } else {
+        setCurrentTerm(realCalendarTerm);
+      }
+
       if (savedAtt) setAttendances(JSON.parse(savedAtt));
       if (savedStars) setStarLogs(JSON.parse(savedStars));
       if (savedTx) setAllTransactions(JSON.parse(savedTx));

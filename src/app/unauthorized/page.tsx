@@ -116,7 +116,7 @@ export default function UnauthorizedPage() {
           </p>
           <div className="bg-white p-2.5 rounded-xl border border-blue-200 font-mono text-xs font-bold text-blue-900 flex items-center justify-between">
             <span>anhnnh4@gmail.com</span>
-            <span className="text-[10px] font-sans font-normal text-slate-500">Admin Trường Chu Văn An</span>
+            <span className="text-[10px] font-sans font-normal text-slate-500">Admin Trường Tiểu học Đại Mỗ</span>
           </div>
         </div>
 

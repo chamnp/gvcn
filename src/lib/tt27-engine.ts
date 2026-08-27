@@ -6,31 +6,31 @@ export const TERMS: {
   shortName: string;
   monthsDescription: string;
 }[] = [
-  { id: 'GIUA_HK1', name: 'Giữa Học kỳ I', shortName: 'G.HK1', monthsDescription: 'Tháng 9 - Đầu T11' },
-  { id: 'CUOI_HK1', name: 'Cuối Học kỳ I', shortName: 'C.HK1', monthsDescription: 'Giữa T11 - T1' },
-  { id: 'GIUA_HK2', name: 'Giữa Học kỳ II', shortName: 'G.HK2', monthsDescription: 'Giữa T1 - T3' },
-  { id: 'CUOI_NAM', name: 'Cuối Năm học', shortName: 'C.Năm', monthsDescription: 'Tháng 4 - T8' },
+  { id: 'GIUA_HK1', name: 'Giữa Học kỳ I', shortName: 'G.HK1', monthsDescription: 'Tháng 8 - Giữa T11' },
+  { id: 'CUOI_HK1', name: 'Cuối Học kỳ I', shortName: 'C.HK1', monthsDescription: 'Giữa T11 - Giữa T1' },
+  { id: 'GIUA_HK2', name: 'Giữa Học kỳ II', shortName: 'G.HK2', monthsDescription: 'Giữa T1 - Hết T3' },
+  { id: 'CUOI_NAM', name: 'Cuối Năm học', shortName: 'C.Năm', monthsDescription: 'Tháng 4 - Tháng 7' },
 ];
 
 /**
  * Tự động xác định kỳ đánh giá TT27 dựa trên thời gian thực tế của năm học:
- * - Tháng 9 -> 15/11: Giữa Học kỳ 1 (GIUA_HK1)
+ * - Tháng 8, 9, 10 -> 15/11: Bắt đầu năm học mới & Giữa Học kỳ 1 (GIUA_HK1)
  * - 16/11 -> 15/01: Cuối Học kỳ 1 (CUOI_HK1)
  * - 16/01 -> 31/03: Giữa Học kỳ 2 (GIUA_HK2)
- * - 01/04 -> 31/08: Cuối Năm học / Cuối Học kỳ 2 (CUOI_NAM)
+ * - 01/04 -> 31/07: Cuối Năm học / Tổng kết năm học (CUOI_NAM)
  */
 export function getCurrentTermByDate(date: Date = new Date()): TermType {
   const month = date.getMonth() + 1; // 1 -> 12
   const day = date.getDate();
 
-  if (month === 9 || month === 10 || (month === 11 && day <= 15)) {
+  if (month === 8 || month === 9 || month === 10 || (month === 11 && day <= 15)) {
     return 'GIUA_HK1';
   } else if ((month === 11 && day > 15) || month === 12 || (month === 1 && day <= 15)) {
     return 'CUOI_HK1';
   } else if ((month === 1 && day > 15) || month === 2 || month === 3) {
     return 'GIUA_HK2';
   } else {
-    // Tháng 4, 5, 6, 7, 8
+    // Tháng 4, 5, 6, 7
     return 'CUOI_NAM';
   }
 }
