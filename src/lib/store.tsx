@@ -71,6 +71,7 @@ import {
 } from './tt27-engine';
 import { INITIAL_TIMETABLE, INITIAL_CUSTOM_SUBJECTS } from './timetable-data';
 import { useAuth } from './auth-context';
+import { supabase } from './supabase';
 import { toast } from 'sonner';
 
 export function getDefaultPinForStudent(student?: { dateOfBirth?: string }): string {
@@ -532,53 +533,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         } catch (e) {}
       }
 
-      // Nếu chưa có bảng đánh giá, tự động sinh dữ liệu mẫu ban đầu cho các môn
       if (savedSubAss) {
         setSubjectAssessments(JSON.parse(savedSubAss));
-      } else {
-        const initialSubAss: SubjectAssessment[] = [];
-        const subjects = PRIMARY_SUBJECTS.filter((s) => s.applicableGrades.includes(4));
-        INITIAL_STUDENTS.forEach((st, idx) => {
-          subjects.forEach((sb) => {
-            const isTop = idx < 4;
-            const isMedium = idx >= 4 && idx < 10;
-            const level: SubjectLevel = isTop ? 'T' : isMedium ? 'T' : 'H';
-            const score = sb.hasPeriodicTest ? (isTop ? 9.5 : isMedium ? 8.0 : 7.0) : undefined;
-            initialSubAss.push({
-              id: `sa-${st.id}-${sb.code}-CUOI_HK1`,
-              studentId: st.id,
-              subjectCode: sb.code,
-              term: 'CUOI_HK1',
-              level,
-              score,
-              comment: '',
-              updatedAt: new Date().toISOString(),
-            });
-          });
-        });
-        setSubjectAssessments(initialSubAss);
       }
 
       if (savedTraitAss) {
         setTraitAssessments(JSON.parse(savedTraitAss));
-      } else {
-        const initialTraitAss: TraitAssessment[] = [];
-        INITIAL_STUDENTS.forEach((st, idx) => {
-          TRAIT_DEFINITIONS.forEach((tr) => {
-            const level: TraitLevel = idx < 6 ? 'T' : 'Đ';
-            initialTraitAss.push({
-              id: `ta-${st.id}-${tr.code}-CUOI_HK1`,
-              studentId: st.id,
-              traitCode: tr.code,
-              category: tr.category,
-              term: 'CUOI_HK1',
-              level,
-              comment: '',
-              updatedAt: new Date().toISOString(),
-            });
-          });
-        });
-        setTraitAssessments(initialTraitAss);
       }
 
       if (savedSummaries) {
@@ -589,6 +549,133 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } finally {
       setIsLoaded(true);
     }
+  }, []);
+
+  // 100% Live API Connection: Đồng bộ dữ liệu 2 chiều thời gian thực với Supabase
+  useEffect(() => {
+    let isMounted = true;
+
+    async function syncFromSupabase() {
+      try {
+        const [
+          { data: dbSchool },
+          { data: dbClasses },
+          { data: dbStudents },
+          { data: dbAssessments },
+          { data: dbTraits },
+          { data: dbSummaries },
+          { data: dbAttendances },
+          { data: dbStars },
+          { data: dbHomeworks },
+          { data: dbTimetable },
+          { data: dbEvents },
+          { data: dbCustomSubjects },
+        ] = await Promise.all([
+          supabase.from('SchoolInfo').select('*').single(),
+          supabase.from('Class').select('*').order('grade', { ascending: true }),
+          supabase.from('Student').select('*').order('id', { ascending: true }),
+          supabase.from('SubjectAssessment').select('*'),
+          supabase.from('TraitAssessment').select('*'),
+          supabase.from('TermSummary').select('*'),
+          supabase.from('DailyAttendance').select('*'),
+          supabase.from('StarLog').select('*').order('createdAt', { ascending: false }),
+          supabase.from('HomeworkAssignment').select('*').order('createdAt', { ascending: false }),
+          supabase.from('TimetableSlot').select('*'),
+          supabase.from('ClassEvent').select('*').order('date', { ascending: true }),
+          supabase.from('CustomSubject').select('*'),
+        ]);
+
+        if (!isMounted) return;
+
+        if (dbSchool) {
+          setSchoolInfo((prev) => ({
+            ...prev,
+            id: dbSchool.id || prev.id || 'default',
+            name: dbSchool.name || prev.name || 'Trường Tiểu học Đại Mỗ',
+            departmentName: dbSchool.departmentName || prev.departmentName || 'Phòng GD&ĐT Quận Nam Từ Liêm',
+            address: dbSchool.address || prev.address || '',
+            phone: dbSchool.phone || prev.phone || '',
+            principalName: dbSchool.principalName || prev.principalName || '',
+            schoolYear: dbSchool.schoolYear || prev.schoolYear || '2026-2027',
+          }));
+        }
+
+        if (dbClasses && dbClasses.length > 0) {
+          setSchoolClasses(dbClasses);
+        }
+
+        if (dbStudents && dbStudents.length > 0) {
+          const mappedStudents: Student[] = dbStudents.map((st: any) => ({
+            id: st.id,
+            classId: st.classId,
+            studentCode: st.studentCode,
+            fullName: st.fullName,
+            gender: st.gender,
+            dateOfBirth: st.dateOfBirth,
+            birthPlace: st.birthPlace,
+            ethnicity: st.ethnicity,
+            address: st.address,
+            parentName: st.parentName,
+            parentPhone: st.parentPhone,
+            isBoarding: st.isBoarding !== false,
+            seatRow: st.seatRow,
+            seatCol: st.seatCol,
+            healthNotes: st.healthNotes,
+            tags: typeof st.tags === 'string' ? JSON.parse(st.tags || '[]') : st.tags || [],
+            avatarUrl: st.avatarUrl,
+            shareToken: st.shareToken,
+            customPin: st.customPin,
+            isActivated: Boolean(st.isActivated),
+            createdAt: st.createdAt,
+          }));
+          setAllStudents(mappedStudents);
+        }
+
+        if (dbAssessments && dbAssessments.length > 0) {
+          setSubjectAssessments(dbAssessments);
+        }
+
+        if (dbTraits && dbTraits.length > 0) {
+          setTraitAssessments(dbTraits);
+        }
+
+        if (dbSummaries && dbSummaries.length > 0) {
+          setTermSummaries(dbSummaries);
+        }
+
+        if (dbAttendances && dbAttendances.length > 0) {
+          setAttendances(dbAttendances);
+        }
+
+        if (dbStars && dbStars.length > 0) {
+          setStarLogs(dbStars);
+        }
+
+        if (dbHomeworks && dbHomeworks.length > 0) {
+          setAllHomeworks(dbHomeworks);
+        }
+
+        if (dbTimetable && dbTimetable.length > 0) {
+          setAllTimetables(dbTimetable);
+        }
+
+        if (dbEvents && dbEvents.length > 0) {
+          setAllClassEvents(dbEvents);
+        }
+
+        if (dbCustomSubjects && dbCustomSubjects.length > 0) {
+          setCustomSubjects(dbCustomSubjects);
+        }
+      } catch (err) {
+        console.warn('Supabase initial fetch error:', err);
+      }
+    }
+
+    syncFromSupabase();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Tự động lưu vào LocalStorage
@@ -650,6 +737,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }))
         );
       }
+
+      // Live API Write to Supabase
+      supabase
+        .from('SchoolInfo')
+        .upsert({
+          id: 'default',
+          name: updated.name,
+          address: updated.address,
+          phone: updated.phone,
+          principalName: updated.principalName,
+          schoolYear: updated.schoolYear,
+          updatedAt: new Date().toISOString(),
+        })
+        .then();
+
       return updated;
     });
     toast.success('Đã cập nhật thông tin nhà trường!');
@@ -677,10 +779,47 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     setSchoolClasses((prev) => [...prev, newClass]);
     setActiveClassId(newClass.id);
+
+    // Live API Write to Supabase
+    supabase
+      .from('Class')
+      .upsert({
+        id: newClass.id,
+        name: newClass.name,
+        grade: newClass.grade,
+        schoolYear: newClass.schoolYear,
+        schoolName: newClass.schoolName,
+        teacherName: newClass.teacherName,
+        totalStudents: newClass.totalStudents || 0,
+        seatingGridRows: newClass.seatingGridRows || 5,
+        seatingGridCols: newClass.seatingGridCols || 8,
+        shareToken: newClass.shareToken,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      })
+      .then();
   };
 
   const updateClass = (updated: ClassInfo) => {
     setSchoolClasses((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+
+    // Live API Write to Supabase
+    supabase
+      .from('Class')
+      .upsert({
+        id: updated.id,
+        name: updated.name,
+        grade: updated.grade,
+        schoolYear: updated.schoolYear,
+        schoolName: updated.schoolName,
+        teacherName: updated.teacherName,
+        totalStudents: updated.totalStudents || 0,
+        seatingGridRows: updated.seatingGridRows || 5,
+        seatingGridCols: updated.seatingGridCols || 8,
+        shareToken: updated.shareToken,
+        updatedAt: new Date().toISOString(),
+      })
+      .then();
   };
 
   const deleteClass = (classId: string) => {
@@ -689,6 +828,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const remaining = schoolClasses.filter((c) => c.id !== classId);
       if (remaining.length > 0) setActiveClassId(remaining[0].id);
     }
+    supabase.from('Class').delete().eq('id', classId).then();
   };
 
   const regenerateClassShareToken = (classId?: string): string => {
@@ -706,6 +846,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return updated;
     });
 
+    supabase.from('Class').update({ shareToken: newToken, updatedAt: new Date().toISOString() }).eq('id', targetId).then();
+
     return newToken;
   };
 
@@ -716,10 +858,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: `cs-${Date.now()}`,
     };
     setCustomSubjects((prev) => [...prev, newSub]);
+
+    supabase
+      .from('CustomSubject')
+      .upsert({
+        id: newSub.id,
+        code: newSub.code,
+        name: newSub.name,
+        shortName: newSub.shortName,
+        icon: newSub.icon,
+        bgColor: newSub.bgColor,
+        textColor: newSub.textColor,
+        borderColor: newSub.borderColor,
+        category: newSub.category,
+        createdAt: new Date().toISOString(),
+      })
+      .then();
   };
 
   const deleteCustomSubject = (id: string) => {
     setCustomSubjects((prev) => prev.filter((s) => s.id !== id));
+    supabase.from('CustomSubject').delete().eq('id', id).then();
   };
 
   // HOMEWORK ACTIONS
@@ -732,14 +891,51 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createdAt: new Date().toISOString(),
     };
     setAllHomeworks((prev) => [newHw, ...prev]);
+
+    // Live API Write to Supabase
+    supabase
+      .from('HomeworkAssignment')
+      .upsert({
+        id: newHw.id,
+        classId: newHw.classId,
+        className: newHw.className,
+        subjectCode: newHw.subjectCode,
+        subjectName: newHw.subjectName,
+        title: newHw.title,
+        description: newHw.description,
+        attachmentUrl: newHw.attachmentUrl,
+        assignedDate: newHw.assignedDate,
+        dueDate: newHw.dueDate,
+        reminderNotes: newHw.reminderNotes,
+        createdAt: newHw.createdAt,
+      })
+      .then();
   };
 
   const updateHomework = (updated: HomeworkAssignment) => {
     setAllHomeworks((prev) => prev.map((h) => (h.id === updated.id ? updated : h)));
+
+    supabase
+      .from('HomeworkAssignment')
+      .upsert({
+        id: updated.id,
+        classId: updated.classId,
+        className: updated.className,
+        subjectCode: updated.subjectCode,
+        subjectName: updated.subjectName,
+        title: updated.title,
+        description: updated.description,
+        attachmentUrl: updated.attachmentUrl,
+        assignedDate: updated.assignedDate,
+        dueDate: updated.dueDate,
+        reminderNotes: updated.reminderNotes,
+      })
+      .then();
   };
 
   const deleteHomework = (id: string) => {
     setAllHomeworks((prev) => prev.filter((h) => h.id !== id));
+    supabase.from('HomeworkAssignment').delete().eq('id', id).then();
   };
 
   // TIMETABLE ACTIONS
@@ -751,11 +947,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     note?: string,
     teacherName?: string
   ) => {
+    const slotId = `${activeClassId}-${day.toLowerCase()}-p${period}`;
+    const session = period <= 4 ? 'MORNING' : 'AFTERNOON';
+
     setAllTimetables((prev) => {
       const idx = prev.findIndex(
         (s) => (s.classId || 'class-4a1') === activeClassId && s.day === day && s.period === period
       );
-      const session = period <= 4 ? 'MORNING' : 'AFTERNOON';
       if (idx >= 0) {
         const copy = [...prev];
         copy[idx] = {
@@ -770,7 +968,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return [
         ...prev,
         {
-          id: `${activeClassId}-${day.toLowerCase()}-p${period}`,
+          id: slotId,
           classId: activeClassId,
           day,
           period,
@@ -782,6 +980,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         },
       ];
     });
+
+    supabase
+      .from('TimetableSlot')
+      .upsert({
+        id: slotId,
+        classId: activeClassId,
+        day,
+        period,
+        session,
+        subjectCode,
+        subjectName,
+        note: note || '',
+        teacherName: teacherName || null,
+        createdAt: new Date().toISOString(),
+      })
+      .then();
   };
 
   const setTimetable = (slots: TimetableSlot[]) => {
@@ -790,6 +1004,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const taggedSlots = slots.map((s) => ({ ...s, classId: activeClassId }));
       return [...otherClasses, ...taggedSlots];
     });
+
+    const dbSlots = slots.map((s) => ({
+      id: s.id || `${activeClassId}-${s.day.toLowerCase()}-p${s.period}`,
+      classId: activeClassId,
+      day: s.day,
+      period: s.period,
+      session: s.session || (s.period <= 4 ? 'MORNING' : 'AFTERNOON'),
+      subjectCode: s.subjectCode,
+      subjectName: s.subjectName,
+      note: s.note || '',
+      teacherName: s.teacherName || null,
+      createdAt: new Date().toISOString(),
+    }));
+    supabase.from('TimetableSlot').upsert(dbSlots).then();
   };
 
   const resetTimetableToStandard = () => {
@@ -807,10 +1035,61 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createdAt: new Date().toISOString(),
     };
     setAllStudents((prev) => [...prev, newStudent]);
+
+    // Live API Write to Supabase
+    supabase
+      .from('Student')
+      .upsert({
+        id: newStudent.id,
+        classId: newStudent.classId,
+        studentCode: newStudent.studentCode,
+        fullName: newStudent.fullName,
+        gender: newStudent.gender,
+        dateOfBirth: newStudent.dateOfBirth,
+        parentName: newStudent.parentName,
+        parentPhone: newStudent.parentPhone,
+        isBoarding: newStudent.isBoarding,
+        seatRow: newStudent.seatRow,
+        seatCol: newStudent.seatCol,
+        healthNotes: newStudent.healthNotes,
+        tags: JSON.stringify(newStudent.tags || []),
+        shareToken: newStudent.shareToken,
+        createdAt: newStudent.createdAt,
+        updatedAt: new Date().toISOString(),
+      })
+      .then();
   };
 
   const updateStudent = (updated: Student) => {
     setAllStudents((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+
+    // Live API Write to Supabase
+    supabase
+      .from('Student')
+      .upsert({
+        id: updated.id,
+        classId: updated.classId,
+        studentCode: updated.studentCode,
+        fullName: updated.fullName,
+        gender: updated.gender,
+        dateOfBirth: updated.dateOfBirth,
+        birthPlace: updated.birthPlace,
+        ethnicity: updated.ethnicity,
+        address: updated.address,
+        parentName: updated.parentName,
+        parentPhone: updated.parentPhone,
+        isBoarding: updated.isBoarding,
+        seatRow: updated.seatRow,
+        seatCol: updated.seatCol,
+        healthNotes: updated.healthNotes,
+        tags: JSON.stringify(updated.tags || []),
+        avatarUrl: updated.avatarUrl,
+        shareToken: updated.shareToken,
+        customPin: updated.customPin,
+        isActivated: updated.isActivated,
+        updatedAt: new Date().toISOString(),
+      })
+      .then();
   };
 
   const deleteStudent = (id: string) => {
@@ -820,6 +1099,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setSubjectAssessments((prev) => prev.filter((a) => a.studentId !== id));
     setTraitAssessments((prev) => prev.filter((a) => a.studentId !== id));
     setTermSummaries((prev) => prev.filter((a) => a.studentId !== id));
+
+    // Live API Deletion from Supabase
+    supabase.from('Student').delete().eq('id', id).then();
+    supabase.from('StarLog').delete().eq('studentId', id).then();
+    supabase.from('DailyAttendance').delete().eq('studentId', id).then();
+    supabase.from('SubjectAssessment').delete().eq('studentId', id).then();
+    supabase.from('TraitAssessment').delete().eq('studentId', id).then();
+    supabase.from('TermSummary').delete().eq('studentId', id).then();
   };
 
   const importStudents = (
@@ -961,6 +1248,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       });
 
+      // Persist to Supabase Live Database
+      const dbRows = updatedClassStudents.map((st) => ({
+        id: st.id,
+        classId: st.classId,
+        studentCode: st.studentCode,
+        fullName: st.fullName,
+        gender: st.gender,
+        dateOfBirth: st.dateOfBirth,
+        parentName: st.parentName,
+        parentPhone: st.parentPhone,
+        isBoarding: st.isBoarding,
+        seatRow: st.seatRow,
+        seatCol: st.seatCol,
+        healthNotes: st.healthNotes,
+        tags: JSON.stringify(st.tags || []),
+        shareToken: st.shareToken,
+        createdAt: st.createdAt,
+        updatedAt: new Date().toISOString(),
+      }));
+      supabase.from('Student').upsert(dbRows).then();
+
       return [...otherClassStudents, ...updatedClassStudents];
     });
 
@@ -999,6 +1307,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAllStudents((prev) =>
       prev.map((s) => (s.id === studentId ? { ...s, seatRow: row, seatCol: col } : s))
     );
+    supabase.from('Student').update({ seatRow: row, seatCol: col, updatedAt: new Date().toISOString() }).eq('id', studentId).then();
   };
 
   const updateStudentSecurity = (
@@ -1029,6 +1338,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } catch (e) {}
       return updated;
     });
+
+    supabase
+      .from('Student')
+      .update({
+        customPin: security.customPin,
+        isActivated: security.isActivated,
+        parentPhone: security.parentPhone,
+        shareToken: security.shareToken,
+        updatedAt: new Date().toISOString(),
+      })
+      .eq('id', studentId)
+      .then();
   };
 
   const resetStudentPin = (studentId: string) => {
@@ -1049,6 +1370,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } catch (e) {}
       return updated;
     });
+
+    supabase
+      .from('Student')
+      .update({
+        customPin: null,
+        isActivated: false,
+        updatedAt: new Date().toISOString(),
+      })
+      .eq('id', studentId)
+      .then();
   };
 
   const regenerateStudentToken = (studentId: string): string => {
@@ -1069,6 +1400,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } catch (e) {}
       return updated;
     });
+
+    supabase
+      .from('Student')
+      .update({
+        shareToken: newToken,
+        updatedAt: new Date().toISOString(),
+      })
+      .eq('id', studentId)
+      .then();
+
     return newToken;
   };
 
@@ -1081,6 +1422,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     score?: number,
     comment?: string
   ) => {
+    const recordId = `sa-${studentId}-${subjectCode}-${term}`;
     setSubjectAssessments((prev) => {
       const idx = prev.findIndex(
         (a) => a.studentId === studentId && a.subjectCode === subjectCode && a.term === term
@@ -1099,7 +1441,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return [
         ...prev,
         {
-          id: `sa-${studentId}-${subjectCode}-${term}`,
+          id: recordId,
           studentId,
           subjectCode,
           term,
@@ -1110,6 +1452,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         },
       ];
     });
+
+    // Live API Write to Supabase
+    supabase
+      .from('SubjectAssessment')
+      .upsert({
+        id: recordId,
+        studentId,
+        subjectCode,
+        term,
+        level,
+        score: score !== undefined ? score : null,
+        comment: comment || '',
+        updatedAt: new Date().toISOString(),
+      })
+      .then();
   };
 
   const batchSetSubjectLevel = (subjectCode: string, level: SubjectLevel) => {
@@ -1126,6 +1483,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     level: TraitLevel,
     comment?: string
   ) => {
+    const recordId = `ta-${studentId}-${traitCode}-${term}`;
     setTraitAssessments((prev) => {
       const idx = prev.findIndex(
         (a) => a.studentId === studentId && a.traitCode === traitCode && a.term === term
@@ -1143,7 +1501,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return [
         ...prev,
         {
-          id: `ta-${studentId}-${traitCode}-${term}`,
+          id: recordId,
           studentId,
           traitCode,
           category,
@@ -1154,6 +1512,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         },
       ];
     });
+
+    // Live API Write to Supabase
+    supabase
+      .from('TraitAssessment')
+      .upsert({
+        id: recordId,
+        studentId,
+        traitCode,
+        category,
+        term,
+        level,
+        comment: comment || '',
+        updatedAt: new Date().toISOString(),
+      })
+      .then();
   };
 
   const batchSetTraitLevel = (traitCode: string, level: TraitLevel) => {
@@ -1169,6 +1542,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     term: TermType,
     partial: Partial<StudentTermSummary>
   ) => {
+    const recordId = `ts-${studentId}-${term}`;
     setTermSummaries((prev) => {
       const idx = prev.findIndex((s) => s.studentId === studentId && s.term === term);
       if (idx >= 0) {
@@ -1189,6 +1563,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         },
       ];
     });
+
+    // Live API Write to Supabase
+    supabase
+      .from('TermSummary')
+      .upsert({
+        id: recordId,
+        studentId,
+        term,
+        overallLearningLevel: partial.overallLearningLevel,
+        overallTraitsLevel: partial.overallTraitsLevel,
+        awardTitle: partial.awardTitle,
+        awardDetail: partial.awardDetail,
+        teacherComment: partial.teacherComment,
+        promotedToNextGrade: partial.promotedToNextGrade,
+        summerRemediation: partial.summerRemediation,
+        updatedAt: new Date().toISOString(),
+      })
+      .then();
   };
 
   const recalculateAllAwards = (term: TermType) => {
@@ -1214,6 +1606,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     hasBoardingMeal: boolean,
     reason?: string
   ) => {
+    const recordId = `att-${studentId}-${date}`;
     setAttendances((prev) => {
       const idx = prev.findIndex((a) => a.studentId === studentId && a.date === date);
       if (idx >= 0) {
@@ -1224,7 +1617,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return [
         ...prev,
         {
-          id: `att-${studentId}-${date}`,
+          id: recordId,
           studentId,
           date,
           status,
@@ -1233,6 +1626,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         },
       ];
     });
+
+    // Live API Write to Supabase
+    supabase
+      .from('DailyAttendance')
+      .upsert({
+        id: recordId,
+        studentId,
+        date,
+        status,
+        hasBoardingMeal,
+        reason: reason || '',
+      })
+      .then();
   };
 
   const batchSetAttendance = (date: string, status: AttendanceStatus) => {
@@ -1261,10 +1667,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createdAt: new Date().toISOString(),
     };
     setStarLogs((prev) => [newLog, ...prev]);
+
+    // Live API Write to Supabase
+    supabase
+      .from('StarLog')
+      .insert({
+        id: newLog.id,
+        studentId: newLog.studentId,
+        points: newLog.points,
+        category: newLog.category,
+        reason: newLog.reason,
+        createdAt: newLog.createdAt,
+      })
+      .then();
   };
 
   const deleteStarLog = (logId: string) => {
     setStarLogs((prev) => prev.filter((s) => s.id !== logId));
+    supabase.from('StarLog').delete().eq('id', logId).then();
   };
 
   const getStudentStars = (studentId: string) => {
@@ -1572,6 +1992,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } catch (e) {}
       return updated;
     });
+
+    supabase
+      .from('ClassEvent')
+      .upsert({
+        id: newEv.id,
+        classId: newEv.classId,
+        title: newEv.title,
+        eventType: newEv.type || 'OTHER',
+        date: newEv.date,
+        time: newEv.time,
+        location: newEv.location,
+        description: newEv.description,
+        isImportant: newEv.isImportant,
+        createdAt: new Date().toISOString(),
+      })
+      .then();
   };
 
   const updateClassEvent = (event: ClassEvent) => {
@@ -1582,6 +2018,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } catch (e) {}
       return updated;
     });
+
+    supabase
+      .from('ClassEvent')
+      .upsert({
+        id: event.id,
+        classId: event.classId,
+        title: event.title,
+        eventType: event.type || 'OTHER',
+        date: event.date,
+        time: event.time,
+        location: event.location,
+        description: event.description,
+        isImportant: event.isImportant,
+      })
+      .then();
   };
 
   const deleteClassEvent = (id: string) => {
@@ -1592,6 +2043,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } catch (e) {}
       return updated;
     });
+
+    supabase.from('ClassEvent').delete().eq('id', id).then();
   };
 
   return (

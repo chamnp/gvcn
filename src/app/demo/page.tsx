@@ -19,12 +19,12 @@ import {
 import { useAppStore } from '@/lib/store';
 
 export default function DemoHubPage() {
-  const { schoolInfo, classInfo } = useAppStore();
+  const { schoolInfo, classInfo, students } = useAppStore();
 
   const DEMO_MODULES = [
     {
-      title: `Hồ Sơ Học Sinh Mẫu (30 Em)`,
-      desc: `Danh sách 30 học sinh Lớp ${classInfo.name} với đầy đủ mã số, ngày sinh, thông tin phụ huynh và trạng thái bán trú.`,
+      title: `Hồ Sơ Học Sinh Lớp ${classInfo.name} (${students.length} Em)`,
+      desc: `Danh sách ${students.length} học sinh Lớp ${classInfo.name} với đầy đủ mã định danh, ngày sinh, thông tin phụ huynh và trạng thái bán trú.`,
       href: '/students',
       icon: Users,
       color: 'bg-blue-500',
