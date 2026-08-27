@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import {
   ClassInfo,
   Student,
@@ -9,6 +9,7 @@ import {
   StudentTermSummary,
   DailyAttendance,
   StarLog,
+  FundTransaction,
   TermType,
   SubjectLevel,
   TraitLevel,
@@ -22,9 +23,11 @@ import {
   INITIAL_STUDENTS,
   INITIAL_DAILY_ATTENDANCE,
   INITIAL_STAR_LOGS,
+  INITIAL_TRANSACTIONS,
 } from '@/data/mock-data';
 import { PRIMARY_SUBJECTS, TRAIT_DEFINITIONS, evaluateStudentTT27 } from './tt27-engine';
 import { INITIAL_TIMETABLE } from './timetable-data';
+import { useAuth } from './auth-context';
 
 interface AppContextType {
   // Multi-Class Management
@@ -37,7 +40,9 @@ interface AppContextType {
   updateClass: (updated: ClassInfo) => void;
   deleteClass: (classId: string) => void;
 
+  // Active Class Scoped Data
   students: Student[];
+  allStudents: Student[];
   currentTerm: TermType;
   setCurrentTerm: (term: TermType) => void;
   subjectAssessments: SubjectAssessment[];
@@ -47,12 +52,18 @@ interface AppContextType {
   starLogs: StarLog[];
   apiKey: string;
   setApiKey: (key: string) => void;
-  
+
   // Timetable
   timetable: TimetableSlot[];
   updateTimetableSlot: (day: DayOfWeek, period: number, subjectCode: string, subjectName: string, note?: string) => void;
   setTimetable: (slots: TimetableSlot[]) => void;
   resetTimetableToStandard: () => void;
+
+  // Class Fund Management
+  transactions: FundTransaction[];
+  addTransaction: (tx: Omit<FundTransaction, 'id' | 'createdAt'>) => void;
+  updateTransaction: (tx: FundTransaction) => void;
+  deleteTransaction: (id: string) => void;
 
   // Student Actions
   addStudent: (student: Omit<Student, 'id' | 'createdAt'>) => void;
@@ -97,7 +108,9 @@ interface AppContextType {
   addStarLog: (studentId: string, points: number, category: string, reason: string) => void;
   getStudentStars: (studentId: string) => number;
 
-  // Reset
+  // Full Database Backup & Restore
+  exportAllDataJSON: () => string;
+  importAllDataJSON: (jsonStr: string) => { success: boolean; error?: string };
   resetData: () => void;
 }
 
@@ -108,19 +121,55 @@ const STORAGE_PREFIX = 'gvcn_pro_';
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [schoolClasses, setSchoolClasses] = useState<ClassInfo[]>(INITIAL_SCHOOL_CLASSES);
   const [activeClassId, setActiveClassId] = useState<string>('class-4a1');
-  const [students, setStudents] = useState<Student[]>(INITIAL_STUDENTS);
+  const [allStudents, setAllStudents] = useState<Student[]>(INITIAL_STUDENTS);
   const [currentTerm, setCurrentTerm] = useState<TermType>('CUOI_HK1');
   const [subjectAssessments, setSubjectAssessments] = useState<SubjectAssessment[]>([]);
   const [traitAssessments, setTraitAssessments] = useState<TraitAssessment[]>([]);
   const [termSummaries, setTermSummaries] = useState<StudentTermSummary[]>([]);
   const [attendances, setAttendances] = useState<DailyAttendance[]>(INITIAL_DAILY_ATTENDANCE);
   const [starLogs, setStarLogs] = useState<StarLog[]>(INITIAL_STAR_LOGS);
-  const [timetable, setTimetableState] = useState<TimetableSlot[]>(INITIAL_TIMETABLE);
+  const [allTransactions, setAllTransactions] = useState<FundTransaction[]>(INITIAL_TRANSACTIONS);
+  const [allTimetables, setAllTimetables] = useState<TimetableSlot[]>(
+    INITIAL_TIMETABLE.map((t) => ({ ...t, classId: 'class-4a1' }))
+  );
   const [apiKey, setApiKey] = useState<string>('');
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Active Class Info
-  const classInfo = schoolClasses.find((c) => c.id === activeClassId) || schoolClasses[0] || INITIAL_CLASS;
+  const classInfo = useMemo(() => {
+    return schoolClasses.find((c) => c.id === activeClassId) || schoolClasses[0] || INITIAL_CLASS;
+  }, [schoolClasses, activeClassId]);
+
+  // Scoped Students for active class
+  const students = useMemo(() => {
+    const list = allStudents.filter((s) => (s.classId || 'class-4a1') === activeClassId);
+    return list;
+  }, [allStudents, activeClassId]);
+
+  // Scoped Timetable for active class
+  const timetable = useMemo(() => {
+    const list = allTimetables.filter((t) => (t.classId || 'class-4a1') === activeClassId);
+    if (list.length > 0) return list;
+    return INITIAL_TIMETABLE.map((t) => ({ ...t, classId: activeClassId }));
+  }, [allTimetables, activeClassId]);
+
+  // Scoped Fund Transactions for active class
+  const transactions = useMemo(() => {
+    return allTransactions.filter((tx) => (tx.classId || 'class-4a1') === activeClassId);
+  }, [allTransactions, activeClassId]);
+
+  const { profile } = useAuth();
+
+  // Tự động chuyển lớp theo phân công của giáo viên khi đăng nhập
+  useEffect(() => {
+    if (profile && profile.role === 'TEACHER' && profile.assignedClassName) {
+      const rawName = profile.assignedClassName.replace('Lớp ', '').trim().toLowerCase();
+      const matchedClass = schoolClasses.find((c) => c.name.toLowerCase() === rawName || c.id.toLowerCase() === rawName);
+      if (matchedClass && matchedClass.id !== activeClassId) {
+        setActiveClassId(matchedClass.id);
+      }
+    }
+  }, [profile, schoolClasses]);
 
   // Khởi tạo và load từ LocalStorage
   useEffect(() => {
@@ -134,16 +183,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const savedSummaries = localStorage.getItem(STORAGE_PREFIX + 'termSummaries');
       const savedAtt = localStorage.getItem(STORAGE_PREFIX + 'attendances');
       const savedStars = localStorage.getItem(STORAGE_PREFIX + 'starLogs');
+      const savedTx = localStorage.getItem(STORAGE_PREFIX + 'transactions');
       const savedTt = localStorage.getItem(STORAGE_PREFIX + 'timetable');
       const savedKey = localStorage.getItem(STORAGE_PREFIX + 'apiKey');
 
       if (savedClasses) setSchoolClasses(JSON.parse(savedClasses));
       if (savedActiveId) setActiveClassId(savedActiveId);
-      if (savedStudents) setStudents(JSON.parse(savedStudents));
+      if (savedStudents) {
+        const parsedStudents: Student[] = JSON.parse(savedStudents);
+        setAllStudents(parsedStudents.map((s) => ({ ...s, classId: s.classId || 'class-4a1' })));
+      }
       if (savedTerm) setCurrentTerm(savedTerm as TermType);
       if (savedAtt) setAttendances(JSON.parse(savedAtt));
       if (savedStars) setStarLogs(JSON.parse(savedStars));
-      if (savedTt) setTimetableState(JSON.parse(savedTt));
+      if (savedTx) setAllTransactions(JSON.parse(savedTx));
+      if (savedTt) setAllTimetables(JSON.parse(savedTt));
       if (savedKey) setApiKey(savedKey);
 
       // Nếu chưa có bảng đánh giá, tự động sinh dữ liệu mẫu ban đầu cho các môn
@@ -211,14 +265,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       localStorage.setItem(STORAGE_PREFIX + 'schoolClasses', JSON.stringify(schoolClasses));
       localStorage.setItem(STORAGE_PREFIX + 'activeClassId', activeClassId);
-      localStorage.setItem(STORAGE_PREFIX + 'students', JSON.stringify(students));
+      localStorage.setItem(STORAGE_PREFIX + 'students', JSON.stringify(allStudents));
       localStorage.setItem(STORAGE_PREFIX + 'currentTerm', currentTerm);
       localStorage.setItem(STORAGE_PREFIX + 'subjectAssessments', JSON.stringify(subjectAssessments));
       localStorage.setItem(STORAGE_PREFIX + 'traitAssessments', JSON.stringify(traitAssessments));
       localStorage.setItem(STORAGE_PREFIX + 'termSummaries', JSON.stringify(termSummaries));
       localStorage.setItem(STORAGE_PREFIX + 'attendances', JSON.stringify(attendances));
       localStorage.setItem(STORAGE_PREFIX + 'starLogs', JSON.stringify(starLogs));
-      localStorage.setItem(STORAGE_PREFIX + 'timetable', JSON.stringify(timetable));
+      localStorage.setItem(STORAGE_PREFIX + 'transactions', JSON.stringify(allTransactions));
+      localStorage.setItem(STORAGE_PREFIX + 'timetable', JSON.stringify(allTimetables));
       localStorage.setItem(STORAGE_PREFIX + 'apiKey', apiKey);
     } catch (e) {
       console.warn('Error writing to localStorage:', e);
@@ -227,14 +282,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     isLoaded,
     schoolClasses,
     activeClassId,
-    students,
+    allStudents,
     currentTerm,
     subjectAssessments,
     traitAssessments,
     termSummaries,
     attendances,
     starLogs,
-    timetable,
+    allTransactions,
+    allTimetables,
     apiKey,
   ]);
 
@@ -262,6 +318,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteClass = (classId: string) => {
     setSchoolClasses((prev) => prev.filter((c) => c.id !== classId));
+    setAllStudents((prev) => prev.filter((s) => s.classId !== classId));
     if (activeClassId === classId) {
       const remaining = schoolClasses.filter((c) => c.id !== classId);
       if (remaining.length > 0) setActiveClassId(remaining[0].id);
@@ -276,13 +333,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     subjectName: string,
     note?: string
   ) => {
-    setTimetableState((prev) => {
-      const idx = prev.findIndex((s) => s.day === day && s.period === period);
+    setAllTimetables((prev) => {
+      const idx = prev.findIndex((s) => (s.classId || 'class-4a1') === activeClassId && s.day === day && s.period === period);
       const session = period <= 4 ? 'MORNING' : 'AFTERNOON';
       if (idx >= 0) {
         const copy = [...prev];
         copy[idx] = {
           ...copy[idx],
+          classId: activeClassId,
           subjectCode,
           subjectName,
           note: note !== undefined ? note : copy[idx].note,
@@ -292,7 +350,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return [
         ...prev,
         {
-          id: `${day.toLowerCase()}-p${period}`,
+          id: `${activeClassId}-${day.toLowerCase()}-p${period}`,
+          classId: activeClassId,
           day,
           period,
           session,
@@ -305,11 +364,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const setTimetable = (slots: TimetableSlot[]) => {
-    setTimetableState(slots);
+    setAllTimetables((prev) => {
+      const otherClassesSlots = prev.filter((s) => (s.classId || 'class-4a1') !== activeClassId);
+      const scopedSlots = slots.map((s) => ({ ...s, classId: activeClassId }));
+      return [...otherClassesSlots, ...scopedSlots];
+    });
   };
 
   const resetTimetableToStandard = () => {
-    setTimetableState(INITIAL_TIMETABLE);
+    const scopedSlots = INITIAL_TIMETABLE.map((t) => ({ ...t, classId: activeClassId }));
+    setTimetable(scopedSlots);
+  };
+
+  // CLASS FUND ACTIONS
+  const addTransaction = (txData: Omit<FundTransaction, 'id' | 'createdAt'>) => {
+    const newTx: FundTransaction = {
+      ...txData,
+      id: `tx-${Date.now()}`,
+      classId: activeClassId,
+      createdAt: new Date().toISOString(),
+    };
+    setAllTransactions((prev) => [newTx, ...prev]);
+  };
+
+  const updateTransaction = (updated: FundTransaction) => {
+    setAllTransactions((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+  };
+
+  const deleteTransaction = (id: string) => {
+    setAllTransactions((prev) => prev.filter((t) => t.id !== id));
   };
 
   // STUDENT ACTIONS
@@ -317,45 +400,48 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const newStudent: Student = {
       ...studentData,
       id: `hs-${Date.now()}`,
+      classId: activeClassId,
       createdAt: new Date().toISOString(),
     };
-    setStudents((prev) => [...prev, newStudent]);
+    setAllStudents((prev) => [...prev, newStudent]);
   };
 
   const updateStudent = (updated: Student) => {
-    setStudents((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+    setAllStudents((prev) => prev.map((s) => (s.id === updated.id ? { ...updated, classId: updated.classId || activeClassId } : s)));
   };
 
   const deleteStudent = (id: string) => {
-    setStudents((prev) => prev.filter((s) => s.id !== id));
+    setAllStudents((prev) => prev.filter((s) => s.id !== id));
   };
 
   const importStudents = (imported: Partial<Student>[]) => {
+    const currentClassStudents = allStudents.filter((s) => (s.classId || 'class-4a1') === activeClassId);
     const newStudents: Student[] = imported.map((st, i) => ({
       id: `hs-${Date.now()}-${i}`,
-      studentCode: st.studentCode || `HS-${classInfo.name}-${String(students.length + i + 1).padStart(3, '0')}`,
+      classId: activeClassId,
+      studentCode: st.studentCode || `HS-${classInfo.name}-${String(currentClassStudents.length + i + 1).padStart(3, '0')}`,
       fullName: st.fullName || 'Học sinh mới',
       gender: st.gender || 'Nam',
       dateOfBirth: st.dateOfBirth || '2016-01-01',
       parentName: st.parentName || '',
       parentPhone: st.parentPhone || '',
       isBoarding: st.isBoarding ?? true,
-      seatRow: Math.floor((students.length + i) / 8),
-      seatCol: (students.length + i) % 8,
+      seatRow: Math.floor((currentClassStudents.length + i) / 8),
+      seatCol: (currentClassStudents.length + i) % 8,
       healthNotes: st.healthNotes || '',
       tags: [],
       createdAt: new Date().toISOString(),
     }));
-    setStudents((prev) => [...prev, ...newStudents]);
+    setAllStudents((prev) => [...prev, ...newStudents]);
   };
 
   const updateSeatPosition = (studentId: string, row: number, col: number) => {
-    setStudents((prev) =>
+    setAllStudents((prev) =>
       prev.map((s) => {
         if (s.id === studentId) {
           return { ...s, seatRow: row, seatCol: col };
         }
-        if (s.seatRow === row && s.seatCol === col) {
+        if ((s.classId || 'class-4a1') === activeClassId && s.seatRow === row && s.seatCol === col) {
           const current = prev.find((item) => item.id === studentId);
           return { ...s, seatRow: current?.seatRow || 0, seatCol: current?.seatCol || 0 };
         }
@@ -552,14 +638,60 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .reduce((sum, s) => sum + s.points, 0);
   };
 
+  // FULL SYSTEM BACKUP & RESTORE
+  const exportAllDataJSON = (): string => {
+    const payload = {
+      version: '1.0.0',
+      exportedAt: new Date().toISOString(),
+      schoolClasses,
+      activeClassId,
+      students: allStudents,
+      subjectAssessments,
+      traitAssessments,
+      termSummaries,
+      attendances,
+      starLogs,
+      transactions: allTransactions,
+      timetable: allTimetables,
+      currentTerm,
+    };
+    return JSON.stringify(payload, null, 2);
+  };
+
+  const importAllDataJSON = (jsonStr: string): { success: boolean; error?: string } => {
+    try {
+      const data = JSON.parse(jsonStr);
+      if (!data || typeof data !== 'object') {
+        return { success: false, error: 'File sao lưu không hợp lệ' };
+      }
+
+      if (Array.isArray(data.schoolClasses)) setSchoolClasses(data.schoolClasses);
+      if (typeof data.activeClassId === 'string') setActiveClassId(data.activeClassId);
+      if (Array.isArray(data.students)) setAllStudents(data.students);
+      if (Array.isArray(data.subjectAssessments)) setSubjectAssessments(data.subjectAssessments);
+      if (Array.isArray(data.traitAssessments)) setTraitAssessments(data.traitAssessments);
+      if (Array.isArray(data.termSummaries)) setTermSummaries(data.termSummaries);
+      if (Array.isArray(data.attendances)) setAttendances(data.attendances);
+      if (Array.isArray(data.starLogs)) setStarLogs(data.starLogs);
+      if (Array.isArray(data.transactions)) setAllTransactions(data.transactions);
+      if (Array.isArray(data.timetable)) setAllTimetables(data.timetable);
+      if (data.currentTerm) setCurrentTerm(data.currentTerm);
+
+      return { success: true };
+    } catch (e: any) {
+      return { success: false, error: e?.message || 'Lỗi khi giải mã file JSON' };
+    }
+  };
+
   const resetData = () => {
     localStorage.clear();
     setSchoolClasses(INITIAL_SCHOOL_CLASSES);
     setActiveClassId('class-4a1');
-    setStudents(INITIAL_STUDENTS);
+    setAllStudents(INITIAL_STUDENTS);
     setAttendances(INITIAL_DAILY_ATTENDANCE);
     setStarLogs(INITIAL_STAR_LOGS);
-    setTimetableState(INITIAL_TIMETABLE);
+    setAllTransactions(INITIAL_TRANSACTIONS);
+    setAllTimetables(INITIAL_TIMETABLE.map((t) => ({ ...t, classId: 'class-4a1' })));
     window.location.reload();
   };
 
@@ -575,6 +707,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateClass,
         deleteClass,
         students,
+        allStudents,
         currentTerm,
         setCurrentTerm,
         subjectAssessments,
@@ -582,6 +715,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         termSummaries,
         attendances,
         starLogs,
+        transactions,
+        addTransaction,
+        updateTransaction,
+        deleteTransaction,
         timetable,
         updateTimetableSlot,
         setTimetable,
@@ -603,6 +740,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         batchSetAttendance,
         addStarLog,
         getStudentStars,
+        exportAllDataJSON,
+        importAllDataJSON,
         resetData,
       }}
     >

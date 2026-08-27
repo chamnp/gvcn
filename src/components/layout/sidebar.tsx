@@ -22,6 +22,7 @@ import {
   UserCircle,
   ShieldCheck,
   ChevronDown,
+  Wallet,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useAuth } from '@/lib/auth-context';
@@ -35,6 +36,7 @@ export const NAV_ITEMS = [
   { href: '/attendance', label: 'Điểm danh & Bán trú', icon: CalendarCheck, badge: null },
   { href: '/timetable', label: 'Thời khóa biểu', icon: Calendar, badge: '2 Buổi' },
   { href: '/behavior', label: 'Nề nếp & Tích sao', icon: Award, badge: 'Mới' },
+  { href: '/fund', label: 'Quản lý Quỹ lớp', icon: Wallet, badge: 'Minh bạch' },
   { href: '/assessment', label: 'Đánh giá TT 27', icon: FileSpreadsheet, badge: 'Cốt lõi' },
   { href: '/ai-assistant', label: 'Trợ lý Nhận xét AI', icon: Sparkles, badge: 'AI Pro' },
   { href: '/reports', label: 'Báo cáo & Xuất Excel', icon: FileDown, badge: null },

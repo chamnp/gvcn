@@ -88,18 +88,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (existing) {
       setProfile(existing);
-    } else {
-      // Create pending or auto-assign if admin
-      const newProfile: TeacherProfile = {
+    } else if (email === 'anhnnh4@gmail.com') {
+      const adminProfile: TeacherProfile = {
         id: `t-${user.id}`,
         email: user.email || '',
-        fullName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Giáo viên mới',
-        role: 'TEACHER',
-        assignedClassName: 'Lớp 4A1',
+        fullName: user.user_metadata?.full_name || 'Admin Quản Trị Viên',
+        role: 'ADMIN',
+        assignedClassName: 'Tất cả các lớp',
         isActive: true,
         createdAt: new Date().toISOString(),
       };
-      setProfile(newProfile);
+      setProfile(adminProfile);
+    } else {
+      // Tài khoản mới chưa có trong whitelist -> Đặt trạng thái PENDING chờ Admin duyệt
+      const pendingProfile: TeacherProfile = {
+        id: `t-${user.id}`,
+        email: user.email || '',
+        fullName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Giáo viên mới',
+        role: 'PENDING',
+        assignedClassName: undefined,
+        isActive: false,
+        createdAt: new Date().toISOString(),
+      };
+      setProfile(pendingProfile);
     }
   }, [user, teachers]);
 

@@ -36,6 +36,7 @@ export interface TeacherProfile {
 
 export interface Student {
   id: string;
+  classId?: string;
   studentCode: string;
   fullName: string;
   gender: Gender;
@@ -130,6 +131,7 @@ export type DayOfWeek = 'T2' | 'T3' | 'T4' | 'T5' | 'T6';
 
 export interface TimetableSlot {
   id: string;
+  classId?: string;
   day: DayOfWeek;
   period: number; // 1 -> 7 (1-4 Sáng, 5-7 Chiều)
   session: 'MORNING' | 'AFTERNOON';
@@ -139,3 +141,20 @@ export interface TimetableSlot {
   teacherName?: string;
   note?: string; // Ghi chú: Dụng cụ cần mang, dặn dò học sinh
 }
+
+export type TransactionType = 'INCOME' | 'EXPENSE';
+
+export interface FundTransaction {
+  id: string;
+  classId?: string;
+  studentId?: string;
+  type: TransactionType; // Thu hoặc Chi
+  category: string; // Quỹ hội cha mẹ HS, Cơ sở vật chất, Liên hoan, v.v.
+  title: string;
+  amount: number; // Số tiền (VNĐ)
+  date: string; // YYYY-MM-DD
+  payerOrReceiver?: string; // Người nộp hoặc Người nhận
+  notes?: string;
+  createdAt: string;
+}
+

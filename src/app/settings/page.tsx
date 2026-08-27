@@ -24,7 +24,16 @@ import { GradeLevel, UserRole } from '@/types';
 import { toast } from 'sonner';
 
 export default function SettingsPage() {
-  const { classInfo, setClassInfo, apiKey, setApiKey, resetData, students } = useAppStore();
+  const {
+    classInfo,
+    setClassInfo,
+    apiKey,
+    setApiKey,
+    resetData,
+    students,
+    exportAllDataJSON,
+    importAllDataJSON,
+  } = useAppStore();
   const { user, profile, teachers, addTeacher, updateTeacher, deleteTeacher } = useAuth();
 
   const [className, setClassName] = useState(classInfo.name);
@@ -66,6 +75,10 @@ export default function SettingsPage() {
 
   const handleCreateTeacher = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (profile && profile.role !== 'ADMIN') {
+      toast.error('Chỉ Quản trị viên / Ban Giám Hiệu mới có quyền thêm và phân công giáo viên!');
+      return;
+    }
     if (!newTeacherEmail.trim() || !newTeacherName.trim()) {
       toast.error('Vui lòng điền đầy đủ email và họ tên');
       return;
@@ -78,18 +91,33 @@ export default function SettingsPage() {
   };
 
   const handleExportBackup = () => {
-    const data = {
-      classInfo,
-      students,
-      exportedAt: new Date().toISOString(),
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const jsonStr = exportAllDataJSON();
+    const blob = new Blob([jsonStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `GVCN_Backup_${classInfo.name}_${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `GVCN_PRO_Full_Backup_${new Date().toISOString().split('T')[0]}.json`;
     a.click();
-    toast.success('Đã xuất file sao lưu dữ liệu lớp!');
+    toast.success('Đã xuất file sao lưu toàn bộ hệ thống!');
+  };
+
+  const handleImportBackupFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      if (!content) return;
+      const res = importAllDataJSON(content);
+      if (res.success) {
+        toast.success('Khôi phục dữ liệu từ file sao lưu thành công! Đang tải lại trang...');
+        setTimeout(() => window.location.reload(), 1000);
+      } else {
+        toast.error(`Lỗi khi khôi phục dữ liệu: ${res.error}`);
+      }
+    };
+    reader.readAsText(file);
   };
 
   const handleReset = () => {
@@ -291,10 +319,16 @@ export default function SettingsPage() {
                       <span>Được phép</span>
                     </span>
                   </td>
-                  <td className="py-2.5 px-3 text-right">
+                  <td className="py-2.5 px-4 text-right">
                     {t.email !== 'anhnnh4@gmail.com' && (
                       <button
-                        onClick={() => deleteTeacher(t.id)}
+                        onClick={() => {
+                          if (profile && profile.role !== 'ADMIN') {
+                            toast.error('Chỉ Quản trị viên / Ban Giám Hiệu mới có quyền xóa giáo viên!');
+                            return;
+                          }
+                          deleteTeacher(t.id);
+                        }}
                         className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
                         title="Xóa quyền"
                       >
@@ -369,16 +403,27 @@ export default function SettingsPage() {
 
       {/* Section 5: Backup & Reset */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 space-y-4">
-        <h2 className="text-base font-bold text-slate-900">Sao Lưu & Quản Lý Dữ Liệu</h2>
+        <div>
+          <h2 className="text-base font-bold text-slate-900">Sao Lưu & Quản Lý Dữ Liệu Toàn Hệ Thống</h2>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Xuất file JSON sao lưu đầy đủ tất cả các lớp, học sinh, điểm số TT27, thời khóa biểu hoặc khôi phục dữ liệu khi đổi thiết bị.
+          </p>
+        </div>
 
         <div className="flex flex-wrap gap-3">
           <button
             onClick={handleExportBackup}
             className="inline-flex items-center space-x-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-4 py-2.5 rounded-xl border border-slate-300 transition-colors"
           >
-            <Download className="w-4 h-4" />
-            <span>Sao Lưu Dữ Liệu Ra File JSON</span>
+            <Download className="w-4 h-4 text-slate-600" />
+            <span>Sao Lưu Toàn Bộ Dữ Liệu (JSON)</span>
           </button>
+
+          <label className="cursor-pointer inline-flex items-center space-x-2 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs px-4 py-2.5 rounded-xl border border-blue-300 transition-colors">
+            <Upload className="w-4 h-4 text-blue-600" />
+            <span>Khôi Phục Từ File Sao Lưu</span>
+            <input type="file" accept=".json" onChange={handleImportBackupFile} className="hidden" />
+          </label>
 
           <button
             onClick={handleReset}

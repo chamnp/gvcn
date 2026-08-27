@@ -27,7 +27,7 @@ import Link from 'next/link';
 
 export default function AdminPortalPage() {
   const router = useRouter();
-  const { schoolClasses, activeClassId, switchClass, addClass, updateClass, deleteClass } = useAppStore();
+  const { schoolClasses, activeClassId, switchClass, addClass, updateClass, deleteClass, allStudents } = useAppStore();
   const { user, profile, teachers, addTeacher, updateTeacher, deleteTeacher } = useAuth();
 
   // Modal State for Class
@@ -60,11 +60,17 @@ export default function AdminPortalPage() {
 
   // Tổng hợp dữ liệu toàn trường
   const totalClasses = schoolClasses.length;
-  const totalEstimatedStudents = schoolClasses.reduce((sum, c) => sum + (c.totalStudents || 30), 0);
+  const totalEstimatedStudents = allStudents.length;
   const totalTeachers = teachers.length;
+
+  const isAdmin = !profile || profile.role === 'ADMIN';
 
   // Xử lý tạo / sửa lớp
   const handleOpenClassModal = (cls?: ClassInfo) => {
+    if (!isAdmin) {
+      toast.error('Chỉ Quản trị viên / Ban Giám Hiệu mới có quyền thêm hoặc sửa cấu hình lớp!');
+      return;
+    }
     if (cls) {
       setEditingClass(cls);
       setClassForm({
@@ -93,6 +99,10 @@ export default function AdminPortalPage() {
 
   const handleSaveClass = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isAdmin) {
+      toast.error('Chỉ Quản trị viên / Ban Giám Hiệu mới có quyền lưu cấu hình lớp!');
+      return;
+    }
     if (editingClass) {
       updateClass({
         ...editingClass,
@@ -111,6 +121,10 @@ export default function AdminPortalPage() {
   };
 
   const handleDeleteClass = (id: string, name: string) => {
+    if (!isAdmin) {
+      toast.error('Chỉ Quản trị viên / Ban Giám Hiệu mới có quyền xóa lớp học!');
+      return;
+    }
     if (confirm(`Bạn có chắc chắn muốn xóa Lớp "${name}" khỏi trường không?`)) {
       deleteClass(id);
       toast.success(`Đã xóa Lớp ${name}`);
@@ -127,6 +141,10 @@ export default function AdminPortalPage() {
   // Thêm giáo viên
   const handleCreateTeacher = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isAdmin) {
+      toast.error('Chỉ Quản trị viên / Ban Giám Hiệu mới có quyền phân công giáo viên mới!');
+      return;
+    }
     if (!teacherEmail.trim() || !teacherFullName.trim()) {
       toast.error('Vui lòng điền đủ email và họ tên giáo viên');
       return;
@@ -140,12 +158,61 @@ export default function AdminPortalPage() {
 
   // Thay đổi phân công lớp của giáo viên
   const handleReassignTeacher = async (teacherId: string, newClassName: string) => {
+    if (profile && profile.role !== 'ADMIN') {
+      toast.error('Chỉ Quản trị viên / Ban Giám Hiệu mới có quyền thay đổi phân công giáo viên!');
+      return;
+    }
     await updateTeacher(teacherId, { assignedClassName: newClassName });
     toast.success(`Đã chuyển phân công giáo viên sang ${newClassName}`);
   };
 
   return (
     <div className="space-y-6">
+      {/* Role Warning for Non-Admin */}
+      {!isAdmin && profile?.role === 'TEACHER' && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl p-4 flex items-center justify-between gap-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+              <Lock className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs font-bold">Chế độ Chỉ Xem dành cho Giáo Viên</p>
+              <p className="text-[11px] text-amber-700">
+                Bạn đang đăng nhập với vai trò <strong>{profile.fullName}</strong> ({profile.assignedClassName || 'GVCN'}). Chỉ Ban Giám Hiệu mới có quyền thêm/xóa lớp và phân công giáo viên.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/"
+            className="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold shrink-0 transition-colors"
+          >
+            Quay Về Lớp Của Tôi
+          </Link>
+        </div>
+      )}
+
+      {!isAdmin && profile?.role === 'PENDING' && (
+        <div className="bg-rose-50 border border-rose-200 text-rose-900 rounded-2xl p-4 flex items-center justify-between gap-4">
+          <div className="flex items-center space-x-3">
+            <div className="w-9 h-9 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
+              <Lock className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs font-bold">Tài Khoản Đang Chờ Phê Duyệt</p>
+              <p className="text-[11px] text-rose-700">
+                Tài khoản <strong>{profile.email}</strong> chưa được phân công lớp. Vui lòng liên hệ Ban Giám Hiệu để được cấp quyền.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/login"
+            className="px-3.5 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold shrink-0 transition-colors"
+          >
+            Đăng Nhập Tài Khoản Khác
+          </Link>
+        </div>
+      )}
+
       {/* Header Banner */}
       <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -164,14 +231,26 @@ export default function AdminPortalPage() {
 
           <div className="flex items-center space-x-2 shrink-0">
             <button
-              onClick={() => handleOpenClassModal()}
+              onClick={() => {
+                if (!isAdmin) {
+                  toast.error('Bạn cần quyền Ban Giám Hiệu để thêm lớp học mới!');
+                  return;
+                }
+                handleOpenClassModal();
+              }}
               className="inline-flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs transition-colors"
             >
               <Plus className="w-4 h-4" />
               <span>Thêm Lớp Học Mới</span>
             </button>
             <button
-              onClick={() => setIsTeacherModalOpen(true)}
+              onClick={() => {
+                if (!isAdmin) {
+                  toast.error('Bạn cần quyền Ban Giám Hiệu để phân công giáo viên!');
+                  return;
+                }
+                setIsTeacherModalOpen(true);
+              }}
               className="inline-flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs transition-colors"
             >
               <UserPlus className="w-4 h-4" />
@@ -275,7 +354,7 @@ export default function AdminPortalPage() {
                       {cls.teacherName}
                     </td>
                     <td className="py-3 px-4 text-center font-bold text-slate-900">
-                      {cls.totalStudents || 30} HS
+                      {allStudents.filter((s) => (s.classId || 'class-4a1') === cls.id).length} HS
                     </td>
                     <td className="py-3 px-4 text-center text-slate-500 font-mono">
                       {cls.seatingGridRows} hàng x {cls.seatingGridCols} cột
