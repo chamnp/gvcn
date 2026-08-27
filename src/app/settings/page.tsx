@@ -83,10 +83,10 @@ const AI_VENDOR_PRESETS = [
     provider: 'CUSTOM_OPENAI' as AIProviderType,
     badge: 'Khuyên dùng (Đã cấu hình)',
     icon: '🟠',
-    defaultModel: 'mimo-v1',
+    defaultModel: 'mimo-v2.5',
     baseUrl: 'https://api.xiaomimimo.com/v1',
     description: 'Mô hình Xiaomi MIMO theo chuẩn định dạng OpenAI, hỗ trợ chìa khóa cá nhân.',
-    models: ['mimo-v1', 'mimo-pro', 'milm-7b'],
+    models: ['mimo-v2.5', 'mimo-v2.5-pro'],
   },
   {
     id: 'gemini',
@@ -211,7 +211,7 @@ export default function SettingsPage() {
   const [aiProvider, setAiProvider] = useState<AIProviderType>(aiConfig?.provider || 'CUSTOM_OPENAI');
   const [inputApiKey, setInputApiKey] = useState(aiConfig?.apiKey || apiKey || 'sk-sjozamgxafx93e1ut7zizxetbf653tx3amguacizr6c40jby');
   const [baseUrl, setBaseUrl] = useState(aiConfig?.baseUrl || 'https://api.xiaomimimo.com/v1');
-  const [modelName, setModelName] = useState(aiConfig?.modelName || 'mimo-v1');
+  const [modelName, setModelName] = useState(aiConfig?.modelName === 'mimo-v1' ? 'mimo-v2.5' : aiConfig?.modelName || 'mimo-v2.5');
   const [temperature, setTemperature] = useState(aiConfig?.temperature ?? 0.7);
   const [showKey, setShowKey] = useState(false);
   const [isTestingAi, setIsTestingAi] = useState(false);
@@ -263,7 +263,8 @@ export default function SettingsPage() {
       setAiProvider(aiConfig.provider || 'CUSTOM_OPENAI');
       setInputApiKey(aiConfig.apiKey || apiKey || 'sk-sjozamgxafx93e1ut7zizxetbf653tx3amguacizr6c40jby');
       setBaseUrl(aiConfig.baseUrl || 'https://api.xiaomimimo.com/v1');
-      setModelName(aiConfig.modelName || 'mimo-v1');
+      const validModel = (!aiConfig.modelName || aiConfig.modelName === 'mimo-v1') ? 'mimo-v2.5' : aiConfig.modelName;
+      setModelName(validModel);
       setTemperature(aiConfig.temperature ?? 0.7);
     }
   }, [aiConfig, apiKey]);

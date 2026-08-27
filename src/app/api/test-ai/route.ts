@@ -14,10 +14,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: 'Thiếu cấu hình AI' }, { status: 400 });
     }
 
-    const provider = aiConfig.provider || 'GEMINI';
+    const provider = aiConfig.provider || 'CUSTOM_OPENAI';
     const effectiveKey = (aiConfig.apiKey || (provider === 'GEMINI' ? process.env.GEMINI_API_KEY : '') || '').trim();
-    const modelName = (aiConfig.modelName || '').trim();
+    let modelName = (aiConfig.modelName || '').trim();
     const baseUrl = (aiConfig.baseUrl || '').trim().replace(/\/+$/, '');
+
+    // Normalize Xiaomi MIMO model name
+    if (baseUrl.includes('xiaomimimo') || provider === 'CUSTOM_OPENAI') {
+      if (!modelName || modelName === 'mimo-v1' || modelName === 'mimo') {
+        modelName = 'mimo-v2.5';
+      }
+    }
 
     if (!effectiveKey) {
       return NextResponse.json({
@@ -28,7 +35,51 @@ export async function POST(req: NextRequest) {
 
     const testPrompt = 'Bạn là AI trợ lý giáo viên tiểu học. Hãy trả lời ngắn gọn: "Kết nối thành công!".';
 
-    // 1. GEMINI
+    // 1. OPENAI / CUSTOM OPENAI-COMPATIBLE (Xiaomi MIMO, DeepSeek, OpenRouter, etc.)
+    if (provider === 'OPENAI' || provider === 'CUSTOM_OPENAI') {
+      const endpoint = baseUrl
+        ? `${baseUrl}/chat/completions`
+        : provider === 'OPENAI'
+        ? 'https://api.openai.com/v1/chat/completions'
+        : 'https://api.xiaomimimo.com/v1/chat/completions';
+
+      const selectedModel = modelName || (baseUrl.includes('xiaomimimo') ? 'mimo-v2.5' : 'gpt-4o-mini');
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${effectiveKey}`,
+        },
+        body: JSON.stringify({
+          model: selectedModel,
+          messages: [{ role: 'user', content: testPrompt }],
+          max_tokens: 300,
+        }),
+      });
+
+      const latencyMs = Date.now() - startTime;
+
+      if (res.ok) {
+        const json = await res.json();
+        const text = json.choices?.[0]?.message?.content?.trim() || json.choices?.[0]?.message?.reasoning_content?.trim() || 'Kết nối thành công!';
+        return NextResponse.json({
+          success: true,
+          provider: baseUrl.includes('xiaomimimo') ? 'Xiaomi MIMO AI' : provider === 'OPENAI' ? 'OpenAI GPT' : 'Custom OpenAI',
+          model: selectedModel,
+          latencyMs,
+          message: text,
+        });
+      } else {
+        const errorText = await res.text();
+        return NextResponse.json({
+          success: false,
+          error: `API trả về mã lỗi ${res.status}: ${errorText.substring(0, 200)}`,
+        });
+      }
+    }
+
+    // 2. GEMINI
     if (provider === 'GEMINI') {
       const selectedModel = modelName || 'gemini-2.5-flash';
       const ai = new GoogleGenAI({ apiKey: effectiveKey });
@@ -51,50 +102,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 2. OPENAI / CUSTOM OPENAI-COMPATIBLE (Xiaomi MIMO, DeepSeek, OpenRouter, etc.)
-    if (provider === 'OPENAI' || provider === 'CUSTOM_OPENAI') {
-      const endpoint = baseUrl
-        ? `${baseUrl}/chat/completions`
-        : provider === 'OPENAI'
-        ? 'https://api.openai.com/v1/chat/completions'
-        : 'https://api.openai.com/v1/chat/completions';
-
-      const selectedModel = modelName || (provider === 'OPENAI' ? 'gpt-4o-mini' : 'mimo-v1');
-
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${effectiveKey}`,
-        },
-        body: JSON.stringify({
-          model: selectedModel,
-          messages: [{ role: 'user', content: testPrompt }],
-          max_tokens: 60,
-        }),
-      });
-
-      const latencyMs = Date.now() - startTime;
-
-      if (res.ok) {
-        const json = await res.json();
-        const text = json.choices?.[0]?.message?.content?.trim() || 'Kết nối thành công!';
-        return NextResponse.json({
-          success: true,
-          provider: provider === 'OPENAI' ? 'OpenAI GPT' : 'Custom OpenAI / Xiaomi MIMO',
-          model: selectedModel,
-          latencyMs,
-          message: text,
-        });
-      } else {
-        const errorText = await res.text();
-        return NextResponse.json({
-          success: false,
-          error: `API trả về mã lỗi ${res.status}: ${errorText.substring(0, 200)}`,
-        });
-      }
-    }
-
     // 3. ANTHROPIC CLAUDE
     if (provider === 'ANTHROPIC') {
       const endpoint = baseUrl ? `${baseUrl}/messages` : 'https://api.anthropic.com/v1/messages';
@@ -109,7 +116,7 @@ export async function POST(req: NextRequest) {
         },
         body: JSON.stringify({
           model: selectedModel,
-          max_tokens: 60,
+          max_tokens: 200,
           messages: [{ role: 'user', content: testPrompt }],
         }),
       });

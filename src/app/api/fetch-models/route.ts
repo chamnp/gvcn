@@ -7,7 +7,7 @@ const FALLBACK_MODELS_BY_PROVIDER: Record<AIProviderType, string[]> = {
   GEMINI: ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-2.0-flash-exp'],
   OPENAI: ['gpt-4o-mini', 'gpt-4o', 'gpt-4-turbo', 'gpt-3.5-turbo', 'o1-mini'],
   ANTHROPIC: ['claude-3-5-haiku-20241022', 'claude-3-5-sonnet-20241022', 'claude-3-opus-20240229', 'claude-3-haiku-20240307'],
-  CUSTOM_OPENAI: ['mimo-v1', 'mimo-pro', 'milm-7b', 'deepseek-chat', 'deepseek-coder', 'openai/gpt-4o-mini', 'anthropic/claude-3.5-haiku', 'qwen/qwen3.8-flash'],
+  CUSTOM_OPENAI: ['mimo-v2.5', 'mimo-v2.5-pro', 'deepseek-chat', 'deepseek-coder', 'openai/gpt-4o-mini', 'anthropic/claude-3.5-haiku', 'qwen/qwen3.8-flash'],
 };
 
 export async function POST(req: NextRequest) {
@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
           let rawList = Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : [];
           const models = rawList
             .map((m: any) => (typeof m === 'string' ? m : m.id || m.name || ''))
-            .filter((id: string) => id && !id.includes('whisper') && !id.includes('tts') && !id.includes('dall-e') && !id.includes('embedding') && !id.includes('bge') && !id.includes('rerank'))
+            .filter((id: string) => id && !id.includes('whisper') && !id.includes('tts') && !id.includes('asr') && !id.includes('voiceclone') && !id.includes('dall-e') && !id.includes('embedding') && !id.includes('bge') && !id.includes('rerank'))
             .sort((a: string, b: string) => a.localeCompare(b));
 
           if (models.length > 0) {

@@ -316,6 +316,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (savedAiConfig) {
         try {
           const parsed = JSON.parse(savedAiConfig);
+          if (parsed.modelName === 'mimo-v1' || parsed.modelName === 'mimo' || !parsed.modelName) {
+            parsed.modelName = 'mimo-v2.5';
+          }
+          if (!parsed.baseUrl && parsed.provider === 'CUSTOM_OPENAI') {
+            parsed.baseUrl = 'https://api.xiaomimimo.com/v1';
+          }
           setAiConfigState(parsed);
           if (parsed.apiKey) setApiKeyState(parsed.apiKey);
         } catch (e) {}

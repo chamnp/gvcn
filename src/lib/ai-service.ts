@@ -13,7 +13,14 @@ export interface GenerateCommentRequest {
   extraNotes?: string;
 }
 
-export async function generateStudentAIComment(req: GenerateCommentRequest): Promise<string> {
+export interface GeneratedCommentResult {
+  comment: string;
+  source: string;
+  isRealAI: boolean;
+  model?: string;
+}
+
+export async function generateStudentAICommentFull(req: GenerateCommentRequest): Promise<GeneratedCommentResult> {
   const { student, subjects, traits, starLogs, attendances, aiConfig, apiKey, tone = 'standard', extraNotes } = req;
 
   // Gọi qua API Route để bảo mật API key và thực hiện gọi các AI provider
@@ -39,7 +46,12 @@ export async function generateStudentAIComment(req: GenerateCommentRequest): Pro
     if (res.ok) {
       const data = await res.json();
       if (data.comment) {
-        return data.comment;
+        return {
+          comment: data.comment,
+          source: data.source || 'AI Provider',
+          isRealAI: !!data.isRealAI,
+          model: data.model,
+        };
       }
     }
   } catch (err) {
@@ -47,5 +59,14 @@ export async function generateStudentAIComment(req: GenerateCommentRequest): Pro
   }
 
   // Fallback ngoại tuyến (100% offline-ready)
-  return generateSmartComment(student, subjects, traits, extraNotes);
+  return {
+    comment: generateSmartComment(student, subjects, traits, extraNotes),
+    source: 'Ngân hàng sư phạm ngoại tuyến',
+    isRealAI: false,
+  };
+}
+
+export async function generateStudentAIComment(req: GenerateCommentRequest): Promise<string> {
+  const res = await generateStudentAICommentFull(req);
+  return res.comment;
 }

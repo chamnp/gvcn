@@ -19,9 +19,10 @@ import {
   Cpu,
   ArrowRight,
   ChevronDown,
+  CheckCheck,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
-import { generateStudentAIComment } from '@/lib/ai-service';
+import { generateStudentAICommentFull, GeneratedCommentResult } from '@/lib/ai-service';
 import { TERMS, evaluateStudentTT27, getAwardBadgeClass } from '@/lib/tt27-engine';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -49,6 +50,7 @@ export default function AIAssistantPage() {
   const [customNotes, setCustomNotes] = useState<{ [studentId: string]: string }>({});
   const [availableModels, setAvailableModels] = useState<string[]>([]);
   const [isFetchingModels, setIsFetchingModels] = useState(false);
+  const [commentSources, setCommentSources] = useState<Record<string, GeneratedCommentResult>>({});
 
   const termName = TERMS.find((t) => t.id === currentTerm)?.name || currentTerm;
   const activeProviderLabel =
@@ -58,7 +60,7 @@ export default function AIAssistantPage() {
       ? 'OpenAI GPT'
       : aiConfig?.provider === 'ANTHROPIC'
       ? 'Anthropic Claude'
-      : 'Xiaomi MIMO / Custom AI';
+      : 'Xiaomi MIMO AI';
 
   // Fetch available models for active provider
   const loadModels = useCallback(async () => {
@@ -107,7 +109,7 @@ export default function AIAssistantPage() {
     const studentAtt = attendances.filter((a) => a.studentId === studentId);
 
     try {
-      const comment = await generateStudentAIComment({
+      const result = await generateStudentAICommentFull({
         student,
         subjects: sAss,
         traits: tAss,
@@ -119,8 +121,14 @@ export default function AIAssistantPage() {
         extraNotes: customNotes[studentId],
       });
 
-      updateTermSummary(studentId, currentTerm, { teacherComment: comment });
-      toast.success(`Đã tạo nhận xét cho em ${student.fullName}`);
+      updateTermSummary(studentId, currentTerm, { teacherComment: result.comment });
+      setCommentSources((prev) => ({ ...prev, [studentId]: result }));
+
+      if (result.isRealAI) {
+        toast.success(`✨ Đã sinh nhận xét cho em ${student.fullName} qua ${result.source} (${result.model || ''})!`);
+      } else {
+        toast.info(`Đã tạo nhận xét cho em ${student.fullName} từ Ngân hàng sư phạm`);
+      }
     } catch (e) {
       console.error(e);
       toast.error('Có lỗi khi tạo nhận xét AI');
@@ -132,7 +140,9 @@ export default function AIAssistantPage() {
   // Sinh nhận xét cho cả lớp (1-Click)
   const handleGenerateAll = async () => {
     setIsGeneratingAll(true);
-    toast.info(`Đang sinh nhận xét tự động cho ${students.length} học sinh qua ${activeProviderLabel} (${aiConfig?.modelName || 'mimo-v1'})...`);
+    toast.info(`Đang sinh nhận xét tự động cho ${students.length} học sinh qua ${activeProviderLabel} (${aiConfig?.modelName || 'mimo-v2.5'})...`);
+
+    let realAICount = 0;
 
     for (const student of students) {
       const sAss = subjectAssessments.filter((a) => a.studentId === student.id && a.term === currentTerm);
@@ -140,7 +150,7 @@ export default function AIAssistantPage() {
       const studentStars = starLogs.filter((l) => l.studentId === student.id);
       const studentAtt = attendances.filter((a) => a.studentId === student.id);
 
-      const comment = await generateStudentAIComment({
+      const result = await generateStudentAICommentFull({
         student,
         subjects: sAss,
         traits: tAss,
@@ -152,11 +162,13 @@ export default function AIAssistantPage() {
         extraNotes: customNotes[student.id],
       });
 
-      updateTermSummary(student.id, currentTerm, { teacherComment: comment });
+      updateTermSummary(student.id, currentTerm, { teacherComment: result.comment });
+      setCommentSources((prev) => ({ ...prev, [student.id]: result }));
+      if (result.isRealAI) realAICount++;
     }
 
     setIsGeneratingAll(false);
-    toast.success('Đã hoàn thành sinh nhận xét học bạ cho toàn bộ học sinh trong lớp! 🎉');
+    toast.success(`Đã hoàn thành sinh nhận xét cho ${students.length} học sinh (${realAICount}/${students.length} qua ${activeProviderLabel})! 🎉`);
   };
 
   // Copy nhận xét
@@ -245,9 +257,9 @@ export default function AIAssistantPage() {
 
             {availableModels.length > 0 ? (
               <select
-                value={aiConfig?.modelName || 'mimo-v1'}
+                value={aiConfig?.modelName || 'mimo-v2.5'}
                 onChange={(e) => handleModelChange(e.target.value)}
-                className="w-full bg-white text-purple-900 border border-purple-200 rounded-lg px-2 py-1 text-[11px] font-mono font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none"
+                className="w-full bg-white text-purple-900 border border-purple-200 rounded-lg px-2 py-1 text-[11px] font-mono font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none cursor-pointer"
               >
                 {availableModels.map((m) => (
                   <option key={m} value={m}>
@@ -257,7 +269,7 @@ export default function AIAssistantPage() {
               </select>
             ) : (
               <span className="bg-purple-200 text-purple-800 text-[10px] font-mono px-2 py-0.5 rounded font-bold block">
-                {aiConfig?.modelName || 'mimo-v1'}
+                {aiConfig?.modelName || 'mimo-v2.5'}
               </span>
             )}
           </div>
@@ -283,6 +295,7 @@ export default function AIAssistantPage() {
           const award = summary?.awardTitle || evalRes.awardTitle;
           const comment = summary?.teacherComment || '';
           const isGenerating = generatingStudentId === st.id;
+          const sourceInfo = commentSources[st.id];
 
           // Student Stars & Praises
           const stStars = starLogs.filter((l) => l.studentId === st.id);
@@ -330,7 +343,7 @@ export default function AIAssistantPage() {
                 </div>
 
                 {/* Comment text area */}
-                <div className="relative">
+                <div className="relative space-y-1">
                   <textarea
                     rows={4}
                     value={comment}
@@ -340,6 +353,21 @@ export default function AIAssistantPage() {
                     placeholder="Chưa có lời nhận xét. Nhấp 'Tạo nhận xét AI' bên dưới..."
                     className="w-full p-3 rounded-2xl border border-slate-200 text-xs text-slate-800 leading-relaxed focus:ring-2 focus:ring-purple-500 focus:outline-none bg-slate-50/50 resize-none font-medium"
                   />
+
+                  {/* AI Generation Live Source Badge */}
+                  {comment && (
+                    <div className="flex items-center justify-between text-[10px] px-1 text-slate-400">
+                      {sourceInfo ? (
+                        <span className={`inline-flex items-center gap-1 font-semibold ${sourceInfo.isRealAI ? 'text-purple-700' : 'text-slate-500'}`}>
+                          {sourceInfo.isRealAI ? <Sparkles className="w-3 h-3 text-purple-600" /> : <Bot className="w-3 h-3" />}
+                          <span>Tạo bởi: {sourceInfo.source} {sourceInfo.model ? `(${sourceInfo.model})` : ''}</span>
+                        </span>
+                      ) : (
+                        <span className="text-slate-400">Đã lưu trong học bạ</span>
+                      )}
+                      <span>{comment.trim().split(/\s+/).length} từ</span>
+                    </div>
+                  )}
                 </div>
               </div>
 

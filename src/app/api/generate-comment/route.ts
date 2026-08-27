@@ -35,11 +35,18 @@ export async function POST(req: NextRequest) {
     }
 
     // Determine active provider, key, baseUrl, modelName
-    const provider = aiConfig?.provider || 'GEMINI';
+    const provider = aiConfig?.provider || 'CUSTOM_OPENAI';
     const effectiveKey = (aiConfig?.apiKey || apiKey || (provider === 'GEMINI' ? process.env.GEMINI_API_KEY : '') || '').trim();
-    const modelName = (aiConfig?.modelName || '').trim();
+    let modelName = (aiConfig?.modelName || '').trim();
     const baseUrl = (aiConfig?.baseUrl || '').trim().replace(/\/+$/, '');
     const temperature = aiConfig?.temperature ?? 0.7;
+
+    // Normalize Xiaomi MIMO model name
+    if (baseUrl.includes('xiaomimimo') || provider === 'CUSTOM_OPENAI') {
+      if (!modelName || modelName === 'mimo-v1' || modelName === 'mimo' || modelName === 'gemini-2.5-flash') {
+        modelName = 'mimo-v2.5';
+      }
+    }
 
     // Nếu không có API Key, sử dụng smart offline pedagogical engine
     if (!effectiveKey) {
@@ -98,36 +105,16 @@ Nhiệm vụ của bạn là viết một đoạn LỜI NHẬN XÉT HỌC BẠ /
 5. ĐỊNH DẠNG ĐẦU RA: Chỉ trả về DUY NHẤT đoạn văn nhận xét bằng tiếng Việt. Tuyệt đối không thêm tiêu đề, không có "Lời nhận xét:", không bọc trong dấu ngoặc kép.
 `;
 
-    // 1. GOOGLE GEMINI PROVIDER
-    if (provider === 'GEMINI') {
-      try {
-        const ai = new GoogleGenAI({ apiKey: effectiveKey });
-        const selectedModel = modelName || 'gemini-2.5-flash';
-
-        const response = await ai.models.generateContent({
-          model: selectedModel,
-          contents: prompt,
-        });
-
-        const text = response.text?.trim();
-        if (text) {
-          return NextResponse.json({ success: true, comment: text, source: 'gemini_ai', model: selectedModel });
-        }
-      } catch (geminiError: any) {
-        console.warn('Gemini API call failed, trying fallback:', geminiError?.message || geminiError);
-      }
-    }
-
-    // 2. OPENAI & CUSTOM OPENAI-COMPATIBLE PROVIDERS (Xiaomi MIMO, DeepSeek, OpenRouter, Groq, Ollama, etc.)
+    // 1. OPENAI & CUSTOM OPENAI-COMPATIBLE PROVIDERS (Xiaomi MIMO, DeepSeek, OpenRouter, Groq, Ollama, etc.)
     if (provider === 'OPENAI' || provider === 'CUSTOM_OPENAI') {
       try {
         const endpoint = baseUrl
           ? `${baseUrl}/chat/completions`
           : provider === 'OPENAI'
           ? 'https://api.openai.com/v1/chat/completions'
-          : 'https://api.openai.com/v1/chat/completions';
+          : 'https://api.xiaomimimo.com/v1/chat/completions';
 
-        const selectedModel = modelName || (provider === 'OPENAI' ? 'gpt-4o-mini' : 'mimo-v1');
+        const selectedModel = modelName || (baseUrl.includes('xiaomimimo') ? 'mimo-v2.5' : 'gpt-4o-mini');
 
         const aiResponse = await fetch(endpoint, {
           method: 'POST',
@@ -159,8 +146,9 @@ Nhiệm vụ của bạn là viết một đoạn LỜI NHẬN XÉT HỌC BẠ /
             return NextResponse.json({
               success: true,
               comment: text,
-              source: provider === 'OPENAI' ? 'openai' : 'custom_openai',
+              source: baseUrl.includes('xiaomimimo') ? 'Xiaomi MIMO AI' : provider === 'OPENAI' ? 'OpenAI GPT' : 'Custom AI',
               model: selectedModel,
+              isRealAI: true,
             });
           }
         } else {
@@ -169,6 +157,32 @@ Nhiệm vụ của bạn là viết một đoạn LỜI NHẬN XÉT HỌC BẠ /
         }
       } catch (openAiError: any) {
         console.warn('OpenAI/Custom AI API call failed:', openAiError?.message || openAiError);
+      }
+    }
+
+    // 2. GOOGLE GEMINI PROVIDER
+    if (provider === 'GEMINI') {
+      try {
+        const ai = new GoogleGenAI({ apiKey: effectiveKey });
+        const selectedModel = modelName || 'gemini-2.5-flash';
+
+        const response = await ai.models.generateContent({
+          model: selectedModel,
+          contents: prompt,
+        });
+
+        const text = response.text?.trim();
+        if (text) {
+          return NextResponse.json({
+            success: true,
+            comment: text,
+            source: 'Google Gemini AI',
+            model: selectedModel,
+            isRealAI: true,
+          });
+        }
+      } catch (geminiError: any) {
+        console.warn('Gemini API call failed, trying fallback:', geminiError?.message || geminiError);
       }
     }
 
@@ -205,8 +219,9 @@ Nhiệm vụ của bạn là viết một đoạn LỜI NHẬN XÉT HỌC BẠ /
             return NextResponse.json({
               success: true,
               comment: text,
-              source: 'anthropic_claude',
+              source: 'Anthropic Claude AI',
               model: selectedModel,
+              isRealAI: true,
             });
           }
         } else {
@@ -220,7 +235,12 @@ Nhiệm vụ của bạn là viết một đoạn LỜI NHẬN XÉT HỌC BẠ /
 
     // 4. FALLBACK TO HIGH-QUALITY PEDAGOGICAL BANK
     const fallbackComment = generateSmartComment(student, subjects, traits, extraNotes);
-    return NextResponse.json({ success: true, comment: fallbackComment, source: 'offline_fallback' });
+    return NextResponse.json({
+      success: true,
+      comment: fallbackComment,
+      source: 'Ngân hàng sư phạm offline',
+      isRealAI: false,
+    });
   } catch (error: any) {
     console.error('API /api/generate-comment error:', error);
     return NextResponse.json({ error: 'Lỗi máy chủ khi tạo nhận xét' }, { status: 500 });
