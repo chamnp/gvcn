@@ -320,11 +320,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Tự động chuyển lớp theo phân công của giáo viên khi đăng nhập
   useEffect(() => {
-    if (profile && profile.role === 'TEACHER' && profile.assignedClassName) {
-      const rawName = profile.assignedClassName.replace('Lớp ', '').trim().toLowerCase();
-      const matchedClass = schoolClasses.find((c) => c.name.toLowerCase() === rawName || c.id.toLowerCase() === rawName);
-      if (matchedClass && matchedClass.id !== activeClassId) {
-        setActiveClassId(matchedClass.id);
+    if (profile && (profile.role === 'TEACHER' || profile.role === 'ADMIN_TEACHER')) {
+      const targetId = profile.assignedClassId || (profile.assignedClassName ? `class-${profile.assignedClassName.replace('Lớp ', '').trim().toLowerCase()}` : undefined);
+      if (targetId && targetId !== activeClassId) {
+        const classExists = schoolClasses.some((c) => c.id === targetId);
+        if (classExists) {
+          setActiveClassId(targetId);
+        }
       }
     }
   }, [profile, schoolClasses, activeClassId]);
@@ -419,8 +421,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const upgradedClasses = parsedClasses.map((c: any) => {
           const cleanName = (c.name || 'lop').toLowerCase().replace(/[^a-z0-9]/g, '');
           const initialMatch = INITIAL_SCHOOL_CLASSES.find((ic) => ic.id === c.id || ic.name === c.name);
+          const is4A1 = c.id === 'class-4a1' || c.name === '4A1';
           return {
             ...c,
+            totalStudents: is4A1 ? 55 : c.totalStudents || initialMatch?.totalStudents || 35,
+            teacherName: is4A1 && (!c.teacherName || c.teacherName === 'Cô Nguyễn Thị Mai') ? 'Cô Nguyễn Thị Minh Hằng' : c.teacherName || initialMatch?.teacherName || 'Giáo viên',
             schoolName: c.schoolName === 'Trường Tiểu học Chu Văn An' ? INITIAL_SCHOOL_INFO.name : c.schoolName || INITIAL_SCHOOL_INFO.name,
             schoolYear: c.schoolYear === '2025-2026' ? '2026-2027' : c.schoolYear || '2026-2027',
             shareToken: c.shareToken || initialMatch?.shareToken || `c${cleanName}-${Math.random().toString(36).substring(2, 8)}`,
@@ -434,17 +439,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (savedActiveId) setActiveClassId(savedActiveId);
       if (savedStudents) {
         const parsedStudents = JSON.parse(savedStudents);
-        const upgradedStudents = parsedStudents.map((st: any) => ({
-          ...st,
-          shareToken: st.shareToken || `s-${(st.id || 'hs').toLowerCase().replace(/[^a-z0-9]/g, '')}-${Math.random().toString(36).substring(2, 8)}`,
-        }));
-        setAllStudents(upgradedStudents);
+        // Check if cached 4A1 students is the old 12-student demo list (starts with 'Nguyễn Văn An' and has <= 12 students)
+        const isOldDemo4A1 =
+          parsedStudents.filter((s: any) => (s.classId || 'class-4a1') === 'class-4a1').length <= 12 &&
+          parsedStudents.some((s: any) => s.fullName === 'Nguyễn Văn An');
+
+        if (isOldDemo4A1) {
+          const otherClasses = parsedStudents.filter((s: any) => s.classId && s.classId !== 'class-4a1');
+          const real4A1 = INITIAL_STUDENTS.filter((s) => (s.classId || 'class-4a1') === 'class-4a1');
+          const combined = [...otherClasses, ...real4A1];
+          setAllStudents(combined);
+          try {
+            localStorage.setItem(STORAGE_PREFIX + 'students', JSON.stringify(combined));
+          } catch (e) {}
+        } else {
+          const upgradedStudents = parsedStudents.map((st: any) => ({
+            ...st,
+            shareToken: st.shareToken || `s-${(st.id || 'hs').toLowerCase().replace(/[^a-z0-9]/g, '')}-${Math.random().toString(36).substring(2, 8)}`,
+          }));
+          setAllStudents(upgradedStudents);
+        }
       } else {
-        const upgradedInitial = INITIAL_STUDENTS.map((st) => ({
-          ...st,
-          shareToken: `s-${st.id.toLowerCase().replace(/[^a-z0-9]/g, '')}-${Math.random().toString(36).substring(2, 8)}`,
-        }));
-        setAllStudents(upgradedInitial);
+        setAllStudents(INITIAL_STUDENTS);
       }
 
       const realCalendarTerm = getCurrentTermByDate();
