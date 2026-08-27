@@ -33,7 +33,12 @@ import Link from 'next/link';
 export default function AdminPortalPage() {
   const router = useRouter();
   const { schoolClasses, activeClassId, switchClass, addClass, updateClass, deleteClass, allStudents } = useAppStore();
-  const { user, profile, teachers, addTeacher, updateTeacher, deleteTeacher } = useAuth();
+  const { user, profile, teachers, refreshTeachers, addTeacher, updateTeacher, deleteTeacher } = useAuth();
+
+  // Load latest teacher requests on mount
+  React.useEffect(() => {
+    refreshTeachers();
+  }, [refreshTeachers]);
 
   // Modal State for Class
   const [isClassModalOpen, setIsClassModalOpen] = useState(false);

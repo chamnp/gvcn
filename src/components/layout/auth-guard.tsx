@@ -24,9 +24,11 @@ export const AuthGuard: React.FC<{ children: React.ReactNode }> = ({ children })
         router.push('/login');
       } else if (!isAuthorized) {
         router.push('/unauthorized');
+      } else if (pathname === '/admin' && profile?.role !== 'ADMIN') {
+        router.push('/');
       }
     }
-  }, [user, isAuthorized, loading, pathname, isPublicRoute, router]);
+  }, [user, isAuthorized, profile, loading, pathname, isPublicRoute, router]);
 
   // If on a public route, always render immediately
   if (isPublicRoute) {

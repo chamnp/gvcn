@@ -83,18 +83,26 @@ const SidebarContent: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
       {/* Class Quick Switcher Card */}
       <div className="mx-3 sm:mx-4 my-3 p-3 rounded-xl bg-slate-800/80 border border-slate-700/60 shadow-xs space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Lớp Đang Chọn</span>
-          <select
-            value={activeClassId}
-            onChange={(e) => switchClass(e.target.value)}
-            className="bg-blue-600 text-white text-xs px-2 py-0.5 rounded-lg font-bold border-none focus:ring-1 focus:ring-blue-400 cursor-pointer"
-          >
-            {schoolClasses.map((c) => (
-              <option key={c.id} value={c.id}>
-                Lớp {c.name} (K{c.grade})
-              </option>
-            ))}
-          </select>
+          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+            {profile?.role === 'ADMIN' ? 'Chọn Lớp Quản Lý' : 'Lớp Phụ Trách'}
+          </span>
+          {profile?.role === 'ADMIN' ? (
+            <select
+              value={activeClassId}
+              onChange={(e) => switchClass(e.target.value)}
+              className="bg-blue-600 text-white text-xs px-2 py-0.5 rounded-lg font-bold border-none focus:ring-1 focus:ring-blue-400 cursor-pointer"
+            >
+              {schoolClasses.map((c) => (
+                <option key={c.id} value={c.id}>
+                  Lớp {c.name} (K{c.grade})
+                </option>
+              ))}
+            </select>
+          ) : (
+            <span className="bg-blue-600 text-white text-xs px-2.5 py-0.5 rounded-lg font-bold">
+              Lớp {classInfo.name}
+            </span>
+          )}
         </div>
         <p className="text-xs font-semibold text-white truncate">{classInfo.schoolName}</p>
         <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1.5 border-t border-slate-700/50">
@@ -105,7 +113,7 @@ const SidebarContent: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
 
       {/* Nav Menu */}
       <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
-        {NAV_ITEMS.map((item) => {
+        {NAV_ITEMS.filter((item) => (item.href === '/admin' ? profile?.role === 'ADMIN' : true)).map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || (item.href !== '/' && item.href !== '/admin' && pathname.startsWith(item.href));
 

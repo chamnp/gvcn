@@ -18,7 +18,8 @@ import Link from 'next/link';
 
 export default function UnauthorizedPage() {
   const router = useRouter();
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, isAuthorized, signOut, refreshTeachers } = useAuth();
+  const [checking, setChecking] = React.useState(false);
 
   const handleSendEmailAdmin = () => {
     const email = 'anhnnh4@gmail.com';
@@ -29,8 +30,18 @@ export default function UnauthorizedPage() {
     window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
   };
 
-  const handleRefresh = () => {
-    window.location.reload();
+  const handleRefresh = async () => {
+    setChecking(true);
+    const updated = await refreshTeachers();
+    const email = (user?.email || '').toLowerCase().trim();
+    const matched = updated.find((t) => t.email.toLowerCase() === email);
+
+    if (matched && matched.isActive && (matched.role === 'ADMIN' || matched.role === 'TEACHER')) {
+      router.push('/');
+    } else {
+      window.location.reload();
+    }
+    setChecking(false);
   };
 
   const handleSignOut = async () => {

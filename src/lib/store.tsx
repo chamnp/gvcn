@@ -329,6 +329,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const switchClass = (classId: string) => {
+    if (profile && profile.role === 'TEACHER') {
+      return;
+    }
     setActiveClassId(classId);
   };
 
