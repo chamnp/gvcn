@@ -68,6 +68,19 @@ import { INITIAL_TIMETABLE, INITIAL_CUSTOM_SUBJECTS } from './timetable-data';
 import { useAuth } from './auth-context';
 import { toast } from 'sonner';
 
+export function getDefaultPinForStudent(student?: { dateOfBirth?: string }): string {
+  if (!student?.dateOfBirth) return '1234';
+  try {
+    const parts = student.dateOfBirth.split('-');
+    if (parts.length === 3) {
+      const day = parts[2].padStart(2, '0');
+      const month = parts[1].padStart(2, '0');
+      return `${day}${month}`;
+    }
+  } catch (e) {}
+  return '1234';
+}
+
 interface AppContextType {
   // School Profile & Settings
   schoolInfo: SchoolInfo;
@@ -148,6 +161,17 @@ interface AppContextType {
   clearClassStudents: () => void;
   loadDemoStudents: () => void;
   updateSeatPosition: (studentId: string, row: number, col: number) => void;
+  updateStudentSecurity: (
+    studentId: string,
+    security: {
+      customPin?: string;
+      isActivated?: boolean;
+      parentPhone?: string;
+      shareToken?: string;
+    }
+  ) => void;
+  resetStudentPin: (studentId: string) => void;
+  regenerateStudentToken: (studentId: string) => string;
 
   // Assessment Actions
   updateSubjectAssessment: (
@@ -379,7 +403,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       if (savedActiveId) setActiveClassId(savedActiveId);
-      if (savedStudents) setAllStudents(JSON.parse(savedStudents));
+      if (savedStudents) {
+        const parsedStudents = JSON.parse(savedStudents);
+        const upgradedStudents = parsedStudents.map((st: any) => ({
+          ...st,
+          shareToken: st.shareToken || `s-${(st.id || 'hs').toLowerCase().replace(/[^a-z0-9]/g, '')}-${Math.random().toString(36).substring(2, 8)}`,
+        }));
+        setAllStudents(upgradedStudents);
+      } else {
+        const upgradedInitial = INITIAL_STUDENTS.map((st) => ({
+          ...st,
+          shareToken: `s-${st.id.toLowerCase().replace(/[^a-z0-9]/g, '')}-${Math.random().toString(36).substring(2, 8)}`,
+        }));
+        setAllStudents(upgradedInitial);
+      }
 
       const realCalendarTerm = getCurrentTermByDate();
       if (savedTerm) {
@@ -710,10 +747,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // STUDENT ACTIONS
   const addStudent = (studentData: Omit<Student, 'id' | 'createdAt'>) => {
+    const studentId = `hs-${Date.now()}`;
     const newStudent: Student = {
       ...studentData,
       classId: activeClassId,
-      id: `hs-${Date.now()}`,
+      id: studentId,
+      shareToken: studentData.shareToken || `s-${studentId}-${Math.random().toString(36).substring(2, 8)}`,
       createdAt: new Date().toISOString(),
     };
     setAllStudents((prev) => [...prev, newStudent]);
@@ -728,22 +767,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const importStudents = (imported: Partial<Student>[]) => {
-    const newStudents: Student[] = imported.map((st, i) => ({
-      id: `hs-${Date.now()}-${i}`,
-      classId: activeClassId,
-      studentCode: st.studentCode || `HS-${classInfo.name}-${String(students.length + i + 1).padStart(3, '0')}`,
-      fullName: st.fullName || 'Học sinh mới',
-      gender: st.gender || 'Nam',
-      dateOfBirth: st.dateOfBirth || '2016-01-01',
-      parentName: st.parentName || '',
-      parentPhone: st.parentPhone || '',
-      isBoarding: st.isBoarding ?? true,
-      seatRow: Math.floor((students.length + i) / 8),
-      seatCol: (students.length + i) % 8,
-      healthNotes: st.healthNotes || '',
-      tags: [],
-      createdAt: new Date().toISOString(),
-    }));
+    const newStudents: Student[] = imported.map((st, i) => {
+      const studentId = `hs-${Date.now()}-${i}`;
+      return {
+        id: studentId,
+        classId: activeClassId,
+        studentCode: st.studentCode || `HS-${classInfo.name}-${String(students.length + i + 1).padStart(3, '0')}`,
+        fullName: st.fullName || 'Học sinh mới',
+        gender: st.gender || 'Nam',
+        dateOfBirth: st.dateOfBirth || '2016-01-01',
+        parentName: st.parentName || '',
+        parentPhone: st.parentPhone || '',
+        isBoarding: st.isBoarding ?? true,
+        seatRow: Math.floor((students.length + i) / 8),
+        seatCol: (students.length + i) % 8,
+        healthNotes: st.healthNotes || '',
+        tags: [],
+        shareToken: `s-${studentId}-${Math.random().toString(36).substring(2, 8)}`,
+        createdAt: new Date().toISOString(),
+      };
+    });
     setAllStudents((prev) => [...prev, ...newStudents]);
   };
 
@@ -757,6 +800,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: `hs-${activeClassId}-${st.id}`,
       classId: activeClassId,
       studentCode: st.studentCode.replace('HS4A1', `HS${classInfo.name.replace(/\s+/g, '')}`),
+      shareToken: `s-${st.id.toLowerCase().replace(/[^a-z0-9]/g, '')}-${Math.random().toString(36).substring(2, 8)}`,
     }));
     setAllStudents((prev) => {
       const otherClasses = prev.filter((s) => (s.classId || 'class-4a1') !== activeClassId);
@@ -766,17 +810,79 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateSeatPosition = (studentId: string, row: number, col: number) => {
     setAllStudents((prev) =>
-      prev.map((s) => {
+      prev.map((s) => (s.id === studentId ? { ...s, seatRow: row, seatCol: col } : s))
+    );
+  };
+
+  const updateStudentSecurity = (
+    studentId: string,
+    security: {
+      customPin?: string;
+      isActivated?: boolean;
+      parentPhone?: string;
+      shareToken?: string;
+    }
+  ) => {
+    setAllStudents((prev) => {
+      const updated = prev.map((s) => {
         if (s.id === studentId) {
-          return { ...s, seatRow: row, seatCol: col };
-        }
-        if ((s.classId || 'class-4a1') === activeClassId && s.seatRow === row && s.seatCol === col) {
-          const current = prev.find((item) => item.id === studentId);
-          return { ...s, seatRow: current?.seatRow || 0, seatCol: current?.seatCol || 0 };
+          return {
+            ...s,
+            customPin: security.customPin !== undefined ? security.customPin : s.customPin,
+            isActivated: security.isActivated !== undefined ? security.isActivated : s.isActivated,
+            activatedAt: security.isActivated ? (s.activatedAt || new Date().toISOString()) : s.activatedAt,
+            parentPhone: security.parentPhone !== undefined ? security.parentPhone : s.parentPhone,
+            shareToken: security.shareToken || s.shareToken,
+          };
         }
         return s;
-      })
-    );
+      });
+      try {
+        localStorage.setItem(STORAGE_PREFIX + 'students', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  };
+
+  const resetStudentPin = (studentId: string) => {
+    setAllStudents((prev) => {
+      const updated = prev.map((s) => {
+        if (s.id === studentId) {
+          return {
+            ...s,
+            customPin: undefined,
+            isActivated: false,
+            activatedAt: undefined,
+          };
+        }
+        return s;
+      });
+      try {
+        localStorage.setItem(STORAGE_PREFIX + 'students', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  };
+
+  const regenerateStudentToken = (studentId: string): string => {
+    const randomSuffix = Math.random().toString(36).substring(2, 9);
+    const newToken = `s-${studentId.toLowerCase().replace(/[^a-z0-9]/g, '')}-${randomSuffix}`;
+    setAllStudents((prev) => {
+      const updated = prev.map((s) => {
+        if (s.id === studentId) {
+          return {
+            ...s,
+            shareToken: newToken,
+          };
+        }
+        return s;
+      });
+      try {
+        localStorage.setItem(STORAGE_PREFIX + 'students', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+    return newToken;
   };
 
   // ASSESSMENT ACTIONS
@@ -1164,6 +1270,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         clearClassStudents,
         loadDemoStudents,
         updateSeatPosition,
+        updateStudentSecurity,
+        resetStudentPin,
+        regenerateStudentToken,
         updateSubjectAssessment,
         batchSetSubjectLevel,
         updateTraitAssessment,

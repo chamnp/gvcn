@@ -284,8 +284,15 @@ export default function PublicClassHomeworkPortal({
             </div>
           </div>
 
-          {/* Quick Actions / Link to Teacher Login */}
+          {/* Quick Actions: Tra Cứu Điểm Của Con + Link to Teacher Login */}
           <div className="flex items-center space-x-2 shrink-0">
+            <Link
+              href="/lookup"
+              className="text-[11px] font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 px-3 py-1.5 rounded-xl border border-amber-300 transition-colors inline-flex items-center gap-1 shadow-2xs"
+            >
+              <span>🌟 Tra Cứu Con</span>
+            </Link>
+
             <Link
               href="/login"
               className="text-[11px] font-bold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-xl border border-blue-200 transition-colors inline-flex items-center gap-1"

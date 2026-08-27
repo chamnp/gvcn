@@ -85,6 +85,10 @@ export interface Student {
   healthNotes?: string; // Ví dụ: Cận thị 2 độ, Dị ứng hải sản
   tags?: string[]; // Ví dụ: Ban cán sự, Tổ trưởng, Cần bồi dưỡng
   avatarUrl?: string;
+  shareToken?: string; // Token bí mật cá nhân để xem phiếu báo điểm riêng tư (VD: hs-4a1-8f92a4)
+  customPin?: string; // Mã PIN riêng 4-6 số do phụ huynh tự thiết lập sau khi kích hoạt
+  isActivated?: boolean; // Đã kích hoạt xem bảng điểm lần đầu
+  activatedAt?: string; // Thời điểm kích hoạt lần đầu
   createdAt: string;
 }
 
