@@ -133,8 +133,16 @@ interface AppContextType {
   ) => void;
   batchSetAttendance: (date: string, status: AttendanceStatus) => void;
 
-  // Star / Reward Actions
-  addStarLog: (studentId: string, points: number, category: string, reason: string) => void;
+  // Star / Reward & Daily Assessment Actions
+  addStarLog: (
+    studentId: string,
+    points: number,
+    category: string,
+    reason: string,
+    comment?: string,
+    date?: string
+  ) => void;
+  deleteStarLog: (logId: string) => void;
   getStudentStars: (studentId: string) => number;
 
   // Full Database Backup & Restore
@@ -721,17 +729,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  // STAR REWARDS
-  const addStarLog = (studentId: string, points: number, category: string, reason: string) => {
+  // STAR REWARDS & DAILY BEHAVIOR ASSESSMENTS
+  const addStarLog = (
+    studentId: string,
+    points: number,
+    category: string,
+    reason: string,
+    comment?: string,
+    date?: string
+  ) => {
     const newLog: StarLog = {
-      id: `star-${Date.now()}`,
+      id: `star-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
       studentId,
       points,
       category,
       reason,
+      comment: comment?.trim() || undefined,
+      date: date || new Date().toISOString().split('T')[0],
       createdAt: new Date().toISOString(),
     };
     setStarLogs((prev) => [newLog, ...prev]);
+  };
+
+  const deleteStarLog = (logId: string) => {
+    setStarLogs((prev) => prev.filter((s) => s.id !== logId));
   };
 
   const getStudentStars = (studentId: string) => {
@@ -858,6 +879,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateAttendance,
         batchSetAttendance,
         addStarLog,
+        deleteStarLog,
         getStudentStars,
         exportAllDataJSON,
         importAllDataJSON,

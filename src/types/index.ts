@@ -111,9 +111,11 @@ export interface DailyAttendance {
 export interface StarLog {
   id: string;
   studentId: string;
-  points: number; // +1, +2, -1, v.v.
-  category: string; // 'Phát biểu', 'Làm bài tập', 'Giúp bạn', 'Vệ sinh', 'Nề nếp'
-  reason: string;
+  points: number; // +1, +2, -1, 0 (chỉ nhận xét), v.v.
+  category: string; // 'Học tập', 'Nề nếp & Kỷ luật', 'Phẩm chất & Tương tác', 'Trực nhật & Vệ sinh', 'Dặn dò phụ huynh', 'Khen thưởng', 'Khác'
+  reason: string; // 'Phát biểu hăng hái', 'Làm bài xuất sắc', 'Vở sạch chữ đẹp', v.v.
+  comment?: string; // Nhận xét / dặn dò cụ thể hàng ngày của cô giáo
+  date?: string; // YYYY-MM-DD
   createdAt: string;
 }
 
