@@ -18,8 +18,19 @@ import Link from 'next/link';
 
 export default function UnauthorizedPage() {
   const router = useRouter();
-  const { user, profile, isAuthorized, signOut, refreshTeachers } = useAuth();
+  const { user, profile, isAuthorized, isAdmin, loading, signOut, refreshTeachers } = useAuth();
   const [checking, setChecking] = React.useState(false);
+
+  // Auto redirect if already authorized
+  React.useEffect(() => {
+    if (!loading && isAuthorized) {
+      if (isAdmin) {
+        router.push('/admin');
+      } else {
+        router.push('/');
+      }
+    }
+  }, [loading, isAuthorized, isAdmin, router]);
 
   const handleSendEmailAdmin = () => {
     const email = 'anhnnh4@gmail.com';
@@ -34,10 +45,15 @@ export default function UnauthorizedPage() {
     setChecking(true);
     const updated = await refreshTeachers();
     const email = (user?.email || '').toLowerCase().trim();
+    const isPrimaryAdmin = email === 'anhnnh4@gmail.com';
     const matched = updated.find((t) => t.email.toLowerCase() === email);
 
-    if (matched && matched.isActive && (matched.role === 'ADMIN' || matched.role === 'TEACHER')) {
-      router.push('/');
+    if (isPrimaryAdmin || (matched && matched.isActive && (matched.role === 'ADMIN' || matched.role === 'ADMIN_TEACHER' || matched.role === 'TEACHER'))) {
+      if (isPrimaryAdmin || matched?.role === 'ADMIN' || matched?.role === 'ADMIN_TEACHER') {
+        router.push('/admin');
+      } else {
+        router.push('/');
+      }
     } else {
       window.location.reload();
     }

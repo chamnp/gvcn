@@ -67,7 +67,7 @@ export default function AdminPortalPage() {
     deleteClass,
     allStudents,
   } = useAppStore();
-  const { user, profile, teachers, refreshTeachers, addTeacher, updateTeacher, deleteTeacher } = useAuth();
+  const { user, profile, isAdmin, teachers, refreshTeachers, addTeacher, updateTeacher, deleteTeacher } = useAuth();
 
   // Load latest teacher requests on mount
   React.useEffect(() => {
@@ -140,8 +140,6 @@ export default function AdminPortalPage() {
   const totalTeachers = teachers.length;
   const totalAdmins = teachers.filter((t) => t.role === 'ADMIN' || t.role === 'ADMIN_TEACHER').length;
   const totalPending = teachers.filter((t) => t.role === 'PENDING' || !t.isActive).length;
-
-  const isAdmin = !profile || profile.role === 'ADMIN' || profile.role === 'ADMIN_TEACHER';
 
   // Filtered staff list
   const filteredTeachers = useMemo(() => {

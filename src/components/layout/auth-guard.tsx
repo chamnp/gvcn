@@ -10,7 +10,7 @@ const PUBLIC_PREFIXES = ['/login', '/unauthorized', '/demo', '/hw'];
 export const AuthGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, profile, isAuthorized, loading } = useAuth();
+  const { user, profile, isAuthorized, isAdmin, loading } = useAuth();
 
   const isPublicRoute = PUBLIC_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
@@ -24,11 +24,11 @@ export const AuthGuard: React.FC<{ children: React.ReactNode }> = ({ children })
         router.push('/login');
       } else if (!isAuthorized) {
         router.push('/unauthorized');
-      } else if (pathname === '/admin' && profile?.role !== 'ADMIN' && profile?.role !== 'ADMIN_TEACHER') {
+      } else if (pathname === '/admin' && !isAdmin) {
         router.push('/');
       }
     }
-  }, [user, isAuthorized, profile, loading, pathname, isPublicRoute, router]);
+  }, [user, isAuthorized, isAdmin, profile, loading, pathname, isPublicRoute, router]);
 
   // If on a public route, always render immediately
   if (isPublicRoute) {
@@ -36,7 +36,7 @@ export const AuthGuard: React.FC<{ children: React.ReactNode }> = ({ children })
   }
 
   // If still checking auth session
-  if (loading) {
+  if (loading || (user && !profile)) {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center space-y-4">
         <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20 animate-pulse">

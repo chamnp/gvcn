@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { User, Session } from '@supabase/supabase-js';
 import { TeacherProfile, UserRole } from '@/types';
@@ -111,16 +111,70 @@ const DEFAULT_TEACHERS: TeacherProfile[] = [
   },
 ];
 
+// Helper to synchronously resolve a profile given user & teacher list
+function resolveUserProfile(user: User | null, teachersList: TeacherProfile[]): TeacherProfile | null {
+  if (!user) return null;
+  const email = (user.email || '').toLowerCase().trim();
+
+  // Primary Admin Email Check
+  if (email === 'anhnnh4@gmail.com') {
+    const matched = teachersList.find((t) => t.email.toLowerCase() === email);
+    return {
+      id: matched?.id || `admin-${user.id}`,
+      email,
+      fullName: matched?.fullName || user.user_metadata?.full_name || 'Admin Quản Trị Viên (Hiệu Trưởng)',
+      role: matched?.role || 'ADMIN_TEACHER',
+      title: matched?.title || 'Hiệu trưởng kiêm GVCN',
+      department: matched?.department || 'Ban Giám Hiệu',
+      assignedClassId: matched?.assignedClassId || 'class-4a1',
+      assignedClassName: matched?.assignedClassName || 'Lớp 4A1',
+      isActive: true,
+      createdAt: matched?.createdAt || new Date().toISOString(),
+    };
+  }
+
+  // Whitelist match
+  const matched = teachersList.find((t) => t.email.toLowerCase() === email);
+  if (matched) {
+    return matched;
+  }
+
+  // Not in whitelist -> Pending request
+  return {
+    id: `pending-${user.id}`,
+    email,
+    fullName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Giáo viên mới',
+    role: 'PENDING',
+    title: 'Chờ duyệt',
+    department: 'Chưa phân bổ',
+    assignedClassName: undefined,
+    isActive: false,
+    createdAt: new Date().toISOString(),
+  };
+}
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<TeacherProfile | null>(null);
-  const [teachers, setTeachers] = useState<TeacherProfile[]>(DEFAULT_TEACHERS);
+  const [teachers, setTeachers] = useState<TeacherProfile[]>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('gvcn_teachers');
+        if (saved) return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return DEFAULT_TEACHERS;
+  });
   const [loading, setLoading] = useState(true);
 
-  // Fetch teachers from Supabase (with fallback to localStorage / defaults)
+  // Synchronously compute current profile from (user, teachers)
+  const profile = useMemo(() => {
+    return resolveUserProfile(user, teachers);
+  }, [user, teachers]);
+
+  // Fetch teachers from Supabase
   const refreshTeachers = useCallback(async (): Promise<TeacherProfile[]> => {
     try {
       const { data, error } = await supabase
@@ -154,108 +208,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.warn('Error fetching teachers from Supabase:', err);
     }
 
-    // Fallback to localStorage
-    try {
-      const saved = localStorage.getItem('gvcn_teachers');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        setTeachers(parsed);
-        return parsed;
+    return teachers;
+  }, [teachers]);
+
+  // Initial load
+  useEffect(() => {
+    let isMounted = true;
+
+    async function initAuth() {
+      try {
+        const [{ data: { session } }, dbTeachers] = await Promise.all([
+          supabase.auth.getSession(),
+          refreshTeachers(),
+        ]);
+
+        if (isMounted) {
+          setSession(session);
+          setUser(session?.user ?? null);
+          setLoading(false);
+        }
+      } catch (err) {
+        if (isMounted) setLoading(false);
       }
-    } catch (e) {}
-
-    return DEFAULT_TEACHERS;
-  }, []);
-
-  // Initial load of teachers
-  useEffect(() => {
-    refreshTeachers();
-  }, [refreshTeachers]);
-
-  // Check role & profile when user changes
-  useEffect(() => {
-    if (!user) {
-      setProfile(null);
-      return;
     }
 
-    const email = (user.email || '').toLowerCase().trim();
-    const existing = teachers.find((t) => t.email.toLowerCase() === email);
+    initAuth();
 
-    // 1. Primary Admin Account
-    if (email === 'anhnnh4@gmail.com') {
-      const adminProf: TeacherProfile = {
-        id: existing?.id || `admin-${user.id}`,
-        email,
-        fullName: existing?.fullName || user.user_metadata?.full_name || 'Admin Quản Trị Viên (Hiệu Trưởng)',
-        role: existing?.role || 'ADMIN_TEACHER',
-        title: existing?.title || 'Hiệu trưởng kiêm GVCN',
-        department: existing?.department || 'Ban Giám Hiệu',
-        assignedClassId: existing?.assignedClassId || 'class-4a1',
-        assignedClassName: existing?.assignedClassName || 'Lớp 4A1',
-        isActive: true,
-        createdAt: existing?.createdAt || new Date().toISOString(),
-      };
-      setProfile(adminProf);
-      return;
-    }
-
-    // 2. Check if user email is in whitelist
-    if (existing) {
-      setProfile(existing);
-    } else {
-      // 3. User is logged in but NOT in whitelist -> Record as PENDING in Supabase & state
-      const pendingProfile: TeacherProfile = {
-        id: `pending-${user.id}`,
-        email,
-        fullName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Giáo viên mới',
-        role: 'PENDING',
-        title: 'Chờ duyệt',
-        department: 'Chưa phân bổ',
-        assignedClassName: undefined,
-        isActive: false,
-        createdAt: new Date().toISOString(),
-      };
-      setProfile(pendingProfile);
-
-      // Auto-register pending request in Supabase for Admin to see
-      (async () => {
-        try {
-          const { error } = await supabase.from('Teacher').insert({
-            email,
-            fullName: pendingProfile.fullName,
-            role: 'PENDING',
-            title: pendingProfile.title,
-            department: pendingProfile.department,
-            isActive: false,
-          });
-          if (!error) {
-            refreshTeachers();
-          }
-        } catch (e) {}
-      })();
-    }
-  }, [user, teachers, refreshTeachers]);
-
-  useEffect(() => {
-    // Check active session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    // Listen for auth state changes
+    // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (isMounted) {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setLoading(false);
+      }
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, [refreshTeachers]);
 
   // Google OAuth
   const signInWithGoogle = async () => {
@@ -331,7 +325,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
-    setProfile(null);
     toast.info('Đã đăng xuất');
   };
 
@@ -448,21 +441,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Auth & RBAC Flags (Supports Admin, Teacher, and Dual Admin+Teacher)
+  const isPrimaryAdmin = (user?.email || '').toLowerCase().trim() === 'anhnnh4@gmail.com';
+
   const isAdmin =
     user !== null &&
-    profile !== null &&
-    (profile.role === 'ADMIN' || profile.role === 'ADMIN_TEACHER');
+    (isPrimaryAdmin ||
+      profile?.role === 'ADMIN' ||
+      profile?.role === 'ADMIN_TEACHER');
 
   const isTeacher =
     user !== null &&
-    profile !== null &&
-    (profile.role === 'TEACHER' || profile.role === 'ADMIN_TEACHER');
+    (isPrimaryAdmin ||
+      profile?.role === 'TEACHER' ||
+      profile?.role === 'ADMIN_TEACHER');
 
   const isAuthorized =
     user !== null &&
-    profile !== null &&
-    profile.isActive &&
-    (profile.role === 'ADMIN' || profile.role === 'TEACHER' || profile.role === 'ADMIN_TEACHER');
+    (isPrimaryAdmin ||
+      (profile !== null &&
+        profile.isActive &&
+        (profile.role === 'ADMIN' || profile.role === 'TEACHER' || profile.role === 'ADMIN_TEACHER')));
 
   return (
     <AuthContext.Provider
