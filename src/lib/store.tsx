@@ -602,9 +602,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             departmentName: dbSchool.departmentName || prev.departmentName || 'Phòng GD&ĐT Quận Nam Từ Liêm',
             address: dbSchool.address || prev.address || '',
             phone: dbSchool.phone || prev.phone || '',
+            email: dbSchool.email || prev.email || '',
+            website: dbSchool.website || prev.website || '',
+            logoUrl: dbSchool.logoUrl || prev.logoUrl || '',
             principalName: dbSchool.principalName || prev.principalName || '',
             schoolYear: dbSchool.schoolYear || prev.schoolYear || '2026-2027',
           }));
+
+          if (dbSchool.aiConfig && typeof dbSchool.aiConfig === 'object') {
+            setAiConfigState(dbSchool.aiConfig);
+            if (dbSchool.aiConfig.apiKey) {
+              setApiKeyState(dbSchool.aiConfig.apiKey);
+            }
+          }
+
+          if (dbSchool.aiGenSettings && typeof dbSchool.aiGenSettings === 'object') {
+            setAiGenSettingsState(dbSchool.aiGenSettings);
+          }
         }
 
         if (dbClasses && dbClasses.length > 0) {
@@ -710,6 +724,53 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Setup Live Realtime Subscriptions via Supabase Channels
     const channel = supabase
       .channel('gvcn_live_sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'SchoolInfo' },
+        (payload) => {
+          if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+            const newRow = payload.new as any;
+            setSchoolInfo((prev) => ({
+              ...prev,
+              name: newRow.name || prev.name,
+              departmentName: newRow.departmentName || prev.departmentName,
+              address: newRow.address || prev.address,
+              phone: newRow.phone || prev.phone,
+              email: newRow.email || prev.email,
+              website: newRow.website || prev.website,
+              logoUrl: newRow.logoUrl || prev.logoUrl,
+              principalName: newRow.principalName || prev.principalName,
+              schoolYear: newRow.schoolYear || prev.schoolYear,
+            }));
+            if (newRow.aiConfig && typeof newRow.aiConfig === 'object') {
+              setAiConfigState(newRow.aiConfig);
+              if (newRow.aiConfig.apiKey) setApiKeyState(newRow.aiConfig.apiKey);
+            }
+            if (newRow.aiGenSettings && typeof newRow.aiGenSettings === 'object') {
+              setAiGenSettingsState(newRow.aiGenSettings);
+            }
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'Class' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newRow = payload.new as ClassInfo;
+            setSchoolClasses((prev) => {
+              if (prev.some((c) => c.id === newRow.id)) return prev;
+              return [...prev, newRow];
+            });
+          } else if (payload.eventType === 'DELETE') {
+            const oldRow = payload.old as any;
+            setSchoolClasses((prev) => prev.filter((c) => c.id !== oldRow.id));
+          } else if (payload.eventType === 'UPDATE') {
+            const newRow = payload.new as ClassInfo;
+            setSchoolClasses((prev) => prev.map((c) => (c.id === newRow.id ? newRow : c)));
+          }
+        }
+      )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'StarLog' },
@@ -868,8 +929,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         .upsert({
           id: 'default',
           name: updated.name,
-          address: updated.address,
-          phone: updated.phone,
+          departmentName: updated.departmentName || '',
+          address: updated.address || '',
+          phone: updated.phone || '',
+          email: updated.email || '',
+          website: updated.website || '',
+          logoUrl: updated.logoUrl || '',
           principalName: updated.principalName,
           schoolYear: updated.schoolYear,
           updatedAt: new Date().toISOString(),
@@ -883,7 +948,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // CLASS ACTIONS
   const setClassInfo = (info: ClassInfo) => {
-    setSchoolClasses((prev) => prev.map((c) => (c.id === info.id ? info : c)));
+    updateClass(info);
   };
 
   const switchClass = (classId: string) => {
@@ -2135,6 +2200,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         localStorage.setItem(STORAGE_PREFIX + 'apiKey', key);
         localStorage.setItem(STORAGE_PREFIX + 'aiConfig', JSON.stringify(updated));
       } catch (e) {}
+
+      // Live API Write to Supabase
+      supabase
+        .from('SchoolInfo')
+        .update({
+          aiConfig: updated,
+          updatedAt: new Date().toISOString(),
+        })
+        .eq('id', 'default')
+        .then();
+
       return updated;
     });
   };
@@ -2146,6 +2222,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem(STORAGE_PREFIX + 'aiConfig', JSON.stringify(config));
       localStorage.setItem(STORAGE_PREFIX + 'apiKey', config.apiKey);
     } catch (e) {}
+
+    // Live API Write to Supabase
+    supabase
+      .from('SchoolInfo')
+      .update({
+        aiConfig: config,
+        updatedAt: new Date().toISOString(),
+      })
+      .eq('id', 'default')
+      .then();
   };
 
   const setAiGenSettings = (settings: AIGenerationSettings) => {
@@ -2153,6 +2239,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       localStorage.setItem(STORAGE_PREFIX + 'aiGenSettings', JSON.stringify(settings));
     } catch (e) {}
+
+    // Live API Write to Supabase
+    supabase
+      .from('SchoolInfo')
+      .update({
+        aiGenSettings: settings,
+        updatedAt: new Date().toISOString(),
+      })
+      .eq('id', 'default')
+      .then();
   };
 
   const addClassEvent = (event: Omit<ClassEvent, 'id'>) => {
