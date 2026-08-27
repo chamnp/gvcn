@@ -31,6 +31,10 @@ import {
   Share2,
   ArrowRight,
   Filter,
+  Lock,
+  RefreshCw,
+  Eye,
+  ShieldCheck,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useAuth } from '@/lib/auth-context';
@@ -162,6 +166,7 @@ export default function TimetablePage() {
     resetTimetableToStandard,
     customSubjects,
     schoolInfo,
+    regenerateClassShareToken,
   } = useAppStore();
   const { profile } = useAuth();
 
@@ -186,10 +191,8 @@ export default function TimetablePage() {
   const [scope, setScope] = useState<TimetableScope>('FULL_YEAR');
   const [customStartWeek, setCustomStartWeek] = useState(1);
   const [customEndWeek, setCustomEndWeek] = useState(4);
-  const [scopeDescription, setScopeDescription] = useState('Thời khóa biểu chính khóa áp dụng cho toàn bộ năm học 2026-2027.');
 
   // Palette Filter & Active Quick-Assign Tool
-  const [paletteCategory, setPaletteCategory] = useState<'ALL' | 'CORE' | 'ENRICHMENT' | 'ART_SPORT'>('ALL');
   const [activePaletteSubject, setActivePaletteSubject] = useState<SubjectTheme | null>(null);
 
   // Drag & Drop State
@@ -310,6 +313,12 @@ export default function TimetablePage() {
     handleOpenEdit(day, period);
   };
 
+  // Clear single slot
+  const handleClearSingleSlot = (day: DayOfWeek, period: number) => {
+    updateTimetableSlot(day, period, 'TU_HOC', 'Tự học có hướng dẫn', '', '');
+    toast.info(`Đã đặt lại Tiết ${period} về Tự học`);
+  };
+
   // Open Edit Modal
   const handleOpenEdit = (day: DayOfWeek, period: number) => {
     const slot = getSlot(day, period);
@@ -372,6 +381,23 @@ export default function TimetablePage() {
     }
   };
 
+  // Secure Parent Link Helpers
+  const shareToken = classInfo.shareToken || 'c4a1-8f92a4';
+  const parentPublicUrl = typeof window !== 'undefined' ? `${window.location.origin}/hw/${shareToken}` : `https://gvcn-eta.vercel.app/hw/${shareToken}`;
+
+  const handleCopyParentLink = () => {
+    const text = `Kính gửi quý phụ huynh Lớp ${classInfo.name},\nĐây là liên kết tra cứu thời khóa biểu và bài tập về nhà của các con:\n🔗 ${parentPublicUrl}\n(Liên kết bảo mật riêng của lớp, không cần đăng nhập).`;
+    navigator.clipboard.writeText(text);
+    toast.success('Đã sao chép đường dẫn bảo mật dành cho Phụ huynh!');
+  };
+
+  const handleRegenerateToken = () => {
+    if (confirm(`Bạn có chắc muốn tạo lại Mã Bảo Mật Mới cho Lớp ${classInfo.name}? Sau khi đổi mã, liên kết cũ sẽ bị vô hiệu hóa ngay lập tức để bảo vệ thông tin học sinh.`)) {
+      const newToken = regenerateClassShareToken(classInfo.id);
+      toast.success(`Đã tạo mã bảo mật mới (${newToken}) thành công!`);
+    }
+  };
+
   // EXCEL EXPORT
   const handleExportExcel = () => {
     try {
@@ -400,7 +426,6 @@ export default function TimetablePage() {
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.aoa_to_sheet(matrixData);
 
-      // Set column widths
       ws['!cols'] = [
         { wch: 10 },
         { wch: 10 },
@@ -469,10 +494,7 @@ export default function TimetablePage() {
           return;
         }
 
-        // Detect matrix grid vs list
         const parsedSlots: TimetableSlot[] = [];
-
-        // Find header row containing "Thứ" or "Thứ Hai"
         let headerRowIndex = -1;
         let dayColMap: { [col: number]: DayOfWeek } = {};
 
@@ -493,14 +515,12 @@ export default function TimetablePage() {
         }
 
         if (headerRowIndex >= 0) {
-          // Parse matrix format (Row per Period)
           let periodCounter = 1;
           for (let r = headerRowIndex + 1; r < rawData.length; r++) {
             if (periodCounter > 7) break;
             const row = rawData[r] || [];
             if (row.length === 0) continue;
 
-            // Check if row has period label
             const firstCell = (row[0] || row[1] || '').toString();
             let periodNum = periodCounter;
             const matchPeriod = firstCell.match(/tiết\s*(\d)/i);
@@ -663,8 +683,60 @@ export default function TimetablePage() {
           </div>
         </div>
 
-        {/* 2. TIMETABLE SCOPE & VERSION SELECTOR */}
-        <div className="bg-slate-50 rounded-2xl p-3.5 border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+        {/* 2. PRIVATE PARENT SHARE LINK BAR (BẢO MẬT & RANDOM TOKEN) */}
+        <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-2xl p-3.5 border border-blue-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center space-x-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold shrink-0 shadow-xs">
+              <Lock className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center space-x-1.5">
+                <span className="font-bold text-slate-900">Liên kết Phụ huynh (Bảo mật ngẫu nhiên):</span>
+                <span className="bg-emerald-100 text-emerald-800 text-[10px] font-mono font-bold px-1.5 py-0.2 rounded border border-emerald-300">
+                  {shareToken}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 font-mono truncate" title={parentPublicUrl}>
+                {parentPublicUrl}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2 shrink-0">
+            <button
+              type="button"
+              onClick={handleCopyParentLink}
+              className="inline-flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-1.5 rounded-xl font-bold text-xs shadow-xs transition-colors cursor-pointer"
+            >
+              <Copy className="w-3.5 h-3.5" />
+              <span>Sao Chép Link Phụ Huynh</span>
+            </button>
+
+            <a
+              href={`/hw/${shareToken}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center space-x-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-1.5 rounded-xl font-bold text-xs transition-colors"
+              title="Xem trước trang Phụ huynh"
+            >
+              <Eye className="w-3.5 h-3.5 text-slate-500" />
+              <span>Xem</span>
+            </a>
+
+            <button
+              type="button"
+              onClick={handleRegenerateToken}
+              className="inline-flex items-center space-x-1 text-slate-500 hover:text-rose-600 bg-white hover:bg-rose-50 border border-slate-200 px-2.5 py-1.5 rounded-xl font-bold text-xs transition-colors cursor-pointer"
+              title="Tạo mã bảo mật mới nếu muốn vô hiệu hóa link cũ"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Đổi mã</span>
+            </button>
+          </div>
+        </div>
+
+        {/* 3. TIMETABLE SCOPE & VERSION SELECTOR */}
+        <div className="bg-slate-50 rounded-2xl p-3 border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
           <div className="flex items-center space-x-2">
             <span className="font-bold text-slate-700 whitespace-nowrap">Phạm vi áp dụng TKB:</span>
             <div className="flex flex-wrap gap-1.5">
@@ -733,7 +805,7 @@ export default function TimetablePage() {
         </div>
       </div>
 
-      {/* 3. SUBJECT PALETTE / TOOLBOX FOR DRAG & DROP */}
+      {/* 4. SUBJECT PALETTE / TOOLBOX FOR DRAG & DROP */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-5 space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center space-x-2">
@@ -745,20 +817,21 @@ export default function TimetablePage() {
                 <span>Kho Môn Học (Kéo Thả Vào Lịch Hoặc Nhấp Chọn Để Gán Nhanh)</span>
               </h2>
               <p className="text-[11px] text-slate-500">
-                Kéo thẻ môn bên dưới thả vào bất kỳ ô tiết học nào trên lưới.
+                Kéo thẻ môn bên dưới thả vào bất kỳ ô tiết học nào trên lưới, hoặc nhấp chọn để bật chế độ dán nhanh.
               </p>
             </div>
           </div>
 
           {activePaletteSubject && (
-            <div className="inline-flex items-center gap-2 bg-purple-100 text-purple-900 px-3 py-1 rounded-xl text-xs font-bold border border-purple-300 animate-pulse">
+            <div className="inline-flex items-center gap-2 bg-purple-100 text-purple-900 px-3 py-1.5 rounded-2xl text-xs font-bold border border-purple-300 shadow-sm animate-pulse">
               <span>Đang chọn: {activePaletteSubject.icon} {activePaletteSubject.name}</span>
               <button
                 type="button"
                 onClick={() => setActivePaletteSubject(null)}
-                className="w-4 h-4 rounded-full bg-purple-200 hover:bg-purple-300 flex items-center justify-center text-purple-800"
+                className="w-5 h-5 rounded-full bg-purple-200 hover:bg-purple-300 flex items-center justify-center text-purple-800 cursor-pointer"
+                title="Hủy chọn"
               >
-                <X className="w-3 h-3" />
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
           )}
@@ -803,7 +876,7 @@ export default function TimetablePage() {
         </div>
       </div>
 
-      {/* 4. MAIN TIMETABLE GRID (DRAG & DROP TIMELINE MATRIX) */}
+      {/* 5. MAIN TIMETABLE GRID (DRAG & DROP TIMELINE MATRIX) */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-5 sm:p-6 space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <div className="flex items-center space-x-2">
@@ -812,7 +885,7 @@ export default function TimetablePage() {
               Bảng Thời Khóa Biểu Lớp {classInfo.name} (35 Tiết / Tuần)
             </h2>
           </div>
-          <span className="text-xs text-slate-500 font-medium">
+          <span className="text-xs text-slate-500 font-medium hidden sm:inline-block">
             💡 Bạn có thể kéo thả giữa 2 tiết học để hoán đổi vị trí
           </span>
         </div>
@@ -880,17 +953,30 @@ export default function TimetablePage() {
                               </span>
                             </div>
 
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenEdit(d.id, p.period);
-                              }}
-                              className="opacity-0 group-hover:opacity-100 w-5 h-5 rounded-md bg-white/90 text-slate-600 hover:text-blue-600 flex items-center justify-center transition-opacity shadow-xs"
-                              title="Sửa chi tiết"
-                            >
-                              <Edit2 className="w-3 h-3" />
-                            </button>
+                            <div className="opacity-0 group-hover:opacity-100 flex items-center space-x-1 transition-opacity">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenEdit(d.id, p.period);
+                                }}
+                                className="w-5 h-5 rounded-md bg-white/90 text-slate-600 hover:text-blue-600 flex items-center justify-center shadow-xs cursor-pointer"
+                                title="Sửa chi tiết"
+                              >
+                                <Edit2 className="w-3 h-3" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleClearSingleSlot(d.id, p.period);
+                                }}
+                                className="w-5 h-5 rounded-md bg-white/90 text-slate-600 hover:text-rose-600 flex items-center justify-center shadow-xs cursor-pointer"
+                                title="Xóa tiết (đặt về Tự học)"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
                           </div>
 
                           {slot?.note ? (
@@ -958,17 +1044,30 @@ export default function TimetablePage() {
                               </span>
                             </div>
 
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenEdit(d.id, p.period);
-                              }}
-                              className="opacity-0 group-hover:opacity-100 w-5 h-5 rounded-md bg-white/90 text-slate-600 hover:text-blue-600 flex items-center justify-center transition-opacity shadow-xs"
-                              title="Sửa chi tiết"
-                            >
-                              <Edit2 className="w-3 h-3" />
-                            </button>
+                            <div className="opacity-0 group-hover:opacity-100 flex items-center space-x-1 transition-opacity">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleOpenEdit(d.id, p.period);
+                                }}
+                                className="w-5 h-5 rounded-md bg-white/90 text-slate-600 hover:text-blue-600 flex items-center justify-center shadow-xs cursor-pointer"
+                                title="Sửa chi tiết"
+                              >
+                                <Edit2 className="w-3 h-3" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleClearSingleSlot(d.id, p.period);
+                                }}
+                                className="w-5 h-5 rounded-md bg-white/90 text-slate-600 hover:text-rose-600 flex items-center justify-center shadow-xs cursor-pointer"
+                                title="Xóa tiết (đặt về Tự học)"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
                           </div>
 
                           {slot?.note ? (
@@ -991,7 +1090,7 @@ export default function TimetablePage() {
         </div>
       </div>
 
-      {/* 5. EDIT SLOT MODAL */}
+      {/* 6. EDIT SLOT MODAL */}
       {editingSlot && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white max-w-md w-full rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
@@ -1012,7 +1111,7 @@ export default function TimetablePage() {
               <button
                 type="button"
                 onClick={() => setEditingSlot(null)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center"
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1078,7 +1177,7 @@ export default function TimetablePage() {
                 <button
                   type="button"
                   onClick={() => setEditingSlot(null)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100"
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 cursor-pointer"
                 >
                   Hủy
                 </button>
@@ -1094,7 +1193,7 @@ export default function TimetablePage() {
         </div>
       )}
 
-      {/* 6. EXCEL IMPORT PREVIEW MODAL */}
+      {/* 7. EXCEL IMPORT PREVIEW MODAL */}
       {isImportModalOpen && importedPreviewSlots && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white max-w-3xl w-full rounded-3xl shadow-2xl border border-slate-200 overflow-hidden max-h-[90vh] flex flex-col">

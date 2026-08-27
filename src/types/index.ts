@@ -154,12 +154,13 @@ export interface ClassInfo {
   id: string;
   name: string; // Ví dụ: '4A1'
   grade: GradeLevel;
-  schoolYear: string; // '2025-2026'
-  schoolName: string; // Trường Tiểu học Lê Quý Đôn
-  teacherName: string; // Cô Nguyễn Thị Lan
+  schoolYear: string; // '2026-2027'
+  schoolName: string; // Trường Tiểu học Đại Mỗ
+  teacherName: string; // Cô Nguyễn Thị Mai
   totalStudents: number;
   seatingGridRows: number;
   seatingGridCols: number;
+  shareToken?: string; // Mã ngẫu nhiên bảo mật cho link public phụ huynh (VD: c4a1-8f92a4)
 }
 
 export type DayOfWeek = 'T2' | 'T3' | 'T4' | 'T5' | 'T6';

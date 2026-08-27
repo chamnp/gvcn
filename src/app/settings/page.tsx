@@ -48,6 +48,7 @@ import {
   RefreshCw,
   Edit3,
   List,
+  Copy,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useAuth } from '@/lib/auth-context';
@@ -166,6 +167,7 @@ export default function SettingsPage() {
     loadDemoStudents,
     exportAllDataJSON,
     importAllDataJSON,
+    regenerateClassShareToken,
   } = useAppStore();
   const { user, profile, isAdmin, updateProfile, teachers } = useAuth();
 
@@ -893,6 +895,66 @@ export default function SettingsPage() {
               </button>
             </div>
           </form>
+
+          {/* SECURE RANDOM SHARE TOKEN SECTION */}
+          <div className="pt-4 border-t border-slate-100">
+            <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 rounded-2xl p-4 border border-blue-200 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold shadow-xs">
+                    <ShieldCheck className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                      <span>Mã Bảo Mật & Liên Kết Dành Cho Phụ Huynh Lớp {classInfo.name}</span>
+                    </h3>
+                    <p className="text-[11px] text-slate-500">
+                      Mỗi lớp sở hữu 1 mã bảo mật ngẫu nhiên để chống người lạ đoán link.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const shareToken = classInfo.shareToken || 'c4a1-8f92a4';
+                      const url = `${window.location.origin}/hw/${shareToken}`;
+                      navigator.clipboard.writeText(url);
+                      toast.success(`Đã sao chép link phụ huynh: ${url}`);
+                    }}
+                    className="inline-flex items-center space-x-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-xs cursor-pointer"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Sao Chép Link</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm(`Bạn có chắc muốn tạo lại Mã Bảo Mật Mới cho Lớp ${classInfo.name}? Liên kết cũ sẽ bị vô hiệu hóa ngay lập tức.`)) {
+                        const newToken = regenerateClassShareToken(classInfo.id);
+                        toast.success(`Đã tạo mã mới: ${newToken}`);
+                      }
+                    }}
+                    className="inline-flex items-center space-x-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold px-3 py-1.5 rounded-xl cursor-pointer"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>Tạo Lại Mã Mới</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="bg-white/80 p-2.5 rounded-xl border border-blue-100 flex items-center justify-between text-xs font-mono">
+                <span className="text-slate-600 truncate">
+                  {typeof window !== 'undefined' ? `${window.location.origin}/hw/${classInfo.shareToken || 'c4a1-8f92a4'}` : `https://gvcn-eta.vercel.app/hw/${classInfo.shareToken || 'c4a1-8f92a4'}`}
+                </span>
+                <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full ml-2 shrink-0">
+                  Mã: {classInfo.shareToken || 'c4a1-8f92a4'}
+                </span>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

@@ -24,6 +24,7 @@ export const INITIAL_SCHOOL_CLASSES: ClassInfo[] = [
     totalStudents: 6,
     seatingGridRows: 5,
     seatingGridCols: 8,
+    shareToken: 'c1a1-9x4k2a',
   },
   {
     id: 'class-2a1',
@@ -35,6 +36,7 @@ export const INITIAL_SCHOOL_CLASSES: ClassInfo[] = [
     totalStudents: 6,
     seatingGridRows: 5,
     seatingGridCols: 8,
+    shareToken: 'c2a1-7m3p8b',
   },
   {
     id: 'class-3a1',
@@ -46,6 +48,7 @@ export const INITIAL_SCHOOL_CLASSES: ClassInfo[] = [
     totalStudents: 6,
     seatingGridRows: 5,
     seatingGridCols: 8,
+    shareToken: 'c3a1-4v9r1c',
   },
   {
     id: 'class-4a1',
@@ -57,6 +60,7 @@ export const INITIAL_SCHOOL_CLASSES: ClassInfo[] = [
     totalStudents: 12,
     seatingGridRows: 5,
     seatingGridCols: 8,
+    shareToken: 'c4a1-8f92a4',
   },
   {
     id: 'class-5a1',
@@ -68,6 +72,7 @@ export const INITIAL_SCHOOL_CLASSES: ClassInfo[] = [
     totalStudents: 6,
     seatingGridRows: 5,
     seatingGridCols: 8,
+    shareToken: 'c5a1-5d2w6e',
   },
 ];
 

@@ -83,6 +83,7 @@ interface AppContextType {
   addClass: (newClass: Omit<ClassInfo, 'id'>) => void;
   updateClass: (updated: ClassInfo) => void;
   deleteClass: (classId: string) => void;
+  regenerateClassShareToken: (classId?: string) => string;
 
   // Active Class Scoped Data
   students: Student[];
@@ -313,11 +314,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       if (savedClasses) {
         const parsedClasses = JSON.parse(savedClasses);
-        const upgradedClasses = parsedClasses.map((c: any) => ({
-          ...c,
-          schoolName: c.schoolName === 'Trường Tiểu học Chu Văn An' ? INITIAL_SCHOOL_INFO.name : c.schoolName || INITIAL_SCHOOL_INFO.name,
-          schoolYear: c.schoolYear === '2025-2026' ? '2026-2027' : c.schoolYear || '2026-2027',
-        }));
+        const upgradedClasses = parsedClasses.map((c: any) => {
+          const cleanName = (c.name || 'lop').toLowerCase().replace(/[^a-z0-9]/g, '');
+          const initialMatch = INITIAL_SCHOOL_CLASSES.find((ic) => ic.id === c.id || ic.name === c.name);
+          return {
+            ...c,
+            schoolName: c.schoolName === 'Trường Tiểu học Chu Văn An' ? INITIAL_SCHOOL_INFO.name : c.schoolName || INITIAL_SCHOOL_INFO.name,
+            schoolYear: c.schoolYear === '2025-2026' ? '2026-2027' : c.schoolYear || '2026-2027',
+            shareToken: c.shareToken || initialMatch?.shareToken || `c${cleanName}-${Math.random().toString(36).substring(2, 8)}`,
+          };
+        });
         setSchoolClasses(upgradedClasses);
       } else {
         setSchoolClasses(INITIAL_SCHOOL_CLASSES);
@@ -506,9 +512,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addClass = (newClassData: Omit<ClassInfo, 'id'>) => {
+    const cleanName = newClassData.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const randomSuffix = Math.random().toString(36).substring(2, 8);
     const newClass: ClassInfo = {
       ...newClassData,
       id: `class-${Date.now()}`,
+      shareToken: newClassData.shareToken || `c${cleanName}-${randomSuffix}`,
     };
     setSchoolClasses((prev) => [...prev, newClass]);
     setActiveClassId(newClass.id);
@@ -524,6 +533,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const remaining = schoolClasses.filter((c) => c.id !== classId);
       if (remaining.length > 0) setActiveClassId(remaining[0].id);
     }
+  };
+
+  const regenerateClassShareToken = (classId?: string): string => {
+    const targetId = classId || activeClassId;
+    const targetClass = schoolClasses.find((c) => c.id === targetId) || classInfo;
+    const cleanName = targetClass.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const randomSuffix = Math.random().toString(36).substring(2, 8);
+    const newToken = `c${cleanName}-${randomSuffix}`;
+
+    setSchoolClasses((prev) => {
+      const updated = prev.map((c) => (c.id === targetId ? { ...c, shareToken: newToken } : c));
+      try {
+        localStorage.setItem(STORAGE_PREFIX + 'schoolClasses', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+
+    return newToken;
   };
 
   // CUSTOM SUBJECT ACTIONS
@@ -1044,6 +1071,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addClass,
         updateClass,
         deleteClass,
+        regenerateClassShareToken,
         students,
         allStudents,
         currentTerm,

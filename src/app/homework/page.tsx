@@ -96,11 +96,11 @@ export default function HomeworkPage() {
     ...customSubjects.map((s) => ({ ...s, isDefault: false })),
   ];
 
-  // Public Class Portal Link
-  const publicPortalSlug = classInfo.name.toLowerCase().replace(/\s+/g, '');
+  // Public Class Portal Link (Using secure random shareToken)
+  const shareToken = classInfo.shareToken || 'c4a1-8f92a4';
   const publicPortalUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/hw/${publicPortalSlug}`
-    : `https://gvcn-eta.vercel.app/hw/${publicPortalSlug}`;
+    ? `${window.location.origin}/hw/${shareToken}`
+    : `https://gvcn-eta.vercel.app/hw/${shareToken}`;
 
   // QR Code Image API
   const qrCodeImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(publicPortalUrl)}`;
@@ -312,7 +312,7 @@ export default function HomeworkPage() {
         </button>
 
         <Link
-          href={`/hw/${publicPortalSlug}`}
+          href={`/hw/${shareToken}`}
           target="_blank"
           className="ml-auto inline-flex items-center space-x-1 text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200"
         >

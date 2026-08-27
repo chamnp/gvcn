@@ -89,13 +89,45 @@ export default function PublicClassHomeworkPortal({
     starLogs,
   } = useAppStore();
 
-  // Find class from URL slug/id
+  // Find class strictly matching shareToken or classId
   const currentClass = schoolClasses.find(
     (c) =>
+      (c.shareToken && c.shareToken.toLowerCase() === rawParam) ||
       c.id.toLowerCase() === rawParam ||
       c.name.toLowerCase() === rawParam ||
       c.name.toLowerCase().replace(/\s+/g, '') === rawParam
-  ) || schoolClasses[0];
+  );
+
+  // If no class matched the token or param
+  if (!currentClass) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans">
+        <div className="max-w-md w-full bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xl text-center space-y-4">
+          <div className="w-16 h-16 rounded-3xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto text-3xl shadow-inner">
+            🔒
+          </div>
+          <h2 className="text-xl font-black text-slate-900">Liên Kết Bảo Mật Hoặc Đã Đổi Mã</h2>
+          <p className="text-xs text-slate-500 leading-relaxed">
+            Để đảm bảo an toàn thông tin cá nhân và kết quả học tập của các em, hệ thống sử dụng liên kết riêng tư ngẫu nhiên cho từng lớp. Vui lòng liên hệ <strong>Giáo viên chủ nhiệm</strong> để nhận đường dẫn chính xác.
+          </p>
+          <div className="pt-3 border-t border-slate-100 flex items-center justify-center gap-2">
+            <Link
+              href="/hw"
+              className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-4 py-2.5 rounded-xl transition-colors"
+            >
+              Nhập mã lớp khác
+            </Link>
+            <Link
+              href="/login"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-colors shadow-xs"
+            >
+              Giáo viên đăng nhập →
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Scoped Homework for this class
   const classHomeworks = allHomeworks.filter(
@@ -865,32 +897,6 @@ export default function PublicClassHomeworkPortal({
                 <li>Học sinh bán trú chuẩn bị gối ngủ cá nhân.</li>
                 <li>Nghỉ học phụ huynh vui lòng nhắn tin báo cô trước 07:30.</li>
               </ul>
-            </div>
-
-            {/* SWITCH TO OTHER CLASS IN SCHOOL */}
-            <div className="bg-white rounded-3xl border border-slate-200 p-5 space-y-3 shadow-xs">
-              <h4 className="font-bold text-xs uppercase text-slate-500 tracking-wider">
-                Xem Lớp Khác Trong Trường
-              </h4>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                {schoolClasses.map((cls) => {
-                  const slug = cls.name.toLowerCase().replace(/\s+/g, '');
-                  const isCurrent = cls.id === currentClass.id;
-                  return (
-                    <Link
-                      key={cls.id}
-                      href={`/hw/${slug}`}
-                      className={`p-2.5 rounded-xl border text-center font-bold transition-all ${
-                        isCurrent
-                          ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                          : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'
-                      }`}
-                    >
-                      Lớp {cls.name}
-                    </Link>
-                  );
-                })}
-              </div>
             </div>
           </div>
         </div>
