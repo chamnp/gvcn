@@ -5,6 +5,22 @@ import { generateSmartComment } from '@/lib/comment-bank';
 
 export const runtime = 'nodejs';
 
+function cleanAIComment(rawText: string): string {
+  if (!rawText) return '';
+  let text = rawText.trim();
+  // Remove markdown headers like # or ##
+  text = text.replace(/^#+.*$/gm, '').trim();
+  // Remove prefixes like "Lời nhận xét:", "Nhận xét:", "Đánh giá:", "Học bạ:"
+  text = text.replace(/^(Lời nhận xét|Nhận xét|Đánh giá|Học bạ|Nhận xét giáo viên|Đánh giá định kỳ)\s*:\s*/i, '');
+  // Remove surrounding quotes
+  text = text.replace(/^["'“”«»]+|["'“”«»]+$/g, '').trim();
+  // Remove markdown formatting
+  text = text.replace(/\*\*/g, '').replace(/\*/g, '');
+  // Remove multiple newlines
+  text = text.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim();
+  return text;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -64,7 +80,7 @@ export async function POST(req: NextRequest) {
     // Nếu không có API Key, sử dụng smart offline pedagogical engine
     if (!effectiveKey) {
       const fallbackComment = generateSmartComment(student, subjects, traits, extraNotes, starLogs, attendances, aiGenSettings);
-      return NextResponse.json({ success: true, comment: fallbackComment, source: 'Ngân hàng sư phạm offline', isRealAI: false });
+      return NextResponse.json({ success: true, comment: fallbackComment, source: 'Mẫu Sư Phạm Ngoại Tuyến (Offline)', isRealAI: false });
     }
 
     // Build comprehensive context for the student
@@ -117,28 +133,26 @@ export async function POST(req: NextRequest) {
     }
 
     const prompt = `
-Bạn là một Giáo viên Chủ nhiệm Tiểu học chuẩn mực, giàu tình yêu thương và thấu hiểu học sinh tại Việt Nam.
-Nhiệm vụ của bạn là viết một đoạn LỜI NHẬN XÉT HỌC BẠ / ĐÁNH GIÁ ĐỊNH KỲ cho học sinh tiểu học theo đúng tinh thần và quy định của THÔNG TƯ 27/2020/TT-BGDĐT.
+Bạn là một Giáo viên Chủ nhiệm Tiểu học chuẩn mực tại Việt Nam.
+Nhiệm vụ của bạn là viết một đoạn LỜI NHẬN XÉT HỌC BẠ cho học sinh tiểu học theo Thông tư 27/2020/TT-BGDĐT.
 
-=== THAM SỐ CẤU HÌNH BẮT BUỘC ===
-- Độ dài mục tiêu: Khoảng ${targetWordCount} từ (đúng ${targetSentenceCount} câu).
-- Phong cách & Văn phong yêu cầu: ${toneInstruction}
+=== THAM SỐ YÊU CẦU ===
+- Độ dài: Khoảng ${targetWordCount} từ (đúng ${targetSentenceCount} câu).
+- Phong cách: ${toneInstruction}
 
-=== DỮ LIỆU ĐẦU VÀO CỦA HỌC SINH ===
-- Họ và tên học sinh: ${student.fullName} (Giới tính: ${student.gender})
-- Xưng hô phù hợp: "Em", "Em ${student.fullName.split(' ').pop()}"
-- Kết quả học tập các môn học (T/H/C & Điểm số): ${subjectSummary}
-- Đánh giá Năng lực & Phẩm chất (T/Đ/C): ${traitSummary}
-- Lịch sử nề nếp, tích sao & nhận xét hàng ngày của cô giáo: ${behaviorHistorySummary}
-- Tình hình chuyên cần & sinh hoạt: ${attendanceSummary}
-- Định hướng bổ sung của giáo viên: ${extraNotes || 'Không có'}
+=== THÔNG TIN HỌC SINH ===
+- Họ và tên: ${student.fullName} (${student.gender})
+- Xưng hô: "Em", "Em ${student.fullName.split(' ').pop()}"
+- Kết quả học tập: ${subjectSummary}
+- Năng lực & Phẩm chất: ${traitSummary}
+- Nề nếp & Nhận xét hàng ngày của cô: ${behaviorHistorySummary}
+- Chuyên cần: ${attendanceSummary}
+- Định hướng riêng: ${extraNotes || 'Không có'}
 
-=== QUY TẮC SƯ PHẠM THEO THÔNG TƯ 27/2020/TT-BGDĐT ===
-1. NGẮN GỌN & ĐÚNG ĐỘ DÀI: Viết đúng ${targetSentenceCount} câu (khoảng ${targetWordCount} từ), tự nhiên, cô đọng.
-2. TÍCH CỰC & KHÍCH LỆ: Luôn ghi nhận ưu điểm và sự nỗ lực trước; chỉ rõ điểm cần rèn luyện thêm (nếu có) một cách nhẹ nhàng, xây dựng.
-3. KẾT HỢP DỮ LIỆU THỰC TẾ: Lồng ghép khéo léo nhận xét từ lịch sử nề nếp hàng ngày, điểm kiểm tra môn học và định hướng riêng của giáo viên.
-4. TUYỆT ĐỐI KHÔNG: Không so sánh học sinh này với học sinh khác, không dùng từ ngữ tiêu cực hay phán xét nặng nề.
-5. ĐỊNH DẠNG ĐẦU RA: Chỉ trả về DUY NHẤT đoạn văn nhận xét bằng tiếng Việt. Tuyệt đối không thêm tiêu đề, không có "Lời nhận xét:", không bọc trong dấu ngoặc kép.
+=== QUY TẮC BẮT BUỘC ===
+1. CHỈ TRẢ VỀ DUY NHẤT 1 đoạn văn nhận xét ngắn gọn (đúng ${targetSentenceCount} câu, ~${targetWordCount} từ).
+2. TUYỆT ĐỐI KHÔNG xuất tiêu đề (#, ##), không gạch đầu dòng, không đề mục, không có "Lời nhận xét:".
+3. Tích cực, ấm áp, kết hợp điểm môn học và sao nề nếp hàng ngày.
 `;
 
     // 1. OPENAI & CUSTOM OPENAI-COMPATIBLE PROVIDERS (Xiaomi MIMO, DeepSeek, OpenRouter, Groq, Ollama, etc.)
@@ -163,7 +177,7 @@ Nhiệm vụ của bạn là viết một đoạn LỜI NHẬN XÉT HỌC BẠ /
             messages: [
               {
                 role: 'system',
-                content: 'Bạn là chuyên gia giáo dục tiểu học Việt Nam chuyên viết nhận xét học bạ theo Thông tư 27/2020/TT-BGDĐT.',
+                content: 'Bạn là Giáo viên Chủ nhiệm Tiểu học tại Việt Nam. QUY TẮC BẮT BUỘC: Bạn CHỈ ĐƯỢC trả về DUY NHẤT 1 đoạn văn nhận xét học bạ ngắn gọn (khoảng 3 câu, 50-60 từ). TUYỆT ĐỐI KHÔNG xuất tiêu đề, không markdown, không gạch đầu dòng, không đề mục, không bọc ngoặc kép.',
               },
               {
                 role: 'user',
@@ -171,13 +185,14 @@ Nhiệm vụ của bạn là viết một đoạn LỜI NHẬN XÉT HỌC BẠ /
               },
             ],
             temperature,
-            max_tokens: 500,
+            max_tokens: 800,
           }),
         });
 
         if (aiResponse.ok) {
           const resJson = await aiResponse.json();
-          const text = resJson.choices?.[0]?.message?.content?.trim() || resJson.choices?.[0]?.message?.reasoning_content?.trim();
+          const rawText = resJson.choices?.[0]?.message?.content?.trim() || resJson.choices?.[0]?.message?.reasoning_content?.trim();
+          const text = cleanAIComment(rawText);
           if (text) {
             return NextResponse.json({
               success: true,
@@ -207,7 +222,8 @@ Nhiệm vụ của bạn là viết một đoạn LỜI NHẬN XÉT HỌC BẠ /
           contents: prompt,
         });
 
-        const text = response.text?.trim();
+        const rawText = response.text?.trim() || '';
+        const text = cleanAIComment(rawText);
         if (text) {
           return NextResponse.json({
             success: true,
@@ -237,7 +253,7 @@ Nhiệm vụ của bạn là viết một đoạn LỜI NHẬN XÉT HỌC BẠ /
           },
           body: JSON.stringify({
             model: selectedModel,
-            max_tokens: 400,
+            max_tokens: 500,
             temperature,
             messages: [
               {
@@ -250,7 +266,8 @@ Nhiệm vụ của bạn là viết một đoạn LỜI NHẬN XÉT HỌC BẠ /
 
         if (aiResponse.ok) {
           const resJson = await aiResponse.json();
-          const text = resJson.content?.[0]?.text?.trim();
+          const rawText = resJson.content?.[0]?.text?.trim() || '';
+          const text = cleanAIComment(rawText);
           if (text) {
             return NextResponse.json({
               success: true,

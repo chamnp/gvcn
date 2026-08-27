@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Sparkles,
   Bot,
@@ -36,6 +36,8 @@ import {
   Wifi,
   WifiOff,
   Layers,
+  SquareX,
+  StopCircle,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { generateStudentAICommentFull, GeneratedCommentResult } from '@/lib/ai-service';
@@ -78,6 +80,11 @@ export default function AIAssistantPage() {
   } = useAppStore();
 
   const [isGeneratingAll, setIsGeneratingAll] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState<{
+    current: number;
+    total: number;
+    currentStudentName: string;
+  } | null>(null);
   const [generatingStudentId, setGeneratingStudentId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [customNotes, setCustomNotes] = useState<{ [studentId: string]: string }>({});
@@ -85,6 +92,9 @@ export default function AIAssistantPage() {
   const [isFetchingModels, setIsFetchingModels] = useState(false);
   const [commentSources, setCommentSources] = useState<Record<string, GeneratedCommentResult>>({});
   
+  // Abort controller ref for stopping sync midway
+  const abortSyncRef = useRef(false);
+
   // Modal Pop-up State
   const [isConfigModalOpen, setIsConfigModalOpen] = useState(false);
   const [tempSettings, setTempSettings] = useState<AIGenerationSettings>(aiGenSettings);
@@ -172,6 +182,15 @@ export default function AIAssistantPage() {
     }
   };
 
+  // Cancel / Abort ongoing batch generation
+  const handleCancelGeneration = () => {
+    abortSyncRef.current = true;
+    setIsGeneratingAll(false);
+    setGenerationProgress(null);
+    setGeneratingStudentId(null);
+    toast.info('Đã dừng tiến trình sinh nhận xét!');
+  };
+
   // Sinh nhận xét cho 1 học sinh
   const handleGenerateSingle = async (studentId: string) => {
     const student = students.find((s) => s.id === studentId);
@@ -212,48 +231,74 @@ export default function AIAssistantPage() {
     }
   };
 
-  // Sinh nhận xét cho cả lớp (1-Click)
+  // Sinh nhận xét cho cả lớp (1-Click) với cơ chế Cancel giữa chừng
   const handleGenerateAll = async () => {
+    abortSyncRef.current = false;
     setIsGeneratingAll(true);
     const isOnline = aiGenSettings.mode === 'AI_ONLINE';
 
     toast.info(
       isOnline
-        ? `Đang sinh nhận xét tự động cho ${students.length} học sinh qua ${activeProviderLabel} (${aiConfig?.modelName || 'mimo-v2.5'})...`
+        ? `Đang bắt đầu sinh nhận xét cho ${students.length} học sinh qua ${activeProviderLabel} (${aiConfig?.modelName || 'mimo-v2.5'})...`
         : `Đang tự động sinh nhận xét ngoại tuyến cho ${students.length} học sinh theo Thông tư 27...`
     );
 
     let realAICount = 0;
+    let completedCount = 0;
 
-    for (const student of students) {
+    for (let i = 0; i < students.length; i++) {
+      // Check if user requested to cancel
+      if (abortSyncRef.current) {
+        toast.info(`Đã dừng quá trình sinh nhận xét. Đã hoàn tất ${completedCount}/${students.length} học sinh.`);
+        break;
+      }
+
+      const student = students[i];
+      setGenerationProgress({
+        current: i + 1,
+        total: students.length,
+        currentStudentName: student.fullName,
+      });
+      setGeneratingStudentId(student.id);
+
       const sAss = subjectAssessments.filter((a) => a.studentId === student.id && a.term === currentTerm);
       const tAss = traitAssessments.filter((a) => a.studentId === student.id && a.term === currentTerm);
       const studentStars = starLogs.filter((l) => l.studentId === student.id);
       const studentAtt = attendances.filter((a) => a.studentId === student.id);
 
-      const result = await generateStudentAICommentFull({
-        student,
-        subjects: sAss,
-        traits: tAss,
-        starLogs: studentStars,
-        attendances: studentAtt,
-        aiConfig,
-        aiGenSettings,
-        apiKey,
-        extraNotes: customNotes[student.id],
-      });
+      try {
+        const result = await generateStudentAICommentFull({
+          student,
+          subjects: sAss,
+          traits: tAss,
+          starLogs: studentStars,
+          attendances: studentAtt,
+          aiConfig,
+          aiGenSettings,
+          apiKey,
+          extraNotes: customNotes[student.id],
+        });
 
-      updateTermSummary(student.id, currentTerm, { teacherComment: result.comment });
-      setCommentSources((prev) => ({ ...prev, [student.id]: result }));
-      if (result.isRealAI) realAICount++;
+        updateTermSummary(student.id, currentTerm, { teacherComment: result.comment });
+        setCommentSources((prev) => ({ ...prev, [student.id]: result }));
+        if (result.isRealAI) realAICount++;
+        completedCount++;
+      } catch (err) {
+        console.warn(`Lỗi khi tạo nhận xét cho em ${student.fullName}, tiếp tục em tiếp theo:`, err);
+      }
     }
 
     setIsGeneratingAll(false);
-    toast.success(
-      isOnline
-        ? `Đã hoàn thành sinh nhận xét cho ${students.length} học sinh (${realAICount}/${students.length} qua ${activeProviderLabel})! 🎉`
-        : `Đã hoàn thành sinh nhận xét ngoại tuyến chuẩn TT27 cho ${students.length} học sinh! 🎉`
-    );
+    setGenerationProgress(null);
+    setGeneratingStudentId(null);
+
+    if (!abortSyncRef.current) {
+      toast.success(
+        isOnline
+          ? `Đã hoàn thành sinh nhận xét cho ${completedCount}/${students.length} học sinh (${realAICount} qua ${activeProviderLabel})! 🎉`
+          : `Đã hoàn thành sinh nhận xét ngoại tuyến chuẩn TT27 cho ${completedCount}/${students.length} học sinh! 🎉`
+      );
+    }
   };
 
   // Copy nhận xét
@@ -339,34 +384,65 @@ export default function AIAssistantPage() {
           {/* OPEN CONFIG MODAL BUTTON */}
           <button
             type="button"
+            disabled={isGeneratingAll}
             onClick={() => setIsConfigModalOpen(true)}
-            className="inline-flex items-center space-x-2 bg-slate-100 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-300 text-slate-800 border border-slate-200 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all shadow-xs cursor-pointer"
+            className="inline-flex items-center space-x-2 bg-slate-100 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-300 text-slate-800 border border-slate-200 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all shadow-xs disabled:opacity-50 cursor-pointer"
           >
             <SlidersHorizontal className="w-4 h-4 text-purple-600" />
             <span>Cấu Hình Tham Số & Chọn Chế Độ AI</span>
           </button>
 
-          {/* 1-CLICK GENERATE ALL BUTTON */}
-          <button
-            type="button"
-            onClick={handleGenerateAll}
-            disabled={isGeneratingAll}
-            className="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-5 py-2.5 rounded-2xl text-xs font-bold shadow-md hover:shadow-lg transition-all disabled:opacity-50 cursor-pointer"
-          >
-            {isGeneratingAll ? (
-              <>
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                <span>Đang Sinh Tự Động...</span>
-              </>
-            ) : (
-              <>
-                <Zap className="w-4 h-4 text-yellow-300" />
-                <span>Sinh Nhận Xét Cả Lớp ({students.length} Em)</span>
-              </>
-            )}
-          </button>
+          {/* GENERATE ALL OR CANCEL BUTTON */}
+          {isGeneratingAll ? (
+            <button
+              type="button"
+              onClick={handleCancelGeneration}
+              className="inline-flex items-center space-x-2 bg-rose-600 hover:bg-rose-700 text-white px-5 py-2.5 rounded-2xl text-xs font-bold shadow-md hover:shadow-lg transition-all animate-pulse cursor-pointer"
+            >
+              <StopCircle className="w-4 h-4" />
+              <span>Dừng Lại / Hủy Bỏ (Cancel)</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleGenerateAll}
+              className="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-5 py-2.5 rounded-2xl text-xs font-bold shadow-md hover:shadow-lg transition-all cursor-pointer"
+            >
+              <Zap className="w-4 h-4 text-yellow-300" />
+              <span>Sinh Nhận Xét Cả Lớp ({students.length} Em)</span>
+            </button>
+          )}
         </div>
       </div>
+
+      {/* LIVE PROGRESS BANNER WHEN GENERATING */}
+      {isGeneratingAll && generationProgress && (
+        <div className="bg-purple-900 text-white p-4 rounded-2xl border border-purple-700 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in">
+          <div className="flex items-center space-x-3">
+            <RefreshCw className="w-5 h-5 text-purple-300 animate-spin shrink-0" />
+            <div>
+              <p className="text-xs font-bold">
+                Đang tạo nhận xét cho em: <span className="text-yellow-300">{generationProgress.currentStudentName}</span> ({generationProgress.current}/{generationProgress.total} học sinh)
+              </p>
+              <div className="w-full sm:w-64 bg-white/20 h-1.5 rounded-full overflow-hidden mt-1.5">
+                <div
+                  className="bg-yellow-400 h-full transition-all duration-300 rounded-full"
+                  style={{ width: `${(generationProgress.current / generationProgress.total) * 100}%` }}
+                />
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleCancelGeneration}
+            className="inline-flex items-center space-x-1.5 bg-rose-500/80 hover:bg-rose-600 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer self-start sm:self-auto shrink-0"
+          >
+            <StopCircle className="w-4 h-4" />
+            <span>Hủy / Dừng Ngay</span>
+          </button>
+        </div>
+      )}
 
       {/* STUDENT CARDS GRID */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -458,7 +534,7 @@ export default function AIAssistantPage() {
               <div className="flex items-center justify-between pt-1 border-t border-slate-100">
                 <button
                   onClick={() => handleGenerateSingle(st.id)}
-                  disabled={isGenerating}
+                  disabled={isGenerating || isGeneratingAll}
                   className="inline-flex items-center space-x-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors disabled:opacity-50 cursor-pointer"
                 >
                   {isGenerating ? (
