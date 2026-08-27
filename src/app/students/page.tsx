@@ -36,7 +36,7 @@ import {
 import { useAppStore, getDefaultPinForStudent } from '@/lib/store';
 import { Student, Gender } from '@/types';
 import { parseStudentExcelFile } from '@/lib/excel-import';
-import { downloadStudentTemplate } from '@/lib/excel-export';
+import { downloadStudentTemplate, exportStudentList } from '@/lib/excel-export';
 import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
 
@@ -216,13 +216,13 @@ export default function StudentsPage() {
     try {
       const parsed = await parseStudentExcelFile(file);
       if (parsed.length === 0) {
-        toast.error('Không tìm thấy học sinh nào trong file Excel!');
+        toast.error('Không tìm thấy danh sách học sinh hợp lệ trong file Excel. Vui lòng kiểm tra lại file hoặc dùng file mẫu của app!');
         return;
       }
       importStudents(parsed);
-      toast.success(`Đã nhập thành công ${parsed.length} học sinh từ file Excel!`);
+      toast.success(`Đã nhập thành công ${parsed.length} học sinh từ file Excel vào lớp ${classInfo.name}!`);
     } catch (err: any) {
-      toast.error(`Lỗi đọc file: ${err.message}`);
+      toast.error(`Lỗi đọc file Excel: ${err.message || 'Vui lòng kiểm tra định dạng file'}`);
     }
 
     e.target.value = '';
@@ -230,30 +230,12 @@ export default function StudentsPage() {
 
   // Export Excel for Roster
   const handleExportExcel = () => {
-    const headers = ['STT', 'Mã Học Sinh', 'Họ và Tên', 'Giới Tính', 'Ngày Sinh', 'Phụ Huynh', 'SĐT', 'Ăn Bán Trú', 'Ghi Chú Sức Khỏe'];
-    const rows = students.map((s, i) => [
-      i + 1,
-      s.studentCode,
-      s.fullName,
-      s.gender,
-      s.dateOfBirth,
-      s.parentName || '',
-      s.parentPhone || '',
-      s.isBoarding ? 'Có' : 'Không',
-      s.healthNotes || '',
-    ]);
-
-    const titleRows = [
-      [`DANH SÁCH HỌC SINH LỚP ${classInfo.name} - NĂM HỌC ${classInfo.schoolYear}`],
-      [`Trường: ${classInfo.schoolName} - GVCN: ${classInfo.teacherName} - Sĩ số: ${students.length} em`],
-      [],
-    ];
-
-    const worksheet = XLSX.utils.aoa_to_sheet([...titleRows, headers, ...rows]);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, `DanhSach_${classInfo.name}`);
-    XLSX.writeFile(workbook, `Danh_Sach_Hoc_Sinh_${classInfo.name}_${classInfo.schoolYear}.xlsx`);
-    toast.success('Đã xuất file danh sách học sinh!');
+    if (students.length === 0) {
+      toast.error('Lớp chưa có học sinh nào để xuất Excel!');
+      return;
+    }
+    exportStudentList(classInfo, students);
+    toast.success(`Đã xuất danh sách ${students.length} học sinh lớp ${classInfo.name}!`);
   };
 
   // Export Excel for Parent Links & PINs

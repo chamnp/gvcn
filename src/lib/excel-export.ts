@@ -174,6 +174,67 @@ export function exportVnEduTemplate(
 }
 
 /**
+ * Xuất danh sách học sinh của lớp ra file Excel (Tương thích 100% hai chiều với chức năng Nhập Excel)
+ */
+export function exportStudentList(classInfo: ClassInfo, students: Student[]) {
+  const headers = [
+    'STT',
+    'Mã học sinh',
+    'Họ và tên (*)',
+    'Giới tính (Nam/Nữ)',
+    'Ngày sinh (DD/MM/YYYY)',
+    'Họ tên Phụ huynh',
+    'SĐT Phụ huynh',
+    'Ăn bán trú (Có/Không)',
+    'Ghi chú sức khỏe / Năng khiếu',
+  ];
+
+  const rows = students.map((s, i) => {
+    // Định dạng ngày sinh hiển thị rõ ràng DD/MM/YYYY
+    let dobFormatted = s.dateOfBirth;
+    if (dobFormatted && /^\d{4}-\d{2}-\d{2}$/.test(dobFormatted)) {
+      const [y, m, d] = dobFormatted.split('-');
+      dobFormatted = `${d}/${m}/${y}`;
+    }
+
+    return [
+      i + 1,
+      s.studentCode,
+      s.fullName,
+      s.gender,
+      dobFormatted,
+      s.parentName || '',
+      s.parentPhone || '',
+      s.isBoarding ? 'Có' : 'Không',
+      s.healthNotes || '',
+    ];
+  });
+
+  const titleRows = [
+    [`DANH SÁCH HỌC SINH LỚP ${classInfo.name} - NĂM HỌC ${classInfo.schoolYear}`],
+    [`Trường: ${classInfo.schoolName} - GVCN: ${classInfo.teacherName} - Sĩ số: ${students.length} em`],
+    [],
+  ];
+
+  const worksheet = XLSX.utils.aoa_to_sheet([...titleRows, headers, ...rows]);
+  worksheet['!cols'] = [
+    { wch: 8 },
+    { wch: 14 },
+    { wch: 24 },
+    { wch: 18 },
+    { wch: 22 },
+    { wch: 22 },
+    { wch: 16 },
+    { wch: 20 },
+    { wch: 35 },
+  ];
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, `DanhSach_${classInfo.name}`);
+  XLSX.writeFile(workbook, `Danh_Sach_Hoc_Sinh_${classInfo.name}_${classInfo.schoolYear}.xlsx`);
+}
+
+/**
  * Tải file Excel mẫu danh sách học sinh để giáo viên điền nhanh
  */
 export function downloadStudentTemplate() {
