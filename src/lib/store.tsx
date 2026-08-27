@@ -262,7 +262,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   }, [allHomeworks, activeClassId, classInfo.name]);
 
-  const { profile } = useAuth();
+  const { profile, teachers } = useAuth();
 
   // Tự động chuyển lớp theo phân công của giáo viên khi đăng nhập
   useEffect(() => {
@@ -274,6 +274,55 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     }
   }, [profile, schoolClasses, activeClassId]);
+
+  // Tự động đồng bộ tên Giáo viên từ Supabase / Teacher whitelist vào danh sách Lớp học
+  useEffect(() => {
+    if (teachers && teachers.length > 0) {
+      setSchoolClasses((prev) => {
+        let hasDiff = false;
+        const updated = prev.map((cls) => {
+          const matchedTeacher = teachers.find(
+            (t) =>
+              t.assignedClassId === cls.id ||
+              (t.assignedClassName &&
+                t.assignedClassName.replace('Lớp ', '').trim().toLowerCase() === cls.name.toLowerCase())
+          );
+          if (matchedTeacher && matchedTeacher.fullName && matchedTeacher.fullName !== cls.teacherName) {
+            hasDiff = true;
+            return {
+              ...cls,
+              teacherName: matchedTeacher.fullName,
+            };
+          }
+          return cls;
+        });
+
+        if (hasDiff) {
+          try {
+            localStorage.setItem(STORAGE_PREFIX + 'schoolClasses', JSON.stringify(updated));
+          } catch (e) {}
+          return updated;
+        }
+        return prev;
+      });
+    }
+  }, [teachers]);
+
+  // Đồng bộ Giáo viên Chủ nhiệm của lớp đang chọn với profile người dùng nếu là GVCN lớp đó
+  useEffect(() => {
+    if (profile && profile.fullName && profile.fullName.trim() !== '') {
+      if (
+        profile.assignedClassId === activeClassId ||
+        profile.assignedClassName?.replace('Lớp ', '').trim().toLowerCase() === classInfo.name.toLowerCase()
+      ) {
+        if (classInfo.teacherName !== profile.fullName) {
+          setSchoolClasses((prev) =>
+            prev.map((c) => (c.id === activeClassId ? { ...c, teacherName: profile.fullName } : c))
+          );
+        }
+      }
+    }
+  }, [profile, activeClassId, classInfo.name, classInfo.teacherName]);
 
   // Khởi tạo và load từ LocalStorage
   useEffect(() => {

@@ -859,7 +859,7 @@ export default function PublicClassHomeworkPortal({
                     Giáo Viên Chủ Nhiệm
                   </span>
                   <h3 className="font-bold text-base text-slate-900 truncate">
-                    {currentClass.teacherName || 'Cô Nguyễn Thị Mai'}
+                    {currentClass.teacherName || 'Cô Nguyễn Thị Minh Hằng'}
                   </h3>
                   <p className="text-xs text-blue-600 font-semibold">Chủ nhiệm Lớp {currentClass.name}</p>
                 </div>

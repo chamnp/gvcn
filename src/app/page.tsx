@@ -108,7 +108,7 @@ export default function DashboardPage() {
   const [newEventImportant, setNewEventImportant] = useState(false);
 
   const termName = TERMS.find((t) => t.id === currentTerm)?.name || currentTerm;
-  const teacherDisplayName = profile?.fullName || classInfo.teacherName || 'Thầy/Cô';
+  const teacherDisplayName = classInfo.teacherName || profile?.fullName || 'Thầy/Cô';
 
   // Thống kê sĩ số học sinh
   const totalStudents = students.length;

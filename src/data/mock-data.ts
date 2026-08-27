@@ -56,7 +56,7 @@ export const INITIAL_SCHOOL_CLASSES: ClassInfo[] = [
     grade: 4,
     schoolYear: '2026-2027',
     schoolName: 'Trường Tiểu học Đại Mỗ',
-    teacherName: 'Cô Nguyễn Thị Mai',
+    teacherName: 'Cô Nguyễn Thị Minh Hằng',
     totalStudents: 12,
     seatingGridRows: 5,
     seatingGridCols: 8,
