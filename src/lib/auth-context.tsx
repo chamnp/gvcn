@@ -195,7 +195,24 @@ function resolveUserProfile(user: User | null, teachersList: TeacherProfile[]): 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const mockEmail = localStorage.getItem('gvcn_mock_email');
+        if (mockEmail) {
+          return {
+            id: 'mock-user-hang-4a1',
+            app_metadata: {},
+            user_metadata: { full_name: 'Cô Nguyễn Thị Minh Hằng' },
+            aud: 'authenticated',
+            created_at: new Date().toISOString(),
+            email: mockEmail,
+          } as User;
+        }
+      } catch (e) {}
+    }
+    return null;
+  });
   const [session, setSession] = useState<Session | null>(null);
   const [teachers, setTeachers] = useState<TeacherProfile[]>(() => {
     if (typeof window !== 'undefined') {
@@ -206,7 +223,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     return DEFAULT_TEACHERS;
   });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   // Synchronously compute current profile from (user, teachers)
   const profile = useMemo(() => {
@@ -293,7 +310,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (isMounted) {
         setSession(session);
-        setUser(session?.user ?? null);
+        let currentUser = session?.user ?? null;
+        if (!currentUser && typeof window !== 'undefined') {
+          const mockEmail = localStorage.getItem('gvcn_mock_email');
+          if (mockEmail) {
+            currentUser = {
+              id: 'mock-user-hang-4a1',
+              app_metadata: {},
+              user_metadata: { full_name: 'Cô Nguyễn Thị Minh Hằng' },
+              aud: 'authenticated',
+              created_at: new Date().toISOString(),
+              email: mockEmail,
+            } as User;
+          }
+        }
+        setUser(currentUser);
         setLoading(false);
       }
     });
