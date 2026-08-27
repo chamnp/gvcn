@@ -632,7 +632,7 @@ export default function TimetablePage() {
 
           {/* Action Buttons */}
           <div className="flex flex-wrap items-center gap-2">
-            <label className="inline-flex items-center space-x-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-2xl text-xs font-bold shadow-xs transition-all cursor-pointer">
+            <label className="inline-flex w-full sm:w-auto justify-center items-center space-x-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-2xl text-xs font-bold shadow-xs transition-all cursor-pointer">
               <Upload className="w-4 h-4" />
               <span>Nhập File Excel</span>
               <input
@@ -647,7 +647,7 @@ export default function TimetablePage() {
             <button
               type="button"
               onClick={handleExportExcel}
-              className="inline-flex items-center space-x-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-2 rounded-2xl text-xs font-bold shadow-xs transition-all cursor-pointer"
+              className="inline-flex w-full sm:w-auto justify-center items-center space-x-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-2 rounded-2xl text-xs font-bold shadow-xs transition-all cursor-pointer"
             >
               <Download className="w-4 h-4 text-emerald-600" />
               <span>Xuất Excel</span>
@@ -656,7 +656,7 @@ export default function TimetablePage() {
             <button
               type="button"
               onClick={handleDownloadTemplate}
-              className="inline-flex items-center space-x-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-2 rounded-2xl text-xs font-bold shadow-xs transition-all cursor-pointer"
+              className="inline-flex w-full sm:w-auto justify-center items-center space-x-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-2 rounded-2xl text-xs font-bold shadow-xs transition-all cursor-pointer"
               title="Tải file mẫu Excel"
             >
               <FileSpreadsheet className="w-4 h-4 text-blue-600" />
@@ -666,7 +666,7 @@ export default function TimetablePage() {
             <button
               type="button"
               onClick={handleCopyWeekSchedule}
-              className="inline-flex items-center space-x-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-2 rounded-2xl text-xs font-bold shadow-xs transition-all cursor-pointer"
+              className="inline-flex w-full sm:w-auto justify-center items-center space-x-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-2 rounded-2xl text-xs font-bold shadow-xs transition-all cursor-pointer"
             >
               <Copy className="w-4 h-4 text-purple-600" />
               <span>Gửi Zalo</span>
@@ -675,7 +675,7 @@ export default function TimetablePage() {
             <button
               type="button"
               onClick={() => window.print()}
-              className="inline-flex items-center space-x-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3 py-2 rounded-2xl text-xs font-bold shadow-xs transition-all cursor-pointer"
+              className="inline-flex w-full sm:w-auto justify-center items-center space-x-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3 py-2 rounded-2xl text-xs font-bold shadow-xs transition-all cursor-pointer"
             >
               <Printer className="w-4 h-4 text-slate-500" />
               <span>In Lịch</span>
@@ -709,7 +709,7 @@ export default function TimetablePage() {
               className="inline-flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-1.5 rounded-xl font-bold text-xs shadow-xs transition-colors cursor-pointer"
             >
               <Copy className="w-3.5 h-3.5" />
-              <span>Sao Chép Link Phụ Huynh</span>
+              <span className="hidden sm:inline">Sao Chép Link Phụ Huynh</span><span className="sm:hidden">Copy Link</span>
             </button>
 
             <a
@@ -739,7 +739,7 @@ export default function TimetablePage() {
         <div className="bg-slate-50 rounded-2xl p-3 border border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
           <div className="flex items-center space-x-2">
             <span className="font-bold text-slate-700 whitespace-nowrap">Phạm vi áp dụng TKB:</span>
-            <div className="flex flex-wrap gap-1.5">
+            <div className="flex overflow-x-auto no-scrollbar gap-1.5">
               {[
                 { id: 'FULL_YEAR', label: '🔄 Cả Năm Học (2026-2027)' },
                 { id: 'SEMESTER_1', label: '🍂 Học Kỳ 1 (Tuần 1-18)' },
@@ -750,7 +750,7 @@ export default function TimetablePage() {
                   key={item.id}
                   type="button"
                   onClick={() => setScope(item.id as TimetableScope)}
-                  className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
+                  className={`shrink-0 whitespace-nowrap px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
                     scope === item.id
                       ? 'bg-blue-600 text-white shadow-xs'
                       : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
@@ -891,7 +891,7 @@ export default function TimetablePage() {
         </div>
 
         <div className="overflow-x-auto border border-slate-200 rounded-3xl shadow-xs">
-          <table className="w-full text-xs border-collapse">
+          <table className="w-full min-w-[650px] text-xs border-collapse">
             <thead>
               <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
                 <th className="py-3 px-2 w-14 text-center border-r border-slate-200">Tiết</th>
@@ -1222,7 +1222,7 @@ export default function TimetablePage() {
               </p>
 
               <div className="overflow-x-auto border border-slate-200 rounded-2xl">
-                <table className="w-full text-xs text-center border-collapse">
+                <table className="w-full min-w-[650px] text-xs text-center border-collapse">
                   <thead className="bg-slate-100 font-bold border-b border-slate-200">
                     <tr>
                       <th className="p-2 border-r">Tiết</th>

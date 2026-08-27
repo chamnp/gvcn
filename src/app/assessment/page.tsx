@@ -98,9 +98,9 @@ export default function AssessmentPage() {
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2.5">
+          <h1 className="text-lg sm:text-2xl font-black text-slate-900 flex items-center gap-2.5">
             <FileSpreadsheet className="w-7 h-7 text-blue-600" />
-            <span>Bảng Đánh Giá Học Sinh Theo Thông Tư 27</span>
+            <span className="hidden sm:inline">Bảng Đánh Giá Học Sinh Theo Thông Tư 27</span><span className="sm:hidden">Đánh Giá TT27</span>
           </h1>
           <p className="text-xs text-slate-500 mt-1">
             Kỳ đánh giá: <strong className="text-blue-600 font-bold">{termName}</strong> - Lớp {classInfo.name} ({classInfo.schoolName})
@@ -110,15 +110,15 @@ export default function AssessmentPage() {
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={handleRecalculateAwards}
-            className="inline-flex items-center space-x-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-300 px-3.5 py-2 rounded-xl text-xs font-bold transition-colors"
+            className="inline-flex justify-center items-center space-x-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-300 px-3.5 py-2 rounded-xl text-xs font-bold transition-colors w-full sm:w-auto"
           >
             <Zap className="w-4 h-4 text-indigo-600" />
-            <span>Tự Động Xét Khen Thưởng</span>
+            <span className="hidden sm:inline">Tự Động Xét Khen Thưởng</span><span className="sm:hidden">Xét Khen Thưởng</span>
           </button>
 
           <button
             onClick={handleExportVnEdu}
-            className="inline-flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors"
+            className="inline-flex justify-center items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors w-full sm:w-auto"
           >
             <Download className="w-4 h-4 text-slate-600" />
             <span>Xuất VnEdu/SMAS</span>
@@ -126,55 +126,55 @@ export default function AssessmentPage() {
 
           <button
             onClick={handleExportForm1}
-            className="inline-flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow-xs transition-colors"
+            className="inline-flex justify-center items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow-xs transition-colors w-full sm:w-auto"
           >
             <Download className="w-4 h-4" />
-            <span>Xuất Excel Mẫu 1 (TT27)</span>
+            <span className="hidden sm:inline">Xuất Excel Mẫu 1 (TT27)</span><span className="sm:hidden">Xuất Mẫu 1</span>
           </button>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-2">
+      <div className="flex flex-nowrap items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto no-scrollbar">
         <button
           onClick={() => setActiveTab('SUBJECTS')}
-          className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors ${
+          className={`shrink-0 whitespace-nowrap px-4 py-2 rounded-lg text-xs font-bold transition-colors ${
             activeTab === 'SUBJECTS'
               ? 'bg-blue-600 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          1. Đánh Giá Môn Học & HĐGD
+          <span className="hidden sm:inline">1. Đánh Giá Môn Học & HĐGD</span><span className="sm:hidden">Môn Học</span>
         </button>
         <button
           onClick={() => setActiveTab('QUALITIES')}
-          className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors ${
+          className={`shrink-0 whitespace-nowrap px-4 py-2 rounded-lg text-xs font-bold transition-colors ${
             activeTab === 'QUALITIES'
               ? 'bg-blue-600 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          2. Đánh Giá 5 Phẩm Chất
+          <span className="hidden sm:inline">2. Đánh Giá 5 Phẩm Chất</span><span className="sm:hidden">Phẩm Chất</span>
         </button>
         <button
           onClick={() => setActiveTab('COMPETENCIES')}
-          className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors ${
+          className={`shrink-0 whitespace-nowrap px-4 py-2 rounded-lg text-xs font-bold transition-colors ${
             activeTab === 'COMPETENCIES'
               ? 'bg-blue-600 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          3. Đánh Giá Năng Lực Cốt Lõi
+          <span className="hidden sm:inline">3. Đánh Giá Năng Lực Cốt Lõi</span><span className="sm:hidden">Năng Lực</span>
         </button>
         <button
           onClick={() => setActiveTab('SUMMARY')}
-          className={`px-4 py-2 rounded-lg text-xs font-bold transition-colors ${
+          className={`shrink-0 whitespace-nowrap px-4 py-2 rounded-lg text-xs font-bold transition-colors ${
             activeTab === 'SUMMARY'
               ? 'bg-purple-600 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          4. Tổng Hợp & Khen Thưởng (TT27)
+          <span className="hidden sm:inline">4. Tổng Hợp & Khen Thưởng (TT27)</span><span className="sm:hidden">Tổng Hợp</span>
         </button>
       </div>
 
@@ -182,13 +182,13 @@ export default function AssessmentPage() {
       {activeTab === 'SUBJECTS' && (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full min-w-[700px] text-left text-xs border-collapse">
               <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
                 <tr>
                   <th className="py-3 px-3 w-10 text-center sticky left-0 bg-slate-50 z-10 border-r border-slate-200">
                     STT
                   </th>
-                  <th className="py-3 px-3 w-40 sticky left-10 bg-slate-50 z-10 border-r border-slate-200">
+                  <th className="py-3 px-3 w-28 sm:w-40 sticky left-10 bg-slate-50 z-10 border-r border-slate-200">
                     Họ và Tên
                   </th>
                   {subjects.map((sub) => (
@@ -291,13 +291,13 @@ export default function AssessmentPage() {
       {activeTab === 'QUALITIES' && (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full min-w-[700px] text-left text-xs border-collapse">
               <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
                 <tr>
                   <th className="py-3 px-3 w-10 text-center sticky left-0 bg-slate-50 z-10 border-r border-slate-200">
                     STT
                   </th>
-                  <th className="py-3 px-3 w-40 sticky left-10 bg-slate-50 z-10 border-r border-slate-200">
+                  <th className="py-3 px-3 w-28 sm:w-40 sticky left-10 bg-slate-50 z-10 border-r border-slate-200">
                     Họ và Tên
                   </th>
                   {qualities.map((q) => (
@@ -371,13 +371,13 @@ export default function AssessmentPage() {
       {activeTab === 'COMPETENCIES' && (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="w-full min-w-[700px] text-left text-xs border-collapse">
               <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
                 <tr>
                   <th className="py-3 px-3 w-10 text-center sticky left-0 bg-slate-50 z-10 border-r border-slate-200">
                     STT
                   </th>
-                  <th className="py-3 px-3 w-40 sticky left-10 bg-slate-50 z-10 border-r border-slate-200">
+                  <th className="py-3 px-3 w-28 sm:w-40 sticky left-10 bg-slate-50 z-10 border-r border-slate-200">
                     Họ và Tên
                   </th>
                   {[...generalCompetencies, ...specialCompetencies].map((c) => (
@@ -468,7 +468,7 @@ export default function AssessmentPage() {
           </div>
 
           <div className="overflow-x-auto border border-slate-200 rounded-xl">
-            <table className="w-full text-left text-xs">
+            <table className="w-full min-w-[700px] text-left text-xs">
               <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
                 <tr>
                   <th className="py-3 px-3 w-10 text-center">STT</th>

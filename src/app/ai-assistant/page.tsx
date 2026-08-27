@@ -338,7 +338,7 @@ export default function AIAssistantPage() {
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-xl font-black text-slate-900">
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900">
                 Trợ Lý Sư Phạm AI — Viết Lời Nhận Xét Học Bạ Lớp {classInfo.name}
               </h1>
               <p className="text-xs text-slate-500 mt-0.5">
@@ -386,10 +386,10 @@ export default function AIAssistantPage() {
             type="button"
             disabled={isGeneratingAll}
             onClick={() => setIsConfigModalOpen(true)}
-            className="inline-flex items-center space-x-2 bg-slate-100 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-300 text-slate-800 border border-slate-200 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all shadow-xs disabled:opacity-50 cursor-pointer"
+            className="inline-flex w-full sm:w-auto justify-center items-center space-x-2 bg-slate-100 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-300 text-slate-800 border border-slate-200 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all shadow-xs disabled:opacity-50 cursor-pointer"
           >
             <SlidersHorizontal className="w-4 h-4 text-purple-600" />
-            <span>Cấu Hình Tham Số & Chọn Chế Độ AI</span>
+            <span className="hidden sm:inline">Cấu Hình Tham Số & Chọn Chế Độ AI</span><span className="sm:hidden">Cấu Hình AI</span>
           </button>
 
           {/* GENERATE ALL OR CANCEL BUTTON */}
@@ -397,19 +397,19 @@ export default function AIAssistantPage() {
             <button
               type="button"
               onClick={handleCancelGeneration}
-              className="inline-flex items-center space-x-2 bg-rose-600 hover:bg-rose-700 text-white px-5 py-2.5 rounded-2xl text-xs font-bold shadow-md hover:shadow-lg transition-all animate-pulse cursor-pointer"
+              className="inline-flex w-full sm:w-auto justify-center items-center space-x-2 bg-rose-600 hover:bg-rose-700 text-white px-5 py-2.5 rounded-2xl text-xs font-bold shadow-md hover:shadow-lg transition-all animate-pulse cursor-pointer"
             >
               <StopCircle className="w-4 h-4" />
-              <span>Dừng Lại / Hủy Bỏ (Cancel)</span>
+              <span className="hidden sm:inline">Dừng Lại / Hủy Bỏ (Cancel)</span><span className="sm:hidden">Hủy Bỏ</span>
             </button>
           ) : (
             <button
               type="button"
               onClick={handleGenerateAll}
-              className="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-5 py-2.5 rounded-2xl text-xs font-bold shadow-md hover:shadow-lg transition-all cursor-pointer"
+              className="inline-flex w-full sm:w-auto justify-center items-center space-x-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-5 py-2.5 rounded-2xl text-xs font-bold shadow-md hover:shadow-lg transition-all cursor-pointer"
             >
               <Zap className="w-4 h-4 text-yellow-300" />
-              <span>Sinh Nhận Xét Cả Lớp ({students.length} Em)</span>
+              <span className="hidden sm:inline">Sinh Nhận Xét Cả Lớp ({students.length} Em)</span><span className="sm:hidden">Sinh Nhận Xét Lớp</span>
             </button>
           )}
         </div>
@@ -688,7 +688,7 @@ export default function AIAssistantPage() {
                 </div>
 
                 {!isCustomToneInput ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
                     {[
                       { id: 'standard', label: 'Chuẩn Sư Phạm', desc: 'Mẫu mực Thông tư 27' },
                       { id: 'encouraging', label: 'Ấm Áp - Động Viên', desc: 'Thân mật, khích lệ' },
@@ -733,7 +733,7 @@ export default function AIAssistantPage() {
                 </label>
 
                 <div className="space-y-2">
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     {LENGTH_PRESETS.map((lp) => (
                       <button
                         key={lp.id}

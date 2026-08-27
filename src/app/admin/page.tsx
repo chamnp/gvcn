@@ -372,7 +372,7 @@ export default function AdminPortalPage() {
               <ShieldCheck className="w-3.5 h-3.5 text-indigo-300" />
               <span>CỔNG QUẢN TRỊ TRƯỜNG TIỂU HỌC (ADMIN PORTAL)</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight">
               {schoolInfo.name}
             </h1>
             <p className="text-slate-300 text-xs sm:text-sm">
@@ -393,21 +393,21 @@ export default function AdminPortalPage() {
                 });
                 setIsSchoolModalOpen(true);
               }}
-              className="inline-flex items-center space-x-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-xs transition-colors"
+              className="inline-flex w-full sm:w-auto items-center space-x-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-xs transition-colors"
             >
               <Building className="w-4 h-4" />
               <span>Cấu Hình Trường</span>
             </button>
             <button
               onClick={() => handleOpenClassModal()}
-              className="inline-flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-xs transition-colors"
+              className="inline-flex w-full sm:w-auto items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-xs transition-colors"
             >
               <Plus className="w-4 h-4" />
               <span>Thêm Lớp Học</span>
             </button>
             <button
               onClick={() => handleOpenTeacherModal()}
-              className="inline-flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-xs transition-colors"
+              className="inline-flex w-full sm:w-auto items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow-xs transition-colors"
             >
               <UserPlus className="w-4 h-4" />
               <span>Thêm Cán Bộ / GV</span>
@@ -484,7 +484,7 @@ export default function AdminPortalPage() {
         </div>
 
         <div className="overflow-x-auto border border-slate-200 rounded-xl">
-          <table className="w-full text-left text-xs">
+          <table className="w-full min-w-[700px] text-left text-xs">
             <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
               <tr>
                 <th className="py-3 px-4">Tên Lớp</th>
@@ -646,7 +646,7 @@ export default function AdminPortalPage() {
 
         {/* Staff Table */}
         <div className="overflow-x-auto border border-slate-200 rounded-xl">
-          <table className="w-full text-left text-xs">
+          <table className="w-full min-w-[700px] text-left text-xs">
             <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
               <tr>
                 <th className="py-3 px-4">Họ và Tên Cán Bộ / GV</th>
@@ -768,7 +768,7 @@ export default function AdminPortalPage() {
             </h3>
 
             <form onSubmit={handleSaveClass} className="space-y-3 text-xs">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">Tên Lớp (*)</label>
                   <input
@@ -839,7 +839,7 @@ export default function AdminPortalPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">Số hàng ghế</label>
                   <input
@@ -901,7 +901,7 @@ export default function AdminPortalPage() {
             </div>
 
             <form onSubmit={handleSaveTeacher} className="space-y-3.5 text-xs">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">Họ và Tên (*)</label>
                   <input
@@ -927,7 +927,7 @@ export default function AdminPortalPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">Chức Vụ / Vị Trí</label>
                   <input
@@ -1125,7 +1125,7 @@ export default function AdminPortalPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">Cơ Quan Quản Lý (Phòng/Sở)</label>
                   <input
@@ -1162,7 +1162,7 @@ export default function AdminPortalPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">Địa Chỉ Trường</label>
                   <input

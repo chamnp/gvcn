@@ -247,9 +247,9 @@ export default function HomeworkPage() {
           <div className="space-y-1.5">
             <div className="inline-flex items-center space-x-2 bg-white/20 text-blue-100 px-3 py-0.5 rounded-full text-xs font-bold border border-white/20">
               <BookOpen className="w-3.5 h-3.5" />
-              <span>GIAO BÀI & CỔNG BÀI TẬP CÔNG KHAI (ZERO-LOGIN)</span>
+              <span className="hidden sm:inline">GIAO BÀI & CỔNG BÀI TẬP CÔNG KHAI (ZERO-LOGIN)</span><span className="sm:hidden">GIAO BÀI & CỔNG CÔNG KHAI</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
+            <h1 className="text-xl sm:text-3xl font-black tracking-tight">
               Quản Lý Giao Bài Tập — Lớp {classInfo.name}
             </h1>
             <p className="text-blue-100 text-xs sm:text-sm">
@@ -286,29 +286,29 @@ export default function HomeworkPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center space-x-2 border-b border-slate-200 pb-2">
+      <div className="flex items-center space-x-2 border-b border-slate-200 pb-2 overflow-x-auto no-scrollbar">
         <button
           onClick={() => setActiveTab('HOMEWORK')}
-          className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors ${
+          className={`shrink-0 whitespace-nowrap flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors ${
             activeTab === 'HOMEWORK'
               ? 'bg-blue-600 text-white shadow-xs'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
           }`}
         >
           <BookOpen className="w-4 h-4" />
-          <span>Danh Sách Bài Tập Đã Giao ({homeworks.length})</span>
+          <span className="hidden sm:inline">Danh Sách Bài Tập Đã Giao ({homeworks.length})</span><span className="sm:hidden">Bài Tập ({homeworks.length})</span>
         </button>
 
         <button
           onClick={() => setActiveTab('SUBJECTS')}
-          className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors ${
+          className={`shrink-0 whitespace-nowrap flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition-colors ${
             activeTab === 'SUBJECTS'
               ? 'bg-blue-600 text-white shadow-xs'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
           }`}
         >
           <Layers className="w-4 h-4" />
-          <span>Danh Mục Môn Học Tùy Biến ({customSubjects.length})</span>
+          <span className="hidden sm:inline">Danh Mục Môn Học Tùy Biến ({customSubjects.length})</span><span className="sm:hidden">Môn Học ({customSubjects.length})</span>
         </button>
 
         <Link
@@ -462,7 +462,7 @@ export default function HomeworkPage() {
 
             {/* Subject Table */}
             <div className="overflow-x-auto border border-slate-200 rounded-xl">
-              <table className="w-full text-left text-xs">
+              <table className="w-full text-left text-xs min-w-[600px]">
                 <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
                   <tr>
                     <th className="py-2.5 px-3 w-14 text-center">Icon</th>
@@ -660,7 +660,7 @@ export default function HomeworkPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">Tên Viết Tắt</label>
                   <input

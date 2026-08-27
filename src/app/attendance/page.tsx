@@ -80,7 +80,7 @@ ${absentList ? `\nDanh sách học sinh vắng:\n${absentList}` : '\n(Cả lớp
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2.5">
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2.5">
             <CalendarCheck className="w-7 h-7 text-blue-600" />
             <span>Điểm Danh & Kiểm Diện Bán Trú</span>
           </h1>
@@ -103,7 +103,7 @@ ${absentList ? `\nDanh sách học sinh vắng:\n${absentList}` : '\n(Cả lớp
 
           <button
             onClick={handleBatchPresent}
-            className="inline-flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow-xs transition-colors"
+            className="w-full sm:w-auto inline-flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow-xs transition-colors"
           >
             <CheckCircle2 className="w-4 h-4" />
             <span>Có mặt tất cả</span>
@@ -111,7 +111,7 @@ ${absentList ? `\nDanh sách học sinh vắng:\n${absentList}` : '\n(Cả lớp
 
           <button
             onClick={handleCopyKitchenReport}
-            className="inline-flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow-xs transition-colors"
+            className="w-full sm:w-auto inline-flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow-xs transition-colors"
           >
             <Copy className="w-4 h-4" />
             <span>Sao chép báo cáo Bếp</span>
@@ -165,7 +165,7 @@ ${absentList ? `\nDanh sách học sinh vắng:\n${absentList}` : '\n(Cả lớp
       {/* Attendance Table */}
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
+          <table className="w-full text-left text-xs min-w-[700px]">
             <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
               <tr>
                 <th className="py-3 px-4 w-12 text-center">STT</th>

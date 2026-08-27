@@ -55,7 +55,7 @@ export default function ReportsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2.5">
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2.5">
             <FileDown className="w-7 h-7 text-emerald-600" />
             <span>Báo Cáo & Xuất Dữ Liệu Thông Tư 27</span>
           </h1>
@@ -124,14 +124,14 @@ export default function ReportsPage() {
           <div>
             <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
               <Printer className="w-5 h-5 text-indigo-600" />
-              <span>Phiếu Báo Kết Quả Học Tập Cá Nhân (In / Gửi Zalo Phụ Huynh)</span>
+              <span className="hidden sm:inline">Phiếu Báo Kết Quả Học Tập Cá Nhân (In / Gửi Zalo Phụ Huynh)</span><span className="sm:hidden">Phiếu Báo Điểm Cá Nhân</span>
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
               Chọn học sinh để xem trước phiếu liên lạc điện tử đẹp mắt và in ấn.
             </p>
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center flex-wrap gap-2">
             {/* Student Picker */}
             <select
               value={selectedStudentId}

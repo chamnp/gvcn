@@ -334,7 +334,7 @@ export default function StudentsPage() {
                 Sĩ số: {students.length} em
               </span>
             </div>
-            <h1 className="text-lg sm:text-2xl font-black text-slate-900 tracking-tight mt-1 flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight mt-1 flex items-center gap-2">
               <Users className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600 shrink-0" />
               <span className="truncate">Quản Lý Học Sinh & Kết Nối</span>
             </h1>
@@ -450,34 +450,34 @@ export default function StudentsPage() {
               <button
                 type="button"
                 onClick={handleCopyZaloGroupMessage}
-                className="inline-flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-2xl text-xs font-bold shadow-xs transition-colors cursor-pointer"
+                className="inline-flex w-full sm:w-auto items-center justify-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-2xl text-xs font-bold shadow-xs transition-colors cursor-pointer"
               >
                 <Copy className="w-4 h-4" />
-                <span>Sao Chép Tin Nhắn Gửi Nhóm Zalo Lớp</span>
+                <span className="hidden sm:inline">Sao Chép Tin Nhắn Gửi Nhóm Zalo Lớp</span><span className="sm:hidden">Gửi Zalo Lớp</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setIsQrBatchModalOpen(true)}
-                className="inline-flex items-center space-x-1.5 bg-purple-600 hover:bg-purple-700 text-white px-3.5 py-2 rounded-2xl text-xs font-bold shadow-xs transition-colors cursor-pointer"
+                className="inline-flex w-full sm:w-auto items-center justify-center space-x-1.5 bg-purple-600 hover:bg-purple-700 text-white px-3.5 py-2 rounded-2xl text-xs font-bold shadow-xs transition-colors cursor-pointer"
               >
                 <Printer className="w-4 h-4" />
-                <span>In Thẻ QR Cả Lớp (Họp PH)</span>
+                <span className="hidden sm:inline">In Thẻ QR Cả Lớp (Họp PH)</span><span className="sm:hidden">In QR Lớp</span>
               </button>
 
               <button
                 type="button"
                 onClick={handleExportShareLinksExcel}
-                className="inline-flex items-center space-x-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-2 rounded-2xl text-xs font-bold shadow-xs transition-colors cursor-pointer"
+                className="inline-flex w-full sm:w-auto items-center justify-center space-x-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 px-3.5 py-2 rounded-2xl text-xs font-bold shadow-xs transition-colors cursor-pointer"
               >
                 <Download className="w-4 h-4 text-emerald-600" />
-                <span>Xuất Excel Danh Sách Link & PIN</span>
+                <span className="hidden sm:inline">Xuất Excel Danh Sách Link & PIN</span><span className="sm:hidden">Xuất Excel</span>
               </button>
 
               <Link
                 href="/lookup"
                 target="_blank"
-                className="inline-flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-2xl text-xs font-bold transition-colors"
+                className="inline-flex w-full sm:w-auto items-center justify-center space-x-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-2 rounded-2xl text-xs font-bold transition-colors"
               >
                 <ExternalLink className="w-4 h-4 text-slate-500" />
                 <span>Xem Cổng Tra Cứu</span>
@@ -532,7 +532,7 @@ export default function StudentsPage() {
 
           {/* Table */}
           <div className="overflow-x-auto border border-slate-200 rounded-2xl shadow-xs">
-            <table className="w-full text-xs text-left border-collapse">
+            <table className="w-full min-w-[700px] text-xs text-left border-collapse">
               <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
                 <tr>
                   <th className="py-3 px-3 w-12 text-center">STT</th>
@@ -650,7 +650,7 @@ export default function StudentsPage() {
 
           {/* Share Grid / Table */}
           <div className="overflow-x-auto border border-slate-200 rounded-2xl shadow-xs">
-            <table className="w-full text-xs text-left border-collapse">
+            <table className="w-full min-w-[700px] text-xs text-left border-collapse">
               <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
                 <tr>
                   <th className="py-3 px-3 w-12 text-center">STT</th>
@@ -789,7 +789,7 @@ export default function StudentsPage() {
             </div>
 
             <form onSubmit={handleSaveStudent} className="p-6 overflow-y-auto space-y-4 text-xs">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Mã Học Sinh *</label>
                   <input
@@ -825,7 +825,7 @@ export default function StudentsPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Ngày Sinh (YYYY-MM-DD) *</label>
                   <input
@@ -849,7 +849,7 @@ export default function StudentsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Họ Tên Phụ Huynh</label>
                   <input
@@ -907,7 +907,7 @@ export default function StudentsPage() {
       {isQrBatchModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white max-w-4xl w-full rounded-3xl shadow-2xl border border-slate-200 overflow-hidden max-h-[90vh] flex flex-col">
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-purple-50 to-indigo-50">
+            <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-purple-50 to-indigo-50">
               <div className="flex items-center space-x-2">
                 <QrCode className="w-5 h-5 text-purple-600" />
                 <h3 className="font-bold text-base text-slate-900">

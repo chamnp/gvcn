@@ -38,7 +38,7 @@ export const Header: React.FC = () => {
   return (
     <header className="h-16 bg-white border-b border-slate-200 px-3 sm:px-6 flex items-center justify-between sticky top-0 z-30 shadow-xs">
       {/* LEFT: Mobile Menu Button + Class Switcher + Term Selector Pill */}
-      <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
+      <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 overflow-hidden">
         {/* Mobile Hamburger Button */}
         <button
           onClick={toggleMobileNav}
@@ -122,7 +122,7 @@ export const Header: React.FC = () => {
             title="Nhấn để đổi kỳ đánh giá Thông tư 27"
           >
             <Calendar className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-            <span className="truncate max-w-[130px] sm:max-w-[170px]">
+            <span className="truncate max-w-[90px] sm:max-w-[170px]">
               {activeTermObj?.name}
             </span>
             {activeTermObj?.id === autoCalendarTerm && (

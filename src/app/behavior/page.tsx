@@ -1594,7 +1594,7 @@ export default function BehaviorPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
                 <div>
                   <label className="block font-semibold text-slate-700 mb-1">Mức Sao Quy Đổi:</label>
                   <input
@@ -1716,7 +1716,7 @@ export default function BehaviorPage() {
 
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">Ảnh Sản Phẩm (Chọn mẫu hoặc dán URL):</label>
-                <div className="grid grid-cols-5 gap-1.5 sm:gap-2 mb-2">
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-1.5 sm:gap-2 mb-2">
                   {PRESET_SAMPLE_IMAGES.map((img, idx) => (
                     <button
                       key={idx}

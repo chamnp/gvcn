@@ -483,7 +483,7 @@ export default function SettingsPage() {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2.5">
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 flex items-center gap-2.5">
             <Settings className="w-7 h-7 text-blue-600 shrink-0" />
             <span>Cài Đặt & Cấu Hình Hệ Thống</span>
           </h1>
@@ -502,10 +502,10 @@ export default function SettingsPage() {
       </div>
 
       {/* Modern Tabs Navigation */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3">
+      <div className="flex overflow-x-auto no-scrollbar items-center gap-2 border-b border-slate-200 pb-3">
         <button
           onClick={() => setActiveTab('PROFILE')}
-          className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          className={`flex shrink-0 whitespace-nowrap items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeTab === 'PROFILE'
               ? 'bg-blue-600 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
@@ -517,7 +517,7 @@ export default function SettingsPage() {
 
         <button
           onClick={() => setActiveTab('CLASS')}
-          className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          className={`flex shrink-0 whitespace-nowrap items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeTab === 'CLASS'
               ? 'bg-blue-600 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
@@ -529,7 +529,7 @@ export default function SettingsPage() {
 
         <button
           onClick={() => setActiveTab('SCHOOL')}
-          className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          className={`flex shrink-0 whitespace-nowrap items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeTab === 'SCHOOL'
               ? 'bg-blue-600 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
@@ -541,7 +541,7 @@ export default function SettingsPage() {
 
         <button
           onClick={() => setActiveTab('DATA')}
-          className={`flex items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+          className={`flex shrink-0 whitespace-nowrap items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
             activeTab === 'DATA'
               ? 'bg-purple-600 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
@@ -1386,7 +1386,7 @@ export default function SettingsPage() {
                     placeholder="https://api.xiaomimimo.com/v1 hoặc https://api.openai.com/v1..."
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 font-mono text-xs text-slate-900 focus:ring-2 focus:ring-purple-500 focus:outline-none"
                   />
-                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5 overflow-hidden">
                     <span className="text-[10px] text-slate-400">Gợi ý nhanh URL:</span>
                     <button
                       type="button"
@@ -1394,7 +1394,7 @@ export default function SettingsPage() {
                         setBaseUrl('https://api.xiaomimimo.com/v1');
                         fetchModelsList(aiProvider, inputApiKey, 'https://api.xiaomimimo.com/v1');
                       }}
-                      className="text-[10px] font-mono bg-orange-50 hover:bg-orange-100 px-2 py-0.5 rounded text-orange-700 border border-orange-200 cursor-pointer"
+                      className="text-[10px] font-mono bg-orange-50 hover:bg-orange-100 px-2 py-0.5 rounded text-orange-700 border border-orange-200 cursor-pointer truncate max-w-full"
                     >
                       Xiaomi MIMO (https://api.xiaomimimo.com/v1)
                     </button>
@@ -1404,7 +1404,7 @@ export default function SettingsPage() {
                         setBaseUrl('https://api.openai.com/v1');
                         fetchModelsList(aiProvider, inputApiKey, 'https://api.openai.com/v1');
                       }}
-                      className="text-[10px] font-mono bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded text-slate-700 cursor-pointer"
+                      className="text-[10px] font-mono bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded text-slate-700 cursor-pointer truncate max-w-full"
                     >
                       OpenAI (https://api.openai.com/v1)
                     </button>
@@ -1414,7 +1414,7 @@ export default function SettingsPage() {
                         setBaseUrl('https://api.deepseek.com/v1');
                         fetchModelsList(aiProvider, inputApiKey, 'https://api.deepseek.com/v1');
                       }}
-                      className="text-[10px] font-mono bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded text-blue-700 border border-blue-200 cursor-pointer"
+                      className="text-[10px] font-mono bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded text-blue-700 border border-blue-200 cursor-pointer truncate max-w-full"
                     >
                       DeepSeek (https://api.deepseek.com/v1)
                     </button>
@@ -1424,7 +1424,7 @@ export default function SettingsPage() {
                         setBaseUrl('https://openrouter.ai/api/v1');
                         fetchModelsList(aiProvider, inputApiKey, 'https://openrouter.ai/api/v1');
                       }}
-                      className="text-[10px] font-mono bg-purple-50 hover:bg-purple-100 px-2 py-0.5 rounded text-purple-700 border border-purple-200 cursor-pointer"
+                      className="text-[10px] font-mono bg-purple-50 hover:bg-purple-100 px-2 py-0.5 rounded text-purple-700 border border-purple-200 cursor-pointer truncate max-w-full"
                     >
                       OpenRouter (https://openrouter.ai/api/v1)
                     </button>

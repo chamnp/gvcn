@@ -266,21 +266,21 @@ export default function DashboardPage() {
           <div className="flex flex-wrap gap-2.5 pt-1.5">
             <Link
               href="/assessment"
-              className="inline-flex items-center space-x-1.5 bg-white text-blue-900 font-bold text-xs px-4 py-2.5 rounded-2xl shadow-sm hover:bg-blue-50 transition-all cursor-pointer"
+              className="inline-flex items-center justify-center space-x-1.5 bg-white text-blue-900 font-bold text-xs px-4 py-2.5 rounded-2xl shadow-sm hover:bg-blue-50 transition-all cursor-pointer w-full sm:w-auto"
             >
               <FileSpreadsheet className="w-4 h-4 text-blue-600 shrink-0" />
               <span>Bảng Đánh Giá TT27</span>
             </Link>
             <Link
               href="/ai-assistant"
-              className="inline-flex items-center space-x-1.5 bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold text-xs px-4 py-2.5 rounded-2xl shadow-sm hover:opacity-90 transition-all cursor-pointer"
+              className="inline-flex items-center justify-center space-x-1.5 bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold text-xs px-4 py-2.5 rounded-2xl shadow-sm hover:opacity-90 transition-all cursor-pointer w-full sm:w-auto"
             >
               <Sparkles className="w-4 h-4 text-yellow-300 shrink-0" />
               <span>Trợ Lý Sư Phạm AI</span>
             </Link>
             <Link
               href="/attendance"
-              className="inline-flex items-center space-x-1.5 bg-white/10 hover:bg-white/20 text-white font-semibold text-xs px-4 py-2.5 rounded-2xl border border-white/25 backdrop-blur-sm transition-all cursor-pointer"
+              className="inline-flex items-center justify-center space-x-1.5 bg-white/10 hover:bg-white/20 text-white font-semibold text-xs px-4 py-2.5 rounded-2xl border border-white/25 backdrop-blur-sm transition-all cursor-pointer w-full sm:w-auto"
             >
               <CalendarCheck className="w-4 h-4 text-emerald-300 shrink-0" />
               <span>Điểm Danh & Bán Trú</span>
@@ -288,7 +288,7 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={() => setIsAddEventModalOpen(true)}
-              className="inline-flex items-center space-x-1.5 bg-white/10 hover:bg-white/20 text-white font-semibold text-xs px-4 py-2.5 rounded-2xl border border-white/25 backdrop-blur-sm transition-all cursor-pointer"
+              className="inline-flex items-center justify-center space-x-1.5 bg-white/10 hover:bg-white/20 text-white font-semibold text-xs px-4 py-2.5 rounded-2xl border border-white/25 backdrop-blur-sm transition-all cursor-pointer w-full sm:w-auto"
             >
               <Plus className="w-4 h-4 text-yellow-300 shrink-0" />
               <span>Thêm Sự Kiện Mới</span>
@@ -339,7 +339,8 @@ export default function DashboardPage() {
                   ) : (
                     <>
                       <Gift className="w-4 h-4 text-rose-600" />
-                      <span>Sao Chép Lời Chúc Gửi Zalo ({b.student.fullName})</span>
+                      <span className="sm:hidden">Chúc Zalo</span>
+                      <span className="hidden sm:inline">Sao Chép Lời Chúc Gửi Zalo ({b.student.fullName})</span>
                     </>
                   )}
                 </button>
@@ -442,9 +443,9 @@ export default function DashboardPage() {
                 <div className="w-9 h-9 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
                   <Calendar className="w-5 h-5" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <span>Lịch Sự Kiện & Hoạt Động Của Lớp {classInfo.name}</span>
+                    <span className="truncate">Lịch Sự Kiện & Hoạt Động Của Lớp {classInfo.name}</span>
                     <span className="bg-indigo-100 text-indigo-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
                       {classEvents.length} sự kiện
                     </span>
@@ -602,10 +603,10 @@ export default function DashboardPage() {
           {/* WIDGET 2: BẢNG TỔNG HỢP & BIỂU ĐỒ ĐÁNH GIÁ TT27 */}
           <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-5">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div>
+              <div className="min-w-0">
                 <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                  <FileSpreadsheet className="w-5 h-5 text-blue-600" />
-                  <span>Chất Lượng Đánh Giá Học Sinh ({termName})</span>
+                  <FileSpreadsheet className="w-5 h-5 text-blue-600 shrink-0" />
+                  <span className="truncate">Chất Lượng Đánh Giá Học Sinh ({termName})</span>
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
                   Phân bố kết quả khen thưởng và hoàn thành chương trình lớp học theo Thông tư 27.
@@ -952,7 +953,7 @@ export default function DashboardPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1 uppercase">Ngày diễn ra *</label>
                   <input
@@ -975,7 +976,7 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1 uppercase">Phân loại sự kiện</label>
                   <select
