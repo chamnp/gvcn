@@ -31,6 +31,7 @@ import {
   ChevronDown,
   X,
   Share2,
+  ShieldCheck,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { getSubjectTheme, DAYS_OF_WEEK, PERIODS } from '@/lib/timetable-data';
@@ -150,7 +151,7 @@ export default function PublicClassHomeworkPortal({
   // Student Local Checklist (State stored in localStorage)
   const [completedHwIds, setCompletedHwIds] = useState<string[]>([]);
   const [packedSubjectCodes, setPackedSubjectCodes] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<'HOMEWORK' | 'EVENTS' | 'BACKPACK' | 'TIMETABLE' | 'SPOTLIGHT'>('HOMEWORK');
+  const [activeTab, setActiveTab] = useState<'HOMEWORK' | 'EVENTS' | 'BACKPACK' | 'TIMETABLE'>('HOMEWORK');
   const [selectedTimetableDay, setSelectedTimetableDay] = useState<DayOfWeek>('T2');
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [eventFilter, setEventFilter] = useState<'ALL' | 'EXAM' | 'MEETING' | 'FESTIVAL'>('ALL');
@@ -349,35 +350,42 @@ export default function PublicClassHomeworkPortal({
               </div>
             </div>
 
-            {/* BIRTHDAY SPOTLIGHT BANNER (If today has birthday) */}
-            {todayBirthdays.length > 0 && (
-              <div className="bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 rounded-3xl p-4 sm:p-5 text-white shadow-lg flex items-center space-x-3.5 animate-in fade-in">
-                <div className="w-12 h-12 rounded-2xl bg-white/25 backdrop-blur-md flex items-center justify-center text-2xl shadow-inner shrink-0 animate-bounce">
-                  🎂
+            {/* PRIVATE STUDENT LOOKUP CTA BANNER */}
+            <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-3xl p-4 sm:p-5 text-white shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in">
+              <div className="flex items-center space-x-3.5 min-w-0">
+                <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl shadow-inner shrink-0">
+                  🌟
                 </div>
                 <div className="space-y-0.5 min-w-0">
-                  <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-rose-100">
-                    <PartyPopper className="w-3.5 h-3.5" />
-                    <span>Hôm Nay Sinh Nhật Thành Viên Lớp!</span>
+                  <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-amber-100">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    <span>Tra Cứu Riêng Tư Thông Tư 27</span>
                   </div>
                   <h3 className="font-black text-sm sm:text-base truncate">
-                    Chúc Mừng Sinh Nhật Em {todayBirthdays.map((b) => b.student.fullName).join(', ')} 🎉
+                    Bảng Điểm, Nhận Xét & Thi Đua Riêng Của Con
                   </h3>
-                  <p className="text-xs text-rose-100">
-                    Chúc em bước sang tuổi <strong>{todayBirthdays[0]?.turningAge || 10}</strong> luôn chăm ngoan, học giỏi và ngập tràn niềm vui!
+                  <p className="text-xs text-amber-100 truncate">
+                    Bảo mật tuyệt đối, chỉ phụ huynh có mã mới xem được kết quả của con mình.
                   </p>
                 </div>
               </div>
-            )}
 
-            {/* 3. NAVIGATION TABS (5 TABS: HOMEWORK, EVENTS, BACKPACK, TIMETABLE, SPOTLIGHT) */}
+              <Link
+                href="/lookup"
+                className="inline-flex items-center justify-center space-x-1.5 bg-white text-orange-900 hover:bg-orange-50 font-black text-xs px-4 py-2.5 rounded-2xl shadow-md transition-all shrink-0 cursor-pointer"
+              >
+                <span>Tra Cứu Con Ngay</span>
+                <ChevronRight className="w-3.5 h-3.5 text-orange-600" />
+              </Link>
+            </div>
+
+            {/* 3. NAVIGATION TABS (4 TABS: HOMEWORK, EVENTS, BACKPACK, TIMETABLE) */}
             <div className="flex overflow-x-auto no-scrollbar gap-1.5 bg-white p-1.5 rounded-2xl border border-slate-200 shadow-xs text-xs font-bold">
               {[
-                { id: 'HOMEWORK', label: '📝 Bài Tập', count: classHomeworks.length },
-                { id: 'EVENTS', label: '📅 Sự Kiện', count: classEvents.length },
+                { id: 'HOMEWORK', label: '📝 Bài Tập Về Nhà', count: classHomeworks.length },
                 { id: 'BACKPACK', label: '🎒 Soạn Sách Vở', count: null },
                 { id: 'TIMETABLE', label: '🗓️ Thời Khóa Biểu', count: null },
-                { id: 'SPOTLIGHT', label: '🌟 Khen Thưởng & Sinh Nhật', count: null },
+                { id: 'EVENTS', label: '📅 Lịch Sự Kiện', count: classEvents.length },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -761,93 +769,6 @@ export default function PublicClassHomeworkPortal({
                       </div>
                     );
                   })}
-                </div>
-              </div>
-            )}
-
-            {/* TAB CONTENT 5: KHEN THƯỞNG & SINH NHẬT */}
-            {activeTab === 'SPOTLIGHT' && (
-              <div className="space-y-5">
-                {/* Birthday in Month */}
-                <div className="bg-white rounded-3xl border border-slate-200 p-5 space-y-4 shadow-xs">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
-                      <Cake className="w-5 h-5 text-rose-500" />
-                      <span>Sinh Nhật Trong Tháng Này</span>
-                    </h3>
-                    <span className="bg-rose-100 text-rose-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                      {thisMonthBirthdays.length} bạn
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                    {studentBirthdayList.slice(0, 6).map((b) => (
-                      <div
-                        key={b.student.id}
-                        className={`p-3 rounded-2xl border flex items-center justify-between gap-2 ${
-                          b.isToday
-                            ? 'bg-rose-50 border-rose-300 shadow-xs'
-                            : 'bg-slate-50 border-slate-100'
-                        }`}
-                      >
-                        <div className="flex items-center space-x-2.5 min-w-0">
-                          <div className="w-9 h-9 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-sm shrink-0">
-                            {b.isToday ? '🎂' : '🎁'}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="font-bold text-slate-900 truncate">{b.student.fullName}</p>
-                            <p className="text-[11px] text-slate-500">
-                              {b.formattedDate} • Tròn {b.turningAge} tuổi
-                            </p>
-                          </div>
-                        </div>
-
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-white border border-slate-200 text-slate-600 shrink-0">
-                          {b.isToday ? '🎉 Hôm nay' : `Còn ${b.daysRemaining} ngày`}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Star Leaderboard */}
-                <div className="bg-white rounded-3xl border border-slate-200 p-5 space-y-4 shadow-xs">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
-                      <Flame className="w-5 h-5 text-amber-500" />
-                      <span>Góc Thi Đua & Ngôi Sao Sáng Của Tuần</span>
-                    </h3>
-                    <span className="text-xs font-bold text-amber-600">Top 5 nề nếp</span>
-                  </div>
-
-                  <div className="space-y-2 text-xs">
-                    {topStarStudents.map((st, idx) => (
-                      <div
-                        key={st.id}
-                        className="p-2.5 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-between"
-                      >
-                        <div className="flex items-center space-x-2.5">
-                          <span
-                            className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${
-                              idx === 0
-                                ? 'bg-amber-400 text-white'
-                                : idx === 1
-                                ? 'bg-slate-300 text-slate-700'
-                                : idx === 2
-                                ? 'bg-amber-700/60 text-white'
-                                : 'bg-slate-100 text-slate-600'
-                            }`}
-                          >
-                            {idx + 1}
-                          </span>
-                          <span className="font-bold text-slate-900">{st.fullName}</span>
-                        </div>
-                        <span className="bg-amber-100 text-amber-800 font-bold px-2.5 py-0.5 rounded-full text-xs border border-amber-200">
-                          ⭐ {st.stars} sao
-                        </span>
-                      </div>
-                    ))}
-                  </div>
                 </div>
               </div>
             )}

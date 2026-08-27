@@ -1,6 +1,6 @@
 'use client';
 
-import React, { use, useState, useMemo } from 'react';
+import React, { use, useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Award,
@@ -26,11 +26,55 @@ import {
   Clock,
   ArrowRight,
   TrendingUp,
+  Cake,
+  PartyPopper,
+  CheckSquare,
+  Square,
+  Check,
+  Sun,
+  Backpack,
+  FileText,
+  Eye,
+  MapPin,
 } from 'lucide-react';
 import { useAppStore, getDefaultPinForStudent } from '@/lib/store';
 import { TERMS, PRIMARY_SUBJECTS, TRAIT_DEFINITIONS } from '@/lib/tt27-engine';
-import { TermType } from '@/types';
+import { getSubjectTheme, DAYS_OF_WEEK, PERIODS } from '@/lib/timetable-data';
+import { TermType, DayOfWeek, ClassEvent } from '@/types';
 import { toast } from 'sonner';
+
+// Helper to check birthday for this specific student
+function getStudentBirthdayStatus(dobStr: string) {
+  if (!dobStr) return null;
+  const today = new Date();
+  const birthDate = new Date(dobStr);
+  if (isNaN(birthDate.getTime())) return null;
+
+  const currentYear = today.getFullYear();
+  const birthMonth = birthDate.getMonth();
+  const birthDay = birthDate.getDate();
+
+  let nextBday = new Date(currentYear, birthMonth, birthDay);
+  const todayZero = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+  if (nextBday < todayZero) {
+    nextBday = new Date(currentYear + 1, birthMonth, birthDay);
+  }
+
+  const diffTime = nextBday.getTime() - todayZero.getTime();
+  const daysRemaining = Math.round(diffTime / (1000 * 60 * 60 * 24));
+  const isToday = birthMonth === today.getMonth() && birthDay === today.getDate();
+  const isThisMonth = birthMonth === today.getMonth();
+  const turningAge = currentYear - birthDate.getFullYear() + (nextBday.getFullYear() > currentYear ? 1 : 0);
+
+  return {
+    isToday,
+    isThisMonth,
+    daysRemaining,
+    turningAge,
+    formattedDate: `${birthDay < 10 ? '0' : ''}${birthDay}/${birthMonth + 1 < 10 ? '0' : ''}${birthMonth + 1}`,
+  };
+}
 
 export default function StudentPrivateReportPage({
   params,
@@ -49,6 +93,10 @@ export default function StudentPrivateReportPage({
     termSummaries,
     attendances,
     starLogs,
+    allHomeworks,
+    customSubjects,
+    timetable,
+    allClassEvents,
     currentTerm: globalTerm,
     updateStudentSecurity,
   } = useAppStore();
@@ -68,7 +116,10 @@ export default function StudentPrivateReportPage({
     return schoolClasses.find((c) => c.id === student.classId) || schoolClasses[0];
   }, [student, schoolClasses]);
 
-  // Selected Term
+  // Main Active Tab for Child Hub
+  const [activeTab, setActiveTab] = useState<'REPORT' | 'HOMEWORK' | 'BACKPACK' | 'TIMETABLE' | 'EVENTS'>('REPORT');
+
+  // Selected Term for Assessment Report
   const [selectedTerm, setSelectedTerm] = useState<TermType>(globalTerm || 'GIUA_HK1');
 
   // PIN Setup / Change Modal State
@@ -76,6 +127,43 @@ export default function StudentPrivateReportPage({
   const [newPin, setNewPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [parentPhoneInput, setParentPhoneInput] = useState(student?.parentPhone || '');
+
+  // Local Checklist State for Homework & Backpack (Saved per student)
+  const [completedHwIds, setCompletedHwIds] = useState<string[]>([]);
+  const [packedSubjectCodes, setPackedSubjectCodes] = useState<string[]>([]);
+  const [selectedTimetableDay, setSelectedTimetableDay] = useState<DayOfWeek>('T2');
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  useEffect(() => {
+    if (!student) return;
+    try {
+      const savedHw = localStorage.getItem(`gvcn_hw_done_student_${student.id}`);
+      if (savedHw) setCompletedHwIds(JSON.parse(savedHw));
+
+      const savedPack = localStorage.getItem(`gvcn_pack_student_${student.id}_${todayStr}`);
+      if (savedPack) setPackedSubjectCodes(JSON.parse(savedPack));
+    } catch (e) {}
+  }, [student, todayStr]);
+
+  // Determine tomorrow's day of week
+  const todayDayIndex = new Date().getDay();
+  const nextDayMap: Record<number, DayOfWeek> = {
+    0: 'T2',
+    1: 'T3',
+    2: 'T4',
+    3: 'T5',
+    4: 'T6',
+    5: 'T2',
+    6: 'T2',
+  };
+  const tomorrowDayCode: DayOfWeek = nextDayMap[todayDayIndex] || 'T2';
+  const tomorrowDayInfo = DAYS_OF_WEEK.find((d) => d.id === tomorrowDayCode);
+
+  useEffect(() => {
+    setSelectedTimetableDay(tomorrowDayCode);
+  }, [tomorrowDayCode]);
 
   // If student not found
   if (!student || !studentClass) {
@@ -87,7 +175,7 @@ export default function StudentPrivateReportPage({
           </div>
           <h2 className="text-xl font-black text-slate-900">Liên Kết Học Sinh Không Hợp Lệ</h2>
           <p className="text-xs text-slate-500 leading-relaxed">
-            Đường dẫn xem phiếu báo điểm của con không tồn tại hoặc đã được Giáo viên chủ nhiệm thay đổi mã bảo mật mới. Vui lòng liên hệ Giáo viên để nhận liên kết chính xác.
+            Đường dẫn xem góc học tập của con không tồn tại hoặc đã được Giáo viên chủ nhiệm thay đổi mã bảo mật mới. Vui lòng liên hệ Giáo viên để nhận liên kết chính xác.
           </p>
           <div className="pt-3 border-t border-slate-100 flex items-center justify-center gap-2">
             <Link
@@ -123,9 +211,46 @@ export default function StudentPrivateReportPage({
   const absentCount = studentAtt.filter((a) => a.status !== 'CO_MAT').length;
   const boardingCount = studentAtt.filter((a) => a.hasBoardingMeal).length;
 
-  const defaultPin = getDefaultPinForStudent(student);
+  // Birthday info of this student
+  const birthdayInfo = getStudentBirthdayStatus(student.dateOfBirth);
 
-  // Handle Save Custom PIN
+  // Class Homeworks
+  const classHomeworks = allHomeworks.filter(
+    (h) => (h.classId || 'class-4a1') === studentClass.id
+  );
+
+  // Class Events
+  const classEvents = allClassEvents.filter(
+    (e) => (e.classId || 'class-4a1') === studentClass.id
+  );
+
+  // Tomorrow slots from timetable
+  const tomorrowSlots = timetable.filter(
+    (s) => s.day === tomorrowDayCode && (s.classId || 'class-4a1') === studentClass.id
+  );
+
+  const toggleCompleteHw = (hwId: string) => {
+    setCompletedHwIds((prev) => {
+      const isDone = prev.includes(hwId);
+      const updated = isDone ? prev.filter((id) => id !== hwId) : [...prev, hwId];
+      try {
+        localStorage.setItem(`gvcn_hw_done_student_${student.id}`, JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  };
+
+  const togglePackSubject = (subjectCode: string) => {
+    setPackedSubjectCodes((prev) => {
+      const isPacked = prev.includes(subjectCode);
+      const updated = isPacked ? prev.filter((c) => c !== subjectCode) : [...prev, subjectCode];
+      try {
+        localStorage.setItem(`gvcn_pack_student_${student.id}_${todayStr}`, JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  };
+
   const handleSavePin = (e: React.FormEvent) => {
     e.preventDefault();
     if (newPin.length < 4 || newPin.length > 6) {
@@ -154,7 +279,7 @@ export default function StudentPrivateReportPage({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-12">
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-16">
       {/* 1. BRAND HEADER BAR */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
@@ -188,7 +313,7 @@ export default function StudentPrivateReportPage({
               title="Sao chép link"
             >
               <Copy className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Lưu Link</span>
+              <span className="hidden sm:inline">Lưu Link Con</span>
             </button>
 
             <button
@@ -204,10 +329,10 @@ export default function StudentPrivateReportPage({
       </header>
 
       {/* 2. MAIN CONTAINER */}
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 pt-6 space-y-6">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 pt-5 space-y-5">
         {/* FIRST TIME ACTIVATION WELCOME BANNER */}
         {!student.isActivated ? (
-          <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-3xl p-5 sm:p-6 text-white shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in">
+          <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-3xl p-5 text-white shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-4 animate-in fade-in">
             <div className="space-y-1">
               <span className="bg-white/20 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">
                 🌟 Kích Hoạt Lần Đầu
@@ -230,11 +355,11 @@ export default function StudentPrivateReportPage({
             </button>
           </div>
         ) : (
-          <div className="bg-emerald-50 rounded-2xl p-3.5 border border-emerald-200 flex items-center justify-between text-xs text-emerald-900">
+          <div className="bg-emerald-50 rounded-2xl p-3 border border-emerald-200 flex items-center justify-between text-xs text-emerald-900">
             <div className="flex items-center space-x-2">
               <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
               <span>
-                Hồ sơ đã được kích hoạt bảo mật. Mã PIN riêng đang bảo vệ thông tin của con.
+                Hồ sơ học tập của <strong>{student.fullName}</strong> được bảo vệ riêng tư bằng mã PIN của bố mẹ.
               </span>
             </div>
             <button
@@ -247,9 +372,32 @@ export default function StudentPrivateReportPage({
           </div>
         )}
 
-        {/* 3. STUDENT HERO PROFILE CARD */}
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 sm:p-8 relative overflow-hidden">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+        {/* 3. BIRTHDAY SPECIAL GREETING CARD (ONLY FOR THIS CHILD) */}
+        {birthdayInfo && (birthdayInfo.isToday || birthdayInfo.isThisMonth) && (
+          <div className="bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 rounded-3xl p-5 text-white shadow-lg flex items-center space-x-4 animate-in fade-in">
+            <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-3xl shadow-inner shrink-0 animate-bounce">
+              🎂
+            </div>
+            <div className="space-y-1 min-w-0">
+              <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-rose-100">
+                <PartyPopper className="w-3.5 h-3.5" />
+                <span>{birthdayInfo.isToday ? '🎉 Chúc Mừng Sinh Nhật Hôm Nay!' : '🎁 Tháng Sinh Nhật Của Con'}</span>
+              </div>
+              <h3 className="font-black text-base sm:text-lg">
+                Chúc Mừng Sinh Nhật Em {student.fullName}!
+              </h3>
+              <p className="text-xs text-rose-100 leading-relaxed">
+                {birthdayInfo.isToday
+                  ? `Chúc em bước sang tuổi ${birthdayInfo.turningAge} luôn mạnh khỏe, chăm ngoan, học giỏi và ngập tràn niềm vui!`
+                  : `Ngày sinh: ${birthdayInfo.formattedDate} (còn ${birthdayInfo.daysRemaining} ngày nữa là đến sinh nhật tròn ${birthdayInfo.turningAge} tuổi của con).`}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* 4. STUDENT HERO PROFILE CARD */}
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-5 sm:p-7 relative overflow-hidden">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
             <div className="flex items-center space-x-4 sm:space-x-5">
               {student.avatarUrl ? (
                 <img
@@ -284,9 +432,9 @@ export default function StudentPrivateReportPage({
             </div>
 
             {/* Badges / Honors */}
-            <div className="flex flex-wrap md:flex-col items-start md:items-end gap-2.5">
+            <div className="flex flex-wrap md:flex-col items-start md:items-end gap-2">
               {studentSummary?.awardTitle && (
-                <div className="inline-flex items-center space-x-1.5 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-300 text-amber-900 px-4 py-2 rounded-2xl shadow-xs">
+                <div className="inline-flex items-center space-x-1.5 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-300 text-amber-900 px-3.5 py-1.5 rounded-2xl shadow-xs">
                   <Award className="w-4 h-4 text-amber-600 shrink-0" />
                   <span className="font-black text-xs">{studentSummary.awardTitle}</span>
                 </div>
@@ -298,205 +446,461 @@ export default function StudentPrivateReportPage({
               </div>
             </div>
           </div>
-
-          {/* TERM SELECTOR TABS */}
-          <div className="pt-6 mt-6 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              Chọn Kỳ Đánh Giá Thông Tư 27:
-            </span>
-            <div className="flex flex-wrap gap-1.5">
-              {TERMS.map((t) => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => setSelectedTerm(t.id)}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                    selectedTerm === t.id
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  }`}
-                >
-                  {t.name}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
 
-        {/* 4. TEACHER COMMENTS BLOCK (TT27 PEDAGOGICAL EVALUATION) */}
-        <div className="bg-gradient-to-br from-blue-50 via-indigo-50/60 to-purple-50 rounded-3xl border border-blue-200/80 p-6 sm:p-7 space-y-3.5 shadow-xs">
-          <div className="flex items-center space-x-2 text-blue-950 font-bold text-sm">
-            <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
-              ✍️
-            </div>
-            <div>
-              <h3 className="font-black text-slate-900">
-                Lời Nhận Xét Của Giáo Viên Chủ Nhiệm ({TERMS.find((t) => t.id === selectedTerm)?.name})
-              </h3>
-              <p className="text-[11px] text-slate-500">
-                Giáo viên: {studentClass.teacherName}
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white/90 backdrop-blur-xs p-5 rounded-2xl border border-blue-100 text-slate-800 text-xs sm:text-sm leading-relaxed italic shadow-2xs">
-            {studentSummary?.teacherComment ? (
-              <p className="whitespace-pre-line font-medium text-slate-800">
-                &ldquo;{studentSummary.teacherComment}&rdquo;
-              </p>
-            ) : (
-              <p className="text-slate-400 not-italic">
-                Chưa có nhận xét riêng cho kỳ học này. Giáo viên sẽ cập nhật khi hoàn thành đánh giá định kỳ.
-              </p>
-            )}
-          </div>
+        {/* 5. MAIN NAVIGATION TABS FOR THIS CHILD */}
+        <div className="flex overflow-x-auto no-scrollbar gap-1.5 bg-white p-1.5 rounded-2xl border border-slate-200 shadow-xs text-xs font-bold">
+          {[
+            { id: 'REPORT', label: '📊 Bảng Điểm & Nhận Xét TT27' },
+            { id: 'HOMEWORK', label: `📝 Bài Tập Về Nhà (${classHomeworks.length})` },
+            { id: 'BACKPACK', label: '🎒 Soạn Sách Vở Ngày Mai' },
+            { id: 'TIMETABLE', label: '🗓️ Thời Khóa Biểu' },
+            { id: 'EVENTS', label: `📅 Sự Kiện Lớp (${classEvents.length})` },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`flex items-center justify-center space-x-1.5 px-3.5 py-2 rounded-xl transition-all whitespace-nowrap cursor-pointer shrink-0 ${
+                activeTab === tab.id
+                  ? 'bg-blue-600 text-white shadow-xs font-black'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+              }`}
+            >
+              <span>{tab.label}</span>
+            </button>
+          ))}
         </div>
 
-        {/* 5. SUBJECT ASSESSMENTS & SCORES */}
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <BookOpen className="w-4 h-4 text-blue-600" />
-              <span>Kết Quả Đánh Giá Các Môn Học & Hoạt Động Giáo Dục</span>
-            </h3>
-            <span className="text-xs text-slate-400 font-medium hidden sm:inline">
-              T: Hoàn thành tốt • H: Hoàn thành • C: Chưa hoàn thành
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {studentSubjectAss.length > 0 ? (
-              studentSubjectAss.map((ass) => {
-                const subjectObj = PRIMARY_SUBJECTS.find((s) => s.code === ass.subjectCode);
-                const subjDisplayName = subjectObj?.name || ass.subjectCode;
-
-                return (
-                  <div
-                    key={ass.subjectCode}
-                    className="p-4 rounded-2xl border border-slate-200 hover:border-blue-300 transition-all bg-slate-50/50 space-y-2"
+        {/* 6. TAB 1: ACADEMIC & TT27 EVALUATION */}
+        {activeTab === 'REPORT' && (
+          <div className="space-y-5">
+            {/* Term Selector */}
+            <div className="bg-white rounded-2xl p-3 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+              <span className="font-bold text-slate-600 uppercase tracking-wider">
+                Chọn Kỳ Đánh Giá Thông Tư 27:
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {TERMS.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setSelectedTerm(t.id)}
+                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      selectedTerm === t.id
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-xs text-slate-900">
-                        {subjDisplayName}
-                      </span>
-                      <span
-                        className={`px-2 py-0.5 rounded-lg text-xs font-black ${
-                          ass.level === 'T'
-                            ? 'bg-emerald-100 text-emerald-800'
-                            : ass.level === 'H'
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-amber-100 text-amber-800'
-                        }`}
-                      >
-                        Mức {ass.level}
-                      </span>
-                    </div>
+                    {t.name}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-                    {ass.score !== undefined && (
-                      <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200/60">
-                        <span className="text-slate-500">Điểm kiểm tra:</span>
-                        <span className="font-black text-sm text-blue-700 font-mono">
-                          {ass.score} đ
+            {/* Teacher Comments */}
+            <div className="bg-gradient-to-br from-blue-50 via-indigo-50/60 to-purple-50 rounded-3xl border border-blue-200/80 p-6 space-y-3.5 shadow-xs">
+              <div className="flex items-center space-x-2 text-blue-950 font-bold text-sm">
+                <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                  ✍️
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-900">
+                    Lời Nhận Xét Của Giáo Viên Chủ Nhiệm ({TERMS.find((t) => t.id === selectedTerm)?.name})
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    Giáo viên: {studentClass.teacherName}
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-white/90 backdrop-blur-xs p-5 rounded-2xl border border-blue-100 text-slate-800 text-xs sm:text-sm leading-relaxed italic shadow-2xs">
+                {studentSummary?.teacherComment ? (
+                  <p className="whitespace-pre-line font-medium text-slate-800">
+                    &ldquo;{studentSummary.teacherComment}&rdquo;
+                  </p>
+                ) : (
+                  <p className="text-slate-400 not-italic">
+                    Chưa có nhận xét riêng cho kỳ học này. Giáo viên sẽ cập nhật khi hoàn thành đánh giá định kỳ.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Subject Assessments */}
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-blue-600" />
+                  <span>Kết Quả Đánh Giá Các Môn Học & Hoạt Động Giáo Dục</span>
+                </h3>
+                <span className="text-xs text-slate-400 font-medium hidden sm:inline">
+                  T: Hoàn thành tốt • H: Hoàn thành • C: Chưa hoàn thành
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {studentSubjectAss.length > 0 ? (
+                  studentSubjectAss.map((ass) => {
+                    const subjectObj = PRIMARY_SUBJECTS.find((s) => s.code === ass.subjectCode);
+                    const subjDisplayName = subjectObj?.name || ass.subjectCode;
+
+                    return (
+                      <div
+                        key={ass.subjectCode}
+                        className="p-4 rounded-2xl border border-slate-200 hover:border-blue-300 transition-all bg-slate-50/50 space-y-2"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-xs text-slate-900">
+                            {subjDisplayName}
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 rounded-lg text-xs font-black ${
+                              ass.level === 'T'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : ass.level === 'H'
+                                ? 'bg-blue-100 text-blue-800'
+                                : 'bg-amber-100 text-amber-800'
+                            }`}
+                          >
+                            Mức {ass.level}
+                          </span>
+                        </div>
+
+                        {ass.score !== undefined && (
+                          <div className="flex items-center justify-between text-xs pt-1 border-t border-slate-200/60">
+                            <span className="text-slate-500">Điểm kiểm tra:</span>
+                            <span className="font-black text-sm text-blue-700 font-mono">
+                              {ass.score} đ
+                            </span>
+                          </div>
+                        )}
+
+                        {ass.comment && (
+                          <p className="text-[11px] text-slate-600 bg-white p-2 rounded-xl border border-slate-100 leading-snug">
+                            {ass.comment}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p className="text-xs text-slate-400 col-span-full py-4 text-center">
+                    Dữ liệu môn học kỳ này đang được cô giáo hoàn thiện.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Traits & Competencies */}
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <Heart className="w-4 h-4 text-rose-500" />
+                  <span>Đánh Giá Năng Lực Cốt Lõi & Phẩm Chất Chủ Yếu</span>
+                </h3>
+                <span className="text-xs text-slate-400 font-medium hidden sm:inline">
+                  T: Tốt • Đ: Đạt • C: Cần cố gắng
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {studentTraitAss.length > 0 ? (
+                  studentTraitAss.map((trait) => {
+                    const traitObj = TRAIT_DEFINITIONS.find((t) => t.code === trait.traitCode);
+                    const traitDisplayName = traitObj?.name || trait.traitCode;
+
+                    return (
+                      <div
+                        key={trait.traitCode}
+                        className="p-3.5 rounded-2xl border border-slate-200 flex items-center justify-between bg-slate-50/50"
+                      >
+                        <div>
+                          <h4 className="font-bold text-xs text-slate-800">{traitDisplayName}</h4>
+                          <p className="text-[10px] text-slate-400">
+                            {trait.category === 'PHAM_CHAT' ? 'Phẩm chất chủ yếu' : 'Năng lực cốt lõi'}
+                          </p>
+                        </div>
+                        <span
+                          className={`px-2.5 py-1 rounded-xl text-xs font-black ${
+                            trait.level === 'T'
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : trait.level === 'Đ'
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-amber-100 text-amber-800'
+                          }`}
+                        >
+                          Mức {trait.level}
                         </span>
                       </div>
-                    )}
+                    );
+                  })
+                ) : (
+                  <p className="text-xs text-slate-400 col-span-full py-4 text-center">
+                    Dữ liệu phẩm chất & năng lực kỳ này đang được cập nhật.
+                  </p>
+                )}
+              </div>
+            </div>
 
-                    {ass.comment && (
-                      <p className="text-[11px] text-slate-600 bg-white p-2 rounded-xl border border-slate-100 leading-snug">
-                        {ass.comment}
-                      </p>
-                    )}
-                  </div>
-                );
-              })
+            {/* Attendance & Boarding Summary */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Chuyên Cần</span>
+                <p className="text-xl font-black text-slate-900">
+                  {studentAtt.length - absentCount} / {studentAtt.length || 0} Buổi
+                </p>
+                <p className="text-[11px] text-slate-500">Nghỉ có phép / không phép: {absentCount}</p>
+              </div>
+
+              <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Bán Trú</span>
+                <p className="text-xl font-black text-slate-900">
+                  {student.isBoarding ? `${boardingCount} Suất Ăn` : 'Không Bán Trú'}
+                </p>
+                <p className="text-[11px] text-slate-500">{student.isBoarding ? 'Đăng ký ăn trưa tại trường' : 'Ăn trưa tại nhà'}</p>
+              </div>
+
+              <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs space-y-1">
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Vị Trí Chỗ Ngồi</span>
+                <p className="text-xl font-black text-slate-900">
+                  Hàng {student.seatRow + 1} - Bàn {student.seatCol + 1}
+                </p>
+                <p className="text-[11px] text-slate-500">Sơ đồ lớp {studentClass.name}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 7. TAB 2: HOMEWORK FOR THIS CHILD */}
+        {activeTab === 'HOMEWORK' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between bg-white p-4 rounded-2xl border border-slate-200 text-xs">
+              <span className="font-bold text-slate-700">
+                Tiến độ bài tập của {student.fullName}:
+              </span>
+              <span className="font-bold text-emerald-700 bg-emerald-100 px-3 py-1 rounded-full">
+                {classHomeworks.filter((h) => completedHwIds.includes(h.id)).length} / {classHomeworks.length} bài hoàn thành
+              </span>
+            </div>
+
+            {classHomeworks.length === 0 ? (
+              <div className="bg-white rounded-3xl border border-slate-200 p-10 text-center space-y-2">
+                <p className="text-3xl">✨</p>
+                <h3 className="font-bold text-sm text-slate-800">Hôm nay không có bài tập về nhà!</h3>
+                <p className="text-xs text-slate-500">Chúc con có một buổi tối nghỉ ngơi vui vẻ bên gia đình.</p>
+              </div>
             ) : (
-              <p className="text-xs text-slate-400 col-span-full py-4 text-center">
-                Dữ liệu môn học kỳ này đang được cô giáo hoàn thiện.
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* 6. TRAITS & COMPETENCIES EVALUATION */}
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <Heart className="w-4 h-4 text-rose-500" />
-              <span>Đánh Giá Năng Lực Cốt Lõi & Phẩm Chất Chủ Yếu</span>
-            </h3>
-            <span className="text-xs text-slate-400 font-medium hidden sm:inline">
-              T: Tốt • Đ: Đạt • C: Cần cố gắng
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {studentTraitAss.length > 0 ? (
-              studentTraitAss.map((trait) => {
-                const traitObj = TRAIT_DEFINITIONS.find((t) => t.code === trait.traitCode);
-                const traitDisplayName = traitObj?.name || trait.traitCode;
+              classHomeworks.map((hw) => {
+                const theme = getSubjectTheme(hw.subjectCode, customSubjects);
+                const isDone = completedHwIds.includes(hw.id);
 
                 return (
                   <div
-                    key={trait.traitCode}
-                    className="p-3.5 rounded-2xl border border-slate-200 flex items-center justify-between bg-slate-50/50"
+                    key={hw.id}
+                    className={`bg-white rounded-3xl border transition-all p-5 shadow-xs ${
+                      isDone ? 'border-emerald-200 bg-emerald-50/20' : 'border-slate-200'
+                    }`}
                   >
-                    <div>
-                      <h4 className="font-bold text-xs text-slate-800">{traitDisplayName}</h4>
-                      <p className="text-[10px] text-slate-400">
-                        {trait.category === 'PHAM_CHAT' ? 'Phẩm chất chủ yếu' : 'Năng lực cốt lõi'}
-                      </p>
+                    <div className="flex items-start justify-between gap-3 mb-3">
+                      <div className="flex items-center space-x-2.5">
+                        <span className="text-2xl">{theme.icon}</span>
+                        <div>
+                          <span className={`inline-block text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${theme.bgColor} ${theme.textColor}`}>
+                            {hw.subjectName}
+                          </span>
+                          <h4 className="font-bold text-sm text-slate-900 mt-0.5">{hw.title}</h4>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => toggleCompleteHw(hw.id)}
+                        className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                          isDone
+                            ? 'bg-emerald-600 text-white shadow-xs'
+                            : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                        }`}
+                      >
+                        {isDone ? <Check className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+                        <span>{isDone ? 'Đã Xong' : 'Chưa Xong'}</span>
+                      </button>
                     </div>
-                    <span
-                      className={`px-2.5 py-1 rounded-xl text-xs font-black ${
-                        trait.level === 'T'
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : trait.level === 'Đ'
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-amber-100 text-amber-800'
-                      }`}
-                    >
-                      Mức {trait.level}
-                    </span>
+
+                    <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-100 text-xs text-slate-700 leading-relaxed whitespace-pre-line">
+                      {hw.description}
+                    </div>
                   </div>
                 );
               })
-            ) : (
-              <p className="text-xs text-slate-400 col-span-full py-4 text-center">
-                Dữ liệu phẩm chất & năng lực kỳ này đang được cập nhật.
-              </p>
             )}
           </div>
-        </div>
+        )}
 
-        {/* 7. ATTENDANCE & BOARDING SUMMARY */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs space-y-1">
-            <span className="text-[10px] font-bold text-slate-400 uppercase">Chuyên Cần</span>
-            <p className="text-xl font-black text-slate-900">
-              {studentAtt.length - absentCount} / {studentAtt.length || 0} Buổi
-            </p>
-            <p className="text-[11px] text-slate-500">Nghỉ có phép / không phép: {absentCount}</p>
-          </div>
+        {/* 8. TAB 3: BACKPACK PACKING */}
+        {activeTab === 'BACKPACK' && (
+          <div className="bg-white rounded-3xl border border-slate-200 p-5 space-y-4 shadow-xs">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="font-bold text-sm sm:text-base text-slate-900 flex items-center gap-2">
+                  <Backpack className="w-5 h-5 text-indigo-600" />
+                  <span>Soạn Sách Vở Ngày Mai ({tomorrowDayInfo?.name})</span>
+                </h3>
+                <p className="text-xs text-slate-500">Giúp {student.fullName} chuẩn bị đúng và đủ đồ dùng học tập trước khi đến lớp.</p>
+              </div>
+            </div>
 
-          <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs space-y-1">
-            <span className="text-[10px] font-bold text-slate-400 uppercase">Bán Trú</span>
-            <p className="text-xl font-black text-slate-900">
-              {student.isBoarding ? `${boardingCount} Suất Ăn` : 'Không Bán Trú'}
-            </p>
-            <p className="text-[11px] text-slate-500">{student.isBoarding ? 'Đăng ký ăn trưa tại trường' : 'Ăn trưa tại nhà'}</p>
-          </div>
+            <div className="space-y-2.5">
+              {tomorrowSlots.length === 0 ? (
+                <p className="text-xs text-slate-400 py-6 text-center">Ngày mai không có tiết học trên thời khóa biểu.</p>
+              ) : (
+                tomorrowSlots.map((slot) => {
+                  const theme = getSubjectTheme(slot.subjectCode, customSubjects);
+                  const isPacked = packedSubjectCodes.includes(slot.subjectCode);
 
-          <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs space-y-1">
-            <span className="text-[10px] font-bold text-slate-400 uppercase">Vị Trí Chỗ Ngồi</span>
-            <p className="text-xl font-black text-slate-900">
-              Hàng {student.seatRow + 1} - Bàn {student.seatCol + 1}
-            </p>
-            <p className="text-[11px] text-slate-500">Sơ đồ lớp 4A1</p>
+                  return (
+                    <div
+                      key={slot.id}
+                      className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
+                        isPacked ? 'bg-emerald-50/40 border-emerald-200' : 'bg-slate-50 border-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-3 min-w-0">
+                        <span className="text-2xl">{theme.icon}</span>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-xs text-slate-900">{slot.subjectName}</span>
+                            <span className="text-[10px] font-mono text-slate-500 bg-white px-1.5 py-0.2 rounded border border-slate-200">
+                              Tiết {slot.period}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            {slot.note ? `Mang theo: ${slot.note}` : `Sách giáo khoa & Vở bài tập ${slot.subjectName}`}
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => togglePackSubject(slot.subjectCode)}
+                        className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                          isPacked
+                            ? 'bg-emerald-600 text-white shadow-xs'
+                            : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                        }`}
+                      >
+                        {isPacked ? <Check className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+                        <span>{isPacked ? 'Đã Xếp' : 'Chưa Xếp'}</span>
+                      </button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* 9. TAB 4: TIMETABLE */}
+        {activeTab === 'TIMETABLE' && (
+          <div className="bg-white rounded-3xl border border-slate-200 p-5 space-y-4 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="font-bold text-sm sm:text-base text-slate-900 flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-blue-600" />
+                  <span>Thời Khóa Biểu Lớp {studentClass.name}</span>
+                </h3>
+                <p className="text-xs text-slate-500">Chương trình học chuẩn 2 buổi/ngày kèm ăn bán trú.</p>
+              </div>
+
+              <div className="flex flex-wrap gap-1">
+                {DAYS_OF_WEEK.map((d) => (
+                  <button
+                    key={d.id}
+                    type="button"
+                    onClick={() => setSelectedTimetableDay(d.id)}
+                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                      selectedTimetableDay === d.id
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                    }`}
+                  >
+                    {d.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {PERIODS.map((p) => {
+                const slot = timetable.find(
+                  (s) => s.day === selectedTimetableDay && s.period === p.period && (s.classId || 'class-4a1') === studentClass.id
+                );
+                const theme = slot ? getSubjectTheme(slot.subjectCode, customSubjects) : null;
+
+                return (
+                  <div
+                    key={p.period}
+                    className={`flex items-center justify-between p-3 rounded-2xl border transition-colors ${
+                      theme ? `${theme.bgColor} ${theme.borderColor}` : 'bg-slate-50 border-slate-200'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <span className="font-mono text-xs font-bold text-slate-500 w-12 shrink-0">
+                        {p.name}
+                      </span>
+                      <span className="text-xl">{theme?.icon || '📚'}</span>
+                      <div>
+                        <h4 className="font-bold text-xs sm:text-sm text-slate-900">
+                          {slot?.subjectName || 'Tự học / Nghỉ'}
+                        </h4>
+                        {slot?.note && (
+                          <p className="text-[11px] text-slate-600 mt-0.5">{slot.note}</p>
+                        )}
+                      </div>
+                    </div>
+                    <span className="text-xs font-mono text-slate-500 font-semibold">{p.time}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* 10. TAB 5: CLASS EVENTS */}
+        {activeTab === 'EVENTS' && (
+          <div className="bg-white rounded-3xl border border-slate-200 p-5 space-y-4 shadow-xs">
+            <div className="border-b border-slate-100 pb-3">
+              <h3 className="font-bold text-sm sm:text-base text-slate-900 flex items-center gap-2">
+                <Calendar className="w-5 h-5 text-indigo-600" />
+                <span>Lịch Hoạt Động & Sự Kiện Của Lớp {studentClass.name}</span>
+              </h3>
+              <p className="text-xs text-slate-500">Các hoạt động giáo dục, dã ngoại, thi đua và kiểm tra định kỳ.</p>
+            </div>
+
+            <div className="space-y-3">
+              {classEvents.length === 0 ? (
+                <p className="text-xs text-slate-400 py-6 text-center">Chưa có sự kiện nào được lên lịch trong thời gian tới.</p>
+              ) : (
+                classEvents.map((evt) => (
+                  <div key={evt.id} className="p-4 rounded-2xl border border-slate-200 bg-slate-50/60 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-xs text-slate-900">{evt.title}</span>
+                      <span className="text-[11px] font-mono text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md font-bold">
+                        {evt.date}
+                      </span>
+                    </div>
+                    {evt.description && (
+                      <p className="text-xs text-slate-600 leading-relaxed">{evt.description}</p>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
       </main>
 
-      {/* 8. PIN CHANGE / SETUP MODAL */}
+      {/* 11. PIN CHANGE / SETUP MODAL */}
       {isPinModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-in fade-in">
           <div className="bg-white max-w-md w-full rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
