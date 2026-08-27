@@ -379,18 +379,18 @@ export default function PublicClassHomeworkPortal({
             </div>
 
             {/* 3. NAVIGATION TABS (4 TABS: HOMEWORK, EVENTS, BACKPACK, TIMETABLE) */}
-            <div className="flex overflow-x-auto no-scrollbar gap-1.5 bg-white p-1.5 rounded-2xl border border-slate-200 shadow-xs text-xs font-bold">
+            <div className="flex overflow-x-auto no-scrollbar gap-1.5 bg-white p-1 rounded-2xl border border-slate-200 shadow-xs text-xs font-bold scroll-smooth">
               {[
-                { id: 'HOMEWORK', label: '📝 Bài Tập Về Nhà', count: classHomeworks.length },
+                { id: 'HOMEWORK', label: '📝 Bài Tập', count: classHomeworks.length },
                 { id: 'BACKPACK', label: '🎒 Soạn Sách Vở', count: null },
                 { id: 'TIMETABLE', label: '🗓️ Thời Khóa Biểu', count: null },
-                { id: 'EVENTS', label: '📅 Lịch Sự Kiện', count: classEvents.length },
+                { id: 'EVENTS', label: '📅 Sự Kiện', count: classEvents.length },
               ].map((tab) => (
                 <button
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`flex items-center justify-center space-x-1.5 px-3.5 py-2.5 rounded-xl transition-all whitespace-nowrap cursor-pointer shrink-0 ${
+                  className={`h-9 px-3.5 flex items-center justify-center space-x-1.5 rounded-xl transition-all whitespace-nowrap cursor-pointer shrink-0 ${
                     activeTab === tab.id
                       ? 'bg-blue-600 text-white shadow-xs font-black'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -412,7 +412,7 @@ export default function PublicClassHomeworkPortal({
 
             {/* TAB CONTENT 1: HOMEWORK */}
             {activeTab === 'HOMEWORK' && (
-              <div className="space-y-3.5">
+              <div className="space-y-3">
                 {isAllDone && (
                   <div className="bg-emerald-50 border border-emerald-200 rounded-3xl p-4 flex items-center space-x-3 text-emerald-800 animate-in fade-in">
                     <div className="w-10 h-10 rounded-2xl bg-emerald-500 text-white flex items-center justify-center text-xl shrink-0">
@@ -426,11 +426,11 @@ export default function PublicClassHomeworkPortal({
                 )}
 
                 {classHomeworks.length === 0 ? (
-                  <div className="bg-white rounded-3xl border border-slate-200 p-10 text-center space-y-3">
-                    <div className="w-16 h-16 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto text-3xl">
+                  <div className="bg-white rounded-3xl border border-slate-200 p-8 text-center space-y-2">
+                    <div className="w-14 h-14 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto text-2xl">
                       ✨
                     </div>
-                    <h3 className="font-bold text-base text-slate-800">Hôm nay không có bài tập về nhà!</h3>
+                    <h3 className="font-bold text-sm text-slate-800">Hôm nay không có bài tập về nhà!</h3>
                     <p className="text-xs text-slate-500 max-w-sm mx-auto">
                       Chúc các em học sinh có một buổi tối nghỉ ngơi vui vẻ bên gia đình.
                     </p>
@@ -443,7 +443,7 @@ export default function PublicClassHomeworkPortal({
                     return (
                       <div
                         key={hw.id}
-                        className={`bg-white rounded-3xl border transition-all duration-200 p-5 shadow-xs ${
+                        className={`bg-white rounded-3xl border transition-all duration-200 p-4 sm:p-5 shadow-xs ${
                           isDone
                             ? 'border-emerald-200 bg-emerald-50/20'
                             : 'border-slate-200 hover:border-blue-300'
@@ -451,37 +451,37 @@ export default function PublicClassHomeworkPortal({
                       >
                         {/* Header */}
                         <div className="flex items-start justify-between gap-3 mb-3">
-                          <div className="flex items-center space-x-2.5">
-                            <span className="text-2xl">{theme.icon}</span>
-                            <div>
+                          <div className="flex items-start space-x-2.5 min-w-0 flex-1">
+                            <span className="text-2xl shrink-0 mt-0.5">{theme.icon}</span>
+                            <div className="min-w-0 flex-1">
                               <span
-                                className={`inline-block text-[11px] font-black px-2.5 py-0.5 rounded-lg border ${theme.bgColor} ${theme.textColor} ${theme.borderColor}`}
+                                className={`inline-block text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${theme.bgColor} ${theme.textColor}`}
                               >
                                 {hw.subjectName}
                               </span>
-                              <h3 className={`font-bold text-sm sm:text-base text-slate-900 mt-0.5 ${isDone ? 'line-through text-slate-400' : ''}`}>
+                              <h3 className={`font-bold text-xs sm:text-sm text-slate-900 mt-0.5 break-words ${isDone ? 'line-through text-slate-400' : ''}`}>
                                 {hw.title}
                               </h3>
                             </div>
                           </div>
 
-                          {/* Interactive Checkbox */}
+                          {/* Interactive Checkbox Button */}
                           <button
                             type="button"
                             onClick={() => toggleCompleteHw(hw.id)}
-                            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                            className={`w-24 h-8 shrink-0 flex items-center justify-center space-x-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                               isDone
                                 ? 'bg-emerald-600 text-white shadow-xs'
                                 : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
                             }`}
                           >
-                            {isDone ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+                            {isDone ? <Check className="w-3.5 h-3.5 shrink-0" /> : <Square className="w-3.5 h-3.5 shrink-0" />}
                             <span>{isDone ? 'Đã Xong' : 'Chưa Xong'}</span>
                           </button>
                         </div>
 
                         {/* Description */}
-                        <div className="bg-slate-50 rounded-2xl p-3.5 border border-slate-100 text-xs sm:text-sm text-slate-700 whitespace-pre-line leading-relaxed">
+                        <div className="bg-slate-50 rounded-2xl p-3 border border-slate-100 text-xs text-slate-700 whitespace-pre-line leading-relaxed break-words">
                           {hw.description}
                         </div>
 
@@ -546,7 +546,7 @@ export default function PublicClassHomeworkPortal({
                 </div>
 
                 {sortedEvents.length > 0 ? (
-                  <div className="space-y-3">
+                  <div className="space-y-2.5">
                     {sortedEvents.map((ev) => {
                       const evDate = new Date(ev.date);
                       const dayNum = evDate.getDate();
@@ -556,7 +556,7 @@ export default function PublicClassHomeworkPortal({
                       return (
                         <div
                           key={ev.id}
-                          className={`bg-white rounded-3xl border p-4 sm:p-5 transition-all shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 ${
+                          className={`bg-white rounded-3xl border p-3.5 sm:p-5 transition-all shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
                             isTodayEvent
                               ? 'border-amber-400 bg-amber-50/40 ring-2 ring-amber-200'
                               : ev.isImportant
@@ -564,10 +564,10 @@ export default function PublicClassHomeworkPortal({
                               : 'border-slate-200 hover:border-slate-300'
                           }`}
                         >
-                          <div className="flex items-start space-x-3.5 min-w-0">
+                          <div className="flex items-start space-x-3 min-w-0">
                             {/* Date Badge */}
                             <div
-                              className={`w-13 h-14 rounded-2xl flex flex-col items-center justify-center shrink-0 font-bold border shadow-xs ${
+                              className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center shrink-0 font-bold border shadow-xs ${
                                 isTodayEvent
                                   ? 'bg-amber-500 text-white border-amber-600'
                                   : ev.isImportant
@@ -575,13 +575,13 @@ export default function PublicClassHomeworkPortal({
                                   : 'bg-slate-100 text-slate-800 border-slate-200'
                               }`}
                             >
-                              <span className="text-[10px] uppercase font-semibold">Th.{monthNum}</span>
-                              <span className="text-xl font-black leading-none">{dayNum}</span>
+                              <span className="text-[9px] uppercase font-semibold leading-none">Th.{monthNum}</span>
+                              <span className="text-lg font-black leading-tight">{dayNum}</span>
                             </div>
 
-                            <div className="space-y-1 min-w-0">
+                            <div className="space-y-0.5 min-w-0">
                               <div className="flex flex-wrap items-center gap-1.5">
-                                <h3 className="text-sm sm:text-base font-bold text-slate-900 truncate">
+                                <h3 className="text-xs sm:text-sm font-bold text-slate-900 break-words">
                                   {ev.title}
                                 </h3>
                                 {isTodayEvent && (
@@ -596,24 +596,24 @@ export default function PublicClassHomeworkPortal({
                                 )}
                               </div>
 
-                              <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                              <div className="flex flex-wrap items-center gap-2.5 text-[11px] text-slate-500">
                                 {ev.time && (
                                   <span className="flex items-center gap-1">
-                                    <Clock className="w-3.5 h-3.5 text-slate-400" />
+                                    <Clock className="w-3 h-3 text-slate-400" />
                                     <span>{ev.time}</span>
                                   </span>
                                 )}
                                 {ev.location && (
                                   <span className="flex items-center gap-1">
-                                    <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                                    <MapPin className="w-3 h-3 text-slate-400" />
                                     <span>{ev.location}</span>
                                   </span>
                                 )}
                               </div>
 
                               {ev.description && (
-                                <p className="text-xs text-slate-600 leading-relaxed pt-1 bg-slate-50 p-2.5 rounded-xl border border-slate-100 mt-1">
-                                  <strong>Dặn dò phụ huynh:</strong> {ev.description}
+                                <p className="text-xs text-slate-600 leading-relaxed pt-1 bg-slate-50 p-2 rounded-xl border border-slate-100 mt-1 break-words">
+                                  <strong>Dặn dò:</strong> {ev.description}
                                 </p>
                               )}
                             </div>
@@ -634,24 +634,24 @@ export default function PublicClassHomeworkPortal({
             {/* TAB CONTENT 3: SOẠN SÁCH VỞ CHO NGÀY MAI */}
             {activeTab === 'BACKPACK' && (
               <div className="space-y-4">
-                <div className="bg-white rounded-3xl border border-slate-200 p-5 space-y-4 shadow-xs">
+                <div className="bg-white rounded-3xl border border-slate-200 p-4 sm:p-5 space-y-3 shadow-xs">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                     <div>
-                      <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
-                        <Backpack className="w-5 h-5 text-blue-600" />
-                        <span>Danh Sách Soạn Sách Vở Cho Ngày Mai ({tomorrowDayInfo?.name})</span>
+                      <h3 className="font-bold text-xs sm:text-base text-slate-900 flex items-center gap-2">
+                        <Backpack className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 shrink-0" />
+                        <span>Soạn Sách Vở Ngày Mai ({tomorrowDayInfo?.name})</span>
                       </h3>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-[11px] sm:text-xs text-slate-500">
                         Tích chọn từng môn sau khi em đã bỏ sách vở và đồ dùng vào cặp.
                       </p>
                     </div>
 
-                    <span className="bg-blue-100 text-blue-800 text-[11px] font-bold px-2.5 py-1 rounded-full">
-                      {tomorrowSlots.length} Tiết Học
+                    <span className="bg-blue-100 text-blue-800 text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0">
+                      {tomorrowSlots.length} Tiết
                     </span>
                   </div>
 
-                  <div className="space-y-2.5">
+                  <div className="space-y-2">
                     {tomorrowSlots.length === 0 ? (
                       <p className="text-xs text-slate-400 text-center py-4">Ngày mai không có tiết học hoặc là ngày nghỉ.</p>
                     ) : (
@@ -662,22 +662,22 @@ export default function PublicClassHomeworkPortal({
                         return (
                           <div
                             key={slot.id}
-                            className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
+                            className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-2.5 ${
                               isPacked
                                 ? 'bg-emerald-50/40 border-emerald-200'
                                 : 'bg-slate-50 border-slate-200'
                             }`}
                           >
-                            <div className="flex items-center space-x-3 min-w-0">
-                              <span className="text-2xl">{theme.icon}</span>
-                              <div className="min-w-0">
+                            <div className="flex items-center space-x-2.5 min-w-0 flex-1">
+                              <span className="text-xl shrink-0">{theme.icon}</span>
+                              <div className="min-w-0 flex-1">
                                 <div className="flex items-center gap-1.5">
-                                  <span className="font-bold text-xs text-slate-900">{slot.subjectName}</span>
-                                  <span className="text-[10px] font-mono text-slate-500 bg-white px-1.5 py-0.2 rounded border border-slate-200">
+                                  <span className="font-bold text-xs text-slate-900 truncate">{slot.subjectName}</span>
+                                  <span className="text-[10px] font-mono text-slate-500 bg-white px-1.5 py-0.2 rounded border border-slate-200 shrink-0">
                                     Tiết {slot.period}
                                   </span>
                                 </div>
-                                <p className="text-xs text-slate-500 mt-0.5">
+                                <p className="text-[11px] text-slate-500 mt-0.5 truncate">
                                   {slot.note ? `Mang theo: ${slot.note}` : `Sách giáo khoa & Vở bài tập ${slot.subjectName}`}
                                 </p>
                               </div>
@@ -686,13 +686,13 @@ export default function PublicClassHomeworkPortal({
                             <button
                               type="button"
                               onClick={() => togglePackSubject(slot.subjectCode)}
-                              className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                              className={`w-24 h-8 shrink-0 flex items-center justify-center space-x-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                                 isPacked
                                   ? 'bg-emerald-600 text-white shadow-xs'
                                   : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
                               }`}
                             >
-                              {isPacked ? <Check className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+                              {isPacked ? <Check className="w-3.5 h-3.5 shrink-0" /> : <Square className="w-3.5 h-3.5 shrink-0" />}
                               <span>{isPacked ? 'Đã Xếp' : 'Chưa Xếp'}</span>
                             </button>
                           </div>
@@ -706,24 +706,24 @@ export default function PublicClassHomeworkPortal({
 
             {/* TAB CONTENT 4: THỜI KHÓA BIỂU TUẦN */}
             {activeTab === 'TIMETABLE' && (
-              <div className="bg-white rounded-3xl border border-slate-200 p-5 space-y-4 shadow-xs">
+              <div className="bg-white rounded-3xl border border-slate-200 p-4 sm:p-5 space-y-3 shadow-xs">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
                   <div>
-                    <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
-                      <Calendar className="w-5 h-5 text-blue-600" />
+                    <h3 className="font-bold text-xs sm:text-base text-slate-900 flex items-center gap-2">
+                      <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 shrink-0" />
                       <span>Thời Khóa Biểu Lớp {currentClass.name}</span>
                     </h3>
-                    <p className="text-xs text-slate-500">Chương trình học chuẩn 2 buổi/ngày kèm ăn bán trú.</p>
+                    <p className="text-[11px] sm:text-xs text-slate-500">Chương trình học chuẩn 2 buổi/ngày kèm ăn bán trú.</p>
                   </div>
 
-                  {/* Day Picker Pills for Mobile/Tablet */}
-                  <div className="flex flex-wrap gap-1">
+                  {/* Day Picker Grid for Mobile/Tablet */}
+                  <div className="grid grid-cols-5 gap-1 pt-1 sm:pt-0">
                     {DAYS_OF_WEEK.map((d) => (
                       <button
                         key={d.id}
                         type="button"
                         onClick={() => setSelectedTimetableDay(d.id)}
-                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                        className={`h-8 px-2 flex items-center justify-center rounded-xl text-xs font-bold transition-colors cursor-pointer ${
                           selectedTimetableDay === d.id
                             ? 'bg-blue-600 text-white shadow-xs'
                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'

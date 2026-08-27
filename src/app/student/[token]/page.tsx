@@ -132,7 +132,6 @@ export default function StudentPrivateReportPage({
   const [completedHwIds, setCompletedHwIds] = useState<string[]>([]);
   const [packedSubjectCodes, setPackedSubjectCodes] = useState<string[]>([]);
   const [selectedTimetableDay, setSelectedTimetableDay] = useState<DayOfWeek>('T2');
-  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
 
   const todayStr = new Date().toISOString().split('T')[0];
 
@@ -168,7 +167,7 @@ export default function StudentPrivateReportPage({
   // If student not found
   if (!student || !studentClass) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
         <div className="max-w-md w-full bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xl text-center space-y-4">
           <div className="w-16 h-16 rounded-3xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto text-3xl shadow-inner">
             🔒
@@ -279,11 +278,11 @@ export default function StudentPrivateReportPage({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans pb-16">
+    <div className="min-h-screen bg-slate-50 text-slate-900 pb-16">
       {/* 1. BRAND HEADER BAR */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
         <div className="max-w-5xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2">
-          <div className="flex items-center space-x-2.5 sm:space-x-3 min-w-0 flex-1">
+          <div className="flex items-center space-x-2.5 min-w-0 flex-1">
             {schoolInfo.logoUrl ? (
               <img
                 src={schoolInfo.logoUrl}
@@ -291,7 +290,7 @@ export default function StudentPrivateReportPage({
                 className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl object-cover border border-slate-200 shrink-0"
               />
             ) : (
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white text-base sm:text-xl shrink-0">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white text-base sm:text-xl shrink-0 font-bold">
                 🎒
               </div>
             )}
@@ -309,19 +308,19 @@ export default function StudentPrivateReportPage({
             <button
               type="button"
               onClick={handleCopyLink}
-              className="inline-flex items-center space-x-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+              className="h-8 px-2.5 inline-flex items-center justify-center space-x-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
               title="Sao chép link"
             >
-              <Copy className="w-3.5 h-3.5" />
+              <Copy className="w-3.5 h-3.5 shrink-0" />
               <span className="hidden sm:inline">Lưu Link</span>
             </button>
 
             <button
               type="button"
               onClick={() => window.print()}
-              className="inline-flex items-center space-x-1 bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+              className="h-8 px-2.5 inline-flex items-center justify-center space-x-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors cursor-pointer"
             >
-              <Printer className="w-3.5 h-3.5" />
+              <Printer className="w-3.5 h-3.5 shrink-0" />
               <span className="hidden sm:inline">In Phiếu</span>
             </button>
           </div>
@@ -329,7 +328,7 @@ export default function StudentPrivateReportPage({
       </header>
 
       {/* 2. MAIN CONTAINER */}
-      <main className="max-w-5xl mx-auto px-3 sm:px-6 pt-4 sm:pt-6 space-y-4 sm:space-y-5">
+      <main className="max-w-5xl mx-auto px-3 sm:px-6 pt-3.5 sm:pt-6 space-y-4 sm:space-y-5">
         {/* FIRST TIME ACTIVATION WELCOME BANNER */}
         {!student.isActivated ? (
           <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-3xl p-4 sm:p-5 text-white shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in">
@@ -348,9 +347,9 @@ export default function StudentPrivateReportPage({
             <button
               type="button"
               onClick={() => setIsPinModalOpen(true)}
-              className="inline-flex items-center justify-center space-x-1.5 bg-white text-orange-800 hover:bg-orange-50 font-black text-xs px-4 py-2.5 rounded-2xl shadow-md transition-all shrink-0 cursor-pointer"
+              className="w-full sm:w-auto h-10 px-4 inline-flex items-center justify-center space-x-1.5 bg-white text-orange-800 hover:bg-orange-50 font-black text-xs rounded-2xl shadow-md transition-all shrink-0 cursor-pointer"
             >
-              <Key className="w-4 h-4 text-orange-600" />
+              <Key className="w-4 h-4 text-orange-600 shrink-0" />
               <span>Đổi Mã PIN Riêng Ngay</span>
             </button>
           </div>
@@ -359,7 +358,7 @@ export default function StudentPrivateReportPage({
             <div className="flex items-center space-x-2 min-w-0">
               <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
               <span className="truncate">
-                Hồ sơ học tập của <strong>{student.fullName}</strong> được bảo vệ riêng tư bằng mã PIN.
+                Hồ sơ học tập của <strong>{student.fullName}</strong> được bảo vệ bằng mã PIN riêng.
               </span>
             </div>
             <button
@@ -380,7 +379,7 @@ export default function StudentPrivateReportPage({
             </div>
             <div className="space-y-0.5 min-w-0 flex-1">
               <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-rose-100">
-                <PartyPopper className="w-3.5 h-3.5" />
+                <PartyPopper className="w-3.5 h-3.5 shrink-0" />
                 <span>{birthdayInfo.isToday ? '🎉 Sinh Nhật Hôm Nay!' : '🎁 Tháng Sinh Nhật Của Con'}</span>
               </div>
               <h3 className="font-black text-sm sm:text-base truncate">
@@ -398,7 +397,7 @@ export default function StudentPrivateReportPage({
         {/* 4. STUDENT HERO PROFILE CARD */}
         <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-4 sm:p-6 relative overflow-hidden">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center space-x-3.5 sm:space-x-5 min-w-0 flex-1">
+            <div className="flex items-center space-x-3.5 min-w-0 flex-1">
               {student.avatarUrl ? (
                 <img
                   src={student.avatarUrl}
@@ -421,7 +420,7 @@ export default function StudentPrivateReportPage({
                   </span>
                 </div>
 
-                <h1 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight break-words">
+                <h1 className="text-base sm:text-xl font-black text-slate-900 tracking-tight break-words">
                   {student.fullName}
                 </h1>
 
@@ -432,16 +431,16 @@ export default function StudentPrivateReportPage({
             </div>
 
             {/* Badges / Honors */}
-            <div className="flex flex-wrap sm:flex-col items-start sm:items-end gap-1.5 shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+            <div className="flex flex-wrap sm:flex-col items-start sm:items-end gap-1.5 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
               {studentSummary?.awardTitle && (
-                <div className="inline-flex items-center space-x-1.5 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-300 text-amber-900 px-3 py-1 rounded-xl shadow-xs text-xs font-black">
+                <div className="h-8 px-3 inline-flex items-center space-x-1.5 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-300 text-amber-900 rounded-xl shadow-xs text-xs font-black">
                   <Award className="w-3.5 h-3.5 text-amber-600 shrink-0" />
                   <span className="truncate max-w-[180px]">{studentSummary.awardTitle}</span>
                 </div>
               )}
 
-              <div className="inline-flex items-center space-x-1.5 bg-purple-50 border border-purple-200 text-purple-800 px-3 py-1 rounded-xl text-xs font-bold">
-                <Star className="w-3.5 h-3.5 text-purple-600 fill-purple-600" />
+              <div className="h-8 px-3 inline-flex items-center space-x-1.5 bg-purple-50 border border-purple-200 text-purple-800 rounded-xl text-xs font-bold">
+                <Star className="w-3.5 h-3.5 text-purple-600 fill-purple-600 shrink-0" />
                 <span>{studentStars} Ngôi Sao Thi Đua</span>
               </div>
             </div>
@@ -461,7 +460,7 @@ export default function StudentPrivateReportPage({
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center justify-center px-3 py-2 rounded-xl transition-all whitespace-nowrap cursor-pointer shrink-0 ${
+              className={`h-9 px-3.5 flex items-center justify-center rounded-xl transition-all whitespace-nowrap cursor-pointer shrink-0 ${
                 activeTab === tab.id
                   ? 'bg-blue-600 text-white shadow-xs font-black'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
@@ -480,13 +479,13 @@ export default function StudentPrivateReportPage({
               <span className="font-bold text-slate-600 uppercase tracking-wider text-[11px] sm:text-xs">
                 Kỳ Đánh Giá Thông Tư 27:
               </span>
-              <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-1.5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                 {TERMS.map((t) => (
                   <button
                     key={t.id}
                     type="button"
                     onClick={() => setSelectedTerm(t.id)}
-                    className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all text-center cursor-pointer ${
+                    className={`h-9 px-2.5 flex items-center justify-center rounded-xl text-xs font-bold transition-all text-center cursor-pointer ${
                       selectedTerm === t.id
                         ? 'bg-blue-600 text-white shadow-xs'
                         : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -555,7 +554,7 @@ export default function StudentPrivateReportPage({
                             {subjDisplayName}
                           </span>
                           <span
-                            className={`px-2 py-0.5 rounded-lg text-xs font-black shrink-0 ${
+                            className={`h-6 min-w-[56px] px-2 flex items-center justify-center rounded-lg text-xs font-black shrink-0 ${
                               ass.level === 'T'
                                 ? 'bg-emerald-100 text-emerald-800'
                                 : ass.level === 'H'
@@ -622,7 +621,7 @@ export default function StudentPrivateReportPage({
                           </p>
                         </div>
                         <span
-                          className={`px-2 py-0.5 rounded-lg text-xs font-black shrink-0 ${
+                          className={`h-6 min-w-[56px] px-2 flex items-center justify-center rounded-lg text-xs font-black shrink-0 ${
                             trait.level === 'T'
                               ? 'bg-emerald-100 text-emerald-800'
                               : trait.level === 'Đ'
@@ -698,11 +697,11 @@ export default function StudentPrivateReportPage({
                 return (
                   <div
                     key={hw.id}
-                    className={`bg-white rounded-3xl border transition-all p-4 sm:p-5 shadow-xs space-y-3 ${
+                    className={`bg-white rounded-3xl border transition-all p-4 space-y-3 shadow-xs ${
                       isDone ? 'border-emerald-200 bg-emerald-50/20' : 'border-slate-200'
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-2.5">
+                    <div className="flex items-start justify-between gap-3">
                       <div className="flex items-start space-x-2.5 min-w-0 flex-1">
                         <span className="text-2xl shrink-0 mt-0.5">{theme.icon}</span>
                         <div className="min-w-0 flex-1">
@@ -713,16 +712,17 @@ export default function StudentPrivateReportPage({
                         </div>
                       </div>
 
+                      {/* FIXED SIZE BUTTON: NEVER JUMPS OR WRAPS */}
                       <button
                         type="button"
                         onClick={() => toggleCompleteHw(hw.id)}
-                        className={`flex items-center space-x-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                        className={`w-24 h-8 shrink-0 flex items-center justify-center space-x-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                           isDone
                             ? 'bg-emerald-600 text-white shadow-xs'
                             : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
                         }`}
                       >
-                        {isDone ? <Check className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}
+                        {isDone ? <Check className="w-3.5 h-3.5 shrink-0" /> : <Square className="w-3.5 h-3.5 shrink-0" />}
                         <span>{isDone ? 'Đã Xong' : 'Chưa Xong'}</span>
                       </button>
                     </div>
@@ -778,16 +778,17 @@ export default function StudentPrivateReportPage({
                         </div>
                       </div>
 
+                      {/* FIXED SIZE BUTTON */}
                       <button
                         type="button"
                         onClick={() => togglePackSubject(slot.subjectCode)}
-                        className={`flex items-center space-x-1 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                        className={`w-24 h-8 shrink-0 flex items-center justify-center space-x-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                           isPacked
                             ? 'bg-emerald-600 text-white shadow-xs'
                             : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
                         }`}
                       >
-                        {isPacked ? <Check className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}
+                        {isPacked ? <Check className="w-3.5 h-3.5 shrink-0" /> : <Square className="w-3.5 h-3.5 shrink-0" />}
                         <span>{isPacked ? 'Đã Xếp' : 'Chưa Xếp'}</span>
                       </button>
                     </div>
@@ -810,13 +811,13 @@ export default function StudentPrivateReportPage({
                 <p className="text-[11px] sm:text-xs text-slate-500">Chương trình học chuẩn 2 buổi/ngày kèm ăn bán trú.</p>
               </div>
 
-              <div className="flex overflow-x-auto no-scrollbar gap-1 pt-1 sm:pt-0">
+              <div className="grid grid-cols-5 gap-1 pt-1 sm:pt-0">
                 {DAYS_OF_WEEK.map((d) => (
                   <button
                     key={d.id}
                     type="button"
                     onClick={() => setSelectedTimetableDay(d.id)}
-                    className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0 ${
+                    className={`h-8 px-2 flex items-center justify-center rounded-xl text-xs font-bold transition-colors cursor-pointer ${
                       selectedTimetableDay === d.id
                         ? 'bg-blue-600 text-white shadow-xs'
                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -843,7 +844,7 @@ export default function StudentPrivateReportPage({
                     }`}
                   >
                     <div className="flex items-center space-x-2.5 min-w-0 flex-1">
-                      <span className="font-mono text-[11px] font-bold text-slate-500 w-10 shrink-0">
+                      <span className="h-6 w-12 rounded-lg bg-slate-100 text-slate-600 font-mono text-[10px] font-bold flex items-center justify-center shrink-0">
                         {p.name}
                       </span>
                       <span className="text-lg shrink-0">{theme?.icon || '📚'}</span>
@@ -967,13 +968,13 @@ export default function StudentPrivateReportPage({
                 <button
                   type="button"
                   onClick={() => setIsPinModalOpen(false)}
-                  className="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 cursor-pointer"
+                  className="h-9 px-3.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 cursor-pointer"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md cursor-pointer"
+                  className="h-9 px-4 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md cursor-pointer"
                 >
                   Lưu Mã PIN
                 </button>

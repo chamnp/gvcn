@@ -1,10 +1,24 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
+import { Inter } from 'next/font/google';
 import './globals.css';
 import { AppProvider } from '@/lib/store';
 import { AuthProvider } from '@/lib/auth-context';
 import { MobileNavProvider } from '@/components/layout/mobile-nav-context';
 import { AppShell } from '@/components/layout/app-shell';
 import { Toaster } from 'sonner';
+
+const inter = Inter({
+  subsets: ['latin', 'vietnamese'],
+  display: 'swap',
+  variable: '--font-inter',
+});
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: '#2563eb',
+};
 
 export const metadata: Metadata = {
   title: 'GVCN Pro - Quản lý Lớp học & Đánh giá Học sinh Tiểu học (TT27)',
@@ -17,8 +31,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi">
-      <body className="bg-slate-50 text-slate-900 min-h-screen antialiased flex">
+    <html lang="vi" className={inter.variable}>
+      <body className={`${inter.className} bg-slate-50 text-slate-900 min-h-screen antialiased flex`}>
         <AuthProvider>
           <AppProvider>
             <MobileNavProvider>
