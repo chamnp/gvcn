@@ -106,6 +106,8 @@ interface AppContextType {
   updateStudent: (student: Student) => void;
   deleteStudent: (id: string) => void;
   importStudents: (newStudents: Partial<Student>[]) => void;
+  clearClassStudents: () => void;
+  loadDemoStudents: () => void;
   updateSeatPosition: (studentId: string, row: number, col: number) => void;
 
   // Assessment Actions
@@ -596,6 +598,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAllStudents((prev) => [...prev, ...newStudents]);
   };
 
+  const clearClassStudents = () => {
+    setAllStudents((prev) => prev.filter((s) => (s.classId || 'class-4a1') !== activeClassId));
+  };
+
+  const loadDemoStudents = () => {
+    const demoForActive = INITIAL_STUDENTS.map((st) => ({
+      ...st,
+      id: `hs-${activeClassId}-${st.id}`,
+      classId: activeClassId,
+      studentCode: st.studentCode.replace('HS4A1', `HS${classInfo.name.replace(/\s+/g, '')}`),
+    }));
+    setAllStudents((prev) => {
+      const otherClasses = prev.filter((s) => (s.classId || 'class-4a1') !== activeClassId);
+      return [...otherClasses, ...demoForActive];
+    });
+  };
+
   const updateSeatPosition = (studentId: string, row: number, col: number) => {
     setAllStudents((prev) =>
       prev.map((s) => {
@@ -920,6 +939,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateStudent,
         deleteStudent,
         importStudents,
+        clearClassStudents,
+        loadDemoStudents,
         updateSeatPosition,
         updateSubjectAssessment,
         batchSetSubjectLevel,

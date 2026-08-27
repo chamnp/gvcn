@@ -16,12 +16,15 @@ import {
   School,
   CheckCircle2,
 } from 'lucide-react';
+import { useAppStore } from '@/lib/store';
 
 export default function DemoHubPage() {
+  const { schoolInfo, classInfo } = useAppStore();
+
   const DEMO_MODULES = [
     {
-      title: 'Hồ Sơ Học Sinh Mẫu (30 Em)',
-      desc: 'Danh sách 30 học sinh Lớp 4A1 với đầy đủ mã số, ngày sinh, thông tin phụ huynh và trạng thái bán trú.',
+      title: `Hồ Sơ Học Sinh Mẫu (30 Em)`,
+      desc: `Danh sách 30 học sinh Lớp ${classInfo.name} với đầy đủ mã số, ngày sinh, thông tin phụ huynh và trạng thái bán trú.`,
       href: '/students',
       icon: Users,
       color: 'bg-blue-500',
@@ -72,7 +75,7 @@ export default function DemoHubPage() {
           <span>KHÔNG GIAN TRẢI NGHIỆM DÙNG THỬ (DEMO MODE)</span>
         </div>
         <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
-          Bản Trải Nghiệm Mẫu — Lớp 4A1 (Trường Chu Văn An)
+          Bản Trải Nghiệm Mẫu — Lớp {classInfo.name} ({schoolInfo.name})
         </h1>
         <p className="text-xs sm:text-sm text-amber-100 max-w-2xl leading-relaxed">
           Không gian này chứa đầy đủ dữ liệu mẫu minh họa (30 học sinh, bảng đánh giá TT27, thời khóa biểu, nề nếp). Bạn có thể bấm vào các module bên dưới để thử nghiệm tất cả tính năng.
@@ -113,18 +116,25 @@ export default function DemoHubPage() {
       </div>
 
       {/* Switch to Real Mode CTA */}
-      <div className="bg-slate-900 rounded-3xl p-6 text-white flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="space-y-1">
-          <h3 className="font-bold text-base">Sẵn sàng sử dụng cho lớp học thật của bạn?</h3>
-          <p className="text-xs text-slate-400">
-            Đăng nhập tài khoản Google/Email của bạn để bắt đầu quản lý danh sách học sinh thật.
+      <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
+        <div className="space-y-2 text-center md:text-left">
+          <div className="inline-flex items-center space-x-2 bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full text-xs font-bold">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            <span>Sẵn Sàng Cho Năm Học {schoolInfo.schoolYear}</span>
+          </div>
+          <h2 className="text-xl sm:text-2xl font-bold">
+            Đăng Nhập Để Bắt Đầu Với Lớp Học Thực Tế Của Bạn
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-400 max-w-xl leading-relaxed">
+            Dữ liệu cá nhân, danh sách học sinh thật và các bảng đánh giá sẽ được bảo mật và tự động lưu trữ trên tài khoản của bạn.
           </p>
         </div>
+
         <Link
           href="/login"
-          className="inline-flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-5 py-3 rounded-2xl shadow-md transition-colors shrink-0"
+          className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-3.5 rounded-2xl shadow-lg hover:shadow-blue-600/30 transition-all shrink-0 flex items-center space-x-2"
         >
-          <span>Đăng Nhập Quản Lý Lớp Thật</span>
+          <span>Đăng Nhập Ngay</span>
           <ArrowRight className="w-4 h-4" />
         </Link>
       </div>

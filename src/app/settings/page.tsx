@@ -78,6 +78,8 @@ export default function SettingsPage() {
     setApiKey,
     resetData,
     students,
+    clearClassStudents,
+    loadDemoStudents,
     exportAllDataJSON,
     importAllDataJSON,
   } = useAppStore();
@@ -92,17 +94,19 @@ export default function SettingsPage() {
   const [profileDepartment, setProfileDepartment] = useState(profile?.department || 'Tổ Khối 4');
   const [profilePhone, setProfilePhone] = useState(profile?.phone || '');
   const [profileAvatarUrl, setProfileAvatarUrl] = useState(profile?.avatarUrl || AVATAR_PRESETS[0].url);
+  const [isProfileInitialized, setIsProfileInitialized] = useState(false);
 
-  // Sync profile state when auth profile loads
+  // Sync profile state when auth profile loads initially
   useEffect(() => {
-    if (profile) {
+    if (profile && !isProfileInitialized) {
       setProfileFullName(profile.fullName || '');
       setProfileTitle(profile.title || '');
       setProfileDepartment(profile.department || 'Tổ Khối 4');
       setProfilePhone(profile.phone || '');
       if (profile.avatarUrl) setProfileAvatarUrl(profile.avatarUrl);
+      setIsProfileInitialized(true);
     }
-  }, [profile]);
+  }, [profile, isProfileInitialized]);
 
   // School Form State
   const [schoolName, setSchoolName] = useState(schoolInfo.name);
@@ -218,6 +222,20 @@ export default function SettingsPage() {
     reader.readAsText(file);
   };
 
+  const handleClearStudents = () => {
+    if (confirm(`Bạn có chắc chắn muốn xóa toàn bộ danh sách học sinh của Lớp ${classInfo.name} để chuẩn bị nhập danh sách lớp học thật không?`)) {
+      clearClassStudents();
+      toast.success(`Đã làm sạch danh sách học sinh Lớp ${classInfo.name}. Bạn có thể nhập file Excel ngay bây giờ!`);
+    }
+  };
+
+  const handleLoadDemo = () => {
+    if (confirm(`Nạp lại 30 học sinh mẫu cho Lớp ${classInfo.name}?`)) {
+      loadDemoStudents();
+      toast.success(`Đã nạp 30 học sinh mẫu cho Lớp ${classInfo.name}!`);
+    }
+  };
+
   const handleResetDefault = () => {
     if (
       confirm(
@@ -299,7 +317,7 @@ export default function SettingsPage() {
           }`}
         >
           <Database className="w-4 h-4" />
-          <span>AI & Sao Lưu Dữ Liệu</span>
+          <span>AI & Quản Lý Dữ Liệu</span>
         </button>
       </div>
 
@@ -507,7 +525,7 @@ export default function SettingsPage() {
                 <span>Tự động đồng bộ toàn hệ thống:</span>
               </p>
               <p className="text-[11px] text-blue-800 leading-relaxed">
-                Khi bạn thay đổi họ tên hoặc chức danh tại đây, thông tin sẽ được cập nhật đồng nhất trên Header, Danh bạ toàn trường, Sổ chủ nhiệm và Báo cáo TT27.
+                Khi bạn thay đổi họ tên hoặc ảnh đại diện tại đây, thông tin sẽ được lưu giữ vĩnh viễn và đồng bộ ngay trên Header, Danh bạ, Sổ chủ nhiệm và Báo cáo TT27.
               </p>
             </div>
           </div>
@@ -771,97 +789,146 @@ export default function SettingsPage() {
 
       {/* TAB 4: GEMINI AI & BACKUP / RESTORE */}
       {activeTab === 'DATA' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* AI Settings */}
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-4">
-            <div className="flex items-center space-x-2.5 border-b border-slate-100 pb-3">
-              <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
-                <Sparkles className="w-5 h-5" />
-              </div>
-              <div>
-                <h2 className="text-base font-bold text-slate-900">Trợ Lý Nhận Xét AI (Gemini)</h2>
-                <p className="text-xs text-slate-500">Cấu hình khóa API phục vụ sinh lời nhận xét tự động.</p>
-              </div>
-            </div>
-
-            <form onSubmit={handleSaveApiKey} className="space-y-3.5 text-xs">
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">Gemini API Key (Tùy chọn)</label>
-                <input
-                  type="password"
-                  value={inputApiKey}
-                  onChange={(e) => setInputApiKey(e.target.value)}
-                  placeholder="AIzaSy..."
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 font-mono text-xs focus:ring-2 focus:ring-purple-500 focus:outline-none"
-                />
-                <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
-                  Nếu để trống, hệ thống sẽ sử dụng khóa tích hợp sẵn trên máy chủ để phục vụ giáo viên.
-                </p>
-              </div>
-
-              <div className="flex justify-end pt-2">
-                <button
-                  type="submit"
-                  className="inline-flex items-center space-x-1.5 bg-slate-900 hover:bg-slate-800 text-white font-bold px-4 py-2 rounded-xl shadow-xs transition-colors"
-                >
-                  <Save className="w-4 h-4" />
-                  <span>Lưu Khóa API</span>
-                </button>
-              </div>
-            </form>
-          </div>
-
-          {/* Backup & Restore */}
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-4 flex flex-col justify-between">
-            <div>
-              <div className="flex items-center space-x-2.5 border-b border-slate-100 pb-3 mb-4">
-                <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-                  <Database className="w-5 h-5" />
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* AI Settings */}
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-4">
+              <div className="flex items-center space-x-2.5 border-b border-slate-100 pb-3">
+                <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
+                  <Sparkles className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-slate-900">Sao Lưu & Khôi Phục Dữ Liệu</h2>
-                  <p className="text-xs text-slate-500">Xuất/nhập file sao lưu toàn diện cho toàn bộ lớp học.</p>
+                  <h2 className="text-base font-bold text-slate-900">Trợ Lý Nhận Xét AI (Gemini)</h2>
+                  <p className="text-xs text-slate-500">Cấu hình khóa API phục vụ sinh lời nhận xét tự động.</p>
                 </div>
               </div>
 
-              <div className="space-y-3 text-xs">
-                <p className="text-slate-600">
-                  Tải về bản sao lưu toàn bộ danh sách học sinh, điểm đánh giá TT27, điểm danh và nề nếp tích sao để lưu trữ an toàn:
-                </p>
+              <form onSubmit={handleSaveApiKey} className="space-y-3.5 text-xs">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Gemini API Key (Tùy chọn)</label>
+                  <input
+                    type="password"
+                    value={inputApiKey}
+                    onChange={(e) => setInputApiKey(e.target.value)}
+                    placeholder="AIzaSy..."
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 font-mono text-xs focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  />
+                  <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                    Nếu để trống, hệ thống sẽ sử dụng khóa tích hợp sẵn trên máy chủ để phục vụ giáo viên.
+                  </p>
+                </div>
 
-                <div className="flex flex-wrap gap-2.5">
+                <div className="flex justify-end pt-2">
                   <button
-                    type="button"
-                    onClick={handleExportBackup}
-                    className="inline-flex items-center space-x-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-4 py-2 rounded-xl font-bold transition-colors"
+                    type="submit"
+                    className="inline-flex items-center space-x-1.5 bg-slate-900 hover:bg-slate-800 text-white font-bold px-4 py-2 rounded-xl shadow-xs transition-colors"
                   >
-                    <Download className="w-4 h-4" />
-                    <span>Xuất File JSON Toàn Lớp</span>
+                    <Save className="w-4 h-4" />
+                    <span>Lưu Khóa API</span>
                   </button>
+                </div>
+              </form>
+            </div>
 
-                  <label className="inline-flex items-center space-x-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-4 py-2 rounded-xl font-bold transition-colors cursor-pointer">
-                    <Upload className="w-4 h-4" />
-                    <span>Nhập File Khôi Phục</span>
-                    <input
-                      type="file"
-                      accept=".json"
-                      onChange={handleImportBackupFile}
-                      className="hidden"
-                    />
-                  </label>
+            {/* Backup & Restore */}
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-4 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center space-x-2.5 border-b border-slate-100 pb-3 mb-4">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+                    <Database className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-bold text-slate-900">Sao Lưu & Khôi Phục File</h2>
+                    <p className="text-xs text-slate-500">Xuất/nhập file sao lưu toàn diện cho toàn bộ lớp học.</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3 text-xs">
+                  <p className="text-slate-600">
+                    Tải về bản sao lưu toàn bộ danh sách học sinh, điểm đánh giá TT27, điểm danh và nề nếp tích sao để lưu trữ an toàn:
+                  </p>
+
+                  <div className="flex flex-wrap gap-2.5">
+                    <button
+                      type="button"
+                      onClick={handleExportBackup}
+                      className="inline-flex items-center space-x-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-4 py-2 rounded-xl font-bold transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>Xuất File JSON Toàn Lớp</span>
+                    </button>
+
+                    <label className="inline-flex items-center space-x-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-4 py-2 rounded-xl font-bold transition-colors cursor-pointer">
+                      <Upload className="w-4 h-4" />
+                      <span>Nhập File Khôi Phục</span>
+                      <input
+                        type="file"
+                        accept=".json"
+                        onChange={handleImportBackupFile}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
                 </div>
               </div>
             </div>
+          </div>
 
-            <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-              <span className="text-[11px] text-slate-400">Khôi phục trạng thái mẫu:</span>
+          {/* Data Environment & Sandbox Controls (Production vs Demo) */}
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-4">
+            <div className="flex items-center space-x-2.5 border-b border-slate-100 pb-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+                <Users className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-slate-900">Quản Lý Dữ Liệu Học Sinh Lớp {classInfo.name}</h2>
+                <p className="text-xs text-slate-500">
+                  Làm sạch danh sách học sinh để bắt đầu lớp học thực tế hoặc nạp lại dữ liệu mẫu để trải nghiệm.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+              <button
+                type="button"
+                onClick={handleClearStudents}
+                className="p-4 rounded-2xl border border-rose-200 bg-rose-50/60 hover:bg-rose-100 text-left transition-all group cursor-pointer"
+              >
+                <div className="flex items-center space-x-2 text-rose-700 font-bold text-xs">
+                  <Trash2 className="w-4 h-4" />
+                  <span>Xóa Học Sinh Lớp {classInfo.name}</span>
+                </div>
+                <p className="text-[11px] text-rose-600/80 mt-1 leading-relaxed">
+                  Làm sạch danh sách ({students.length} em) để nhập danh sách lớp học thật từ Excel.
+                </p>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleLoadDemo}
+                className="p-4 rounded-2xl border border-blue-200 bg-blue-50/60 hover:bg-blue-100 text-left transition-all group cursor-pointer"
+              >
+                <div className="flex items-center space-x-2 text-blue-700 font-bold text-xs">
+                  <Sparkles className="w-4 h-4" />
+                  <span>Nạp 30 Học Sinh Mẫu (Demo)</span>
+                </div>
+                <p className="text-[11px] text-blue-600/80 mt-1 leading-relaxed">
+                  Nạp lại 30 học sinh mẫu minh họa để thử nghiệm tính năng đánh giá TT27.
+                </p>
+              </button>
+
               <button
                 type="button"
                 onClick={handleResetDefault}
-                className="text-rose-600 hover:text-rose-800 font-bold text-xs inline-flex items-center space-x-1"
+                className="p-4 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-left transition-all group cursor-pointer"
               >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Đặt lại dữ liệu mẫu ban đầu</span>
+                <div className="flex items-center space-x-2 text-slate-700 font-bold text-xs">
+                  <RotateCcw className="w-4 h-4" />
+                  <span>Đặt Lại Cài Đặt Gốc</span>
+                </div>
+                <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                  Đặt lại toàn bộ dữ liệu ứng dụng về trạng thái ban đầu.
+                </p>
               </button>
             </div>
           </div>

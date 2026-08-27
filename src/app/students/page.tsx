@@ -18,6 +18,7 @@ import {
   Calendar,
   Heart,
   Tag,
+  Sparkles,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { Student, Gender } from '@/types';
@@ -27,7 +28,16 @@ import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
 
 export default function StudentsPage() {
-  const { students, addStudent, updateStudent, deleteStudent, importStudents, classInfo } = useAppStore();
+  const {
+    students,
+    addStudent,
+    updateStudent,
+    deleteStudent,
+    importStudents,
+    clearClassStudents,
+    loadDemoStudents,
+    classInfo,
+  } = useAppStore();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [genderFilter, setGenderFilter] = useState<'ALL' | 'Nam' | 'Nữ'>('ALL');
@@ -257,6 +267,24 @@ export default function StudentsPage() {
             <span>Xuất Excel</span>
           </button>
 
+          {/* Clear / Load Demo Toolbar */}
+          {students.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                if (confirm(`Bạn có chắc chắn muốn xóa toàn bộ ${students.length} học sinh của Lớp ${classInfo.name} để chuẩn bị nhập danh sách thật từ file Excel?`)) {
+                  clearClassStudents();
+                  toast.success(`Đã làm sạch danh sách học sinh Lớp ${classInfo.name}!`);
+                }
+              }}
+              className="inline-flex items-center space-x-1 bg-rose-50 hover:bg-rose-100 text-rose-700 px-3 py-2 rounded-xl text-xs font-semibold border border-rose-200 transition-colors cursor-pointer"
+              title="Xóa toàn bộ học sinh lớp này để nhập danh sách mới"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Làm Sạch Lớp</span>
+            </button>
+          )}
+
           {/* Add Student Button */}
           <button
             onClick={handleOpenAdd}
@@ -269,71 +297,115 @@ export default function StudentsPage() {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center space-x-2 flex-1 min-w-[260px]">
-          <div className="relative w-full">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              placeholder="Tìm theo tên học sinh, mã số, số điện thoại phụ huynh..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+      {students.length > 0 && (
+        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center space-x-2 flex-1 min-w-[260px]">
+            <div className="relative w-full">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Tìm theo tên học sinh, mã số, số điện thoại phụ huynh..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 rounded-lg border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-2 text-xs">
+            {/* Gender Filter */}
+            <select
+              value={genderFilter}
+              onChange={(e) => setGenderFilter(e.target.value as any)}
+              className="px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="ALL">Tất cả giới tính</option>
+              <option value="Nam">Chỉ Nam</option>
+              <option value="Nữ">Chỉ Nữ</option>
+            </select>
+
+            {/* Boarding Filter */}
+            <select
+              value={boardingFilter}
+              onChange={(e) => setBoardingFilter(e.target.value as any)}
+              className="px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="ALL">Tất cả hình thức</option>
+              <option value="YES">Ăn bán trú</option>
+              <option value="NO">Không bán trú</option>
+            </select>
           </div>
         </div>
+      )}
 
-        <div className="flex items-center space-x-2 text-xs">
-          {/* Gender Filter */}
-          <select
-            value={genderFilter}
-            onChange={(e) => setGenderFilter(e.target.value as any)}
-            className="px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="ALL">Tất cả giới tính</option>
-            <option value="Nam">Chỉ Nam</option>
-            <option value="Nữ">Chỉ Nữ</option>
-          </select>
+      {/* Student Table or Empty State */}
+      {students.length === 0 ? (
+        <div className="bg-white rounded-3xl border border-slate-200 p-10 text-center space-y-4 shadow-xs">
+          <div className="w-16 h-16 rounded-3xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto shadow-sm">
+            <Users className="w-8 h-8" />
+          </div>
+          <div className="space-y-1.5 max-w-md mx-auto">
+            <h3 className="text-base font-bold text-slate-900">
+              Lớp {classInfo.name} Hiện Chưa Có Học Sinh
+            </h3>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Thầy cô có thể thêm học sinh mới thủ công, nhập nhanh toàn bộ danh sách lớp từ file Excel, hoặc nạp 30 học sinh mẫu để thử nghiệm tính năng đánh giá TT27:
+            </p>
+          </div>
 
-          {/* Boarding Filter */}
-          <select
-            value={boardingFilter}
-            onChange={(e) => setBoardingFilter(e.target.value as any)}
-            className="px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="ALL">Tất cả hình thức</option>
-            <option value="YES">Ăn bán trú</option>
-            <option value="NO">Không bán trú</option>
-          </select>
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <button
+              onClick={handleOpenAdd}
+              className="inline-flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-xs transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              <span>+ Thêm học sinh</span>
+            </button>
+
+            <label className="cursor-pointer inline-flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-xs font-bold shadow-xs transition-colors">
+              <Upload className="w-4 h-4" />
+              <span>Nhập từ Excel</span>
+              <input type="file" accept=".xlsx, .xls" onChange={handleFileUpload} className="hidden" />
+            </label>
+
+            <button
+              onClick={() => {
+                loadDemoStudents();
+                toast.success(`Đã nạp 30 học sinh mẫu cho Lớp ${classInfo.name}!`);
+              }}
+              className="inline-flex items-center space-x-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-4 py-2.5 rounded-xl text-xs font-bold transition-colors"
+            >
+              <Sparkles className="w-4 h-4 text-indigo-600" />
+              <span>Nạp 30 học sinh mẫu (Demo)</span>
+            </button>
+          </div>
         </div>
-      </div>
-
-      {/* Student Table */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
-              <tr>
-                <th className="py-3 px-4 w-12 text-center">STT</th>
-                <th className="py-3 px-4 w-28">Mã HS</th>
-                <th className="py-3 px-4">Họ và Tên</th>
-                <th className="py-3 px-4 w-20 text-center">Giới tính</th>
-                <th className="py-3 px-4 w-28">Ngày sinh</th>
-                <th className="py-3 px-4">Phụ huynh & SĐT</th>
-                <th className="py-3 px-4 w-24 text-center">Bán trú</th>
-                <th className="py-3 px-4">Ghi chú & Vai trò</th>
-                <th className="py-3 px-4 text-right w-28">Thao tác</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {filteredStudents.length === 0 ? (
+      ) : (
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
                 <tr>
-                  <td colSpan={9} className="py-12 text-center text-slate-400">
-                    Không tìm thấy học sinh nào phù hợp với bộ lọc.
-                  </td>
+                  <th className="py-3 px-4 w-12 text-center">STT</th>
+                  <th className="py-3 px-4 w-28">Mã HS</th>
+                  <th className="py-3 px-4">Họ và Tên</th>
+                  <th className="py-3 px-4 w-20 text-center">Giới tính</th>
+                  <th className="py-3 px-4 w-28">Ngày sinh</th>
+                  <th className="py-3 px-4">Phụ huynh & SĐT</th>
+                  <th className="py-3 px-4 w-24 text-center">Bán trú</th>
+                  <th className="py-3 px-4">Ghi chú & Vai trò</th>
+                  <th className="py-3 px-4 text-right w-28">Thao tác</th>
                 </tr>
-              ) : (
-                filteredStudents.map((st, idx) => (
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredStudents.length === 0 ? (
+                  <tr>
+                    <td colSpan={9} className="py-12 text-center text-slate-400">
+                      Không tìm thấy học sinh nào phù hợp với bộ lọc.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredStudents.map((st, idx) => (
                   <tr key={st.id} className="hover:bg-slate-50/80 transition-colors">
                     <td className="py-3 px-4 text-center font-medium text-slate-400">{idx + 1}</td>
                     <td className="py-3 px-4 font-mono font-semibold text-slate-600">{st.studentCode}</td>
@@ -431,6 +503,7 @@ export default function StudentsPage() {
           </table>
         </div>
       </div>
+      )}
 
       {/* Modal Add / Edit Student */}
       {isAddModalOpen && (

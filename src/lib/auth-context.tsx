@@ -127,14 +127,31 @@ const DEFAULT_TEACHERS: TeacherProfile[] = [
   },
 ];
 
+// Helper to get custom avatar from localStorage
+function getCustomAvatar(email: string): string | undefined {
+  if (typeof window === 'undefined') return undefined;
+  try {
+    return localStorage.getItem(`gvcn_custom_avatar_${email.toLowerCase().trim()}`) || undefined;
+  } catch (e) {
+    return undefined;
+  }
+}
+
 // Helper to synchronously resolve a profile given user & teacher list
 function resolveUserProfile(user: User | null, teachersList: TeacherProfile[]): TeacherProfile | null {
   if (!user) return null;
   const email = (user.email || '').toLowerCase().trim();
+  const customAvatar = getCustomAvatar(email);
 
   // Primary Admin Email Check
   if (email === 'anhnnh4@gmail.com') {
     const matched = teachersList.find((t) => t.email.toLowerCase() === email);
+    const resolvedAvatar =
+      customAvatar ||
+      matched?.avatarUrl ||
+      user.user_metadata?.avatar_url ||
+      'https://images.unsplash.com/photo-1544717305-2782549b5136?w=150&auto=format&fit=crop&q=80';
+
     return {
       id: matched?.id || `admin-${user.id}`,
       email,
@@ -145,7 +162,7 @@ function resolveUserProfile(user: User | null, teachersList: TeacherProfile[]): 
       assignedClassId: matched?.assignedClassId || 'class-4a1',
       assignedClassName: matched?.assignedClassName || 'Lớp 4A1',
       phone: matched?.phone || '024 3839 0134',
-      avatarUrl: matched?.avatarUrl || user.user_metadata?.avatar_url || 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=150&auto=format&fit=crop&q=80',
+      avatarUrl: resolvedAvatar,
       isActive: true,
       createdAt: matched?.createdAt || new Date().toISOString(),
     };
@@ -156,7 +173,7 @@ function resolveUserProfile(user: User | null, teachersList: TeacherProfile[]): 
   if (matched) {
     return {
       ...matched,
-      avatarUrl: matched.avatarUrl || user.user_metadata?.avatar_url,
+      avatarUrl: customAvatar || matched.avatarUrl || user.user_metadata?.avatar_url,
     };
   }
 
@@ -169,7 +186,7 @@ function resolveUserProfile(user: User | null, teachersList: TeacherProfile[]): 
     title: 'Chờ duyệt',
     department: 'Chưa phân bổ',
     assignedClassName: undefined,
-    avatarUrl: user.user_metadata?.avatar_url,
+    avatarUrl: customAvatar || user.user_metadata?.avatar_url,
     isActive: false,
     createdAt: new Date().toISOString(),
   };
@@ -355,9 +372,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!profile) return;
     const cleanEmail = (profile.email || user?.email || '').toLowerCase().trim();
 
+    // 0. Persist custom avatar immediately to localStorage
+    if (partial.avatarUrl) {
+      try {
+        localStorage.setItem(`gvcn_custom_avatar_${cleanEmail}`, partial.avatarUrl);
+      } catch (e) {}
+    }
+
     // 1. Update in Supabase Teacher table
     try {
-      await supabase.from('Teacher').upsert(
+      const { error } = await supabase.from('Teacher').upsert(
         {
           email: cleanEmail,
           fullName: partial.fullName || profile.fullName,
@@ -371,6 +395,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         },
         { onConflict: 'email' }
       );
+      if (error) console.error('Supabase upsert error:', error);
     } catch (e) {
       console.warn('Supabase update profile error:', e);
     }
@@ -378,12 +403,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // 2. Also update Supabase auth metadata if full_name or avatar_url changed
     if (partial.fullName || partial.avatarUrl) {
       try {
-        await supabase.auth.updateUser({
+        const { data: updatedAuthUser } = await supabase.auth.updateUser({
           data: {
             full_name: partial.fullName || profile.fullName,
             avatar_url: partial.avatarUrl || profile.avatarUrl,
           },
         });
+        if (updatedAuthUser?.user) {
+          setUser(updatedAuthUser.user);
+        }
       } catch (e) {}
     }
 
@@ -392,7 +420,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const updatedTeachers = teachers.map((t) => {
       if (t.email.toLowerCase() === cleanEmail) {
         found = true;
-        return { ...t, ...partial };
+        return {
+          ...t,
+          ...partial,
+          avatarUrl: partial.avatarUrl !== undefined ? partial.avatarUrl : t.avatarUrl,
+        };
       }
       return t;
     });
@@ -402,6 +434,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ...profile,
         ...partial,
         email: cleanEmail,
+        avatarUrl: partial.avatarUrl !== undefined ? partial.avatarUrl : profile.avatarUrl,
       });
     }
 
