@@ -121,8 +121,9 @@ export default function StudentsPage() {
 
   // Open Add Modal
   const handleOpenAdd = () => {
+    const classCode = classInfo.name.replace(/\s+/g, '').toUpperCase();
     setFormData({
-      studentCode: `HS4A1-${String(students.length + 1).padStart(3, '0')}`,
+      studentCode: `HS${classCode}-${String(students.length + 1).padStart(3, '0')}`,
       fullName: '',
       gender: 'Nam',
       dateOfBirth: '2016-01-01',

@@ -101,12 +101,13 @@ export default function StudentPrivateReportPage({
     updateStudentSecurity,
   } = useAppStore();
 
-  // Find student strictly by shareToken or id
+  // Find student strictly by shareToken, id, or studentCode (Mã định danh)
   const student = useMemo(() => {
     return allStudents.find(
       (s) =>
         (s.shareToken && s.shareToken.toLowerCase() === rawToken.toLowerCase()) ||
-        s.id.toLowerCase() === rawToken.toLowerCase()
+        s.id.toLowerCase() === rawToken.toLowerCase() ||
+        (s.studentCode && s.studentCode.toLowerCase() === rawToken.toLowerCase())
     );
   }, [allStudents, rawToken]);
 
