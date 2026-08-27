@@ -35,10 +35,20 @@ import {
   HelpCircle,
   Crown,
   AlertTriangle,
+  Bot,
+  Cpu,
+  Eye,
+  EyeOff,
+  Radio,
+  Zap,
+  Globe,
+  Sliders,
+  CheckCheck,
+  XCircle,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useAuth } from '@/lib/auth-context';
-import { GradeLevel, UserRole } from '@/types';
+import { GradeLevel, UserRole, AIProviderType, AIConfig } from '@/types';
 import { TERMS, getCurrentTermByDate, getAcademicYearByDate } from '@/lib/tt27-engine';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -63,6 +73,75 @@ const DEPARTMENTS = [
   'Tổ Văn phòng & Hành chính',
 ];
 
+const AI_VENDOR_PRESETS = [
+  {
+    id: 'gemini',
+    name: 'Google Gemini',
+    provider: 'GEMINI' as AIProviderType,
+    badge: 'Khuyên dùng',
+    icon: '✨',
+    defaultModel: 'gemini-2.5-flash',
+    baseUrl: '',
+    description: 'Tối ưu nhận xét tiếng Việt, tốc độ cao, hỗ trợ chìa khóa tích hợp sẵn hoặc khóa riêng.',
+    models: ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'],
+  },
+  {
+    id: 'openai',
+    name: 'OpenAI (ChatGPT)',
+    provider: 'OPENAI' as AIProviderType,
+    badge: 'Phổ biến',
+    icon: '🟢',
+    defaultModel: 'gpt-4o-mini',
+    baseUrl: 'https://api.openai.com/v1',
+    description: 'Mô hình GPT-4o-mini & GPT-4o từ OpenAI, độ chính xác cao và khả năng viết văn sư phạm phong phú.',
+    models: ['gpt-4o-mini', 'gpt-4o', 'gpt-3.5-turbo'],
+  },
+  {
+    id: 'anthropic',
+    name: 'Anthropic Claude',
+    provider: 'ANTHROPIC' as AIProviderType,
+    badge: 'Văn phong tốt',
+    icon: '🟣',
+    defaultModel: 'claude-3-5-haiku-20241022',
+    baseUrl: 'https://api.anthropic.com/v1',
+    description: 'Claude 3.5 Haiku/Sonnet với ngôn ngữ tự nhiên, ấm áp, rất phù hợp nhận xét học sinh tiểu học.',
+    models: ['claude-3-5-haiku-20241022', 'claude-3-5-sonnet-20241022'],
+  },
+  {
+    id: 'xiaomi',
+    name: 'Xiaomi MIMO / MiLM',
+    provider: 'CUSTOM_OPENAI' as AIProviderType,
+    badge: 'OpenAI Format',
+    icon: '🟠',
+    defaultModel: 'mimo-v1',
+    baseUrl: 'https://api.xiaomimimo.com/v1',
+    description: 'Mô hình Xiaomi MIMO theo chuẩn định dạng OpenAI, hỗ trợ chìa khóa sk-sjozamg...',
+    models: ['mimo-v1', 'mimo-pro', 'milm-7b'],
+  },
+  {
+    id: 'deepseek',
+    name: 'DeepSeek AI',
+    provider: 'CUSTOM_OPENAI' as AIProviderType,
+    badge: 'Tiết kiệm',
+    icon: '🐳',
+    defaultModel: 'deepseek-chat',
+    baseUrl: 'https://api.deepseek.com/v1',
+    description: 'DeepSeek-V3 Chat với chi phí cực rẻ, khả năng xử lý tiếng Việt rất mượt mà.',
+    models: ['deepseek-chat', 'deepseek-coder'],
+  },
+  {
+    id: 'openrouter',
+    name: 'OpenRouter (Đa mô hình)',
+    provider: 'CUSTOM_OPENAI' as AIProviderType,
+    badge: 'Tổng hợp',
+    icon: '🔀',
+    defaultModel: 'openai/gpt-4o-mini',
+    baseUrl: 'https://openrouter.ai/api/v1',
+    description: 'Cổng kết nối hơn 100+ mô hình AI toàn cầu chỉ với 1 tài khoản duy nhất.',
+    models: ['openai/gpt-4o-mini', 'anthropic/claude-3.5-haiku', 'deepseek/deepseek-chat', 'google/gemini-flash-1.5'],
+  },
+];
+
 type SettingsTab = 'PROFILE' | 'CLASS' | 'SCHOOL' | 'DATA';
 
 export default function SettingsPage() {
@@ -76,6 +155,8 @@ export default function SettingsPage() {
     setCurrentTerm,
     apiKey,
     setApiKey,
+    aiConfig,
+    setAiConfig,
     resetData,
     students,
     clearClassStudents,
@@ -122,7 +203,95 @@ export default function SettingsPage() {
   const [teacherName, setTeacherName] = useState(classInfo.teacherName);
   const [rows, setRows] = useState(classInfo.seatingGridRows || 5);
   const [cols, setCols] = useState(classInfo.seatingGridCols || 8);
-  const [inputApiKey, setInputApiKey] = useState(apiKey);
+
+  // Multi-Vendor AI Form State
+  const [aiProvider, setAiProvider] = useState<AIProviderType>(aiConfig?.provider || 'GEMINI');
+  const [inputApiKey, setInputApiKey] = useState(aiConfig?.apiKey || apiKey || '');
+  const [baseUrl, setBaseUrl] = useState(aiConfig?.baseUrl || '');
+  const [modelName, setModelName] = useState(aiConfig?.modelName || 'gemini-2.5-flash');
+  const [temperature, setTemperature] = useState(aiConfig?.temperature ?? 0.7);
+  const [showKey, setShowKey] = useState(false);
+  const [isTestingAi, setIsTestingAi] = useState(false);
+  const [testResult, setTestResult] = useState<{
+    success: boolean;
+    provider?: string;
+    model?: string;
+    latencyMs?: number;
+    message?: string;
+    error?: string;
+  } | null>(null);
+
+  // Sync AI Config when loaded
+  useEffect(() => {
+    if (aiConfig) {
+      setAiProvider(aiConfig.provider || 'GEMINI');
+      setInputApiKey(aiConfig.apiKey || apiKey || '');
+      setBaseUrl(aiConfig.baseUrl || '');
+      setModelName(aiConfig.modelName || 'gemini-2.5-flash');
+      setTemperature(aiConfig.temperature ?? 0.7);
+    }
+  }, [aiConfig, apiKey]);
+
+  // Apply Preset
+  const handleApplyVendorPreset = (preset: typeof AI_VENDOR_PRESETS[0]) => {
+    setAiProvider(preset.provider);
+    setModelName(preset.defaultModel);
+    setBaseUrl(preset.baseUrl);
+    setTestResult(null);
+    toast.info(`Đã chọn cấu hình ${preset.name} (${preset.defaultModel})`);
+  };
+
+  // Save AI Config
+  const handleSaveAiConfig = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newConfig: AIConfig = {
+      provider: aiProvider,
+      apiKey: inputApiKey.trim(),
+      baseUrl: baseUrl.trim(),
+      modelName: modelName.trim() || 'gemini-2.5-flash',
+      temperature,
+    };
+    setAiConfig(newConfig);
+    toast.success(`Đã lưu cấu hình AI ${aiProvider} thành công!`);
+  };
+
+  // Test AI Connection
+  const handleTestAiConnection = async () => {
+    setIsTestingAi(true);
+    setTestResult(null);
+    try {
+      const testConfig: AIConfig = {
+        provider: aiProvider,
+        apiKey: inputApiKey.trim(),
+        baseUrl: baseUrl.trim(),
+        modelName: modelName.trim() || 'gemini-2.5-flash',
+        temperature,
+      };
+
+      const res = await fetch('/api/test-ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ aiConfig: testConfig }),
+      });
+
+      const data = await res.json();
+      setTestResult(data);
+
+      if (data.success) {
+        toast.success(`Kết nối AI thành công (${data.latencyMs}ms)! ${data.provider} (${data.model}) đã sẵn sàng.`);
+      } else {
+        toast.error(`Lỗi kết nối: ${data.error || 'Kiểm tra thất bại'}`);
+      }
+    } catch (e: any) {
+      setTestResult({
+        success: false,
+        error: e?.message || 'Không thể kết nối đến máy chủ kiểm tra API',
+      });
+      toast.error('Lỗi khi gửi yêu cầu kiểm tra AI');
+    } finally {
+      setIsTestingAi(false);
+    }
+  };
 
   // Save User Profile
   const handleSaveProfile = async (e: React.FormEvent) => {
@@ -135,7 +304,6 @@ export default function SettingsPage() {
       avatarUrl: profileAvatarUrl,
     });
 
-    // If teacher is currently managing the active class, auto-update class teacherName
     if (profile?.assignedClassId === classInfo.id || profile?.assignedClassName === `Lớp ${classInfo.name}`) {
       setClassInfo({
         ...classInfo,
@@ -184,12 +352,6 @@ export default function SettingsPage() {
       seatingGridCols: Number(cols),
     });
     toast.success(`Đã lưu cấu hình Lớp ${className}!`);
-  };
-
-  const handleSaveApiKey = (e: React.FormEvent) => {
-    e.preventDefault();
-    setApiKey(inputApiKey);
-    toast.success('Đã lưu khóa Gemini API!');
   };
 
   const handleExportBackup = () => {
@@ -253,17 +415,17 @@ export default function SettingsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2.5">
-            <Settings className="w-7 h-7 text-blue-600" />
+            <Settings className="w-7 h-7 text-blue-600 shrink-0" />
             <span>Cài Đặt & Cấu Hình Hệ Thống</span>
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Quản lý thông tin hồ sơ cá nhân, phân công giáo viên, dữ liệu trường học và sao lưu hệ thống.
+            Quản lý thông tin hồ sơ cá nhân, phân công giáo viên, mô hình AI đa nhà cung cấp và sao lưu hệ thống.
           </p>
         </div>
 
         {/* Real-time Semester Badge */}
-        <div className="inline-flex items-center space-x-2 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-xl text-xs">
-          <Calendar className="w-4 h-4 text-blue-600" />
+        <div className="inline-flex items-center space-x-2 bg-blue-50 border border-blue-200 px-3 py-1.5 rounded-xl text-xs shrink-0">
+          <Calendar className="w-4 h-4 text-blue-600 shrink-0" />
           <span className="font-bold text-blue-900">
             {TERMS.find((t) => t.id === currentTerm)?.name} • {schoolInfo.schoolYear}
           </span>
@@ -316,8 +478,8 @@ export default function SettingsPage() {
               : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
           }`}
         >
-          <Database className="w-4 h-4" />
-          <span>AI & Quản Lý Dữ Liệu</span>
+          <Sparkles className="w-4 h-4 text-amber-400" />
+          <span>Mô Hình AI & Quản Lý Dữ Liệu</span>
         </button>
       </div>
 
@@ -348,7 +510,7 @@ export default function SettingsPage() {
               <div className="space-y-2">
                 <label className="block font-semibold text-slate-700">Chọn Ảnh Đại Diện (Avatar)</label>
                 <div className="flex flex-wrap items-center gap-3.5">
-                  <div className="relative">
+                  <div className="relative shrink-0">
                     <img
                       src={profileAvatarUrl}
                       alt="Avatar"
@@ -591,7 +753,7 @@ export default function SettingsPage() {
                   <button
                     type="button"
                     onClick={() => setTeacherName(profile.fullName)}
-                    className="text-[11px] text-blue-600 font-bold hover:underline flex items-center gap-1"
+                    className="text-[11px] text-blue-600 font-bold hover:underline flex items-center gap-1 cursor-pointer"
                   >
                     <Sparkles className="w-3.5 h-3.5" />
                     <span>Gán tôi ({profile.fullName}) làm GVCN</span>
@@ -657,7 +819,7 @@ export default function SettingsPage() {
             <div className="flex justify-end pt-3 border-t border-slate-100">
               <button
                 type="submit"
-                className="inline-flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2.5 rounded-xl shadow-xs transition-colors"
+                className="inline-flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-2.5 rounded-xl shadow-xs transition-colors cursor-pointer"
               >
                 <Save className="w-4 h-4" />
                 <span>Lưu Cấu Hình Lớp Học</span>
@@ -686,7 +848,7 @@ export default function SettingsPage() {
             <button
               type="button"
               onClick={handleSyncRealDate}
-              className="inline-flex items-center space-x-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors shrink-0"
+              className="inline-flex items-center space-x-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors shrink-0 cursor-pointer"
               title="Tự động đồng bộ theo thời gian thực"
             >
               <Sparkles className="w-4 h-4 text-emerald-600" />
@@ -776,7 +938,7 @@ export default function SettingsPage() {
               <div className="flex justify-end pt-3 border-t border-slate-100">
                 <button
                   type="submit"
-                  className="inline-flex items-center space-x-2 bg-purple-600 hover:bg-purple-700 text-white font-bold px-6 py-2.5 rounded-xl shadow-xs transition-colors"
+                  className="inline-flex items-center space-x-2 bg-purple-600 hover:bg-purple-700 text-white font-bold px-6 py-2.5 rounded-xl shadow-xs transition-colors cursor-pointer"
                 >
                   <Save className="w-4 h-4" />
                   <span>Lưu Hồ Sơ Trường Học</span>
@@ -787,49 +949,265 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* TAB 4: GEMINI AI & BACKUP / RESTORE */}
+      {/* TAB 4: MULTI-VENDOR AI ASSISTANT & BACKUP / RESTORE */}
       {activeTab === 'DATA' && (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* AI Settings */}
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-4">
-              <div className="flex items-center space-x-2.5 border-b border-slate-100 pb-3">
-                <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
-                  <Sparkles className="w-5 h-5" />
+          {/* AI Multi-Vendor Panel */}
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center font-bold shadow-md shadow-purple-500/20 shrink-0">
+                  <Bot className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-slate-900">Trợ Lý Nhận Xét AI (Gemini)</h2>
-                  <p className="text-xs text-slate-500">Cấu hình khóa API phục vụ sinh lời nhận xét tự động.</p>
+                  <h2 className="text-base font-bold text-slate-900">
+                    Cấu Hình Mô Hình Trí Tuệ Nhân Tạo (Multi-Vendor AI)
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Tùy chọn đa dạng nhà cung cấp (Google Gemini, OpenAI ChatGPT, Anthropic Claude, Xiaomi MIMO, DeepSeek, OpenRouter) để tự động sinh nhận xét học bạ TT27.
+                  </p>
                 </div>
               </div>
 
-              <form onSubmit={handleSaveApiKey} className="space-y-3.5 text-xs">
-                <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Gemini API Key (Tùy chọn)</label>
-                  <input
-                    type="password"
-                    value={inputApiKey}
-                    onChange={(e) => setInputApiKey(e.target.value)}
-                    placeholder="AIzaSy..."
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 font-mono text-xs focus:ring-2 focus:ring-purple-500 focus:outline-none"
-                  />
-                  <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
-                    Nếu để trống, hệ thống sẽ sử dụng khóa tích hợp sẵn trên máy chủ để phục vụ giáo viên.
-                  </p>
-                </div>
-
-                <div className="flex justify-end pt-2">
-                  <button
-                    type="submit"
-                    className="inline-flex items-center space-x-1.5 bg-slate-900 hover:bg-slate-800 text-white font-bold px-4 py-2 rounded-xl shadow-xs transition-colors"
-                  >
-                    <Save className="w-4 h-4" />
-                    <span>Lưu Khóa API</span>
-                  </button>
-                </div>
-              </form>
+              <span className="inline-flex items-center gap-1.5 bg-purple-50 text-purple-700 border border-purple-200 text-[11px] font-bold px-3 py-1 rounded-full self-start sm:self-auto">
+                <Cpu className="w-3.5 h-3.5 text-purple-600" />
+                <span>Đang dùng: {aiProvider} ({modelName})</span>
+              </span>
             </div>
 
+            {/* Quick Vendor Presets */}
+            <div className="space-y-2">
+              <label className="block font-bold text-slate-800 text-xs">
+                1. Chọn nhanh Nhà Cung Cấp AI (Vendor Presets):
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+                {AI_VENDOR_PRESETS.map((preset) => {
+                  const isSelected = aiProvider === preset.provider && (baseUrl === preset.baseUrl || (!baseUrl && !preset.baseUrl));
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => handleApplyVendorPreset(preset)}
+                      className={`p-3 rounded-2xl border text-left transition-all relative flex flex-col justify-between cursor-pointer ${
+                        isSelected
+                          ? 'border-purple-600 bg-purple-50/70 ring-2 ring-purple-200 shadow-xs'
+                          : 'border-slate-200 hover:border-purple-300 hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-lg">{preset.icon}</span>
+                          <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 bg-white/80 px-1.5 py-0.5 rounded-md border border-slate-100">
+                            {preset.badge}
+                          </span>
+                        </div>
+                        <p className="font-bold text-slate-900 text-xs mt-1 truncate">{preset.name}</p>
+                        <p className="text-[10px] text-slate-500 font-mono truncate">{preset.defaultModel}</p>
+                      </div>
+
+                      {isSelected && (
+                        <div className="mt-2 flex items-center gap-1 text-[10px] font-bold text-purple-700">
+                          <CheckCheck className="w-3.5 h-3.5" />
+                          <span>Đang chọn</span>
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Detailed AI Form */}
+            <form onSubmit={handleSaveAiConfig} className="space-y-4 text-xs pt-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Provider Selector */}
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Định Dạng Nhà Cung Cấp (Provider Protocol)
+                  </label>
+                  <select
+                    value={aiProvider}
+                    onChange={(e) => setAiProvider(e.target.value as AIProviderType)}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 font-bold text-slate-900 focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white"
+                  >
+                    <option value="GEMINI">Google Gemini API (Mặc định)</option>
+                    <option value="OPENAI">OpenAI API (ChatGPT Standard)</option>
+                    <option value="ANTHROPIC">Anthropic Claude API (Claude 3.5)</option>
+                    <option value="CUSTOM_OPENAI">Custom OpenAI-Compatible (Xiaomi MIMO, DeepSeek, OpenRouter, Groq, Ollama)</option>
+                  </select>
+                </div>
+
+                {/* Model Name */}
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">
+                    Tên Mô Hình (Model ID)
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={modelName}
+                    onChange={(e) => setModelName(e.target.value)}
+                    placeholder="Ví dụ: mimo-v1, gpt-4o-mini, gemini-2.5-flash..."
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 font-mono font-bold text-slate-900 focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* API Key */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="font-semibold text-slate-700">
+                    Khóa API Bí Mật (API Key)
+                  </label>
+                  <span className="text-[11px] text-slate-400">
+                    {aiProvider === 'GEMINI' ? 'Để trống nếu dùng khóa máy chủ mặc định' : 'Bắt buộc khi dùng nhà cung cấp ngoài'}
+                  </span>
+                </div>
+                <div className="relative">
+                  <input
+                    type={showKey ? 'text' : 'password'}
+                    value={inputApiKey}
+                    onChange={(e) => setInputApiKey(e.target.value)}
+                    placeholder={
+                      aiProvider === 'GEMINI'
+                        ? 'AIzaSy... (Để trống để dùng khóa máy chủ)'
+                        : aiProvider === 'ANTHROPIC'
+                        ? 'sk-ant-...'
+                        : 'sk-sjozamgxafx93e1ut7zizxetbf653tx3amguacizr6c40jby (sk-...)'
+                    }
+                    className="w-full pl-3 pr-10 py-2.5 rounded-xl border border-slate-200 font-mono text-xs text-slate-900 focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowKey(!showKey)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                  >
+                    {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Base URL (for Custom / OpenAI-Compatible endpoints) */}
+              {(aiProvider === 'CUSTOM_OPENAI' || aiProvider === 'OPENAI' || aiProvider === 'ANTHROPIC') && (
+                <div className="space-y-1.5">
+                  <label className="block font-semibold text-slate-700">
+                    Địa Chỉ Máy Chủ API (Base URL Endpoint)
+                  </label>
+                  <input
+                    type="url"
+                    value={baseUrl}
+                    onChange={(e) => setBaseUrl(e.target.value)}
+                    placeholder="https://api.openai.com/v1 hoặc https://api.xiaomimimo.com/v1..."
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 font-mono text-xs text-slate-900 focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  />
+                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                    <span className="text-[10px] text-slate-400">Gợi ý nhanh URL:</span>
+                    <button
+                      type="button"
+                      onClick={() => setBaseUrl('https://api.openai.com/v1')}
+                      className="text-[10px] font-mono bg-slate-100 hover:bg-slate-200 px-2 py-0.5 rounded text-slate-700"
+                    >
+                      OpenAI (https://api.openai.com/v1)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBaseUrl('https://api.xiaomimimo.com/v1')}
+                      className="text-[10px] font-mono bg-orange-50 hover:bg-orange-100 px-2 py-0.5 rounded text-orange-700 border border-orange-200"
+                    >
+                      Xiaomi MIMO (https://api.xiaomimimo.com/v1)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBaseUrl('https://api.deepseek.com/v1')}
+                      className="text-[10px] font-mono bg-blue-50 hover:bg-blue-100 px-2 py-0.5 rounded text-blue-700 border border-blue-200"
+                    >
+                      DeepSeek (https://api.deepseek.com/v1)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBaseUrl('https://openrouter.ai/api/v1')}
+                      className="text-[10px] font-mono bg-purple-50 hover:bg-purple-100 px-2 py-0.5 rounded text-purple-700 border border-purple-200"
+                    >
+                      OpenRouter (https://openrouter.ai/api/v1)
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Temperature Slider */}
+              <div className="space-y-1 pt-1">
+                <div className="flex items-center justify-between">
+                  <label className="font-semibold text-slate-700">Độ Sáng Tạo & Đa Dạng Văn Phong (Temperature)</label>
+                  <span className="font-mono font-bold text-purple-700">{temperature}</span>
+                </div>
+                <input
+                  type="range"
+                  min="0.0"
+                  max="1.0"
+                  step="0.05"
+                  value={temperature}
+                  onChange={(e) => setTemperature(parseFloat(e.target.value))}
+                  className="w-full accent-purple-600"
+                />
+                <div className="flex items-center justify-between text-[10px] text-slate-400">
+                  <span>0.0 (Chuẩn mực, tối giản)</span>
+                  <span>0.7 (Cân bằng khuyên dùng)</span>
+                  <span>1.0 (Phong phú, giàu cảm xúc)</span>
+                </div>
+              </div>
+
+              {/* Test Result Box */}
+              {testResult && (
+                <div
+                  className={`p-3.5 rounded-2xl border text-xs flex items-start space-x-2.5 ${
+                    testResult.success
+                      ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
+                      : 'bg-rose-50 text-rose-900 border-rose-200'
+                  }`}
+                >
+                  {testResult.success ? (
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                  ) : (
+                    <XCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                  )}
+                  <div className="space-y-1 flex-1 min-w-0">
+                    <p className="font-bold">
+                      {testResult.success
+                        ? `Kết nối thành công (${testResult.latencyMs}ms)! ${testResult.provider || ''} (${testResult.model || ''})`
+                        : 'Kiểm tra kết nối thất bại'}
+                    </p>
+                    <p className="text-[11px] leading-relaxed break-words font-mono">
+                      {testResult.message || testResult.error}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={handleTestAiConnection}
+                  disabled={isTestingAi}
+                  className="inline-flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-4 py-2.5 rounded-xl border border-slate-300 transition-colors disabled:opacity-50 cursor-pointer"
+                >
+                  <Zap className={`w-4 h-4 text-amber-500 ${isTestingAi ? 'animate-spin' : ''}`} />
+                  <span>{isTestingAi ? 'Đang gửi gói tin test...' : '⚡ Kiểm Tra Kết Nối AI (Test)'}</span>
+                </button>
+
+                <button
+                  type="submit"
+                  className="inline-flex items-center space-x-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold px-6 py-2.5 rounded-xl shadow-md shadow-purple-600/20 transition-all cursor-pointer"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>Lưu Cấu Hình AI</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* Backup & Restore & Data Management */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Backup & Restore */}
             <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-4 flex flex-col justify-between">
               <div>
@@ -852,7 +1230,7 @@ export default function SettingsPage() {
                     <button
                       type="button"
                       onClick={handleExportBackup}
-                      className="inline-flex items-center space-x-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-4 py-2 rounded-xl font-bold transition-colors"
+                      className="inline-flex items-center space-x-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-4 py-2 rounded-xl font-bold transition-colors cursor-pointer"
                     >
                       <Download className="w-4 h-4" />
                       <span>Xuất File JSON Toàn Lớp</span>
@@ -872,64 +1250,58 @@ export default function SettingsPage() {
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Data Environment & Sandbox Controls (Production vs Demo) */}
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-4">
-            <div className="flex items-center space-x-2.5 border-b border-slate-100 pb-3">
-              <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
-                <Users className="w-5 h-5" />
-              </div>
+            {/* Sandbox / Clear Data */}
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-4 flex flex-col justify-between">
               <div>
-                <h2 className="text-base font-bold text-slate-900">Quản Lý Dữ Liệu Học Sinh Lớp {classInfo.name}</h2>
-                <p className="text-xs text-slate-500">
-                  Làm sạch danh sách học sinh để bắt đầu lớp học thực tế hoặc nạp lại dữ liệu mẫu để trải nghiệm.
-                </p>
+                <div className="flex items-center space-x-2.5 border-b border-slate-100 pb-3 mb-4">
+                  <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-base font-bold text-slate-900">Quản Lý Danh Sách Học Sinh</h2>
+                    <p className="text-xs text-slate-500">Khởi tạo lớp mới hoặc nạp dữ liệu mẫu.</p>
+                  </div>
+                </div>
+
+                <div className="space-y-2.5">
+                  <button
+                    type="button"
+                    onClick={handleClearStudents}
+                    className="w-full p-2.5 rounded-xl border border-rose-200 bg-rose-50/60 hover:bg-rose-100 text-left transition-all cursor-pointer flex items-center justify-between"
+                  >
+                    <div className="flex items-center space-x-2 text-rose-700 font-bold text-xs">
+                      <Trash2 className="w-4 h-4 shrink-0" />
+                      <span>Xóa Học Sinh Lớp {classInfo.name}</span>
+                    </div>
+                    <span className="text-[10px] text-rose-600">Bắt đầu lớp mới →</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleLoadDemo}
+                    className="w-full p-2.5 rounded-xl border border-blue-200 bg-blue-50/60 hover:bg-blue-100 text-left transition-all cursor-pointer flex items-center justify-between"
+                  >
+                    <div className="flex items-center space-x-2 text-blue-700 font-bold text-xs">
+                      <Sparkles className="w-4 h-4 shrink-0" />
+                      <span>Nạp 30 Học Sinh Mẫu (Demo)</span>
+                    </div>
+                    <span className="text-[10px] text-blue-600">Dùng thử →</span>
+                  </button>
+                </div>
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-              <button
-                type="button"
-                onClick={handleClearStudents}
-                className="p-4 rounded-2xl border border-rose-200 bg-rose-50/60 hover:bg-rose-100 text-left transition-all group cursor-pointer"
-              >
-                <div className="flex items-center space-x-2 text-rose-700 font-bold text-xs">
-                  <Trash2 className="w-4 h-4" />
-                  <span>Xóa Học Sinh Lớp {classInfo.name}</span>
-                </div>
-                <p className="text-[11px] text-rose-600/80 mt-1 leading-relaxed">
-                  Làm sạch danh sách ({students.length} em) để nhập danh sách lớp học thật từ Excel.
-                </p>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleLoadDemo}
-                className="p-4 rounded-2xl border border-blue-200 bg-blue-50/60 hover:bg-blue-100 text-left transition-all group cursor-pointer"
-              >
-                <div className="flex items-center space-x-2 text-blue-700 font-bold text-xs">
-                  <Sparkles className="w-4 h-4" />
-                  <span>Nạp 30 Học Sinh Mẫu (Demo)</span>
-                </div>
-                <p className="text-[11px] text-blue-600/80 mt-1 leading-relaxed">
-                  Nạp lại 30 học sinh mẫu minh họa để thử nghiệm tính năng đánh giá TT27.
-                </p>
-              </button>
-
-              <button
-                type="button"
-                onClick={handleResetDefault}
-                className="p-4 rounded-2xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-left transition-all group cursor-pointer"
-              >
-                <div className="flex items-center space-x-2 text-slate-700 font-bold text-xs">
-                  <RotateCcw className="w-4 h-4" />
-                  <span>Đặt Lại Cài Đặt Gốc</span>
-                </div>
-                <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
-                  Đặt lại toàn bộ dữ liệu ứng dụng về trạng thái ban đầu.
-                </p>
-              </button>
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                <span className="text-[11px] text-slate-400">Khôi phục cài đặt gốc:</span>
+                <button
+                  type="button"
+                  onClick={handleResetDefault}
+                  className="text-slate-500 hover:text-slate-900 font-bold text-xs flex items-center gap-1 cursor-pointer"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Đặt lại toàn bộ</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

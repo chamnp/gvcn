@@ -1,20 +1,22 @@
-import { GoogleGenAI } from '@google/genai';
-import { Student, SubjectAssessment, TraitAssessment } from '@/types';
+import { Student, SubjectAssessment, TraitAssessment, StarLog, DailyAttendance, AIConfig } from '@/types';
 import { generateSmartComment } from './comment-bank';
 
 export interface GenerateCommentRequest {
   student: Student;
   subjects: SubjectAssessment[];
   traits: TraitAssessment[];
+  starLogs?: StarLog[];
+  attendances?: DailyAttendance[];
+  aiConfig?: AIConfig;
   apiKey?: string;
   tone?: 'standard' | 'encouraging' | 'detailed' | 'concise';
   extraNotes?: string;
 }
 
 export async function generateStudentAIComment(req: GenerateCommentRequest): Promise<string> {
-  const { student, subjects, traits, apiKey, tone = 'standard', extraNotes } = req;
+  const { student, subjects, traits, starLogs, attendances, aiConfig, apiKey, tone = 'standard', extraNotes } = req;
 
-  // Gọi qua API Route để bảo mật API key server-side
+  // Gọi qua API Route để bảo mật API key và thực hiện gọi các AI provider
   try {
     const res = await fetch('/api/generate-comment', {
       method: 'POST',
@@ -25,7 +27,10 @@ export async function generateStudentAIComment(req: GenerateCommentRequest): Pro
         student,
         subjects,
         traits,
-        apiKey,
+        starLogs,
+        attendances,
+        aiConfig,
+        apiKey: aiConfig?.apiKey || apiKey,
         tone,
         extraNotes,
       }),

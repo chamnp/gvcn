@@ -21,6 +21,17 @@ export type AwardTitle =
 
 export type UserRole = 'ADMIN' | 'TEACHER' | 'ADMIN_TEACHER' | 'PENDING';
 
+export type AIProviderType = 'GEMINI' | 'OPENAI' | 'ANTHROPIC' | 'CUSTOM_OPENAI';
+
+export interface AIConfig {
+  provider: AIProviderType;
+  apiKey: string;
+  baseUrl?: string; // e.g. 'https://api.openai.com/v1', 'https://api.anthropic.com/v1', 'https://api.xiaomimimo.com/v1', 'https://api.deepseek.com/v1', 'https://openrouter.ai/api/v1'
+  modelName: string; // e.g. 'gemini-2.5-flash', 'gpt-4o-mini', 'claude-3-5-haiku-20241022', 'mimo-v1', 'deepseek-chat'
+  temperature?: number; // 0.0 - 1.0 (default 0.7)
+  maxTokens?: number;
+}
+
 export interface TeacherProfile {
   id: string;
   email: string;

@@ -19,7 +19,16 @@ import {
   TimetableSlot,
   DayOfWeek,
   SchoolInfo,
+  AIConfig,
 } from '@/types';
+
+export const DEFAULT_AI_CONFIG: AIConfig = {
+  provider: 'GEMINI',
+  apiKey: '',
+  baseUrl: '',
+  modelName: 'gemini-2.5-flash',
+  temperature: 0.7,
+};
 import {
   INITIAL_CLASS,
   INITIAL_SCHOOL_CLASSES,
@@ -69,6 +78,8 @@ interface AppContextType {
   starLogs: StarLog[];
   apiKey: string;
   setApiKey: (key: string) => void;
+  aiConfig: AIConfig;
+  setAiConfig: (config: AIConfig) => void;
 
   // Custom Subjects Management
   customSubjects: CustomSubject[];
@@ -182,7 +193,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [allTimetables, setAllTimetables] = useState<TimetableSlot[]>(
     INITIAL_TIMETABLE.map((t) => ({ ...t, classId: 'class-4a1' }))
   );
-  const [apiKey, setApiKey] = useState<string>('');
+  const [apiKey, setApiKeyState] = useState<string>('');
+  const [aiConfig, setAiConfigState] = useState<AIConfig>(DEFAULT_AI_CONFIG);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Active Class Info
@@ -299,7 +311,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (savedTt) setAllTimetables(JSON.parse(savedTt));
       if (savedCs) setCustomSubjects(JSON.parse(savedCs));
       if (savedHw) setAllHomeworks(JSON.parse(savedHw));
-      if (savedKey) setApiKey(savedKey);
+
+      const savedAiConfig = localStorage.getItem(STORAGE_PREFIX + 'aiConfig');
+      if (savedAiConfig) {
+        try {
+          const parsed = JSON.parse(savedAiConfig);
+          setAiConfigState(parsed);
+          if (parsed.apiKey) setApiKeyState(parsed.apiKey);
+        } catch (e) {}
+      } else if (savedKey) {
+        setApiKeyState(savedKey);
+        setAiConfigState({ ...DEFAULT_AI_CONFIG, apiKey: savedKey });
+      }
 
       // Nếu chưa có bảng đánh giá, tự động sinh dữ liệu mẫu ban đầu cho các môn
       if (savedSubAss) {
@@ -894,6 +917,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     window.location.reload();
   };
 
+  const setApiKey = (key: string) => {
+    setApiKeyState(key);
+    setAiConfigState((prev) => {
+      const updated = { ...prev, apiKey: key };
+      try {
+        localStorage.setItem(STORAGE_PREFIX + 'apiKey', key);
+        localStorage.setItem(STORAGE_PREFIX + 'aiConfig', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  };
+
+  const setAiConfig = (config: AIConfig) => {
+    setAiConfigState(config);
+    setApiKeyState(config.apiKey);
+    try {
+      localStorage.setItem(STORAGE_PREFIX + 'aiConfig', JSON.stringify(config));
+      localStorage.setItem(STORAGE_PREFIX + 'apiKey', config.apiKey);
+    } catch (e) {}
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -935,6 +979,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         resetTimetableToStandard,
         apiKey,
         setApiKey,
+        aiConfig,
+        setAiConfig,
         addStudent,
         updateStudent,
         deleteStudent,
