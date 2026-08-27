@@ -17,6 +17,7 @@ import {
   Clock,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
+import { useAuth } from '@/lib/auth-context';
 import { TERMS, evaluateStudentTT27, getAwardBadgeClass } from '@/lib/tt27-engine';
 import { DAYS_OF_WEEK, PERIODS, getSubjectTheme } from '@/lib/timetable-data';
 import { DayOfWeek } from '@/types';
@@ -33,8 +34,10 @@ export default function DashboardPage() {
     starLogs,
     timetable,
   } = useAppStore();
+  const { profile } = useAuth();
 
   const termName = TERMS.find((t) => t.id === currentTerm)?.name || currentTerm;
+  const teacherDisplayName = profile?.fullName || classInfo.teacherName || 'Thầy/Cô';
 
   // Thống kê học sinh
   const totalStudents = students.length;
@@ -45,9 +48,9 @@ export default function DashboardPage() {
   // Điểm danh hôm nay
   const todayStr = new Date().toISOString().split('T')[0];
   const todayAtt = attendances.filter((a) => a.date === todayStr);
-  const presentCount = todayAtt.filter((a) => a.status === 'CO_MAT').length || totalStudents - 1;
-  const absentCount = todayAtt.filter((a) => a.status !== 'CO_MAT').length || 1;
-  const todayMeals = todayAtt.filter((a) => a.hasBoardingMeal).length || boardingCount - 1;
+  const presentCount = todayAtt.filter((a) => a.status === 'CO_MAT').length || (totalStudents > 0 ? totalStudents - 1 : 0);
+  const absentCount = todayAtt.filter((a) => a.status !== 'CO_MAT').length || (totalStudents > 0 ? 1 : 0);
+  const todayMeals = todayAtt.filter((a) => a.hasBoardingMeal).length || (boardingCount > 0 ? boardingCount - 1 : 0);
 
   // Phân loại kết quả học sinh kỳ này
   let xuatSacCount = 0;
@@ -84,41 +87,41 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       {/* Welcome Banner */}
-      <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-indigo-900 rounded-2xl p-6 text-white shadow-md relative overflow-hidden">
+      <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-indigo-900 rounded-3xl p-6 sm:p-7 text-white shadow-lg relative overflow-hidden">
         <div className="absolute right-0 top-0 bottom-0 opacity-10 flex items-center pr-8 pointer-events-none">
           <Award className="w-64 h-64 text-white" />
         </div>
-        <div className="relative z-10 max-w-3xl">
-          <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold mb-3 border border-white/20">
+        <div className="relative z-10 max-w-3xl space-y-2.5">
+          <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold border border-white/20">
             <span>📚 Kỳ làm việc:</span>
             <span className="text-yellow-300 font-bold">{termName}</span>
           </div>
-          <h1 className="text-2xl font-black tracking-tight mb-2">
-            Xin chào {classInfo.teacherName}! Chúc cô một ngày dạy học hiệu quả 🌟
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight leading-snug">
+            Xin chào {teacherDisplayName}! Chúc cô một ngày dạy học hiệu quả 🌟
           </h1>
-          <p className="text-blue-100 text-sm leading-relaxed mb-4">
+          <p className="text-blue-100 text-xs sm:text-sm leading-relaxed max-w-2xl">
             Hệ thống đang quản lý lớp <strong>{classInfo.name}</strong> ({classInfo.schoolName}). Các dữ liệu đánh giá Môn học, Năng lực, Phẩm chất theo chuẩn <strong>Thông tư 27/2020/TT-BGDĐT</strong> đã sẵn sàng để xuất báo cáo hoặc đồng bộ.
           </p>
-          <div className="flex flex-wrap gap-2.5">
+          <div className="flex flex-wrap gap-2.5 pt-1">
             <Link
               href="/assessment"
-              className="inline-flex items-center space-x-1.5 bg-white text-blue-800 font-bold text-xs px-4 py-2 rounded-xl shadow hover:bg-blue-50 transition-colors"
+              className="inline-flex items-center space-x-1.5 bg-white text-blue-900 font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs hover:bg-blue-50 transition-colors"
             >
-              <FileSpreadsheet className="w-4 h-4 text-blue-600" />
+              <FileSpreadsheet className="w-4 h-4 text-blue-600 shrink-0" />
               <span>Vào Bảng Đánh Giá TT27</span>
             </Link>
             <Link
               href="/ai-assistant"
-              className="inline-flex items-center space-x-1.5 bg-indigo-500/40 text-white font-semibold text-xs px-4 py-2 rounded-xl border border-white/30 backdrop-blur-sm hover:bg-indigo-500/60 transition-colors"
+              className="inline-flex items-center space-x-1.5 bg-indigo-500/40 text-white font-semibold text-xs px-4 py-2.5 rounded-xl border border-white/30 backdrop-blur-sm hover:bg-indigo-500/60 transition-colors"
             >
-              <Sparkles className="w-4 h-4 text-yellow-300" />
+              <Sparkles className="w-4 h-4 text-yellow-300 shrink-0" />
               <span>Sinh Nhận Xét Tự Động</span>
             </Link>
             <Link
               href="/attendance"
-              className="inline-flex items-center space-x-1.5 bg-indigo-500/40 text-white font-semibold text-xs px-4 py-2 rounded-xl border border-white/30 backdrop-blur-sm hover:bg-indigo-500/60 transition-colors"
+              className="inline-flex items-center space-x-1.5 bg-indigo-500/40 text-white font-semibold text-xs px-4 py-2.5 rounded-xl border border-white/30 backdrop-blur-sm hover:bg-indigo-500/60 transition-colors"
             >
-              <CalendarCheck className="w-4 h-4 text-emerald-300" />
+              <CalendarCheck className="w-4 h-4 text-emerald-300 shrink-0" />
               <span>Điểm Danh & Bán Trú</span>
             </Link>
           </div>
@@ -126,26 +129,26 @@ export default function DashboardPage() {
       </div>
 
       {/* Key Metric Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Sĩ số */}
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase">Sĩ số Lớp Học</p>
-            <h3 className="text-2xl font-black text-slate-900 mt-1">{totalStudents} <span className="text-sm font-normal text-slate-500">em</span></h3>
-            <p className="text-xs text-slate-500 mt-1">
-              Nam: <span className="font-semibold text-blue-600">{maleCount}</span> | Nữ: <span className="font-semibold text-pink-600">{femaleCount}</span>
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Sĩ số Lớp Học</p>
+            <h3 className="text-2xl font-black text-slate-900 mt-0.5">{totalStudents} <span className="text-xs font-normal text-slate-500">học sinh</span></h3>
+            <p className="text-xs text-slate-500 mt-1 truncate">
+              Nam: <span className="font-semibold text-blue-600">{maleCount}</span> • Nữ: <span className="font-semibold text-pink-600">{femaleCount}</span>
             </p>
           </div>
-          <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+          <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
             <Users className="w-6 h-6" />
           </div>
         </div>
 
         {/* Chuyên cần & Bán trú hôm nay */}
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase">Chuyên Cần Hôm Nay</p>
-            <h3 className="text-2xl font-black text-emerald-600 mt-1">
+        <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Chuyên Cần Hôm Nay</p>
+            <h3 className="text-2xl font-black text-emerald-600 mt-0.5">
               {presentCount}/{totalStudents}
             </h3>
             <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">

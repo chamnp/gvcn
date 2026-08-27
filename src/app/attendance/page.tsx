@@ -121,36 +121,44 @@ ${absentList ? `\nDanh sách học sinh vắng:\n${absentList}` : '\n(Cả lớp
 
       {/* Summary Counters */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase">Có Mặt</p>
-            <h3 className="text-2xl font-black text-emerald-600 mt-1">{presentCount}</h3>
+        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Có Mặt</p>
+            <h3 className="text-2xl font-black text-emerald-600 mt-0.5">{presentCount}</h3>
           </div>
-          <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+          <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+            <CheckCircle2 className="w-6 h-6" />
+          </div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase">Vắng Có Phép</p>
-            <h3 className="text-2xl font-black text-amber-600 mt-1">{excusedCount}</h3>
+        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Vắng Có Phép</p>
+            <h3 className="text-2xl font-black text-amber-600 mt-0.5">{excusedCount}</h3>
           </div>
-          <AlertTriangle className="w-8 h-8 text-amber-500" />
+          <div className="w-11 h-11 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+            <AlertTriangle className="w-6 h-6" />
+          </div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase">Vắng Không Phép</p>
-            <h3 className="text-2xl font-black text-rose-600 mt-1">{unexcusedCount}</h3>
+        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Vắng K.Phép</p>
+            <h3 className="text-2xl font-black text-rose-600 mt-0.5">{unexcusedCount}</h3>
           </div>
-          <XCircle className="w-8 h-8 text-rose-500" />
+          <div className="w-11 h-11 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
+            <XCircle className="w-6 h-6" />
+          </div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
-          <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase">Suất Bán Trú</p>
-            <h3 className="text-2xl font-black text-indigo-600 mt-1">{totalMeals}</h3>
+        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
+          <div className="min-w-0">
+            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Suất Bán Trú</p>
+            <h3 className="text-2xl font-black text-indigo-600 mt-0.5">{totalMeals}</h3>
           </div>
-          <Utensils className="w-8 h-8 text-indigo-500" />
+          <div className="w-11 h-11 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+            <Utensils className="w-6 h-6" />
+          </div>
         </div>
       </div>
 

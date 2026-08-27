@@ -126,7 +126,10 @@ export default function SeatingChartPage() {
               </div>
 
               {/* Seats in Row */}
-              <div className="grid grid-cols-8 gap-2.5 flex-1">
+              <div
+                className="grid gap-2.5 flex-1"
+                style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
+              >
                 {Array.from({ length: cols }).map((_, c) => {
                   const student = getStudentAt(r, c);
                   const isSelected = student && student.id === selectedStudentId;

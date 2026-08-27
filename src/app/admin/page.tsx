@@ -419,42 +419,42 @@ export default function AdminPortalPage() {
       {/* School Overview Metrics */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center space-x-3">
-          <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+          <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold shrink-0">
             <School className="w-5 h-5" />
           </div>
-          <div>
-            <p className="text-[11px] text-slate-500 font-semibold uppercase">Tổng Số Lớp</p>
-            <p className="text-xl font-black text-slate-900">{totalClasses} Lớp</p>
+          <div className="min-w-0">
+            <p className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">Tổng Số Lớp</p>
+            <p className="text-xl font-black text-slate-900 mt-0.5">{totalClasses} Lớp</p>
           </div>
         </div>
 
         <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center space-x-3">
-          <div className="w-11 h-11 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
+          <div className="w-11 h-11 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold shrink-0">
             <Users className="w-5 h-5" />
           </div>
-          <div>
-            <p className="text-[11px] text-slate-500 font-semibold uppercase">Tổng Số Cán Bộ / GV</p>
-            <p className="text-xl font-black text-slate-900">{totalTeachers} Người</p>
+          <div className="min-w-0">
+            <p className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">Tổng Số Cán Bộ / GV</p>
+            <p className="text-xl font-black text-slate-900 mt-0.5">{totalTeachers} Người</p>
           </div>
         </div>
 
         <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center space-x-3">
-          <div className="w-11 h-11 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
+          <div className="w-11 h-11 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold shrink-0">
             <Crown className="w-5 h-5" />
           </div>
-          <div>
-            <p className="text-[11px] text-slate-500 font-semibold uppercase">Ban Giám Hiệu / Admin</p>
-            <p className="text-xl font-black text-slate-900">{totalAdmins} Người</p>
+          <div className="min-w-0">
+            <p className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">Ban Giám Hiệu / Admin</p>
+            <p className="text-xl font-black text-slate-900 mt-0.5">{totalAdmins} Người</p>
           </div>
         </div>
 
         <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center space-x-3">
-          <div className={`w-11 h-11 rounded-xl flex items-center justify-center font-bold ${totalPending > 0 ? 'bg-rose-50 text-rose-600 animate-pulse' : 'bg-emerald-50 text-emerald-600'}`}>
+          <div className={`w-11 h-11 rounded-xl flex items-center justify-center font-bold shrink-0 ${totalPending > 0 ? 'bg-rose-50 text-rose-600 animate-pulse' : 'bg-emerald-50 text-emerald-600'}`}>
             <UserCheck className="w-5 h-5" />
           </div>
-          <div>
-            <p className="text-[11px] text-slate-500 font-semibold uppercase">Chờ Phê Duyệt</p>
-            <p className={`text-xl font-black ${totalPending > 0 ? 'text-rose-600' : 'text-slate-900'}`}>
+          <div className="min-w-0">
+            <p className="text-[11px] text-slate-500 font-semibold uppercase tracking-wider">Chờ Phê Duyệt</p>
+            <p className={`text-xl font-black mt-0.5 ${totalPending > 0 ? 'text-rose-600' : 'text-slate-900'}`}>
               {totalPending} Yêu cầu
             </p>
           </div>
