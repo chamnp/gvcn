@@ -98,6 +98,7 @@ export function TeamQuizBattleModal({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const victoryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
 
   // Available quiz packs
@@ -107,6 +108,52 @@ export function TeamQuizBattleModal({
     [allPacks, selectedPackId]
   );
   const currentQuestion: QuizQuestion | undefined = activePack.questions[currentQuestionIndex];
+
+  // Sync fullscreen state with browser native events
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      if (victoryTimeoutRef.current) clearTimeout(victoryTimeoutRef.current);
+    };
+  }, []);
+
+  // Modal In-Game Keyboard Shortcuts (Space: Timer, Right Arrow: Next, F: Fullscreen, 1-8: Point)
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleModalKeyDown = (e: KeyboardEvent) => {
+      // Don't intercept typing in inputs
+      if (["INPUT", "TEXTAREA"].includes((e.target as HTMLElement)?.tagName)) return;
+
+      if (e.key === " " || e.code === "Space") {
+        e.preventDefault();
+        if (gameState === "PLAYING") {
+          setIsTimerRunning((prev) => !prev);
+        }
+      } else if (e.key === "ArrowRight" || (e.key === "Enter" && isAnswerRevealed)) {
+        e.preventDefault();
+        if (gameState === "PLAYING") {
+          handleNextQuestion();
+        }
+      } else if (e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        toggleFullscreen();
+      } else if (gameState === "PLAYING" && /^[1-8]$/.test(e.key)) {
+        const teamNum = parseInt(e.key, 10);
+        if (teamNum <= numTeams) {
+          e.preventDefault();
+          handleAwardPointToTeam(teamNum);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleModalKeyDown);
+    return () => window.removeEventListener("keydown", handleModalKeyDown);
+  }, [isOpen, gameState, isAnswerRevealed, currentQuestionIndex, numTeams, activePack]);
 
   // Initialize Web Audio
   const playSound = (type: "tick" | "correct" | "wrong" | "victory" | "horn") => {
@@ -214,12 +261,10 @@ export function TeamQuizBattleModal({
   useEffect(() => {
     if (gameState === "PLAYING" && isTimerRunning && timeLeft > 0) {
       timerRef.current = setTimeout(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 4 && prev > 1) {
-            playSound("tick");
-          }
-          return prev - 1;
-        });
+        if (timeLeft <= 4 && timeLeft > 1) {
+          playSound("tick");
+        }
+        setTimeLeft((prev) => Math.max(0, prev - 1));
       }, 1000);
     } else if (gameState === "PLAYING" && timeLeft === 0 && isTimerRunning) {
       setIsTimerRunning(false);
@@ -249,7 +294,8 @@ export function TeamQuizBattleModal({
       // Check if team reached target
       const victor = updated.find((t) => t.id === teamId && t.score >= targetScore);
       if (victor) {
-        setTimeout(() => {
+        if (victoryTimeoutRef.current) clearTimeout(victoryTimeoutRef.current);
+        victoryTimeoutRef.current = setTimeout(() => {
           setWinningTeam(victor);
           setGameState("FINISHED");
           playSound("victory");
@@ -282,13 +328,22 @@ export function TeamQuizBattleModal({
 
   // Award stars to winning team
   const handleAwardStarsToWinningTeam = (starAmount: number) => {
-    if (!winningTeam || students.length === 0 || awardedStars) return;
+    if (!winningTeam || awardedStars) return;
+    if (students.length === 0) {
+      toast.info("Lớp học chưa có học sinh trong danh sách để cộng sao thi đua!");
+      return;
+    }
     const today = getLocalDateString();
     
     // Allocate students in proportion to number of teams
     const perTeam = Math.ceil(students.length / numTeams);
     const startIdx = (winningTeam.id - 1) * perTeam;
     const teamStudents = students.slice(startIdx, startIdx + perTeam);
+
+    if (teamStudents.length === 0) {
+      toast.info("Không tìm thấy học sinh nào thuộc đội này!");
+      return;
+    }
 
     teamStudents.forEach((st) => {
       addStarLog(
@@ -303,7 +358,7 @@ export function TeamQuizBattleModal({
 
     setAwardedStars(true);
     confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-    toast.success(`Đã cộng +${starAmount} Sao thi đua cho tất cả học sinh thuộc ${winningTeam.name}! 🌟`);
+    toast.success(`Đã cộng +${starAmount} Sao thi đua cho ${teamStudents.length} học sinh thuộc ${winningTeam.name}! 🌟`);
   };
 
   // AI Quiz Generator

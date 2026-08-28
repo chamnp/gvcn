@@ -622,13 +622,48 @@ export default function ClassroomToolsPage() {
                 <kbd className="bg-teal-800 text-[10px] px-1.5 py-0.2 rounded font-mono font-bold">3</kbd>
               </button>
               <button
-                onClick={() => setIsTrafficOpen(true)}
-                className="bg-rose-600 hover:bg-rose-500 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-colors cursor-pointer shadow-xs"
+                onClick={() => setIsTeamQuizOpen(true)}
+                className="bg-amber-500 hover:bg-amber-400 text-slate-950 px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center space-x-1.5 transition-colors cursor-pointer shadow-xs"
               >
-                <span>🚦 Đèn Hiệu</span>
-                <kbd className="bg-rose-800 text-[10px] px-1.5 py-0.2 rounded font-mono font-bold">4</kbd>
+                <span>🏎️ Game Đua Xe</span>
+                <kbd className="bg-amber-600/60 text-slate-950 text-[10px] px-1.5 py-0.2 rounded font-mono font-black">G</kbd>
               </button>
             </div>
+          </div>
+
+          {/* Featured Game Arena Banner in Desktop Mode */}
+          <div
+            onClick={() => setIsTeamQuizOpen(true)}
+            className="bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 rounded-3xl p-4 sm:p-5 text-slate-950 shadow-md cursor-pointer hover:shadow-lg transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-amber-400"
+          >
+            <div className="flex items-center space-x-3.5">
+              <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-3xl shadow-inner shrink-0">
+                🏎️
+              </div>
+              <div className="space-y-0.5">
+                <div className="flex items-center space-x-2">
+                  <span className="bg-white/30 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full uppercase">
+                    Game Học Tập Tương Tác
+                  </span>
+                  <kbd className="bg-slate-950/20 text-slate-950 text-[10px] font-black px-1.5 py-0.2 rounded font-mono">
+                    Phím G
+                  </kbd>
+                </div>
+                <h3 className="text-base sm:text-lg font-black tracking-tight">
+                  Đấu Trí Đua Xe Về Đích (2 – 8 Đội Thi Đấu Smart TV)
+                </h3>
+                <p className="text-xs text-slate-900 font-medium">
+                  Thi đấu trắc nghiệm Toán, Tiếng Việt, Tiếng Anh có tính giờ, âm thanh sống động và thưởng Sao tự động.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-2xl bg-slate-950 text-amber-300 font-black text-xs shadow-md shrink-0 hover:bg-slate-900 transition-colors"
+            >
+              <span>Vào Game Ngay →</span>
+            </button>
           </div>
 
           {/* 3 Categories Smart Action Hub */}
