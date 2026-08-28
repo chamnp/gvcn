@@ -162,6 +162,17 @@ export default function StudentsPage() {
       return;
     }
 
+    const cleanCode = formData.studentCode.trim().toLowerCase();
+    if (cleanCode) {
+      const isDuplicate = students.some(
+        (s) => (s.studentCode || '').trim().toLowerCase() === cleanCode && (!editingStudent || s.id !== editingStudent.id)
+      );
+      if (isDuplicate) {
+        toast.error(`Mã học sinh "${formData.studentCode}" đã tồn tại trong lớp! Vui lòng chọn mã khác.`);
+        return;
+      }
+    }
+
     const tags = formData.tagInput
       .split(',')
       .map((t) => t.trim())

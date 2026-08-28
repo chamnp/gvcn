@@ -44,7 +44,8 @@ export default function AssessmentPage() {
   const [activeTab, setActiveTab] = useState<'SUBJECTS' | 'QUALITIES' | 'COMPETENCIES' | 'SUMMARY'>('SUBJECTS');
   const termName = TERMS.find((t) => t.id === currentTerm)?.name || currentTerm;
 
-  const subjects = PRIMARY_SUBJECTS.filter((s) => s.applicableGrades.includes(classInfo.grade));
+  const currentGrade = classInfo?.grade || 4;
+  const subjects = PRIMARY_SUBJECTS.filter((s) => s.applicableGrades.includes(currentGrade));
   const qualities = TRAIT_DEFINITIONS.filter((t) => t.category === 'PHAM_CHAT');
   const generalCompetencies = TRAIT_DEFINITIONS.filter((t) => t.category === 'NL_CHUNG');
   const specialCompetencies = TRAIT_DEFINITIONS.filter((t) => t.category === 'NL_DAC_THU');
@@ -263,14 +264,21 @@ export default function AssessmentPage() {
                                 placeholder="Điểm"
                                 value={currentScore}
                                 onChange={(e) => {
-                                  const val = e.target.value === '' ? undefined : parseFloat(e.target.value);
-                                  updateSubjectAssessment(
-                                    st.id,
-                                    sub.code,
-                                    currentTerm,
-                                    currentLevel,
-                                    val
-                                  );
+                                  if (e.target.value === '') {
+                                    updateSubjectAssessment(st.id, sub.code, currentTerm, currentLevel, undefined);
+                                    return;
+                                  }
+                                  const parsed = parseFloat(e.target.value);
+                                  if (!isNaN(parsed)) {
+                                    const val = Math.min(10, Math.max(0, parsed));
+                                    updateSubjectAssessment(
+                                      st.id,
+                                      sub.code,
+                                      currentTerm,
+                                      currentLevel,
+                                      val
+                                    );
+                                  }
                                 }}
                                 className="w-14 px-1.5 py-1 text-center font-mono font-bold text-xs rounded border border-slate-200 focus:ring-1 focus:ring-blue-500 focus:outline-none bg-slate-50"
                               />

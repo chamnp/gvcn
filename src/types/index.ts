@@ -10,7 +10,7 @@ export type SubjectLevel = 'T' | 'H' | 'C'; // Hoàn thành tốt, Hoàn thành,
 
 export type TraitLevel = 'T' | 'Đ' | 'C'; // Tốt, Đạt, Cần cố gắng
 
-export type AttendanceStatus = 'CO_MAT' | 'VANG_CO_PHEP' | 'VANG_KHONG_PHEP';
+export type AttendanceStatus = 'CO_MAT' | 'VANG_CO_PHEP' | 'VANG_KHONG_PHEP' | 'MUON';
 
 export type AwardTitle = 
   | 'Học sinh Xuất sắc'

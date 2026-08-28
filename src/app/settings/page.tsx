@@ -440,14 +440,21 @@ export default function SettingsPage() {
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      const content = event.target?.result as string;
-      if (!content) return;
-      const res = importAllDataJSON(content);
-      if (res.success) {
-        toast.success('Khôi phục dữ liệu từ file sao lưu thành công! Đang tải lại trang...');
-        setTimeout(() => window.location.reload(), 1000);
-      } else {
-        toast.error(`Lỗi khi khôi phục dữ liệu: ${res.error}`);
+      try {
+        const content = event.target?.result as string;
+        if (!content) {
+          toast.error('File sao lưu rỗng!');
+          return;
+        }
+        const res = importAllDataJSON(content);
+        if (res.success) {
+          toast.success('Khôi phục dữ liệu từ file sao lưu thành công! Đang tải lại trang...');
+          setTimeout(() => window.location.reload(), 1000);
+        } else {
+          toast.error(`Lỗi khi khôi phục dữ liệu: ${res.error || 'Dữ liệu không đúng định dạng'}`);
+        }
+      } catch (err: any) {
+        toast.error(`Không thể đọc file sao lưu: ${err?.message || 'File JSON hỏng hoặc không đúng định dạng'}`);
       }
     };
     reader.readAsText(file);

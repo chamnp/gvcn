@@ -51,6 +51,16 @@ export function getAcademicYearByDate(date: Date = new Date()): string {
   }
 }
 
+/**
+ * Lấy ngày theo định dạng YYYY-MM-DD theo giờ địa phương (tránh lệch ngày UTC+7 khi thao tác từ 00:00 - 07:00)
+ */
+export function getLocalDateString(date: Date = new Date()): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export const PRIMARY_SUBJECTS: SubjectInfo[] = [
   { code: 'TIENG_VIET', name: 'Tiếng Việt', shortName: 'Tiếng Việt', hasPeriodicTest: true, applicableGrades: [1, 2, 3, 4, 5] },
   { code: 'TOAN', name: 'Toán', shortName: 'Toán', hasPeriodicTest: true, applicableGrades: [1, 2, 3, 4, 5] },

@@ -14,11 +14,12 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { AttendanceStatus } from '@/types';
+import { getLocalDateString } from '@/lib/tt27-engine';
 import { toast } from 'sonner';
 
 export default function AttendancePage() {
   const { students, attendances, updateAttendance, batchSetAttendance, classInfo } = useAppStore();
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+  const [selectedDate, setSelectedDate] = useState<string>(() => getLocalDateString());
 
   // Lọc điểm danh theo ngày đã chọn
   const dayAttendances = students.map((st) => {
@@ -34,6 +35,7 @@ export default function AttendancePage() {
   const presentCount = dayAttendances.filter((a) => a.status === 'CO_MAT').length;
   const excusedCount = dayAttendances.filter((a) => a.status === 'VANG_CO_PHEP').length;
   const unexcusedCount = dayAttendances.filter((a) => a.status === 'VANG_KHONG_PHEP').length;
+  const lateCount = dayAttendances.filter((a) => a.status === 'MUON').length;
   const totalMeals = dayAttendances.filter((a) => a.hasBoardingMeal).length;
 
   const handleStatusChange = (studentId: string, status: AttendanceStatus) => {
@@ -205,6 +207,16 @@ ${absentList ? `\nDanh sách học sinh vắng:\n${absentList}` : '\n(Cả lớp
                         }`}
                       >
                         Có phép
+                      </button>
+                      <button
+                        onClick={() => handleStatusChange(item.student.id, 'MUON')}
+                        className={`px-2.5 py-1 rounded-md font-bold text-[11px] transition-colors ${
+                          item.status === 'MUON'
+                            ? 'bg-blue-600 text-white shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        Đi muộn
                       </button>
                       <button
                         onClick={() => handleStatusChange(item.student.id, 'VANG_KHONG_PHEP')}

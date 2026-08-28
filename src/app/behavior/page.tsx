@@ -58,6 +58,7 @@ import {
 import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
+import { getLocalDateString } from '@/lib/tt27-engine';
 
 const COMMENT_SUGGESTIONS = [
   'Hôm nay em rất hăng hái phát biểu và tiếp thu bài nhanh.',
@@ -111,7 +112,7 @@ export default function BehaviorPage() {
   const [tableViewMode, setTableViewMode] = useState<'TABLE' | 'CARDS'>('TABLE');
 
   // Month selector for Leaderboard (default: current month 'YYYY-MM')
-  const currentMonthKey = new Date().toISOString().substring(0, 7);
+  const currentMonthKey = getLocalDateString().substring(0, 7);
   const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthKey);
 
   // Search & Filter State
@@ -121,7 +122,7 @@ export default function BehaviorPage() {
   // Modal State for Custom Daily Assessment & Comment
   const [isAssessModalOpen, setIsAssessModalOpen] = useState(false);
   const [selectedStudentForAssess, setSelectedStudentForAssess] = useState<Student | null>(null);
-  const [assessDate, setAssessDate] = useState(new Date().toISOString().split('T')[0]);
+  const [assessDate, setAssessDate] = useState(getLocalDateString());
   const [assessCategory, setAssessCategory] = useState<StarCriterionCategory>('Học tập');
   const [assessReason, setAssessReason] = useState('Phát biểu hăng hái xây dựng bài');
   const [assessPoints, setAssessPoints] = useState(1);
@@ -157,7 +158,7 @@ export default function BehaviorPage() {
 
   // Quick Award Handler
   const handleQuickAward = (student: Student, points: number, category: string, reason: string) => {
-    addStarLog(student.id, points, category, reason, undefined, new Date().toISOString().split('T')[0]);
+    addStarLog(student.id, points, category, reason, undefined, getLocalDateString());
 
     if (points > 0) {
       confetti({ particleCount: 60, spread: 50, origin: { y: 0.7 } });
@@ -170,7 +171,7 @@ export default function BehaviorPage() {
   // Open Full Assessment Modal
   const handleOpenAssessModal = (student: Student) => {
     setSelectedStudentForAssess(student);
-    setAssessDate(new Date().toISOString().split('T')[0]);
+    setAssessDate(getLocalDateString());
     const defaultCriterion = starCriteria[0] || { category: 'Học tập' as const, title: 'Phát biểu hăng hái', points: 1 };
     setAssessCategory(defaultCriterion.category);
     setAssessReason(defaultCriterion.title);
@@ -203,7 +204,7 @@ export default function BehaviorPage() {
   // Award Whole Class
   const handleAwardWholeClass = () => {
     if (confirm('Bạn có muốn cộng +1 ⭐ nề nếp cho TẤT CẢ học sinh trong lớp không?')) {
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = getLocalDateString();
       students.forEach((s) => {
         addStarLog(s.id, 1, 'Nề nếp', 'Cả lớp giữ nề nếp tốt', 'Tập thể gương mẫu, tích cực xây dựng bài', todayStr);
       });

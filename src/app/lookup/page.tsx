@@ -84,9 +84,9 @@ export default function StudentLookupPortal() {
     );
 
     const matchedStudent = classStudents.find((s) => {
-      const normName = normalizeText(s.fullName);
-      const normCode = normalizeText(s.studentCode);
-      return normName === normQuery || normCode === normQuery || normName.includes(normQuery);
+      const normName = normalizeText(s.fullName || '');
+      const normCode = normalizeText(s.studentCode || '');
+      return (normName && (normName === normQuery || normName.includes(normQuery))) || (normCode && normCode === normQuery);
     });
 
     if (!matchedStudent) {

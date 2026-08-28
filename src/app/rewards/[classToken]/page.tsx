@@ -234,12 +234,12 @@ export default function PublicClassRewardsPage({
                 </div>
                 <div className="pt-4 space-y-2">
                   <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-slate-300 to-slate-100 border-4 border-slate-300 text-slate-700 font-black text-xl flex items-center justify-center mx-auto shadow-inner">
-                    {leaderboard[1]?.student.fullName.split(' ').pop()?.substring(0, 2) || '2'}
+                    {leaderboard[1]?.student?.fullName ? leaderboard[1].student.fullName.split(' ').pop()?.substring(0, 2) : '2'}
                   </div>
                   <h4 className="font-black text-base text-slate-900 truncate">
-                    {leaderboard[1]?.student.fullName || 'Đang cập nhật'}
+                    {leaderboard[1]?.student?.fullName || 'Đang cập nhật'}
                   </h4>
-                  <p className="text-xs text-slate-500 font-mono">Mã: {leaderboard[1]?.student.studentCode || ''}</p>
+                  <p className="text-xs text-slate-500 font-mono">Mã: {leaderboard[1]?.student?.studentCode || ''}</p>
                 </div>
 
                 <div className="bg-slate-200/70 p-3 rounded-2xl space-y-0.5">
@@ -256,12 +256,12 @@ export default function PublicClassRewardsPage({
                 </div>
                 <div className="pt-5 space-y-2">
                   <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-amber-400 to-yellow-200 border-4 border-amber-400 text-amber-900 font-black text-2xl flex items-center justify-center mx-auto shadow-lg ring-4 ring-amber-200/50">
-                    {leaderboard[0]?.student.fullName.split(' ').pop()?.substring(0, 2) || '1'}
+                    {leaderboard[0]?.student?.fullName ? leaderboard[0].student.fullName.split(' ').pop()?.substring(0, 2) : '1'}
                   </div>
                   <h4 className="font-black text-lg text-slate-900 truncate">
-                    {leaderboard[0]?.student.fullName || 'Đang cập nhật'}
+                    {leaderboard[0]?.student?.fullName || 'Đang cập nhật'}
                   </h4>
-                  <p className="text-xs text-slate-600 font-mono font-bold">Mã: {leaderboard[0]?.student.studentCode || ''}</p>
+                  <p className="text-xs text-slate-600 font-mono font-bold">Mã: {leaderboard[0]?.student?.studentCode || ''}</p>
                 </div>
 
                 <div className="bg-amber-200/80 p-3.5 rounded-2xl space-y-0.5 border border-amber-300">
@@ -277,12 +277,12 @@ export default function PublicClassRewardsPage({
                 </div>
                 <div className="pt-4 space-y-2">
                   <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-amber-700 to-amber-500 border-4 border-amber-600/50 text-white font-black text-xl flex items-center justify-center mx-auto shadow-inner">
-                    {leaderboard[2]?.student.fullName.split(' ').pop()?.substring(0, 2) || '3'}
+                    {leaderboard[2]?.student?.fullName ? leaderboard[2].student.fullName.split(' ').pop()?.substring(0, 2) : '3'}
                   </div>
                   <h4 className="font-black text-base text-slate-900 truncate">
-                    {leaderboard[2]?.student.fullName || 'Đang cập nhật'}
+                    {leaderboard[2]?.student?.fullName || 'Đang cập nhật'}
                   </h4>
-                  <p className="text-xs text-slate-500 font-mono">Mã: {leaderboard[2]?.student.studentCode || ''}</p>
+                  <p className="text-xs text-slate-500 font-mono">Mã: {leaderboard[2]?.student?.studentCode || ''}</p>
                 </div>
 
                 <div className="bg-amber-100/70 p-3 rounded-2xl space-y-0.5">

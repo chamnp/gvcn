@@ -82,10 +82,15 @@ export default function SeatingChartPage() {
   const handleRandomizeSeats = () => {
     if (confirm('Bạn có muốn tự động xáo trộn và xếp lại vị trí chỗ ngồi cho cả lớp không?')) {
       const shuffled = [...students].sort(() => Math.random() - 0.5);
+      const maxDesks = rows * cols;
       shuffled.forEach((s, idx) => {
-        const r = Math.floor(idx / cols);
-        const c = idx % cols;
-        updateSeatPosition(s.id, r, c);
+        if (idx < maxDesks) {
+          const r = Math.floor(idx / cols);
+          const c = idx % cols;
+          updateSeatPosition(s.id, r, c);
+        } else {
+          updateSeatPosition(s.id, -1, -1);
+        }
       });
       toast.success('Đã xếp ngẫu nhiên sơ đồ lớp!');
     }
@@ -97,10 +102,15 @@ export default function SeatingChartPage() {
     const normal = students.filter((s) => !(s.healthNotes || '').toLowerCase().includes('cận'));
     
     const combined = [...nearsighted, ...normal];
+    const maxDesks = rows * cols;
     combined.forEach((s, idx) => {
-      const r = Math.floor(idx / cols);
-      const c = idx % cols;
-      updateSeatPosition(s.id, r, c);
+      if (idx < maxDesks) {
+        const r = Math.floor(idx / cols);
+        const c = idx % cols;
+        updateSeatPosition(s.id, r, c);
+      } else {
+        updateSeatPosition(s.id, -1, -1);
+      }
     });
     toast.success('Đã ưu tiên học sinh cận thị ngồi các bàn phía trên!');
   };
@@ -258,6 +268,26 @@ export default function SeatingChartPage() {
                   onClick={() => {
                     if (selectedStudentId === st.id) {
                       setSelectedStudentId(null);
+                    } else if (selectedStudentId) {
+                      const previouslySelected = students.find((s) => s.id === selectedStudentId);
+                      if (
+                        previouslySelected &&
+                        previouslySelected.seatRow !== undefined &&
+                        previouslySelected.seatRow >= 0 &&
+                        previouslySelected.seatCol !== undefined &&
+                        previouslySelected.seatCol >= 0
+                      ) {
+                        // Swap: seat the unassigned student in the previously selected seat, unseat the previously selected
+                        const targetRow = previouslySelected.seatRow;
+                        const targetCol = previouslySelected.seatCol;
+                        updateSeatPosition(previouslySelected.id, -1, -1);
+                        updateSeatPosition(st.id, targetRow, targetCol);
+                        toast.success(`Đã chuyển em ${st.fullName} vào bàn (${targetRow + 1}, ${targetCol + 1}) và đưa em ${previouslySelected.fullName} ra danh sách chờ!`);
+                        setSelectedStudentId(null);
+                      } else {
+                        setSelectedStudentId(st.id);
+                        toast.info(`Đang chọn ${st.fullName}. Click vào bàn trống để xếp chỗ.`);
+                      }
                     } else {
                       setSelectedStudentId(st.id);
                       toast.info(`Đang chọn ${st.fullName}. Click vào bàn trống để xếp chỗ.`);

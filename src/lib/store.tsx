@@ -1207,16 +1207,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const deleteClass = (classId: string) => {
     // Clean up all data belonging to this class
     const classStudentIds = new Set(
-      allStudents.filter((s) => (s.classId || 'class-4a1') === classId).map((s) => s.id)
+      allStudents.filter((s) => s.classId === classId).map((s) => s.id)
     );
-    setAllStudents((prev) => prev.filter((s) => (s.classId || 'class-4a1') !== classId));
+    setAllStudents((prev) => prev.filter((s) => s.classId !== classId));
     setStarLogs((prev) => prev.filter((s) => !classStudentIds.has(s.studentId)));
     setAttendances((prev) => prev.filter((a) => !classStudentIds.has(a.studentId)));
     setSubjectAssessments((prev) => prev.filter((a) => !classStudentIds.has(a.studentId)));
     setTraitAssessments((prev) => prev.filter((a) => !classStudentIds.has(a.studentId)));
     setTermSummaries((prev) => prev.filter((a) => !classStudentIds.has(a.studentId)));
-    setAllHomeworks((prev) => prev.filter((hw) => (hw.classId || 'class-4a1') !== classId));
-    setAllTimetables((prev) => prev.filter((t) => (t.classId || 'class-4a1') !== classId));
+    setAllHomeworks((prev) => prev.filter((hw) => hw.classId !== classId));
+    setAllTimetables((prev) => prev.filter((t) => t.classId !== classId));
+    setAllClassEvents((prev) => prev.filter((e) => e.classId !== classId));
+    setRewardProducts((prev) => prev.filter((p) => p.classId !== classId));
+    setRewardRedemptions((prev) => prev.filter((r) => r.classId !== classId));
 
     setSchoolClasses((prev) => prev.filter((c) => c.id !== classId));
     if (activeClassId === classId) {
@@ -1228,6 +1231,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     supabase.from('Student').delete().eq('classId', classId).then();
     supabase.from('HomeworkAssignment').delete().eq('classId', classId).then();
     supabase.from('TimetableSlot').delete().eq('classId', classId).then();
+    supabase.from('ClassEvent').delete().eq('classId', classId).then();
+    supabase.from('RewardProduct').delete().eq('classId', classId).then();
+    supabase.from('RewardRedemption').delete().eq('classId', classId).then();
     supabase.from('Class').delete().eq('id', classId).then();
   };
 
@@ -1446,14 +1452,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         fullName: newStudent.fullName,
         gender: newStudent.gender,
         dateOfBirth: newStudent.dateOfBirth,
-        parentName: newStudent.parentName,
-        parentPhone: newStudent.parentPhone,
+        birthPlace: newStudent.birthPlace || null,
+        ethnicity: newStudent.ethnicity || null,
+        address: newStudent.address || null,
+        parentName: newStudent.parentName || null,
+        parentPhone: newStudent.parentPhone || null,
         isBoarding: newStudent.isBoarding,
-        seatRow: newStudent.seatRow,
-        seatCol: newStudent.seatCol,
-        healthNotes: newStudent.healthNotes,
+        seatRow: newStudent.seatRow ?? null,
+        seatCol: newStudent.seatCol ?? null,
+        healthNotes: newStudent.healthNotes || null,
         tags: JSON.stringify(newStudent.tags || []),
+        avatarUrl: newStudent.avatarUrl || null,
         shareToken: newStudent.shareToken,
+        customPin: newStudent.customPin || null,
+        isActivated: newStudent.isActivated || false,
         createdAt: newStudent.createdAt,
         updatedAt: new Date().toISOString(),
       })
@@ -1528,7 +1540,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (mode === 'replace') {
       const otherClassStudents = allStudents.filter(
-        (s) => (s.classId || 'class-4a1') !== activeClassId
+        (s) => s.classId !== activeClassId
       );
       const newStudents: Student[] = imported.map((st, i) => {
         const studentId = `hs-${Date.now()}-${i}`;
@@ -1539,18 +1551,51 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           fullName: st.fullName || 'Học sinh mới',
           gender: st.gender || 'Nam',
           dateOfBirth: st.dateOfBirth || '2016-01-01',
+          birthPlace: st.birthPlace || '',
+          ethnicity: st.ethnicity || '',
+          address: st.address || '',
           parentName: st.parentName || '',
           parentPhone: st.parentPhone || '',
           isBoarding: st.isBoarding ?? true,
           seatRow: Math.floor(i / 8),
           seatCol: i % 8,
           healthNotes: st.healthNotes || '',
-          tags: [],
+          tags: st.tags || [],
           shareToken: `s-${studentId}-${Math.random().toString(36).substring(2, 8)}`,
           createdAt: new Date().toISOString(),
         };
       });
       setAllStudents([...otherClassStudents, ...newStudents]);
+
+      // Delete old students from Supabase and write new ones
+      supabase.from('Student').delete().eq('classId', activeClassId).then(() => {
+        const dbRows = newStudents.map((st) => ({
+          id: st.id,
+          classId: st.classId,
+          studentCode: st.studentCode,
+          fullName: st.fullName,
+          gender: st.gender,
+          dateOfBirth: st.dateOfBirth,
+          birthPlace: st.birthPlace || null,
+          ethnicity: st.ethnicity || null,
+          address: st.address || null,
+          parentName: st.parentName || null,
+          parentPhone: st.parentPhone || null,
+          isBoarding: st.isBoarding,
+          seatRow: st.seatRow ?? null,
+          seatCol: st.seatCol ?? null,
+          healthNotes: st.healthNotes || null,
+          tags: JSON.stringify(st.tags || []),
+          avatarUrl: st.avatarUrl || null,
+          shareToken: st.shareToken,
+          customPin: st.customPin || null,
+          isActivated: st.isActivated || false,
+          createdAt: st.createdAt,
+          updatedAt: new Date().toISOString(),
+        }));
+        supabase.from('Student').upsert(dbRows).then();
+      });
+
       return { added: newStudents.length, updated: 0 };
     }
 
@@ -1564,28 +1609,59 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           fullName: st.fullName || 'Học sinh mới',
           gender: st.gender || 'Nam',
           dateOfBirth: st.dateOfBirth || '2016-01-01',
+          birthPlace: st.birthPlace || '',
+          ethnicity: st.ethnicity || '',
+          address: st.address || '',
           parentName: st.parentName || '',
           parentPhone: st.parentPhone || '',
           isBoarding: st.isBoarding ?? true,
           seatRow: Math.floor((students.length + i) / 8),
           seatCol: (students.length + i) % 8,
           healthNotes: st.healthNotes || '',
-          tags: [],
+          tags: st.tags || [],
           shareToken: `s-${studentId}-${Math.random().toString(36).substring(2, 8)}`,
           createdAt: new Date().toISOString(),
         };
       });
       setAllStudents((prev) => [...prev, ...newStudents]);
+
+      // Persist to Supabase
+      const dbRows = newStudents.map((st) => ({
+        id: st.id,
+        classId: st.classId,
+        studentCode: st.studentCode,
+        fullName: st.fullName,
+        gender: st.gender,
+        dateOfBirth: st.dateOfBirth,
+        birthPlace: st.birthPlace || null,
+        ethnicity: st.ethnicity || null,
+        address: st.address || null,
+        parentName: st.parentName || null,
+        parentPhone: st.parentPhone || null,
+        isBoarding: st.isBoarding,
+        seatRow: st.seatRow ?? null,
+        seatCol: st.seatCol ?? null,
+        healthNotes: st.healthNotes || null,
+        tags: JSON.stringify(st.tags || []),
+        avatarUrl: st.avatarUrl || null,
+        shareToken: st.shareToken,
+        customPin: st.customPin || null,
+        isActivated: st.isActivated || false,
+        createdAt: st.createdAt,
+        updatedAt: new Date().toISOString(),
+      }));
+      supabase.from('Student').upsert(dbRows).then();
+
       return { added: newStudents.length, updated: 0 };
     }
 
     // Default: 'upsert' (Cập nhật thông tin nếu học sinh đã tồn tại, thêm mới nếu chưa có)
     setAllStudents((prev) => {
       const currentClassStudents = prev.filter(
-        (s) => (s.classId || 'class-4a1') === activeClassId
+        (s) => s.classId === activeClassId
       );
       const otherClassStudents = prev.filter(
-        (s) => (s.classId || 'class-4a1') !== activeClassId
+        (s) => s.classId !== activeClassId
       );
 
       const updatedClassStudents = [...currentClassStudents];
@@ -1618,6 +1694,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             fullName: st.fullName || existing.fullName,
             gender: st.gender || existing.gender,
             dateOfBirth: st.dateOfBirth || existing.dateOfBirth,
+            birthPlace: st.birthPlace !== undefined && st.birthPlace !== '' ? st.birthPlace : existing.birthPlace,
+            ethnicity: st.ethnicity !== undefined && st.ethnicity !== '' ? st.ethnicity : existing.ethnicity,
+            address: st.address !== undefined && st.address !== '' ? st.address : existing.address,
             parentName: st.parentName !== undefined && st.parentName !== '' ? st.parentName : existing.parentName,
             parentPhone: st.parentPhone !== undefined && st.parentPhone !== '' ? st.parentPhone : existing.parentPhone,
             isBoarding: st.isBoarding !== undefined ? st.isBoarding : existing.isBoarding,
@@ -1633,13 +1712,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             fullName: st.fullName || 'Học sinh mới',
             gender: st.gender || 'Nam',
             dateOfBirth: st.dateOfBirth || '2016-01-01',
+            birthPlace: st.birthPlace || '',
+            ethnicity: st.ethnicity || '',
+            address: st.address || '',
             parentName: st.parentName || '',
             parentPhone: st.parentPhone || '',
             isBoarding: st.isBoarding ?? true,
             seatRow: Math.floor(updatedClassStudents.length / 8),
             seatCol: updatedClassStudents.length % 8,
             healthNotes: st.healthNotes || '',
-            tags: [],
+            tags: st.tags || [],
             shareToken: `s-${studentId}-${Math.random().toString(36).substring(2, 8)}`,
             createdAt: new Date().toISOString(),
           };
@@ -1656,14 +1738,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         fullName: st.fullName,
         gender: st.gender,
         dateOfBirth: st.dateOfBirth,
-        parentName: st.parentName,
-        parentPhone: st.parentPhone,
+        birthPlace: st.birthPlace || null,
+        ethnicity: st.ethnicity || null,
+        address: st.address || null,
+        parentName: st.parentName || null,
+        parentPhone: st.parentPhone || null,
         isBoarding: st.isBoarding,
-        seatRow: st.seatRow,
-        seatCol: st.seatCol,
-        healthNotes: st.healthNotes,
+        seatRow: st.seatRow ?? null,
+        seatCol: st.seatCol ?? null,
+        healthNotes: st.healthNotes || null,
         tags: JSON.stringify(st.tags || []),
+        avatarUrl: st.avatarUrl || null,
         shareToken: st.shareToken,
+        customPin: st.customPin || null,
+        isActivated: st.isActivated || false,
         createdAt: st.createdAt,
         updatedAt: new Date().toISOString(),
       }));
@@ -2011,20 +2099,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ];
     });
 
-    // Live API Write to Supabase
+    // Live API Write to Supabase with safe merge
+    const existing = termSummaries.find((s) => s.studentId === studentId && s.term === term);
     supabase
       .from('TermSummary')
       .upsert({
         id: recordId,
         studentId,
         term,
-        overallLearningLevel: partial.overallLearningLevel,
-        overallTraitsLevel: partial.overallTraitsLevel,
-        awardTitle: partial.awardTitle,
-        awardDetail: partial.awardDetail,
-        teacherComment: partial.teacherComment,
-        promotedToNextGrade: partial.promotedToNextGrade,
-        summerRemediation: partial.summerRemediation,
+        overallLearningLevel: partial.overallLearningLevel ?? existing?.overallLearningLevel ?? 'H',
+        overallTraitsLevel: partial.overallTraitsLevel ?? existing?.overallTraitsLevel ?? 'Đ',
+        awardTitle: partial.awardTitle ?? existing?.awardTitle ?? 'Hoàn thành chương trình lớp học',
+        awardDetail: partial.awardDetail ?? existing?.awardDetail ?? null,
+        teacherComment: partial.teacherComment ?? existing?.teacherComment ?? '',
+        promotedToNextGrade: partial.promotedToNextGrade ?? existing?.promotedToNextGrade ?? true,
+        summerRemediation: partial.summerRemediation ?? existing?.summerRemediation ?? false,
         updatedAt: new Date().toISOString(),
       })
       .then();

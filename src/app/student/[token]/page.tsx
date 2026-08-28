@@ -45,7 +45,7 @@ import {
   Crown,
 } from 'lucide-react';
 import { useAppStore, getDefaultPinForStudent } from '@/lib/store';
-import { TERMS, PRIMARY_SUBJECTS, TRAIT_DEFINITIONS } from '@/lib/tt27-engine';
+import { TERMS, PRIMARY_SUBJECTS, TRAIT_DEFINITIONS, getLocalDateString } from '@/lib/tt27-engine';
 import { getSubjectTheme, DAYS_OF_WEEK, PERIODS } from '@/lib/timetable-data';
 import { TermType, DayOfWeek, ClassEvent, RewardProduct, RedemptionItem } from '@/types';
 import { toast } from 'sonner';
@@ -153,7 +153,7 @@ export default function StudentPrivateReportPage({
   const [isCriteriaModalOpen, setIsCriteriaModalOpen] = useState(false);
   const [shopCategoryFilter, setShopCategoryFilter] = useState('ALL');
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getLocalDateString();
   const currentMonthKey = todayStr.substring(0, 7); // 'YYYY-MM'
 
   useEffect(() => {

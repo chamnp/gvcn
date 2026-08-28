@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { getSubjectTheme, DAYS_OF_WEEK, PERIODS } from '@/lib/timetable-data';
+import { getLocalDateString } from '@/lib/tt27-engine';
 import { DayOfWeek, ClassEvent, ClassEventType } from '@/types';
 import { toast } from 'sonner';
 
@@ -156,7 +157,7 @@ export default function PublicClassHomeworkPortal({
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [eventFilter, setEventFilter] = useState<'ALL' | 'EXAM' | 'MEETING' | 'FESTIVAL'>('ALL');
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getLocalDateString();
 
   useEffect(() => {
     try {

@@ -26,6 +26,7 @@ import { useAppStore } from '@/lib/store';
 import { HomeworkAssignment, CustomSubject } from '@/types';
 import { DEFAULT_SUBJECT_THEMES, getSubjectTheme } from '@/lib/timetable-data';
 import { toast } from 'sonner';
+import { getLocalDateString } from '@/lib/tt27-engine';
 import Link from 'next/link';
 
 export default function HomeworkPage() {
@@ -60,8 +61,8 @@ export default function HomeworkPage() {
     title: '',
     description: '',
     attachmentUrl: '',
-    assignedDate: new Date().toISOString().split('T')[0],
-    dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+    assignedDate: getLocalDateString(),
+    dueDate: getLocalDateString(new Date(Date.now() + 86400000)),
     reminderNotes: '',
   });
 
