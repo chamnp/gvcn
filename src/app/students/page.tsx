@@ -63,6 +63,11 @@ export default function StudentsPage() {
   const [genderFilter, setGenderFilter] = useState<'ALL' | 'Nam' | 'Nữ'>('ALL');
   const [boardingFilter, setBoardingFilter] = useState<'ALL' | 'YES' | 'NO'>('ALL');
   const [activationFilter, setActivationFilter] = useState<'ALL' | 'ACTIVATED' | 'PENDING'>('ALL');
+  const [selectedTeamFilter, setSelectedTeamFilter] = useState<'ALL' | number>('ALL');
+
+  // Pagination State
+  const [pageSize, setPageSize] = useState<number | 'ALL'>(15);
+  const [currentPage, setCurrentPage] = useState<number>(1);
 
   // Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -70,6 +75,17 @@ export default function StudentsPage() {
   const [selectedStudentDetail, setSelectedStudentDetail] = useState<Student | null>(null);
   const [selectedStudentForNotes, setSelectedStudentForNotes] = useState<Student | null>(null);
   const [isQrBatchModalOpen, setIsQrBatchModalOpen] = useState(false);
+
+  const numTeams = classInfo.numberOfTeams && classInfo.numberOfTeams >= 2 ? classInfo.numberOfTeams : 4;
+
+  const getStudentTeam = (st: Student, idx: number): number => {
+    const tagTeam = (st.tags || []).find((t) => t.includes('Tổ '));
+    if (tagTeam) {
+      const match = tagTeam.match(/Tổ\s*(\d)/i);
+      if (match && match[1]) return Number(match[1]);
+    }
+    return (idx % numTeams) + 1;
+  };
 
   // Form State for Add / Edit
   const [formData, setFormData] = useState<{
@@ -96,26 +112,39 @@ export default function StudentsPage() {
 
   // Filter students
   const filteredStudents = useMemo(() => {
-    return students.filter((s) => {
-      const matchesSearch =
-        s.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        s.studentCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (s.parentPhone && s.parentPhone.includes(searchTerm));
+    return students
+      .map((st, idx) => ({ ...st, teamId: getStudentTeam(st, idx) }))
+      .filter((s) => {
+        const matchesSearch =
+          s.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          s.studentCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (s.parentPhone && s.parentPhone.includes(searchTerm));
 
-      const matchesGender = genderFilter === 'ALL' || s.gender === genderFilter;
-      const matchesBoarding =
-        boardingFilter === 'ALL' ||
-        (boardingFilter === 'YES' && s.isBoarding) ||
-        (boardingFilter === 'NO' && !s.isBoarding);
+        const matchesGender = genderFilter === 'ALL' || s.gender === genderFilter;
+        const matchesBoarding =
+          boardingFilter === 'ALL' ||
+          (boardingFilter === 'YES' && s.isBoarding) ||
+          (boardingFilter === 'NO' && !s.isBoarding);
 
-      const matchesActivation =
-        activationFilter === 'ALL' ||
-        (activationFilter === 'ACTIVATED' && s.isActivated) ||
-        (activationFilter === 'PENDING' && !s.isActivated);
+        const matchesActivation =
+          activationFilter === 'ALL' ||
+          (activationFilter === 'ACTIVATED' && s.isActivated) ||
+          (activationFilter === 'PENDING' && !s.isActivated);
 
-      return matchesSearch && matchesGender && matchesBoarding && matchesActivation;
-    });
-  }, [students, searchTerm, genderFilter, boardingFilter, activationFilter]);
+        const matchesTeam =
+          selectedTeamFilter === 'ALL' || s.teamId === selectedTeamFilter;
+
+        return matchesSearch && matchesGender && matchesBoarding && matchesActivation && matchesTeam;
+      });
+  }, [students, searchTerm, genderFilter, boardingFilter, activationFilter, selectedTeamFilter, numTeams]);
+
+  // Paginated Students
+  const totalPages = pageSize === 'ALL' ? 1 : Math.ceil(filteredStudents.length / (pageSize as number)) || 1;
+  const paginatedStudents = useMemo(() => {
+    if (pageSize === 'ALL') return filteredStudents;
+    const start = (currentPage - 1) * (pageSize as number);
+    return filteredStudents.slice(start, start + (pageSize as number));
+  }, [filteredStudents, currentPage, pageSize]);
 
   // Statistics
   const activatedCount = students.filter((s) => s.isActivated).length;
@@ -508,24 +537,68 @@ export default function StudentsPage() {
       {/* 2. TAB 1: ROSTER LIST VIEW */}
       {activeTab === 'ROSTER' && (
         <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-5 sm:p-6 space-y-4">
-          {/* Search & Filter Controls */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Tìm theo tên, mã HS, SĐT..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-200 text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              />
+          {/* Team Filter Pills & Search */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 text-xs">
+            {/* Team Pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+              <button
+                onClick={() => {
+                  setSelectedTeamFilter('ALL');
+                  setCurrentPage(1);
+                }}
+                className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer shrink-0 ${
+                  selectedTeamFilter === 'ALL'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                🌟 Tất Cả ({students.length})
+              </button>
+
+              {Array.from({ length: numTeams }).map((_, i) => {
+                const teamId = i + 1;
+                return (
+                  <button
+                    key={teamId}
+                    onClick={() => {
+                      setSelectedTeamFilter(teamId);
+                      setCurrentPage(1);
+                    }}
+                    className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer shrink-0 ${
+                      selectedTeamFilter === teamId
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
+                  >
+                    Tổ {teamId}
+                  </button>
+                );
+              })}
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Search Box */}
+              <div className="relative flex-1 sm:w-48">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Tìm tên, mã HS, SĐT..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-slate-200 text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
+                />
+              </div>
+
               <select
                 value={genderFilter}
-                onChange={(e) => setGenderFilter(e.target.value as any)}
-                className="p-2 rounded-xl border border-slate-200 text-slate-700 font-semibold bg-white cursor-pointer"
+                onChange={(e) => {
+                  setGenderFilter(e.target.value as any);
+                  setCurrentPage(1);
+                }}
+                className="py-1.5 px-2.5 rounded-xl border border-slate-200 text-slate-700 font-semibold bg-white cursor-pointer"
               >
                 <option value="ALL">Tất cả giới tính</option>
                 <option value="Nam">Nam</option>
@@ -534,8 +607,11 @@ export default function StudentsPage() {
 
               <select
                 value={boardingFilter}
-                onChange={(e) => setBoardingFilter(e.target.value as any)}
-                className="p-2 rounded-xl border border-slate-200 text-slate-700 font-semibold bg-white cursor-pointer"
+                onChange={(e) => {
+                  setBoardingFilter(e.target.value as any);
+                  setCurrentPage(1);
+                }}
+                className="py-1.5 px-2.5 rounded-xl border border-slate-200 text-slate-700 font-semibold bg-white cursor-pointer"
               >
                 <option value="ALL">Tất cả bán trú</option>
                 <option value="YES">Ăn bán trú</option>
@@ -546,12 +622,13 @@ export default function StudentsPage() {
 
           {/* Table */}
           <div className="overflow-x-auto border border-slate-200 rounded-2xl shadow-xs">
-            <table className="w-full min-w-[700px] text-xs text-left border-collapse">
+            <table className="w-full min-w-[750px] text-xs text-left border-collapse">
               <thead className="bg-slate-50 text-slate-600 font-bold border-b border-slate-200">
                 <tr>
                   <th className="py-3 px-3 w-12 text-center">STT</th>
                   <th className="py-3 px-3">Mã HS</th>
                   <th className="py-3 px-4">Họ và Tên</th>
+                  <th className="py-3 px-3 text-center">Tổ</th>
                   <th className="py-3 px-3">Giới Tính</th>
                   <th className="py-3 px-3">Ngày Sinh</th>
                   <th className="py-3 px-3">Bán Trú</th>
@@ -560,77 +637,85 @@ export default function StudentsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {filteredStudents.length > 0 ? (
-                  filteredStudents.map((st, i) => (
-                    <tr key={st.id} className="hover:bg-slate-50/60 transition-colors">
-                      <td className="py-3 px-3 text-center font-bold text-slate-400">{i + 1}</td>
-                      <td className="py-3 px-3 font-mono font-bold text-blue-700">{st.studentCode}</td>
-                      <td className="py-3 px-4 font-bold text-slate-900">
-                        <div className="flex items-center space-x-2.5">
-                          {st.avatarUrl ? (
-                            <img src={st.avatarUrl} alt={st.fullName} className="w-7 h-7 rounded-lg object-cover" />
-                          ) : (
-                            <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-800 font-bold flex items-center justify-center text-xs">
-                              {st.fullName.split(' ').pop()?.substring(0, 1)}
-                            </div>
-                          )}
-                          <span>{st.fullName}</span>
-                        </div>
-                      </td>
-                      <td className="py-3 px-3">
-                        <span className={`px-2 py-0.5 rounded-md font-semibold text-[11px] ${st.gender === 'Nam' ? 'bg-blue-50 text-blue-700' : 'bg-pink-50 text-pink-700'}`}>
-                          {st.gender}
-                        </span>
-                      </td>
-                      <td className="py-3 px-3 text-slate-600 font-mono">{st.dateOfBirth}</td>
-                      <td className="py-3 px-3">
-                        {st.isBoarding ? (
-                          <span className="text-emerald-700 font-semibold flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5" /> Có
+                {paginatedStudents.length > 0 ? (
+                  paginatedStudents.map((st, i) => {
+                    const globalIdx = (currentPage - 1) * (pageSize === 'ALL' ? 0 : pageSize) + i + 1;
+                    return (
+                      <tr key={st.id} className="hover:bg-slate-50/60 transition-colors">
+                        <td className="py-3 px-3 text-center font-bold text-slate-400">{globalIdx}</td>
+                        <td className="py-3 px-3 font-mono font-bold text-blue-700">{st.studentCode}</td>
+                        <td className="py-3 px-4 font-bold text-slate-900">
+                          <div className="flex items-center space-x-2.5">
+                            {st.avatarUrl ? (
+                              <img src={st.avatarUrl} alt={st.fullName} className="w-7 h-7 rounded-lg object-cover" />
+                            ) : (
+                              <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-800 font-bold flex items-center justify-center text-xs">
+                                {st.fullName.split(' ').pop()?.substring(0, 1)}
+                              </div>
+                            )}
+                            <span>{st.fullName}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-3 text-center">
+                          <span className="bg-slate-100 text-slate-700 font-black text-[10px] px-2 py-0.5 rounded-md border border-slate-200">
+                            Tổ {st.teamId}
                           </span>
-                        ) : (
-                          <span className="text-slate-400 font-medium">Không</span>
-                        )}
-                      </td>
-                      <td className="py-3 px-4 text-slate-600">
-                        <div>
-                          <p className="font-semibold text-slate-800">{st.parentName || 'Chưa cập nhật'}</p>
-                          {st.parentPhone && <p className="text-[11px] font-mono text-slate-400">{st.parentPhone}</p>}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <div className="inline-flex items-center space-x-1">
-                          <button
-                            type="button"
-                            onClick={() => setSelectedStudentForNotes(st)}
-                            className="p-1.5 rounded-lg text-purple-600 hover:text-purple-700 hover:bg-purple-50 cursor-pointer"
-                            title="Nhật ký tiến bộ thường xuyên"
-                          >
-                            <Sparkles className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleOpenEdit(st)}
-                            className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-slate-100 cursor-pointer"
-                            title="Sửa hồ sơ"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(st.id, st.fullName)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer"
-                            title="Xóa học sinh"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className={`px-2 py-0.5 rounded-md font-semibold text-[11px] ${st.gender === 'Nam' ? 'bg-blue-50 text-blue-700' : 'bg-pink-50 text-pink-700'}`}>
+                            {st.gender}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-slate-600 font-mono">{st.dateOfBirth}</td>
+                        <td className="py-3 px-3">
+                          {st.isBoarding ? (
+                            <span className="text-emerald-700 font-semibold flex items-center gap-1">
+                              <CheckCircle2 className="w-3.5 h-3.5" /> Có
+                            </span>
+                          ) : (
+                            <span className="text-slate-400 font-medium">Không</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 text-slate-600">
+                          <div>
+                            <p className="font-semibold text-slate-800">{st.parentName || 'Chưa cập nhật'}</p>
+                            {st.parentPhone && <p className="text-[11px] font-mono text-slate-400">{st.parentPhone}</p>}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <div className="inline-flex items-center space-x-1">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedStudentForNotes(st)}
+                              className="p-1.5 rounded-lg text-purple-600 hover:text-purple-700 hover:bg-purple-50 cursor-pointer"
+                              title="Nhật ký tiến bộ thường xuyên"
+                            >
+                              <Sparkles className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEdit(st)}
+                              className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-slate-100 cursor-pointer"
+                              title="Sửa hồ sơ"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDelete(st.id, st.fullName)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer"
+                              title="Xóa học sinh"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 ) : (
                   <tr>
-                    <td colSpan={8} className="py-8 text-center text-slate-400">
+                    <td colSpan={9} className="py-8 text-center text-slate-400">
                       Không tìm thấy học sinh nào phù hợp.
                     </td>
                   </tr>
@@ -638,6 +723,35 @@ export default function StudentsPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Bar */}
+          {pageSize !== 'ALL' && totalPages > 1 && (
+            <div className="flex items-center justify-between text-xs pt-2">
+              <div className="text-slate-500">
+                Hiển thị <strong>{(currentPage - 1) * (pageSize as number) + 1} - {Math.min(currentPage * (pageSize as number), filteredStudents.length)}</strong> / <strong>{filteredStudents.length}</strong> học sinh
+              </div>
+
+              <div className="flex items-center space-x-1.5">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="px-2.5 py-1.5 rounded-xl border border-slate-200 disabled:opacity-40 hover:bg-slate-100 cursor-pointer font-bold"
+                >
+                  Trước
+                </button>
+                <span className="px-2.5 font-bold text-slate-800">
+                  Trang {currentPage} / {totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-2.5 py-1.5 rounded-xl border border-slate-200 disabled:opacity-40 hover:bg-slate-100 cursor-pointer font-bold"
+                >
+                  Sau
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
