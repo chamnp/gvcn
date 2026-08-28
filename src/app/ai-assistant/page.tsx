@@ -77,6 +77,7 @@ export default function AIAssistantPage() {
     setAiConfig,
     aiGenSettings,
     setAiGenSettings,
+    formativeNotes,
     apiKey,
   } = useAppStore();
 
@@ -202,6 +203,9 @@ export default function AIAssistantPage() {
     const tAss = traitAssessments.filter((a) => a.studentId === studentId && a.term === currentTerm);
     const studentStars = starLogs.filter((l) => l.studentId === studentId);
     const studentAtt = attendances.filter((a) => a.studentId === studentId);
+    const stNotes = formativeNotes.filter((n) => n.studentId === studentId);
+    const notesSummary = stNotes.length > 0 ? stNotes.map((n) => `[${n.title}: ${n.content}]`).join('; ') : '';
+    const combinedNotes = [customNotes[studentId], notesSummary ? `Ghi chú tiến bộ: ${notesSummary}` : ''].filter(Boolean).join('. ');
 
     try {
       const result = await generateStudentAICommentFull({
@@ -213,7 +217,7 @@ export default function AIAssistantPage() {
         aiConfig,
         aiGenSettings,
         apiKey,
-        extraNotes: customNotes[studentId],
+        extraNotes: combinedNotes,
       });
 
       updateTermSummary(studentId, currentTerm, { teacherComment: result.comment });
@@ -266,6 +270,9 @@ export default function AIAssistantPage() {
         const tAss = traitAssessments.filter((a) => a.studentId === student.id && a.term === currentTerm);
         const studentStars = starLogs.filter((l) => l.studentId === student.id);
         const studentAtt = attendances.filter((a) => a.studentId === student.id);
+        const stNotes = formativeNotes.filter((n) => n.studentId === student.id);
+        const notesSummary = stNotes.length > 0 ? stNotes.map((n) => `[${n.title}: ${n.content}]`).join('; ') : '';
+        const combinedNotes = [customNotes[student.id], notesSummary ? `Ghi chú tiến bộ: ${notesSummary}` : ''].filter(Boolean).join('. ');
 
         try {
           const result = await generateStudentAICommentFull({
@@ -277,7 +284,7 @@ export default function AIAssistantPage() {
             aiConfig,
             aiGenSettings,
             apiKey,
-            extraNotes: customNotes[student.id],
+            extraNotes: combinedNotes,
           });
 
           updateTermSummary(student.id, currentTerm, { teacherComment: result.comment });

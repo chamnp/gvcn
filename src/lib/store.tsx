@@ -578,6 +578,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (savedSummaries) {
         setTermSummaries(JSON.parse(savedSummaries));
       }
+
+      const savedNotes = localStorage.getItem(STORAGE_PREFIX + 'formativeNotes');
+      if (savedNotes) {
+        try { setFormativeNotes(JSON.parse(savedNotes)); } catch (e) {}
+      }
     } catch (e) {
       console.warn('Error reading from localStorage:', e);
     } finally {
@@ -1111,6 +1116,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     safeSet(STORAGE_PREFIX + 'timetable', JSON.stringify(allTimetables));
     safeSet(STORAGE_PREFIX + 'customSubjects', JSON.stringify(customSubjects));
     safeSet(STORAGE_PREFIX + 'homeworks', JSON.stringify(allHomeworks));
+    safeSet(STORAGE_PREFIX + 'formativeNotes', JSON.stringify(formativeNotes));
     safeSet(STORAGE_PREFIX + 'apiKey', apiKey);
   }, [
     isLoaded,
@@ -1130,6 +1136,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     allTimetables,
     customSubjects,
     allHomeworks,
+    formativeNotes,
     apiKey,
   ]);
 

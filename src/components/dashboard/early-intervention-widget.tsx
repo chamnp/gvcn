@@ -40,7 +40,11 @@ export function EarlyInterventionWidget({ alerts }: EarlyInterventionWidgetProps
 
   const handleCopyZaloNotice = (studentName: string, reason: string, id: string) => {
     const text = `Kính gửi Quý Phụ Huynh em ${studentName}, cô giáo chủ nhiệm xin gửi lời chào đến gia đình. Cô xin trao đổi nhanh về tình hình học tập và chuyên cần gần đây của con: ${reason}. Rất mong gia đình cùng phối hợp với cô để hỗ trợ con học tập tốt hơn ạ!`;
-    navigator.clipboard.writeText(text);
+    try {
+      if (navigator?.clipboard?.writeText) {
+        navigator.clipboard.writeText(text);
+      }
+    } catch (e) {}
     setCopiedId(id);
     toast.success('Đã sao chép tin nhắn Zalo gửi phụ huynh!');
     setTimeout(() => setCopiedId(null), 3000);
