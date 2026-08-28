@@ -25,6 +25,7 @@ import {
   RewardProduct,
   RewardRedemption,
   RedemptionItem,
+  FormativeNote,
 } from '@/types';
 
 export const DEFAULT_AI_GEN_SETTINGS: AIGenerationSettings = {
@@ -177,6 +178,11 @@ interface AppContextType {
   resetStudentPin: (studentId: string) => void;
   regenerateStudentToken: (studentId: string) => string;
 
+  // Formative Progress Notes
+  formativeNotes: FormativeNote[];
+  addFormativeNote: (note: Omit<FormativeNote, 'id' | 'createdAt'>) => void;
+  deleteFormativeNote: (id: string) => void;
+
   // Assessment Actions
   updateSubjectAssessment: (
     studentId: string,
@@ -286,6 +292,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [apiKey, setApiKeyState] = useState<string>('');
   const [aiConfig, setAiConfigState] = useState<AIConfig>(DEFAULT_AI_CONFIG);
   const [aiGenSettings, setAiGenSettingsState] = useState<AIGenerationSettings>(DEFAULT_AI_GEN_SETTINGS);
+  const [formativeNotes, setFormativeNotes] = useState<FormativeNote[]>([
+    {
+      id: 'fn-1',
+      studentId: 'st-01',
+      studentName: 'Nguyễn Văn An',
+      date: '2026-08-25',
+      category: 'TIEN_BO',
+      title: 'Hăng hái phát biểu và chữ viết tiến bộ',
+      content: 'Em An tuần này rất tự tin phát biểu xây dựng bài môn Toán, bài viết chính tả sạch đẹp không tẩy xóa.',
+      tags: ['Toán', 'Tiếng Việt', 'Tiến bộ'],
+      isImportant: true,
+      createdAt: '2026-08-25T08:30:00Z',
+    },
+    {
+      id: 'fn-2',
+      studentId: 'st-02',
+      studentName: 'Trần Thị Bảo',
+      date: '2026-08-26',
+      category: 'TIEN_BO',
+      title: 'Giúp đỡ bạn trong giờ thực hành',
+      content: 'Biết chủ động hướng dẫn bạn cùng bàn hoàn thành bài vẽ Mỹ thuật, tính tình chan hòa.',
+      tags: ['Mỹ thuật', 'Giúp bạn'],
+      isImportant: false,
+      createdAt: '2026-08-26T09:15:00Z',
+    },
+  ]);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Active Class Info
@@ -2729,6 +2761,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     supabase.from('ClassEvent').delete().eq('id', id).then();
   };
 
+  const addFormativeNote = (note: Omit<FormativeNote, 'id' | 'createdAt'>) => {
+    const newNote: FormativeNote = {
+      ...note,
+      id: `fn-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      createdAt: new Date().toISOString(),
+    };
+    setFormativeNotes((prev) => [newNote, ...prev]);
+    toast.success('Đã lưu ghi chú tiến bộ thường xuyên!');
+  };
+
+  const deleteFormativeNote = (id: string) => {
+    setFormativeNotes((prev) => prev.filter((n) => n.id !== id));
+    toast.success('Đã xóa ghi chú');
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -2803,6 +2850,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateStudentSecurity,
         resetStudentPin,
         regenerateStudentToken,
+        formativeNotes,
+        addFormativeNote,
+        deleteFormativeNote,
         updateSubjectAssessment,
         batchSetSubjectLevel,
         updateTraitAssessment,

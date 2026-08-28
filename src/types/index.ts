@@ -291,3 +291,39 @@ export interface RewardRedemption {
   requestedAt: string;
   deliveredAt?: string;
 }
+
+// ----------------------------------------------------
+// Formative Progress Notes & Early Intervention Types
+// ----------------------------------------------------
+export type FormativeNoteCategory = 'TIEN_BO' | 'CAN_CO_GANG' | 'SUC_KHOE' | 'TRAO_DOI_PH' | 'KHAC';
+
+export interface FormativeNote {
+  id: string;
+  studentId: string;
+  studentName?: string;
+  date: string; // YYYY-MM-DD
+  category: FormativeNoteCategory;
+  title: string;
+  content: string;
+  tags?: string[];
+  isImportant?: boolean;
+  createdAt: string;
+}
+
+export type AlertSeverity = 'CRITICAL' | 'WARNING' | 'INFO';
+export type AlertCategory = 'ATTENDANCE' | 'ACADEMIC' | 'BEHAVIOR' | 'HEALTH_SEATING';
+
+export interface EarlyInterventionAlert {
+  id: string;
+  studentId: string;
+  studentName: string;
+  studentAvatar?: string;
+  category: AlertCategory;
+  severity: AlertSeverity;
+  title: string;
+  reason: string;
+  metricValue?: string;
+  actionRecommendation: string;
+  actionType?: 'CONTACT_PARENT' | 'CHANGE_SEAT' | 'TUTORING' | 'REWARD_ENCOURAGE';
+}
+

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import {
   FileDown,
   FileSpreadsheet,
@@ -162,6 +163,34 @@ export default function ReportsPage() {
             <Download className="w-4 h-4" />
             <span>Tải File Nhập VnEdu / SMAS</span>
           </button>
+        </div>
+
+        {/* Card 3: Sổ Chủ Nhiệm Điện Tử (A4 PDF) */}
+        <div className="bg-gradient-to-br from-indigo-900 to-slate-900 text-white p-5 rounded-2xl shadow-md md:col-span-2 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start space-x-4">
+            <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl shadow-inner shrink-0">
+              📘
+            </div>
+            <div className="space-y-1">
+              <span className="inline-block bg-indigo-500/30 text-indigo-200 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider border border-indigo-400/30">
+                Chuẩn Mẫu Bộ GD&ĐT
+              </span>
+              <h3 className="text-base font-black text-white">
+                Sổ Chủ Nhiệm Lớp Điện Tử (Khổ A4 Chuẩn In Ấn)
+              </h3>
+              <p className="text-xs text-indigo-200/90 leading-relaxed max-w-xl">
+                Tổng hợp đầy đủ trang bìa, danh sách trích ngang học sinh, thời khóa biểu 2 buổi/ngày, bảng tổng hợp đánh giá TT27 và phần duyệt của Ban Giám Hiệu.
+              </p>
+            </div>
+          </div>
+
+          <Link
+            href="/reports/so-chu-nhiem"
+            className="inline-flex items-center justify-center space-x-2 bg-white hover:bg-indigo-50 text-indigo-950 font-black text-xs px-5 py-3 rounded-xl shadow-lg transition-all shrink-0 cursor-pointer"
+          >
+            <Printer className="w-4 h-4 text-indigo-600" />
+            <span>Mở & In Sổ Chủ Nhiệm (A4) →</span>
+          </Link>
         </div>
       </div>
 

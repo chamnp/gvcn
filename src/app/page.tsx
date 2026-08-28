@@ -42,6 +42,8 @@ import {
 import { DAYS_OF_WEEK, PERIODS, getSubjectTheme } from '@/lib/timetable-data';
 import { DayOfWeek, ClassEvent, ClassEventType } from '@/types';
 import { ProgressMeterWidget } from '@/components/assessment/progress-meter-widget';
+import { EarlyInterventionWidget } from '@/components/dashboard/early-intervention-widget';
+import { scanEarlyInterventionAlerts } from '@/lib/early-intervention';
 import { toast } from 'sonner';
 
 // Helper to calculate birthday information
@@ -200,6 +202,17 @@ export default function DashboardPage() {
       currentGrade
     );
   }, [students, subjectAssessments, traitAssessments, termSummaries, currentTerm, currentGrade]);
+
+  // Cảnh báo sớm học sinh cần hỗ trợ (Early Intervention Radar)
+  const earlyAlerts = useMemo(() => {
+    return scanEarlyInterventionAlerts(
+      students,
+      attendances,
+      subjectAssessments,
+      starLogs,
+      currentTerm
+    );
+  }, [students, attendances, subjectAssessments, starLogs, currentTerm]);
 
   // Tính toán sinh nhật học sinh
   const studentBirthdayList = useMemo(() => {
@@ -464,7 +477,7 @@ export default function DashboardPage() {
       </div>
 
       {/* 3.5. TT27 EVALUATION PROGRESS METER WIDGET */}
-      <div className="space-y-2">
+      <div className="space-y-4">
         <ProgressMeterWidget
           progress={progress}
           issues={issues}
@@ -475,6 +488,9 @@ export default function DashboardPage() {
           }}
           compact={false}
         />
+
+        {/* 3.6. EARLY INTERVENTION RADAR WIDGET */}
+        <EarlyInterventionWidget alerts={earlyAlerts} />
       </div>
 
       {/* 4. MAIN TWO-COLUMN LAYOUT */}

@@ -37,6 +37,7 @@ import { useAppStore, getDefaultPinForStudent } from '@/lib/store';
 import { Student, Gender } from '@/types';
 import { parseStudentExcelFile } from '@/lib/excel-import';
 import { downloadStudentTemplate, exportStudentList } from '@/lib/excel-export';
+import { FormativeNotesModal } from '@/components/students/formative-notes-modal';
 import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
 
@@ -66,6 +67,7 @@ export default function StudentsPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [selectedStudentDetail, setSelectedStudentDetail] = useState<Student | null>(null);
+  const [selectedStudentForNotes, setSelectedStudentForNotes] = useState<Student | null>(null);
   const [isQrBatchModalOpen, setIsQrBatchModalOpen] = useState(false);
 
   // Form State for Add / Edit
@@ -599,6 +601,14 @@ export default function StudentsPage() {
                         <div className="inline-flex items-center space-x-1">
                           <button
                             type="button"
+                            onClick={() => setSelectedStudentForNotes(st)}
+                            className="p-1.5 rounded-lg text-purple-600 hover:text-purple-700 hover:bg-purple-50 cursor-pointer"
+                            title="Nhật ký tiến bộ thường xuyên"
+                          >
+                            <Sparkles className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => handleOpenEdit(st)}
                             className="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-slate-100 cursor-pointer"
                             title="Sửa hồ sơ"
@@ -988,6 +998,13 @@ export default function StudentsPage() {
           </div>
         </div>
       )}
+
+      {/* Formative Progress Notes Modal */}
+      <FormativeNotesModal
+        student={selectedStudentForNotes}
+        isOpen={Boolean(selectedStudentForNotes)}
+        onClose={() => setSelectedStudentForNotes(null)}
+      />
     </div>
   );
 }
