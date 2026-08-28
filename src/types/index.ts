@@ -461,7 +461,7 @@ export interface ParentCommitteeMember {
   studentName: string;
 }
 
-export type MeetingSlideLayout = 'TITLE' | 'STATS' | 'BULLETS' | 'GRID_CARDS' | 'COMMITTEE' | 'SPEECH';
+export type MeetingSlideLayout = 'TITLE' | 'STATS' | 'BULLETS' | 'GRID_CARDS' | 'COMMITTEE' | 'SPEECH' | 'PHOTO_GALLERY' | 'SPLIT_IMAGE_TEXT';
 
 export interface MeetingAgendaTopic {
   id: string;
@@ -471,6 +471,8 @@ export interface MeetingAgendaTopic {
   layout: MeetingSlideLayout;
   talkingPoints: string[];
   importantNote?: string;
+  imageUrls?: string[]; // URLs hoặc Base64 ảnh minh họa
+  imageCaption?: string; // Chú thích ảnh
   isEnabled: boolean;
 }
 
