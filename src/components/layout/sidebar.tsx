@@ -40,6 +40,7 @@ export const NAV_ITEMS = [
   { href: '/timetable', label: 'Thời khóa biểu', icon: Calendar, badge: '2 Buổi' },
   { href: '/behavior', label: 'Nề nếp & Tích sao', icon: Award, badge: null },
   { href: '/assessment', label: 'Đánh giá TT 27', icon: FileSpreadsheet, badge: 'Cốt lõi' },
+  { href: '/matrix-exam', label: 'Ma trận Đề TT27', icon: BookOpen, badge: 'Mới' },
   { href: '/ai-assistant', label: 'Trợ lý Nhận xét AI', icon: Sparkles, badge: 'AI Pro' },
   { href: '/reports', label: 'Báo cáo & Xuất Excel', icon: FileDown, badge: null },
   { href: '/settings', label: 'Cài đặt & Lớp học', icon: Settings, badge: null },

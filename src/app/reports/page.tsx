@@ -17,6 +17,7 @@ import { useAppStore } from '@/lib/store';
 import { exportTT27Form1, exportVnEduTemplate } from '@/lib/excel-export';
 import { exportVnEduAssessmentExcel } from '@/lib/vnedu-export';
 import { AIClassDiagnosticModal } from '@/components/assessment/ai-class-diagnostic-modal';
+import { ZaloMessageGeneratorModal } from '@/components/parent/zalo-message-generator-modal';
 import {
   TERMS,
   PRIMARY_SUBJECTS,
@@ -26,7 +27,7 @@ import {
   validateTT27Assessments,
 } from '@/lib/tt27-engine';
 import { GuardrailsAlertModal } from '@/components/assessment/guardrails-alert-modal';
-import { ShieldAlert } from 'lucide-react';
+import { ShieldAlert, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function ReportsPage() {
@@ -42,6 +43,7 @@ export default function ReportsPage() {
   const [selectedStudentId, setSelectedStudentId] = useState<string>(students[0]?.id || '');
   const [isGuardrailsOpen, setIsGuardrailsOpen] = useState(false);
   const [isDiagnosticOpen, setIsDiagnosticOpen] = useState(false);
+  const [isZaloModalOpen, setIsZaloModalOpen] = useState(false);
   const termName = TERMS.find((t) => t.id === currentTerm)?.name || currentTerm;
 
   const subjects = PRIMARY_SUBJECTS.filter((s) => s.applicableGrades.includes(classInfo.grade));
@@ -119,6 +121,11 @@ export default function ReportsPage() {
       <AIClassDiagnosticModal
         isOpen={isDiagnosticOpen}
         onClose={() => setIsDiagnosticOpen(false)}
+      />
+
+      <ZaloMessageGeneratorModal
+        isOpen={isZaloModalOpen}
+        onClose={() => setIsZaloModalOpen(false)}
       />
 
       {/* Export Cards Grid */}
@@ -227,6 +234,63 @@ export default function ReportsPage() {
             <Printer className="w-4 h-4 text-indigo-600" />
             <span>Mở & In Sổ Chủ Nhiệm →</span>
           </Link>
+        </div>
+
+        {/* Card 5: In Giấy Khen & Bằng Khen 1-Click */}
+        <div className="bg-gradient-to-br from-amber-900 to-yellow-950 text-white p-5 rounded-2xl shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start space-x-4">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/30 backdrop-blur-md flex items-center justify-center text-2xl shadow-inner shrink-0">
+              📜
+            </div>
+            <div className="space-y-1">
+              <span className="inline-block bg-amber-500/30 text-amber-200 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider border border-amber-400/30">
+                1-Click In Toàn Lớp
+              </span>
+              <h3 className="text-base font-black text-white">
+                Giấy Khen & Bằng Khen Học Sinh Tiểu Học
+              </h3>
+              <p className="text-xs text-amber-200/90 leading-relaxed max-w-xl">
+                In màu khổ A4/A5 hàng loạt: Học sinh Xuất sắc, Học sinh Tiêu biểu, Kiện tướng Toán, Vở sạch chữ đẹp, Bông hoa việc tốt.
+              </p>
+            </div>
+          </div>
+
+          <Link
+            href="/reports/certificates"
+            className="inline-flex items-center justify-center space-x-2 bg-white hover:bg-amber-50 text-amber-950 font-black text-xs px-5 py-3 rounded-xl shadow-lg transition-all shrink-0 cursor-pointer"
+          >
+            <Printer className="w-4 h-4 text-amber-600" />
+            <span>Mở & In Giấy Khen →</span>
+          </Link>
+        </div>
+
+        {/* Card 6: Soạn Tin Nhắn Zalo / SMS Sổ Liên Lạc */}
+        <div className="bg-gradient-to-br from-cyan-900 to-blue-950 text-white p-5 rounded-2xl shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start space-x-4">
+            <div className="w-12 h-12 rounded-2xl bg-cyan-500/30 backdrop-blur-md flex items-center justify-center text-2xl shadow-inner shrink-0">
+              💬
+            </div>
+            <div className="space-y-1">
+              <span className="inline-block bg-cyan-500/30 text-cyan-200 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider border border-cyan-400/30">
+                Cá Nhân Hóa Từng Em
+              </span>
+              <h3 className="text-base font-black text-white">
+                Soạn Tin Nhắn Zalo Sổ Liên Lạc Điện Tử
+              </h3>
+              <p className="text-xs text-cyan-200/90 leading-relaxed max-w-xl">
+                Tự động tạo tin nhắn Zalo kèm điểm số, nhận xét, số sao và link tra cứu riêng có mã PIN cho từng phụ huynh.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsZaloModalOpen(true)}
+            className="inline-flex items-center justify-center space-x-2 bg-white hover:bg-cyan-50 text-cyan-950 font-black text-xs px-5 py-3 rounded-xl shadow-lg transition-all shrink-0 cursor-pointer"
+          >
+            <MessageSquare className="w-4 h-4 text-cyan-600" />
+            <span>Mở Soạn Tin Zalo →</span>
+          </button>
         </div>
 
         {/* Card 5: AI Class Diagnostic Banner */}

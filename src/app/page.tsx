@@ -45,6 +45,8 @@ import { ProgressMeterWidget } from '@/components/assessment/progress-meter-widg
 import { EarlyInterventionWidget } from '@/components/dashboard/early-intervention-widget';
 import { ConferenceSchedulerModal } from '@/components/conference/conference-scheduler-modal';
 import { AIClassDiagnosticModal } from '@/components/assessment/ai-class-diagnostic-modal';
+import { ClassMeetingPlannerModal } from '@/components/planner/class-meeting-planner-modal';
+import { ZaloMessageGeneratorModal } from '@/components/parent/zalo-message-generator-modal';
 import { scanEarlyInterventionAlerts } from '@/lib/early-intervention';
 import { toast } from 'sonner';
 
@@ -109,6 +111,8 @@ export default function DashboardPage() {
   const [isAddEventModalOpen, setIsAddEventModalOpen] = useState(false);
   const [isConferenceModalOpen, setIsConferenceModalOpen] = useState(false);
   const [isDiagnosticOpen, setIsDiagnosticOpen] = useState(false);
+  const [isPlannerModalOpen, setIsPlannerModalOpen] = useState(false);
+  const [isZaloModalOpen, setIsZaloModalOpen] = useState(false);
   const [copiedWishId, setCopiedWishId] = useState<string | null>(null);
   const [eventFilter, setEventFilter] = useState<'ALL' | 'UPCOMING' | 'EXAM' | 'MEETING' | 'FESTIVAL'>('ALL');
 
@@ -336,6 +340,20 @@ export default function DashboardPage() {
               className="inline-flex items-center justify-center space-x-1.5 bg-gradient-to-r from-pink-500 to-rose-600 text-white font-bold text-xs px-4 py-2.5 rounded-2xl shadow-sm hover:opacity-90 transition-all cursor-pointer w-full sm:w-auto"
             >
               <span>🤖 AI Chẩn Đoán Sư Phạm</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsPlannerModalOpen(true)}
+              className="inline-flex items-center justify-center space-x-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold text-xs px-4 py-2.5 rounded-2xl shadow-sm hover:opacity-90 transition-all cursor-pointer w-full sm:w-auto"
+            >
+              <span>📝 Soạn Sinh Hoạt Lớp</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsZaloModalOpen(true)}
+              className="inline-flex items-center justify-center space-x-1.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold text-xs px-4 py-2.5 rounded-2xl shadow-sm hover:opacity-90 transition-all cursor-pointer w-full sm:w-auto"
+            >
+              <span>💬 Soạn Tin Zalo PH</span>
             </button>
             <Link
               href="/attendance"
@@ -1231,6 +1249,18 @@ export default function DashboardPage() {
       <AIClassDiagnosticModal
         isOpen={isDiagnosticOpen}
         onClose={() => setIsDiagnosticOpen(false)}
+      />
+
+      {/* Class Meeting Planner Modal */}
+      <ClassMeetingPlannerModal
+        isOpen={isPlannerModalOpen}
+        onClose={() => setIsPlannerModalOpen(false)}
+      />
+
+      {/* Zalo Message Generator Modal */}
+      <ZaloMessageGeneratorModal
+        isOpen={isZaloModalOpen}
+        onClose={() => setIsZaloModalOpen(false)}
       />
     </div>
   );
