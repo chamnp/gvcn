@@ -284,6 +284,19 @@ export default function IEPManagementPage() {
                   </button>
 
                   <div className="flex items-center space-x-1.5">
+                    <select
+                      value={plan.status}
+                      onChange={(e) => {
+                        updateIEPPlan({ ...plan, status: e.target.value as any });
+                        toast.success(`Đã cập nhật trạng thái em ${plan.studentName}!`);
+                      }}
+                      className="text-[10px] font-black rounded-xl px-2 py-1 border border-slate-200 bg-slate-50 text-slate-700 hover:bg-white cursor-pointer transition-colors"
+                      title="Đổi nhanh trạng thái tiến độ"
+                    >
+                      <option value="DANG_TIEN_HANH">🔄 Đang Thực Hiện</option>
+                      <option value="DA_HOAN_THANH">✅ Đã Hoàn Thành</option>
+                      <option value="CAN_DIEU_CHINH">⚠️ Cần Điều Chỉnh</option>
+                    </select>
                     <button
                       type="button"
                       onClick={() => {

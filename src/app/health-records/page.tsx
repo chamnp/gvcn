@@ -3,6 +3,9 @@
 import React, { useState, useMemo } from 'react';
 import {
   Heart,
+  Table,
+  FileSpreadsheet,
+  Layers,
   Activity,
   Eye,
   AlertTriangle,
@@ -15,6 +18,7 @@ import {
 import { useAppStore } from '@/lib/store';
 import { HealthRecord } from '@/types';
 import { HealthRecordEditorModal } from '@/components/health/health-record-editor-modal';
+import { toast } from 'sonner';
 
 export default function HealthRecordsPage() {
   const { healthRecords, addHealthRecord, updateHealthRecord, deleteHealthRecord, students, classInfo } = useAppStore();
@@ -23,6 +27,8 @@ export default function HealthRecordsPage() {
   const [filterTab, setFilterTab] = useState<'ALL' | 'VISION' | 'ALLERGY' | 'BMI'>('ALL');
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<HealthRecord | null>(null);
+  const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
+  const [batchData, setBatchData] = useState<Record<string, { heightCm: number; weightKg: number; hasVision: boolean; allergy: string }>>({});
 
   const filteredRecords = useMemo(() => {
     return healthRecords.filter((r) => {
@@ -34,6 +40,69 @@ export default function HealthRecordsPage() {
       return true;
     });
   }, [healthRecords, searchQuery, filterTab]);
+
+  const handleOpenBatchModal = () => {
+    const initial: Record<string, { heightCm: number; weightKg: number; hasVision: boolean; allergy: string }> = {};
+    students.forEach((st) => {
+      const existing = healthRecords.find((r) => r.studentId === st.id);
+      initial[st.id] = {
+        heightCm: existing ? existing.heightCm : 135,
+        weightKg: existing ? existing.weightKg : 30,
+        hasVision: existing ? existing.hasVisionDefect : (st.healthNotes || '').toLowerCase().includes('cận'),
+        allergy: existing && existing.allergies ? existing.allergies.join(', ') : '',
+      };
+    });
+    setBatchData(initial);
+    setIsBatchModalOpen(true);
+  };
+
+  const handleSaveBatch = () => {
+    students.forEach((st) => {
+      const d = batchData[st.id];
+      if (!d) return;
+      const heightM = d.heightCm / 100;
+      const bmi = Number((d.weightKg / (heightM * heightM || 1)).toFixed(1));
+      let bmiCategory: any = 'BINH_THUONG';
+      if (bmi < 14) bmiCategory = 'SUY_DINH_DUONG';
+      else if (bmi >= 19 && bmi < 22) bmiCategory = 'NGUY_CO_THUA_CAN';
+      else if (bmi >= 22) bmiCategory = 'BEO_PHI';
+
+      const allergiesArr = d.allergy ? d.allergy.split(',').map((s) => s.trim()).filter(Boolean) : [];
+      const existing = healthRecords.find((r) => r.studentId === st.id);
+
+      if (existing) {
+        updateHealthRecord({
+          ...existing,
+          heightCm: d.heightCm,
+          weightKg: d.weightKg,
+          bmi,
+          bmiCategory,
+          hasVisionDefect: d.hasVision,
+          leftEye: d.hasVision ? '7/10' : '10/10',
+          rightEye: d.hasVision ? '7/10' : '10/10',
+          allergies: allergiesArr,
+          checkupDate: new Date().toISOString().split('T')[0],
+        });
+      } else {
+        addHealthRecord({
+          studentId: st.id,
+          studentName: st.fullName,
+          classId: classInfo.id,
+          checkupDate: new Date().toISOString().split('T')[0],
+          heightCm: d.heightCm,
+          weightKg: d.weightKg,
+          bmi,
+          bmiCategory,
+          leftEye: d.hasVision ? '7/10' : '10/10',
+          rightEye: d.hasVision ? '7/10' : '10/10',
+          hasVisionDefect: d.hasVision,
+          allergies: allergiesArr,
+        });
+      }
+    });
+    setIsBatchModalOpen(false);
+    toast.success(`Đã lưu cập nhật sức khỏe cho toàn bộ ${students.length} học sinh!`);
+  };
 
   const visionDefectCount = healthRecords.filter((r) => r.hasVisionDefect).length;
   const allergyCount = healthRecords.filter((r) => r.allergies && r.allergies.length > 0).length;
@@ -247,6 +316,106 @@ export default function HealthRecordsPage() {
         students={students}
         classId={classInfo.id}
       />
+
+      {/* Batch Health Editor Modal */}
+      {isBatchModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/85 backdrop-blur-md animate-in fade-in" onClick={() => setIsBatchModalOpen(false)}>
+          <div className="bg-white max-w-5xl w-full h-[90vh] rounded-3xl overflow-hidden shadow-2xl border border-slate-200 flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="p-4 sm:p-5 border-b border-slate-100 bg-gradient-to-r from-emerald-600 to-teal-600 text-white flex items-center justify-between shrink-0">
+              <div>
+                <h3 className="font-black text-base flex items-center gap-2">
+                  <FileSpreadsheet className="w-5 h-5" />
+                  <span>Bảng Nhập Nhanh Thể Lực & Sức Khỏe Toàn Lớp ({students.length} Học Sinh)</span>
+                </h3>
+                <p className="text-xs text-emerald-100">Nhập chiều cao, cân nặng và tự động tính BMI cho cả lớp</p>
+              </div>
+              <button type="button" onClick={() => setIsBatchModalOpen(false)} className="w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center cursor-pointer">✕</button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200 sticky top-0 z-10">
+                    <th className="p-3 w-12 text-center">STT</th>
+                    <th className="p-3">Họ và Tên</th>
+                    <th className="p-3 w-28 text-center">Chiều Cao (cm)</th>
+                    <th className="p-3 w-28 text-center">Cân Nặng (kg)</th>
+                    <th className="p-3 w-28 text-center">Chỉ Số BMI</th>
+                    <th className="p-3 w-24 text-center">Cận Thị</th>
+                    <th className="p-3">Dị Ứng / Ghi Chú Ăn Uống</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {students.map((st, idx) => {
+                    const d = batchData[st.id] || { heightCm: 135, weightKg: 30, hasVision: false, allergy: '' };
+                    const heightM = (d.heightCm || 135) / 100;
+                    const bmi = Number(((d.weightKg || 30) / (heightM * heightM || 1)).toFixed(1));
+                    return (
+                      <tr key={st.id} className="hover:bg-slate-50">
+                        <td className="p-2.5 text-center font-bold text-slate-400">{idx + 1}</td>
+                        <td className="p-2.5 font-bold text-slate-900">{st.fullName}</td>
+                        <td className="p-2.5 text-center">
+                          <input
+                            type="number"
+                            min={90}
+                            max={190}
+                            value={d.heightCm}
+                            onChange={(e) => setBatchData({ ...batchData, [st.id]: { ...d, heightCm: Number(e.target.value) } })}
+                            className="w-20 p-1.5 text-center border border-slate-300 rounded-lg text-xs font-bold"
+                          />
+                        </td>
+                        <td className="p-2.5 text-center">
+                          <input
+                            type="number"
+                            min={15}
+                            max={90}
+                            value={d.weightKg}
+                            onChange={(e) => setBatchData({ ...batchData, [st.id]: { ...d, weightKg: Number(e.target.value) } })}
+                            className="w-20 p-1.5 text-center border border-slate-300 rounded-lg text-xs font-bold"
+                          />
+                        </td>
+                        <td className="p-2.5 text-center">
+                          <span className={`px-2 py-0.5 rounded-full font-bold text-[11px] ${
+                            bmi < 14 ? 'bg-amber-100 text-amber-800' : bmi >= 22 ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'
+                          }`}>
+                            {bmi}
+                          </span>
+                        </td>
+                        <td className="p-2.5 text-center">
+                          <input
+                            type="checkbox"
+                            checked={d.hasVision}
+                            onChange={(e) => setBatchData({ ...batchData, [st.id]: { ...d, hasVision: e.target.checked } })}
+                            className="w-4 h-4 rounded text-emerald-600 cursor-pointer"
+                          />
+                        </td>
+                        <td className="p-2.5">
+                          <input
+                            type="text"
+                            placeholder="VD: Dị ứng tôm, đậu phộng..."
+                            value={d.allergy}
+                            onChange={(e) => setBatchData({ ...batchData, [st.id]: { ...d, allergy: e.target.value } })}
+                            className="w-full p-1.5 border border-slate-300 rounded-lg text-xs"
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between shrink-0">
+              <button type="button" onClick={() => setIsBatchModalOpen(false)} className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200">Đóng</button>
+              <button type="button" onClick={handleSaveBatch} className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-md flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Lưu Toàn Bộ Số Liệu ({students.length} Học Sinh)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

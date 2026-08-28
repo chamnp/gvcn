@@ -18,7 +18,7 @@ import { Student } from '@/types';
 import { toast } from 'sonner';
 
 export default function SeatingChartPage() {
-  const { students, updateSeatPosition, swapSeatPositions, classInfo, getStudentStars } = useAppStore();
+  const { students, healthRecords, updateSeatPosition, swapSeatPositions, classInfo, getStudentStars } = useAppStore();
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
 
   const rows = classInfo.seatingGridRows || 5;
@@ -96,10 +96,20 @@ export default function SeatingChartPage() {
     }
   };
 
-  // Xếp ưu tiên cận thị lên 2 hàng đầu
+  // Xếp ưu tiên cận thị lên 2 hàng đầu (kết hợp Sổ Y Tế & ghi chú sức khỏe)
   const handleOptimizeForVision = () => {
-    const nearsighted = students.filter((s) => (s.healthNotes || '').toLowerCase().includes('cận'));
-    const normal = students.filter((s) => !(s.healthNotes || '').toLowerCase().includes('cận'));
+    const nearsighted = students.filter((s) => {
+      const rec = (healthRecords || []).find((h) => h.studentId === s.id);
+      const isDefect = rec ? rec.hasVisionDefect : false;
+      const note = (s.healthNotes || '').toLowerCase();
+      return isDefect || note.includes('cận') || note.includes('loạn') || note.includes('kính');
+    });
+    const normal = students.filter((s) => {
+      const rec = (healthRecords || []).find((h) => h.studentId === s.id);
+      const isDefect = rec ? rec.hasVisionDefect : false;
+      const note = (s.healthNotes || '').toLowerCase();
+      return !isDefect && !note.includes('cận') && !note.includes('loạn') && !note.includes('kính');
+    });
     
     const combined = [...nearsighted, ...normal];
     const maxDesks = rows * cols;

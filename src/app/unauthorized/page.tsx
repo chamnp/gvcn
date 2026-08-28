@@ -21,7 +21,7 @@ export default function UnauthorizedPage() {
   const { user, profile, isAuthorized, isAdmin, loading, signOut, refreshTeachers } = useAuth();
   const [checking, setChecking] = React.useState(false);
 
-  // Auto redirect if already authorized
+  // Auto redirect if already authorized + background polling every 10s
   React.useEffect(() => {
     if (!loading && isAuthorized) {
       if (isAdmin) {
@@ -31,6 +31,25 @@ export default function UnauthorizedPage() {
       }
     }
   }, [loading, isAuthorized, isAdmin, router]);
+
+  React.useEffect(() => {
+    if (loading || isAuthorized) return;
+    const interval = setInterval(async () => {
+      try {
+        const updated = await refreshTeachers();
+        const email = (user?.email || '').toLowerCase().trim();
+        const matched = updated.find((t) => t.email.toLowerCase() === email);
+        if (matched && matched.isActive && (matched.role === 'ADMIN' || matched.role === 'ADMIN_TEACHER' || matched.role === 'TEACHER')) {
+          if (matched.role === 'ADMIN' || matched.role === 'ADMIN_TEACHER') {
+            router.push('/admin');
+          } else {
+            router.push('/');
+          }
+        }
+      } catch (e) {}
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [loading, isAuthorized, user, refreshTeachers, router]);
 
   const handleSendEmailAdmin = () => {
     const email = 'anhnnh4@gmail.com';
