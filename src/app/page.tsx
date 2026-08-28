@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Users,
@@ -143,6 +143,16 @@ export default function DashboardPage() {
   const todayStr = new Date().toISOString().split('T')[0];
   const todayAtt = attendances.filter((a) => a.date === todayStr);
   const presentCount = todayAtt.filter((a) => a.status === 'CO_MAT').length || (totalStudents > 0 ? totalStudents : 0);
+
+  // Auto-open modals from notification links
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('openConference') === 'true') {
+        setIsConferenceModalOpen(true);
+      }
+    }
+  }, []);
   const absentCount = todayAtt.filter((a) => a.status !== 'CO_MAT').length;
   const todayMeals = todayAtt.filter((a) => a.hasBoardingMeal).length || (boardingCount > 0 ? boardingCount : 0);
 

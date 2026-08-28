@@ -18,7 +18,16 @@ import { getLocalDateString } from '@/lib/tt27-engine';
 import { toast } from 'sonner';
 
 export default function AttendancePage() {
-  const { students, attendances, updateAttendance, batchSetAttendance, classInfo, leaveRequests } = useAppStore();
+  const {
+    students,
+    attendances,
+    updateAttendance,
+    batchSetAttendance,
+    classInfo,
+    leaveRequests,
+    approveLeaveRequest,
+    rejectLeaveRequest,
+  } = useAppStore();
   const [selectedDate, setSelectedDate] = useState<string>(() => getLocalDateString());
 
   // Lọc điểm danh theo ngày đã chọn
@@ -120,6 +129,68 @@ ${absentList ? `\nDanh sách học sinh vắng:\n${absentList}` : '\n(Cả lớp
           </button>
         </div>
       </div>
+
+      {/* PENDING LEAVE REQUESTS BANNER */}
+      {leaveRequests.filter((r) => r.status === 'PENDING').length > 0 && (
+        <div id="leave-requests" className="bg-amber-50 border border-amber-200 rounded-3xl p-4 sm:p-5 space-y-3 animate-in fade-in">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <span className="text-xl">📬</span>
+              <h3 className="font-black text-amber-950 text-sm">
+                Đơn Xin Nghỉ Phép Chờ Duyệt ({leaveRequests.filter((r) => r.status === 'PENDING').length} đơn)
+              </h3>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {leaveRequests
+              .filter((r) => r.status === 'PENDING')
+              .map((req) => (
+                <div
+                  key={req.id}
+                  className="bg-white p-3.5 rounded-2xl border border-amber-200 shadow-xs flex flex-col justify-between gap-2.5"
+                >
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-slate-900 text-xs">{req.studentName}</span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800">
+                        {req.startDate === req.endDate ? req.startDate : `${req.startDate} - ${req.endDate}`}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-600 mt-1">{req.reasonDetail}</p>
+                    {req.hasBoardingMealCancel && (
+                      <span className="inline-block text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md mt-1 border border-rose-100">
+                        🍱 Yêu cầu cắt cơm bán trú
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        rejectLeaveRequest(req.id);
+                        toast.info(`Đã từ chối đơn nghỉ của em ${req.studentName}`);
+                      }}
+                      className="px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl cursor-pointer"
+                    >
+                      Từ chối
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        approveLeaveRequest(req.id);
+                        updateAttendance(req.studentId, req.startDate, 'VANG_CO_PHEP', false, req.reasonDetail);
+                        toast.success(`Đã duyệt đơn và điểm danh VẮNG CÓ PHÉP cho em ${req.studentName}`);
+                      }}
+                      className="px-3.5 py-1.5 text-xs font-black bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-xs cursor-pointer"
+                    >
+                      Duyệt Đơn
+                    </button>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
 
       {/* Summary Counters */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
