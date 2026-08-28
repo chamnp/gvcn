@@ -32,9 +32,16 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useAuth } from '@/lib/auth-context';
-import { TERMS, evaluateStudentTT27, getAwardBadgeClass } from '@/lib/tt27-engine';
+import {
+  TERMS,
+  evaluateStudentTT27,
+  getAwardBadgeClass,
+  calculateEvaluationProgress,
+  validateTT27Assessments,
+} from '@/lib/tt27-engine';
 import { DAYS_OF_WEEK, PERIODS, getSubjectTheme } from '@/lib/timetable-data';
 import { DayOfWeek, ClassEvent, ClassEventType } from '@/types';
+import { ProgressMeterWidget } from '@/components/assessment/progress-meter-widget';
 import { toast } from 'sonner';
 
 // Helper to calculate birthday information
@@ -169,6 +176,30 @@ export default function DashboardPage() {
       .sort((a, b) => b.stars - a.stars)
       .slice(0, 5);
   }, [students, studentStarMap]);
+
+  // Tiến độ đánh giá TT27 và kiểm tra logic
+  const currentGrade = classInfo?.grade || 4;
+  const progress = useMemo(() => {
+    return calculateEvaluationProgress(
+      students,
+      subjectAssessments,
+      traitAssessments,
+      termSummaries,
+      currentTerm,
+      currentGrade
+    );
+  }, [students, subjectAssessments, traitAssessments, termSummaries, currentTerm, currentGrade]);
+
+  const issues = useMemo(() => {
+    return validateTT27Assessments(
+      students,
+      subjectAssessments,
+      traitAssessments,
+      termSummaries,
+      currentTerm,
+      currentGrade
+    );
+  }, [students, subjectAssessments, traitAssessments, termSummaries, currentTerm, currentGrade]);
 
   // Tính toán sinh nhật học sinh
   const studentBirthdayList = useMemo(() => {
@@ -430,6 +461,20 @@ export default function DashboardPage() {
             <Sparkles className="w-6 h-6 text-purple-600" />
           </div>
         </div>
+      </div>
+
+      {/* 3.5. TT27 EVALUATION PROGRESS METER WIDGET */}
+      <div className="space-y-2">
+        <ProgressMeterWidget
+          progress={progress}
+          issues={issues}
+          isFilterIncomplete={false}
+          onToggleFilterIncomplete={() => {
+            // Direct navigate to /assessment
+            window.location.href = '/assessment';
+          }}
+          compact={false}
+        />
       </div>
 
       {/* 4. MAIN TWO-COLUMN LAYOUT */}

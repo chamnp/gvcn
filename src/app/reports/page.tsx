@@ -14,7 +14,16 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { exportTT27Form1, exportVnEduTemplate } from '@/lib/excel-export';
-import { TERMS, PRIMARY_SUBJECTS, TRAIT_DEFINITIONS, evaluateStudentTT27, getAwardBadgeClass } from '@/lib/tt27-engine';
+import {
+  TERMS,
+  PRIMARY_SUBJECTS,
+  TRAIT_DEFINITIONS,
+  evaluateStudentTT27,
+  getAwardBadgeClass,
+  validateTT27Assessments,
+} from '@/lib/tt27-engine';
+import { GuardrailsAlertModal } from '@/components/assessment/guardrails-alert-modal';
+import { ShieldAlert } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function ReportsPage() {
@@ -28,10 +37,25 @@ export default function ReportsPage() {
   } = useAppStore();
 
   const [selectedStudentId, setSelectedStudentId] = useState<string>(students[0]?.id || '');
+  const [isGuardrailsOpen, setIsGuardrailsOpen] = useState(false);
   const termName = TERMS.find((t) => t.id === currentTerm)?.name || currentTerm;
 
   const subjects = PRIMARY_SUBJECTS.filter((s) => s.applicableGrades.includes(classInfo.grade));
   const selectedStudent = students.find((s) => s.id === selectedStudentId) || students[0];
+
+  const issues = React.useMemo(() => {
+    return validateTT27Assessments(
+      students,
+      subjectAssessments,
+      traitAssessments,
+      termSummaries,
+      currentTerm,
+      classInfo.grade || 4
+    );
+  }, [students, subjectAssessments, traitAssessments, termSummaries, currentTerm, classInfo.grade]);
+
+  const errorCount = issues.filter((i) => i.type === 'ERROR').length;
+  const warningCount = issues.filter((i) => i.type === 'WARNING').length;
 
   const studentSubjects = selectedStudent
     ? subjectAssessments.filter((a) => a.studentId === selectedStudent.id && a.term === currentTerm)
@@ -60,10 +84,33 @@ export default function ReportsPage() {
             <span>Báo Cáo & Xuất Dữ Liệu Thông Tư 27</span>
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Kỳ hiện tại: <strong className="text-blue-600 font-bold">{termName}</strong> - Lớp {classInfo.name} ({classInfo.schoolName})
+            Kỳ hiện tại: <strong className="text-blue-600 font-bold">{termName}</strong> • Lớp {classInfo.name} ({classInfo.schoolName})
           </p>
         </div>
+
+        <button
+          type="button"
+          onClick={() => setIsGuardrailsOpen(true)}
+          className={`inline-flex items-center space-x-2 px-4 py-2 rounded-2xl text-xs font-bold transition-all shadow-xs cursor-pointer border ${
+            errorCount > 0
+              ? 'bg-rose-50 hover:bg-rose-100 text-rose-800 border-rose-300'
+              : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-300'
+          }`}
+        >
+          <ShieldAlert className="w-4 h-4 text-amber-600" />
+          <span>
+            {errorCount > 0
+              ? `Phát hiện ${errorCount} lỗi logic TT27!`
+              : `Kiểm tra logic (${issues.length} lưu ý)`}
+          </span>
+        </button>
       </div>
+
+      <GuardrailsAlertModal
+        isOpen={isGuardrailsOpen}
+        onClose={() => setIsGuardrailsOpen(false)}
+        issues={issues}
+      />
 
       {/* Export Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

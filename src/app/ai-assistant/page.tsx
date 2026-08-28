@@ -43,6 +43,7 @@ import { useAppStore } from '@/lib/store';
 import { generateStudentAICommentFull, GeneratedCommentResult } from '@/lib/ai-service';
 import { AIToneType, AILengthPreset, AIGenerationSettings, AIGenerationMode } from '@/types';
 import { TERMS, evaluateStudentTT27, getAwardBadgeClass } from '@/lib/tt27-engine';
+import { VoiceInputButton } from '@/components/ui/voice-input-button';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
@@ -495,7 +496,7 @@ export default function AIAssistantPage() {
                 </div>
 
                 {/* Custom teacher notes for this student */}
-                <div>
+                <div className="flex items-center space-x-1.5">
                   <input
                     type="text"
                     placeholder="Gợi ý riêng cho em này (VD: chữ viết sạch đẹp, năng nổ văn nghệ...)"
@@ -503,19 +504,41 @@ export default function AIAssistantPage() {
                     onChange={(e) => setCustomNotes({ ...customNotes, [st.id]: e.target.value })}
                     className="w-full px-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:ring-2 focus:ring-purple-500 focus:outline-none bg-slate-50 text-slate-700"
                   />
+                  <VoiceInputButton
+                    size="sm"
+                    title="Đọc gợi ý riêng cho em này"
+                    onResult={(text) => {
+                      const current = customNotes[st.id] || '';
+                      setCustomNotes({ ...customNotes, [st.id]: current ? `${current} ${text}` : text });
+                    }}
+                  />
                 </div>
 
                 {/* Comment text area */}
                 <div className="relative space-y-1">
-                  <textarea
-                    rows={4}
-                    value={comment}
-                    onChange={(e) =>
-                      updateTermSummary(st.id, currentTerm, { teacherComment: e.target.value })
-                    }
-                    placeholder="Chưa có lời nhận xét. Nhấp 'Tạo nhận xét AI' bên dưới..."
-                    className="w-full p-3 rounded-2xl border border-slate-200 text-xs text-slate-800 leading-relaxed focus:ring-2 focus:ring-purple-500 focus:outline-none bg-slate-50/50 resize-none font-medium"
-                  />
+                  <div className="relative">
+                    <textarea
+                      rows={4}
+                      value={comment}
+                      onChange={(e) =>
+                        updateTermSummary(st.id, currentTerm, { teacherComment: e.target.value })
+                      }
+                      placeholder="Chưa có lời nhận xét. Nhấp 'Tạo nhận xét AI' bên dưới hoặc bấm nút Micro để đọc..."
+                      className="w-full p-3 pr-10 rounded-2xl border border-slate-200 text-xs text-slate-800 leading-relaxed focus:ring-2 focus:ring-purple-500 focus:outline-none bg-slate-50/50 resize-none font-medium"
+                    />
+                    <div className="absolute right-2 top-2">
+                      <VoiceInputButton
+                        size="sm"
+                        title="Đọc nhận xét cho học sinh này"
+                        onResult={(text) => {
+                          const current = comment || '';
+                          updateTermSummary(st.id, currentTerm, {
+                            teacherComment: current ? `${current} ${text}` : text,
+                          });
+                        }}
+                      />
+                    </div>
+                  </div>
 
                   {/* AI Generation Live Source Badge */}
                   {comment && (
