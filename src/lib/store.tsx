@@ -752,6 +752,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           { data: dbTimetable },
           { data: dbEvents },
           { data: dbCustomSubjects },
+          { data: dbNotes },
+          { data: dbLeave },
+          { data: dbMoments },
+          { data: dbConferences },
         ] = await Promise.all([
           supabase.from('SchoolInfo').select('*').single(),
           supabase.from('Class').select('*').order('grade', { ascending: true }),
@@ -768,6 +772,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           supabase.from('TimetableSlot').select('*'),
           supabase.from('ClassEvent').select('*').order('date', { ascending: true }),
           supabase.from('CustomSubject').select('*'),
+          supabase.from('FormativeNote').select('*').order('date', { ascending: false }),
+          supabase.from('LeaveRequest').select('*').order('createdAt', { ascending: false }),
+          supabase.from('ClassMoment').select('*').order('createdAt', { ascending: false }),
+          supabase.from('ConferenceSlot').select('*').order('date', { ascending: true }),
         ]);
 
         if (!isMounted) return;
@@ -903,6 +911,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         if (dbCustomSubjects && dbCustomSubjects.length > 0) {
           setCustomSubjects(dbCustomSubjects);
+        }
+
+        if (dbNotes && dbNotes.length > 0) {
+          setFormativeNotes(dbNotes);
+        }
+
+        if (dbLeave && dbLeave.length > 0) {
+          setLeaveRequests(dbLeave);
+        }
+
+        if (dbMoments && dbMoments.length > 0) {
+          setClassMoments(dbMoments);
+        }
+
+        if (dbConferences && dbConferences.length > 0) {
+          setConferenceSlots(dbConferences);
         }
       } catch (err) {
         console.warn('Supabase initial fetch error:', err);
@@ -2922,11 +2946,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     setFormativeNotes((prev) => [newNote, ...prev]);
     toast.success('Đã lưu ghi chú tiến bộ thường xuyên!');
+    supabase.from('FormativeNote').upsert(newNote).then();
   };
 
   const deleteFormativeNote = (id: string) => {
     setFormativeNotes((prev) => prev.filter((n) => n.id !== id));
     toast.success('Đã xóa ghi chú');
+    supabase.from('FormativeNote').delete().eq('id', id).then();
   };
 
   // PHASE 3: LEAVE REQUEST ACTIONS
@@ -2939,11 +2965,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     setLeaveRequests((prev) => [newReq, ...prev]);
     toast.success('Đã gửi đơn xin nghỉ phép đến Giáo viên chủ nhiệm!');
+    supabase.from('LeaveRequest').upsert(newReq).then();
   };
 
   const approveLeaveRequest = (id: string, teacherNote?: string) => {
     const req = leaveRequests.find((r) => r.id === id);
     if (!req) return;
+
+    const note = teacherNote || req.teacherNote || 'Đã duyệt đơn xin nghỉ phép của học sinh.';
+    const reviewedAt = new Date().toISOString();
 
     setLeaveRequests((prev) =>
       prev.map((r) =>
@@ -2951,8 +2981,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ? {
               ...r,
               status: 'APPROVED',
-              teacherNote: teacherNote || r.teacherNote || 'Đã duyệt đơn xin nghỉ phép của học sinh.',
-              reviewedAt: new Date().toISOString(),
+              teacherNote: note,
+              reviewedAt,
             }
           : r
       )
@@ -2968,22 +2998,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
 
     toast.success(`Đã duyệt đơn xin nghỉ của em ${req.studentName} và đồng bộ Sổ điểm danh!`);
+    supabase.from('LeaveRequest').update({ status: 'APPROVED', teacherNote: note, reviewedAt }).eq('id', id).then();
   };
 
   const rejectLeaveRequest = (id: string, teacherNote?: string) => {
+    const note = teacherNote || 'Giáo viên chưa thể duyệt đơn này';
+    const reviewedAt = new Date().toISOString();
+
     setLeaveRequests((prev) =>
       prev.map((r) =>
         r.id === id
           ? {
               ...r,
               status: 'REJECTED',
-              teacherNote: teacherNote || 'Giáo viên chưa thể duyệt đơn này',
-              reviewedAt: new Date().toISOString(),
+              teacherNote: note,
+              reviewedAt,
             }
           : r
       )
     );
     toast.info('Đã từ chối đơn xin nghỉ phép');
+    supabase.from('LeaveRequest').update({ status: 'REJECTED', teacherNote: note, reviewedAt }).eq('id', id).then();
   };
 
   // PHASE 3: CLASSROOM MOMENTS ACTIONS
@@ -2997,6 +3032,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     setClassMoments((prev) => [newMoment, ...prev]);
     toast.success('Đã đăng bài viết khoảnh khắc lớp học thành công!');
+    supabase.from('ClassMoment').upsert(newMoment).then();
   };
 
   const likeClassMoment = (id: string, userToken: string) => {
@@ -3004,19 +3040,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       prev.map((m) => {
         if (m.id !== id) return m;
         const alreadyLiked = m.likedBy?.includes(userToken);
-        if (alreadyLiked) {
-          return {
-            ...m,
-            likesCount: Math.max(0, m.likesCount - 1),
-            likedBy: m.likedBy?.filter((t) => t !== userToken),
-          };
-        } else {
-          return {
-            ...m,
-            likesCount: m.likesCount + 1,
-            likedBy: [...(m.likedBy || []), userToken],
-          };
-        }
+        const updated = alreadyLiked
+          ? {
+              ...m,
+              likesCount: Math.max(0, m.likesCount - 1),
+              likedBy: m.likedBy?.filter((t) => t !== userToken),
+            }
+          : {
+              ...m,
+              likesCount: m.likesCount + 1,
+              likedBy: [...(m.likedBy || []), userToken],
+            };
+        supabase.from('ClassMoment').update({ likesCount: updated.likesCount, likedBy: updated.likedBy }).eq('id', id).then();
+        return updated;
       })
     );
   };
@@ -3024,6 +3060,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const deleteClassMoment = (id: string) => {
     setClassMoments((prev) => prev.filter((m) => m.id !== id));
     toast.success('Đã xóa bài viết khoảnh khắc');
+    supabase.from('ClassMoment').delete().eq('id', id).then();
   };
 
   // PHASE 3: PARENT CONFERENCE 1-ON-1 ACTIONS
@@ -3036,6 +3073,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     setConferenceSlots((prev) => [...prev, newSlot]);
     toast.success('Đã tạo khung giờ hẹn trao đổi phụ huynh!');
+    supabase.from('ConferenceSlot').upsert(newSlot).then();
   };
 
   const bookConferenceSlot = (
@@ -3048,25 +3086,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       discussionTopics?: string;
     }
   ) => {
+    const updatePayload = {
+      isBooked: true,
+      bookedStudentId: bookingData.studentId,
+      bookedStudentName: bookingData.studentName,
+      bookedParentName: bookingData.parentName,
+      bookedParentPhone: bookingData.parentPhone,
+      parentDiscussionTopics: bookingData.discussionTopics,
+    };
+
     setConferenceSlots((prev) =>
       prev.map((s) =>
         s.id === slotId
           ? {
               ...s,
-              isBooked: true,
-              bookedStudentId: bookingData.studentId,
-              bookedStudentName: bookingData.studentName,
-              bookedParentName: bookingData.parentName,
-              bookedParentPhone: bookingData.parentPhone,
-              parentDiscussionTopics: bookingData.discussionTopics,
+              ...updatePayload,
             }
           : s
       )
     );
     toast.success('Đã đăng ký lịch hẹn trao đổi với Giáo viên chủ nhiệm thành công!');
+    supabase.from('ConferenceSlot').update(updatePayload).eq('id', slotId).then();
   };
 
   const cancelConferenceBooking = (slotId: string) => {
+    const resetPayload = {
+      isBooked: false,
+      bookedStudentId: null,
+      bookedStudentName: null,
+      bookedParentName: null,
+      bookedParentPhone: null,
+      parentDiscussionTopics: null,
+    };
+
     setConferenceSlots((prev) =>
       prev.map((s) =>
         s.id === slotId
@@ -3083,11 +3135,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       )
     );
     toast.success('Đã hủy đặt lịch hẹn');
+    supabase.from('ConferenceSlot').update(resetPayload).eq('id', slotId).then();
   };
 
   const deleteConferenceSlot = (slotId: string) => {
     setConferenceSlots((prev) => prev.filter((s) => s.id !== slotId));
     toast.success('Đã xóa khung giờ hẹn');
+    supabase.from('ConferenceSlot').delete().eq('id', slotId).then();
   };
 
   return (
