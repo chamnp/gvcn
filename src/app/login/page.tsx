@@ -20,7 +20,7 @@ import Link from 'next/link';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { user, profile, signInWithGoogle, signInWithEmail, signUpWithEmail, signInWithOtp } = useAuth();
+  const { user, profile, isAdmin, isAuthorized, signInWithGoogle, signInWithEmail, signUpWithEmail, signInWithOtp } = useAuth();
 
   const [mode, setMode] = useState<'LOGIN' | 'SIGNUP' | 'MAGIC_LINK'>('LOGIN');
   const [email, setEmail] = useState('');
@@ -31,13 +31,15 @@ export default function LoginPage() {
   // Auto redirect immediately if already logged in (skip manual click screen)
   React.useEffect(() => {
     if (user) {
-      if (profile?.role === 'ADMIN') {
+      if (!isAuthorized) {
+        router.replace('/unauthorized');
+      } else if (isAdmin) {
         router.replace('/admin');
       } else {
         router.replace('/');
       }
     }
-  }, [user, profile, router]);
+  }, [user, profile, isAdmin, isAuthorized, router]);
 
   if (user) {
     return (

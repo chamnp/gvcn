@@ -6,45 +6,45 @@ export const TERMS: {
   shortName: string;
   monthsDescription: string;
 }[] = [
-  { id: 'GIUA_HK1', name: 'Giữa Học kỳ I', shortName: 'G.HK1', monthsDescription: 'Tháng 8 - Giữa T11' },
+  { id: 'GIUA_HK1', name: 'Giữa Học kỳ I', shortName: 'G.HK1', monthsDescription: 'Tháng 9 - Giữa T11' },
   { id: 'CUOI_HK1', name: 'Cuối Học kỳ I', shortName: 'C.HK1', monthsDescription: 'Giữa T11 - Giữa T1' },
   { id: 'GIUA_HK2', name: 'Giữa Học kỳ II', shortName: 'G.HK2', monthsDescription: 'Giữa T1 - Hết T3' },
-  { id: 'CUOI_NAM', name: 'Cuối Năm học', shortName: 'C.Năm', monthsDescription: 'Tháng 4 - Tháng 7' },
+  { id: 'CUOI_NAM', name: 'Cuối Năm học', shortName: 'C.Năm', monthsDescription: 'Tháng 4 - Tháng 8' },
 ];
 
 /**
  * Tự động xác định kỳ đánh giá TT27 dựa trên thời gian thực tế của năm học:
- * - Tháng 8, 9, 10 -> 15/11: Bắt đầu năm học mới & Giữa Học kỳ 1 (GIUA_HK1)
+ * - Tháng 9, 10 -> 15/11: Giữa Học kỳ 1 (GIUA_HK1)
  * - 16/11 -> 15/01: Cuối Học kỳ 1 (CUOI_HK1)
  * - 16/01 -> 31/03: Giữa Học kỳ 2 (GIUA_HK2)
- * - 01/04 -> 31/07: Cuối Năm học / Tổng kết năm học (CUOI_NAM)
+ * - 01/04 -> 31/08: Cuối Năm học / Tổng kết năm học (CUOI_NAM)
  */
 export function getCurrentTermByDate(date: Date = new Date()): TermType {
   const month = date.getMonth() + 1; // 1 -> 12
   const day = date.getDate();
 
-  if (month === 8 || month === 9 || month === 10 || (month === 11 && day <= 15)) {
+  if (month === 9 || month === 10 || (month === 11 && day <= 15)) {
     return 'GIUA_HK1';
   } else if ((month === 11 && day > 15) || month === 12 || (month === 1 && day <= 15)) {
     return 'CUOI_HK1';
   } else if ((month === 1 && day > 15) || month === 2 || month === 3) {
     return 'GIUA_HK2';
   } else {
-    // Tháng 4, 5, 6, 7
+    // Tháng 4, 5, 6, 7, 8
     return 'CUOI_NAM';
   }
 }
 
 /**
  * Tự động xác định năm học (School Year) theo lịch thực tế:
- * - Nếu tháng >= 8 (Tháng 8 -> 12): Năm hiện tại - Năm sau (ví dụ: 2025-2026 hoặc 2026-2027)
- * - Nếu tháng < 8 (Tháng 1 -> 7): Năm trước - Năm hiện tại
+ * - Nếu tháng >= 9 (Tháng 9 -> 12): Năm hiện tại - Năm sau (ví dụ: 2025-2026 hoặc 2026-2027)
+ * - Nếu tháng < 9 (Tháng 1 -> 8): Năm trước - Năm hiện tại
  */
 export function getAcademicYearByDate(date: Date = new Date()): string {
   const year = date.getFullYear();
   const month = date.getMonth() + 1;
 
-  if (month >= 8) {
+  if (month >= 9) {
     return `${year}-${year + 1}`;
   } else {
     return `${year - 1}-${year}`;
@@ -142,9 +142,12 @@ export function evaluateStudentTT27(
     summerRemediation = true;
   } else if (allSubjectsT && allScores9OrAbove && allTraitsT) {
     awardTitle = 'Học sinh Xuất sắc';
-  } else if (allScores7OrAbove) {
+  } else if (allSubjectsT && allTraitsT && allScores7OrAbove) {
     awardTitle = 'Học sinh Tiêu biểu hoàn thành tốt';
   }
+  // Lưu ý: "Khen thưởng từng mặt" là danh hiệu được GVCN tự đánh giá thủ công
+  // khi học sinh có thành tích nổi bật ở một lĩnh vực cụ thể (ví dụ: Toán đạt điểm 10
+  // nhưng các môn khác chỉ đạt 'H'). Giáo viên chọn thủ công trên giao diện.
 
   return {
     overallLearningLevel,

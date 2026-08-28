@@ -133,19 +133,19 @@ export default function PublicClassHomeworkPortal({
   // Scoped Homework for this class
   const classHomeworks = allHomeworks.filter(
     (h) =>
-      (h.classId || 'class-4a1') === currentClass.id ||
-      h.className.toLowerCase() === currentClass.name.toLowerCase() ||
-      h.className.toLowerCase().replace(/\s+/g, '') === rawParam
+      h.classId === currentClass.id ||
+      h.className?.toLowerCase() === currentClass.name.toLowerCase() ||
+      h.className?.toLowerCase().replace(/\s+/g, '') === rawParam
   );
 
   // Scoped Events for this class
   const classEvents = allClassEvents.filter(
-    (e) => (e.classId || 'class-4a1') === currentClass.id
+    (e) => e.classId === currentClass.id
   );
 
   // Scoped Students for this class
   const classStudents = allStudents.filter(
-    (s) => (s.classId || 'class-4a1') === currentClass.id
+    (s) => (s.classId) === currentClass.id
   );
 
   // Student Local Checklist (State stored in localStorage)
@@ -188,7 +188,7 @@ export default function PublicClassHomeworkPortal({
 
   // Tomorrow slots from timetable
   const tomorrowSlots = timetable.filter(
-    (s) => s.day === tomorrowDayCode && (s.classId || 'class-4a1') === currentClass.id
+    (s) => s.day === tomorrowDayCode && (s.classId) === currentClass.id
   );
 
   const toggleCompleteHw = (hwId: string) => {
@@ -745,7 +745,7 @@ export default function PublicClassHomeworkPortal({
                 <div className="space-y-2">
                   {PERIODS.map((p) => {
                     const slot = timetable.find(
-                      (s) => s.day === selectedTimetableDay && s.period === p.period && (s.classId || 'class-4a1') === currentClass.id
+                      (s) => s.day === selectedTimetableDay && s.period === p.period && (s.classId) === currentClass.id
                     );
                     const theme = slot ? getSubjectTheme(slot.subjectCode, customSubjects) : null;
 

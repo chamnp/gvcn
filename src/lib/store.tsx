@@ -294,18 +294,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Scoped Students for active class
   const students = useMemo(() => {
-    const list = allStudents.filter((s) => (s.classId || 'class-4a1') === activeClassId);
+    const list = allStudents.filter((s) => s.classId === activeClassId);
     return list;
   }, [allStudents, activeClassId]);
 
   // Scoped Events for active class
   const classEvents = useMemo(() => {
-    return allClassEvents.filter((ev) => (ev.classId || 'class-4a1') === activeClassId);
+    return allClassEvents.filter((ev) => ev.classId === activeClassId);
   }, [allClassEvents, activeClassId]);
 
   // Scoped Timetable for active class
   const timetable = useMemo(() => {
-    const list = allTimetables.filter((t) => (t.classId || 'class-4a1') === activeClassId);
+    const list = allTimetables.filter((t) => t.classId === activeClassId);
     if (list.length > 0) return list;
     return INITIAL_TIMETABLE.map((t) => ({ ...t, classId: activeClassId }));
   }, [allTimetables, activeClassId]);
@@ -313,7 +313,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Scoped Homework for active class
   const homeworks = useMemo(() => {
     return allHomeworks.filter(
-      (hw) => (hw.classId || 'class-4a1') === activeClassId || hw.className === classInfo.name
+      (hw) => hw.classId === activeClassId || hw.className === classInfo.name
     );
   }, [allHomeworks, activeClassId, classInfo.name]);
 
@@ -1047,27 +1047,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Tự động lưu vào LocalStorage
   useEffect(() => {
     if (!isLoaded) return;
-    try {
-      localStorage.setItem(STORAGE_PREFIX + 'schoolInfo', JSON.stringify(schoolInfo));
-      localStorage.setItem(STORAGE_PREFIX + 'schoolClasses', JSON.stringify(schoolClasses));
-      localStorage.setItem(STORAGE_PREFIX + 'activeClassId', activeClassId);
-      localStorage.setItem(STORAGE_PREFIX + 'students', JSON.stringify(allStudents));
-      localStorage.setItem(STORAGE_PREFIX + 'currentTerm', currentTerm);
-      localStorage.setItem(STORAGE_PREFIX + 'subjectAssessments', JSON.stringify(subjectAssessments));
-      localStorage.setItem(STORAGE_PREFIX + 'traitAssessments', JSON.stringify(traitAssessments));
-      localStorage.setItem(STORAGE_PREFIX + 'termSummaries', JSON.stringify(termSummaries));
-      localStorage.setItem(STORAGE_PREFIX + 'attendances', JSON.stringify(attendances));
-      localStorage.setItem(STORAGE_PREFIX + 'starLogs', JSON.stringify(starLogs));
-      localStorage.setItem(STORAGE_PREFIX + 'starCriteria', JSON.stringify(starCriteria));
-      localStorage.setItem(STORAGE_PREFIX + 'rewardProducts', JSON.stringify(rewardProducts));
-      localStorage.setItem(STORAGE_PREFIX + 'rewardRedemptions', JSON.stringify(rewardRedemptions));
-      localStorage.setItem(STORAGE_PREFIX + 'timetable', JSON.stringify(allTimetables));
-      localStorage.setItem(STORAGE_PREFIX + 'customSubjects', JSON.stringify(customSubjects));
-      localStorage.setItem(STORAGE_PREFIX + 'homeworks', JSON.stringify(allHomeworks));
-      localStorage.setItem(STORAGE_PREFIX + 'apiKey', apiKey);
-    } catch (e) {
-      console.warn('Error writing to localStorage:', e);
-    }
+    const safeSet = (key: string, value: string) => {
+      try { localStorage.setItem(key, value); } catch (e) { console.warn(`localStorage quota exceeded for key: ${key}`, e); }
+    };
+    safeSet(STORAGE_PREFIX + 'schoolInfo', JSON.stringify(schoolInfo));
+    safeSet(STORAGE_PREFIX + 'schoolClasses', JSON.stringify(schoolClasses));
+    safeSet(STORAGE_PREFIX + 'activeClassId', activeClassId);
+    safeSet(STORAGE_PREFIX + 'students', JSON.stringify(allStudents));
+    safeSet(STORAGE_PREFIX + 'currentTerm', currentTerm);
+    safeSet(STORAGE_PREFIX + 'subjectAssessments', JSON.stringify(subjectAssessments));
+    safeSet(STORAGE_PREFIX + 'traitAssessments', JSON.stringify(traitAssessments));
+    safeSet(STORAGE_PREFIX + 'termSummaries', JSON.stringify(termSummaries));
+    safeSet(STORAGE_PREFIX + 'attendances', JSON.stringify(attendances));
+    safeSet(STORAGE_PREFIX + 'starLogs', JSON.stringify(starLogs));
+    safeSet(STORAGE_PREFIX + 'starCriteria', JSON.stringify(starCriteria));
+    safeSet(STORAGE_PREFIX + 'rewardProducts', JSON.stringify(rewardProducts));
+    safeSet(STORAGE_PREFIX + 'rewardRedemptions', JSON.stringify(rewardRedemptions));
+    safeSet(STORAGE_PREFIX + 'timetable', JSON.stringify(allTimetables));
+    safeSet(STORAGE_PREFIX + 'customSubjects', JSON.stringify(customSubjects));
+    safeSet(STORAGE_PREFIX + 'homeworks', JSON.stringify(allHomeworks));
+    safeSet(STORAGE_PREFIX + 'apiKey', apiKey);
   }, [
     isLoaded,
     schoolInfo,
@@ -1193,11 +1192,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const deleteClass = (classId: string) => {
+    // Clean up all data belonging to this class
+    const classStudentIds = new Set(
+      allStudents.filter((s) => (s.classId || 'class-4a1') === classId).map((s) => s.id)
+    );
+    setAllStudents((prev) => prev.filter((s) => (s.classId || 'class-4a1') !== classId));
+    setStarLogs((prev) => prev.filter((s) => !classStudentIds.has(s.studentId)));
+    setAttendances((prev) => prev.filter((a) => !classStudentIds.has(a.studentId)));
+    setSubjectAssessments((prev) => prev.filter((a) => !classStudentIds.has(a.studentId)));
+    setTraitAssessments((prev) => prev.filter((a) => !classStudentIds.has(a.studentId)));
+    setTermSummaries((prev) => prev.filter((a) => !classStudentIds.has(a.studentId)));
+    setAllHomeworks((prev) => prev.filter((hw) => (hw.classId || 'class-4a1') !== classId));
+    setAllTimetables((prev) => prev.filter((t) => (t.classId || 'class-4a1') !== classId));
+
     setSchoolClasses((prev) => prev.filter((c) => c.id !== classId));
     if (activeClassId === classId) {
       const remaining = schoolClasses.filter((c) => c.id !== classId);
       if (remaining.length > 0) setActiveClassId(remaining[0].id);
     }
+
+    // Cascade delete in Supabase
+    supabase.from('Student').delete().eq('classId', classId).then();
+    supabase.from('HomeworkAssignment').delete().eq('classId', classId).then();
+    supabase.from('TimetableSlot').delete().eq('classId', classId).then();
     supabase.from('Class').delete().eq('id', classId).then();
   };
 
@@ -1648,10 +1665,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const clearClassStudents = () => {
     const classStudentIds = new Set(
       allStudents
-        .filter((s) => (s.classId || 'class-4a1') === activeClassId)
+        .filter((s) => s.classId === activeClassId)
         .map((s) => s.id)
     );
-    setAllStudents((prev) => prev.filter((s) => (s.classId || 'class-4a1') !== activeClassId));
+    setAllStudents((prev) => prev.filter((s) => s.classId !== activeClassId));
     setStarLogs((prev) => prev.filter((s) => !classStudentIds.has(s.studentId)));
     setAttendances((prev) => prev.filter((a) => !classStudentIds.has(a.studentId)));
     setSubjectAssessments((prev) => prev.filter((a) => !classStudentIds.has(a.studentId)));

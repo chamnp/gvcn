@@ -199,29 +199,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const isSignedOut = localStorage.getItem('gvcn_signed_out') === 'true';
         if (isSignedOut) return null;
 
-        const mockEmail = localStorage.getItem('gvcn_mock_email') || 'hangnm47@gmail.com';
-        const isHang = mockEmail === 'hangnm47@gmail.com';
-        const isAdmin = mockEmail === 'anhnnh4@gmail.com';
-        const fullName = isHang ? 'Cô Nguyễn Thị Minh Hằng' : isAdmin ? 'Cô Nguyễn Ngọc Ánh' : 'Giáo viên';
+        // Mock user for development only
+        if (process.env.NODE_ENV === 'development') {
+          const mockEmail = localStorage.getItem('gvcn_mock_email') || 'hangnm47@gmail.com';
+          const isHang = mockEmail === 'hangnm47@gmail.com';
+          const isAdmin = mockEmail === 'anhnnh4@gmail.com';
+          const fullName = isHang ? 'Cô Nguyễn Thị Minh Hằng' : isAdmin ? 'Cô Nguyễn Ngọc Ánh' : 'Giáo viên';
 
-        return {
-          id: `user-${mockEmail.replace(/[^a-z0-9]/g, '')}`,
-          app_metadata: {},
-          user_metadata: { full_name: fullName },
-          aud: 'authenticated',
-          created_at: new Date().toISOString(),
-          email: mockEmail,
-        } as User;
+          return {
+            id: `user-${mockEmail.replace(/[^a-z0-9]/g, '')}`,
+            app_metadata: {},
+            user_metadata: { full_name: fullName },
+            aud: 'authenticated',
+            created_at: new Date().toISOString(),
+            email: mockEmail,
+          } as User;
+        }
       } catch (e) {}
     }
-    return {
-      id: 'user-hang-4a1',
-      app_metadata: {},
-      user_metadata: { full_name: 'Cô Nguyễn Thị Minh Hằng' },
-      aud: 'authenticated',
-      created_at: new Date().toISOString(),
-      email: 'hangnm47@gmail.com',
-    } as User;
+    return null;
   });
   const [session, setSession] = useState<Session | null>(null);
   const [teachers, setTeachers] = useState<TeacherProfile[]>(() => {
@@ -233,7 +229,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     return DEFAULT_TEACHERS;
   });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // Synchronously compute current profile from (user, teachers)
   const profile = useMemo(() => {
@@ -291,7 +287,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (isMounted) {
           setSession(session);
           let currentUser = session?.user ?? null;
-          if (!currentUser && typeof window !== 'undefined') {
+          if (!currentUser && typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
             const mockEmail = localStorage.getItem('gvcn_mock_email');
             if (mockEmail) {
               currentUser = {
@@ -321,7 +317,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (isMounted) {
         setSession(session);
         let currentUser = session?.user ?? null;
-        if (!currentUser && typeof window !== 'undefined') {
+        if (!currentUser && typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
           const mockEmail = localStorage.getItem('gvcn_mock_email');
           if (mockEmail) {
             currentUser = {

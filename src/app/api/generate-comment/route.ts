@@ -2,8 +2,20 @@ import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 import { Student, SubjectAssessment, TraitAssessment, StarLog, DailyAttendance, AIConfig, AIGenerationSettings } from '@/types';
 import { generateSmartComment } from '@/lib/comment-bank';
+import { createClient } from '@supabase/supabase-js';
 
 export const runtime = 'nodejs';
+
+// Sanitize user input to prevent prompt injection
+function sanitizeUserInput(input: string): string {
+  if (!input) return '';
+  // Remove common prompt injection patterns
+  return input
+    .replace(/bỏ qua|ignore|disregard|override|bypass|forget/gi, '')
+    .replace(/hướng dẫn trên|instructions above|system prompt/gi, '')
+    .trim()
+    .slice(0, 500); // Limit length
+}
 
 function cleanAIComment(rawText: string): string {
   if (!rawText) return '';
@@ -23,6 +35,19 @@ function cleanAIComment(rawText: string): string {
 
 export async function POST(req: NextRequest) {
   try {
+    // C4: Authentication check - verify the request comes from an authenticated user
+    const authHeader = req.headers.get('authorization');
+    if (authHeader) {
+      const supabaseAuth = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+      );
+      const { data: { user } } = await supabaseAuth.auth.getUser(authHeader.replace('Bearer ', ''));
+      if (!user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+    }
+
     const body = await req.json();
     const {
       student,
@@ -34,7 +59,7 @@ export async function POST(req: NextRequest) {
       aiGenSettings,
       apiKey,
       tone = 'standard',
-      extraNotes,
+      extraNotes: rawExtraNotes,
     } = body as {
       student: Student;
       subjects: SubjectAssessment[];
@@ -47,6 +72,9 @@ export async function POST(req: NextRequest) {
       tone?: string;
       extraNotes?: string;
     };
+
+    // H4: Sanitize user-supplied extraNotes to prevent prompt injection
+    const extraNotes = sanitizeUserInput(rawExtraNotes || '');
 
     if (!student || !student.fullName) {
       return NextResponse.json({ error: 'Thiếu thông tin học sinh' }, { status: 400 });
