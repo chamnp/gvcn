@@ -33,7 +33,6 @@ import { SmartPairMatcherModal } from '@/components/classroom/smart-pair-matcher
 import { DailyMoodModal } from '@/components/classroom/daily-mood-modal';
 import { BrainBreakModal } from '@/components/classroom/brain-break-modal';
 import { TaskCanvasModal } from '@/components/classroom/task-canvas-modal';
-import { FloatingSmartDock } from '@/components/classroom/floating-smart-dock';
 
 type ToolCategory = 'ALL' | 'INTERACTION' | 'MANAGEMENT' | 'ENERGY';
 
@@ -231,7 +230,7 @@ export default function ClassroomToolsPage() {
     category === 'ALL' ? TOOLS : TOOLS.filter((t) => t.category === category);
 
   return (
-    <div className="space-y-6 pb-20 animate-in fade-in duration-300">
+    <div className="space-y-6 pb-12 animate-in fade-in duration-300">
       {/* Top Banner */}
       <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-800 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
         <div className="absolute right-0 bottom-0 opacity-10 translate-x-10 translate-y-10 pointer-events-none">
@@ -441,22 +440,6 @@ export default function ClassroomToolsPage() {
         onClose={() => setIsTaskCanvasOpen(false)}
         students={students}
         className={classInfo.name}
-      />
-
-      {/* Floating Smart Dock */}
-      <FloatingSmartDock
-        onOpenWheel={() => setIsWheelOpen(true)}
-        onOpenTimer={() => setIsTimerOpen(true)}
-        onOpenNoise={() => setIsNoiseOpen(true)}
-        onOpenTraffic={() => setIsTrafficOpen(true)}
-        onOpenSoundboard={() => setIsSoundboardOpen(true)}
-        onOpenChest={() => setIsChestOpen(true)}
-        onOpenPair={() => setIsPairOpen(true)}
-        onOpenTeam={() => setIsTeamGenOpen(true)}
-        onOpenLeaderboard={() => setIsLeaderboardOpen(true)}
-        onOpenMood={() => setIsMoodOpen(true)}
-        onOpenBrainBreak={() => setIsBrainBreakOpen(true)}
-        onOpenTaskCanvas={() => setIsTaskCanvasOpen(true)}
       />
     </div>
   );
