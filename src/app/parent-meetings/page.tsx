@@ -22,6 +22,9 @@ import {
   Copy,
   BookOpen,
   HelpCircle,
+  MapPin,
+  ExternalLink,
+  Zap,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { ParentMeetingDoc, MeetingAgendaTopic, IndividualStudentMeetingNote, Student } from '@/types';
@@ -29,6 +32,7 @@ import { DynamicPresentationModal } from '@/components/meetings/meeting-presenta
 import { MeetingMinutesPrintView } from '@/components/meetings/meeting-minutes-print-view';
 import { TopicEditorModal } from '@/components/meetings/topic-editor-modal';
 import { StudentNoteModal } from '@/components/meetings/student-note-modal';
+import { ConferenceSchedulerModal } from '@/components/conference/conference-scheduler-modal';
 import { toast } from 'sonner';
 
 export default function ParentMeetingsPage() {
@@ -39,9 +43,12 @@ export default function ParentMeetingsPage() {
     classInfo,
     schoolInfo,
     students,
+    conferenceSlots,
+    cancelConferenceBooking,
+    deleteConferenceSlot,
   } = useAppStore();
 
-  const [activeTab, setActiveTab] = useState<'AGENDA' | 'STUDENTS' | 'SPEECH' | 'MINUTES'>('AGENDA');
+  const [activeTab, setActiveTab] = useState<'AGENDA' | 'STUDENTS' | 'CONFERENCE' | 'SPEECH' | 'MINUTES'>('AGENDA');
   const [activeMeeting, setActiveMeeting] = useState<ParentMeetingDoc>(parentMeetings[0] || null);
 
   const [isPresentationOpen, setIsPresentationOpen] = useState(false);
@@ -52,6 +59,8 @@ export default function ParentMeetingsPage() {
 
   const [selectedStudentForNote, setSelectedStudentForNote] = useState<Student | null>(null);
   const [studentNoteModalOpen, setStudentNoteModalOpen] = useState(false);
+  const [isConferenceModalOpen, setIsConferenceModalOpen] = useState(false);
+  const [confFilter, setConfFilter] = useState<'ALL' | 'BOOKED' | 'AVAILABLE'>('ALL');
 
   const currentMeeting = activeMeeting || parentMeetings[0];
 
@@ -226,15 +235,16 @@ export default function ParentMeetingsPage() {
 
       <div className="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
         {[
-          { id: 'AGENDA', label: `📌 Kế Hoạch & Nội Dung Trao Đổi (${currentMeeting?.agendaTopics?.length || 0})` },
+          { id: 'AGENDA', label: `📌 Kế Hoạch & Nội Dung (${currentMeeting?.agendaTopics?.length || 0})` },
           { id: 'STUDENTS', label: `🎯 Sổ Tay Trao Đổi 1-1 Với PH (${students.length})` },
+          { id: 'CONFERENCE', label: `📅 Lịch Hẹn 1-1 (${conferenceSlots.filter((s) => s.classId === classInfo.id || !s.classId).length})` },
           { id: 'SPEECH', label: '🎙️ Kịch Bản Phát Biểu & Hỏi Đáp' },
           { id: 'MINUTES', label: '👥 Ban Đại Diện & Biên Bản Họp' },
         ].map((tab) => (
           <button
             key={tab.id}
             type="button"
-            onClick={() => setActiveTab(tab.id as 'AGENDA' | 'STUDENTS' | 'SPEECH' | 'MINUTES')}
+            onClick={() => setActiveTab(tab.id as 'AGENDA' | 'STUDENTS' | 'CONFERENCE' | 'SPEECH' | 'MINUTES')}
             className={`px-4 py-2.5 rounded-2xl font-bold text-xs transition-all whitespace-nowrap cursor-pointer ${
               activeTab === tab.id
                 ? 'bg-blue-600 text-white shadow-xs'
@@ -571,6 +581,260 @@ export default function ParentMeetingsPage() {
         </div>
       )}
 
+      {/* TAB 5: 1-ON-1 PARENT CONFERENCE SCHEDULER */}
+      {activeTab === 'CONFERENCE' && (
+        <div className="space-y-6 animate-in fade-in">
+          {/* Top Banner with Stats & Quick Actions */}
+          <div className="bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 p-6 rounded-3xl border border-purple-200 shadow-2xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex items-center space-x-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center font-bold text-2xl shadow-md shrink-0">
+                  📅
+                </div>
+                <div>
+                  <h3 className="font-black text-base sm:text-lg text-slate-900">
+                    Quản Lý Khung Giờ Đặt Lịch Hẹn & Trao Đổi Phụ Huynh 1-1
+                  </h3>
+                  <p className="text-xs text-slate-600">
+                    Chủ động mở các khung giờ gặp gỡ (trực tiếp tại lớp hoặc online qua Meet/Zalo) để phụ huynh đăng ký.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+                    const shareUrl = `${origin}/hw/${classInfo.id || 'class-4a1'}`;
+                    navigator.clipboard.writeText(shareUrl);
+                    toast.success('Đã sao chép link Cổng Trao Đổi gửi Zalo Phụ huynh!');
+                  }}
+                  className="inline-flex items-center space-x-1.5 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-purple-700 font-bold border border-purple-200 shadow-2xs transition-all cursor-pointer text-xs"
+                >
+                  <Copy className="w-4 h-4" />
+                  <span>Sao Chép Link Gửi Zalo</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsConferenceModalOpen(true)}
+                  className="inline-flex items-center space-x-1.5 px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-black text-xs shadow-md transition-all cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>+ Mở Thêm Khung Giờ Mới</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Metrics Cards */}
+            {(() => {
+              const classConferences = conferenceSlots.filter((s) => s.classId === classInfo.id || !s.classId);
+              const bookedConferences = classConferences.filter((s) => s.isBooked);
+              const availableConferences = classConferences.filter((s) => !s.isBooked);
+
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                  <div className="bg-white p-4 rounded-2xl border border-purple-100 shadow-2xs space-y-1">
+                    <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                      Tổng Khung Giờ Đã Mở
+                    </span>
+                    <p className="text-2xl font-black text-purple-950">{classConferences.length}</p>
+                    <p className="text-[11px] text-slate-400">Dành cho Lớp {classInfo.name}</p>
+                  </div>
+
+                  <div className="bg-white p-4 rounded-2xl border border-emerald-100 shadow-2xs space-y-1">
+                    <span className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider block">
+                      Phụ Huynh Đã Đăng Ký
+                    </span>
+                    <p className="text-2xl font-black text-emerald-600">{bookedConferences.length}</p>
+                    <p className="text-[11px] text-emerald-700">
+                      {classConferences.length > 0
+                        ? `Đạt ${Math.round((bookedConferences.length / classConferences.length) * 100)}% tổng số slot`
+                        : 'Chưa có lượt đặt'}
+                    </p>
+                  </div>
+
+                  <div className="bg-white p-4 rounded-2xl border border-blue-100 shadow-2xs space-y-1">
+                    <span className="text-[11px] font-bold text-blue-700 uppercase tracking-wider block">
+                      Khung Giờ Còn Trống
+                    </span>
+                    <p className="text-2xl font-black text-blue-600">{availableConferences.length}</p>
+                    <p className="text-[11px] text-blue-700">Sẵn sàng nhận lịch đăng ký mới</p>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Filter Bar & Slots List */}
+          {(() => {
+            const classConferences = conferenceSlots.filter((s) => s.classId === classInfo.id || !s.classId);
+            const bookedConferences = classConferences.filter((s) => s.isBooked);
+            const availableConferences = classConferences.filter((s) => !s.isBooked);
+            const filteredConferences = classConferences.filter((s) => {
+              if (confFilter === 'BOOKED') return s.isBooked;
+              if (confFilter === 'AVAILABLE') return !s.isBooked;
+              return true;
+            });
+
+            return (
+              <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-2xs space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                  <h4 className="font-black text-sm text-slate-900 uppercase tracking-wider">
+                    Danh Sách Khung Giờ ({classConferences.length})
+                  </h4>
+
+                  <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl text-xs font-bold">
+                    {[
+                      { id: 'ALL', label: `Tất cả (${classConferences.length})` },
+                      { id: 'BOOKED', label: `Đã có PH đặt (${bookedConferences.length})` },
+                      { id: 'AVAILABLE', label: `Còn trống (${availableConferences.length})` },
+                    ].map((f) => (
+                      <button
+                        key={f.id}
+                        type="button"
+                        onClick={() => setConfFilter(f.id as any)}
+                        className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+                          confFilter === f.id
+                            ? 'bg-white text-slate-900 shadow-2xs font-black'
+                            : 'text-slate-500 hover:text-slate-800'
+                        }`}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {filteredConferences.length === 0 ? (
+                  <div className="py-12 text-center space-y-3 text-slate-400 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                    <Calendar className="w-10 h-10 mx-auto text-slate-300 stroke-[1.5]" />
+                    <p className="font-bold text-sm text-slate-600">
+                      {classConferences.length === 0
+                        ? 'Chưa có khung giờ hẹn nào được mở.'
+                        : 'Không tìm thấy khung giờ nào theo bộ lọc.'}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setIsConferenceModalOpen(true)}
+                      className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-purple-600 text-white font-bold text-xs hover:bg-purple-700 transition-colors cursor-pointer"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Mở Khung Giờ Ngay</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                    {filteredConferences.map((slot) => {
+                      const isBooked = slot.isBooked;
+                      return (
+                        <div
+                          key={slot.id}
+                          className={`p-4 rounded-2xl border transition-all flex flex-col justify-between space-y-3 ${
+                            isBooked
+                              ? 'bg-purple-50/50 border-purple-200 shadow-2xs'
+                              : 'bg-white border-slate-200 hover:border-purple-200'
+                          }`}
+                        >
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="font-black text-slate-900 text-xs sm:text-sm">
+                                📅 {slot.date} ({slot.startTime} - {slot.endTime})
+                              </span>
+                              <span
+                                className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                                  slot.type === 'IN_PERSON'
+                                    ? 'bg-blue-50 text-blue-800 border-blue-200'
+                                    : slot.type === 'ONLINE_MEET'
+                                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                    : 'bg-amber-50 text-amber-800 border-amber-200'
+                                }`}
+                              >
+                                {slot.type === 'IN_PERSON'
+                                  ? '🏫 Trực tiếp'
+                                  : slot.type === 'ONLINE_MEET'
+                                  ? '📹 Google Meet'
+                                  : slot.type === 'ZALO'
+                                  ? '💬 Zalo'
+                                  : '📞 Điện thoại'}
+                              </span>
+                            </div>
+
+                            <p className="text-xs font-bold text-slate-700">{slot.title}</p>
+                            {slot.location && (
+                              <p className="text-[11px] text-slate-400 flex items-center gap-1">
+                                <MapPin className="w-3 h-3 shrink-0" />
+                                <span>{slot.location}</span>
+                              </p>
+                            )}
+
+                            {isBooked ? (
+                              <div className="bg-white p-3 rounded-xl border border-purple-200 text-xs space-y-1.5">
+                                <div className="flex items-center justify-between">
+                                  <span className="font-black text-slate-900 flex items-center gap-1">
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                    <span>
+                                      HS: <strong className="text-purple-700">{slot.bookedStudentName}</strong>
+                                    </span>
+                                  </span>
+                                  {slot.bookedParentPhone && (
+                                    <a
+                                      href={`tel:${slot.bookedParentPhone}`}
+                                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-mono font-bold text-[10px] border border-emerald-200"
+                                    >
+                                      <Phone className="w-3 h-3" />
+                                      <span>{slot.bookedParentPhone}</span>
+                                    </a>
+                                  )}
+                                </div>
+                                <p className="text-[11px] text-slate-600">
+                                  PH: <strong>{slot.bookedParentName}</strong>
+                                </p>
+                                {slot.parentDiscussionTopics && (
+                                  <p className="text-[11px] text-slate-500 bg-slate-50 p-2 rounded-lg border border-slate-100 italic">
+                                    💬 <strong>Nội dung PH nhắn:</strong> {slot.parentDiscussionTopics}
+                                  </p>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="p-2.5 rounded-xl bg-slate-50 text-slate-400 text-xs font-medium border border-slate-100 flex items-center gap-1.5">
+                                <Clock className="w-3.5 h-3.5" />
+                                <span>Khung giờ đang mở — Đang chờ phụ huynh đăng ký</span>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex items-center justify-end space-x-2 pt-2 border-t border-slate-100">
+                            {isBooked && (
+                              <button
+                                type="button"
+                                onClick={() => cancelConferenceBooking(slot.id)}
+                                className="px-3 py-1.5 rounded-xl border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-colors cursor-pointer"
+                              >
+                                Hủy Lượt Đặt
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => deleteConferenceSlot(slot.id)}
+                              className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
+                              title="Xóa khung giờ này"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
       {currentMeeting && (
         <DynamicPresentationModal
           isOpen={isPresentationOpen}
@@ -605,6 +869,13 @@ export default function ParentMeetingsPage() {
           classNameStr={classInfo.name}
         />
       )}
+
+      {/* Conference Scheduler Modal */}
+      <ConferenceSchedulerModal
+        isOpen={isConferenceModalOpen}
+        onClose={() => setIsConferenceModalOpen(false)}
+        isTeacher={true}
+      />
     </div>
   );
 }

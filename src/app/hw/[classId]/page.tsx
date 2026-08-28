@@ -1037,7 +1037,7 @@ export default function PublicClassHomeworkPortal({
         isOpen={isConferenceModalOpen}
         onClose={() => setIsConferenceModalOpen(false)}
         isTeacher={false}
-        currentStudent={classStudents[0] || null}
+        currentStudent={null}
       />
 
       {/* Student Online Quiz Modal */}

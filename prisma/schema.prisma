@@ -138,3 +138,23 @@ model ClassFundTransaction {
   receiptUrl  String?
   createdAt   DateTime @default(now())
 }
+
+model ConferenceSlot {
+  id                     String    @id @default(uuid())
+  classId                String
+  title                  String
+  date                   String    // YYYY-MM-DD
+  startTime              String    // HH:mm
+  endTime                String    // HH:mm
+  type                   String    // 'IN_PERSON', 'ONLINE_MEET', 'PHONE', 'ZALO'
+  location               String?
+  isBooked               Boolean   @default(false)
+  bookedStudentId        String?
+  bookedStudentName      String?
+  bookedParentName       String?
+  bookedParentPhone      String?
+  parentDiscussionTopics String?
+  teacherNotes           String?
+  createdAt              DateTime  @default(now())
+}
+

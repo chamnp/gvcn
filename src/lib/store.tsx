@@ -293,6 +293,7 @@ interface AppContextType {
   // Phase 3: Parent Conference 1-on-1 Scheduler
   conferenceSlots: ConferenceSlot[];
   createConferenceSlot: (slot: Omit<ConferenceSlot, 'id' | 'isBooked' | 'createdAt'>) => void;
+  createMultipleConferenceSlots: (slots: Omit<ConferenceSlot, 'id' | 'isBooked' | 'createdAt'>[]) => void;
   bookConferenceSlot: (
     slotId: string,
     bookingData: {
@@ -3532,6 +3533,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     supabase.from('ConferenceSlot').upsert(newSlot).then();
   };
 
+  const createMultipleConferenceSlots = (slots: Omit<ConferenceSlot, 'id' | 'isBooked' | 'createdAt'>[]) => {
+    if (!slots.length) return;
+    const newSlots: ConferenceSlot[] = slots.map((slot, index) => ({
+      ...slot,
+      id: `conf-${Date.now()}-${index}-${Math.random().toString(36).substring(2, 6)}`,
+      isBooked: false,
+      createdAt: new Date().toISOString(),
+    }));
+    setConferenceSlots((prev) => [...prev, ...newSlots]);
+    toast.success(`Đã tạo hàng loạt ${newSlots.length} khung giờ hẹn thành công!`);
+    supabase.from('ConferenceSlot').upsert(newSlots).then();
+  };
+
   const bookConferenceSlot = (
     slotId: string,
     bookingData: {
@@ -3967,6 +3981,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deleteClassMoment,
         conferenceSlots,
         createConferenceSlot,
+        createMultipleConferenceSlots,
         bookConferenceSlot,
         cancelConferenceBooking,
         deleteConferenceSlot,

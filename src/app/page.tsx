@@ -1241,6 +1241,7 @@ export default function DashboardPage() {
       <ConferenceSchedulerModal
         isOpen={isConferenceModalOpen}
         onClose={() => setIsConferenceModalOpen(false)}
+        isTeacher={true}
       />
 
       {/* AI Class Diagnostic Modal */}
