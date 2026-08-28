@@ -38,7 +38,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi" className={inter.variable}>
-      <body className={`${inter.className} bg-slate-50 text-slate-900 min-h-screen antialiased flex flex-col w-full max-w-full overflow-x-hidden`}>
+      <body className={`${inter.className} bg-slate-50 text-slate-900 min-h-screen antialiased flex w-full max-w-full overflow-x-hidden`}>
         <AuthProvider>
           <AppProvider>
             <MobileNavProvider>

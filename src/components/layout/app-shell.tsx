@@ -34,7 +34,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
 
   // When logged in and authorized -> Render full application dashboard shell
   return (
-    <>
+    <div className="flex min-h-screen w-full max-w-full overflow-x-hidden">
       <Sidebar />
       <MobileSidebar />
       <div className="flex-1 flex flex-col min-w-0 min-h-screen w-full max-w-full overflow-x-hidden">
@@ -44,6 +44,6 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
         </main>
         <BottomNav />
       </div>
-    </>
+    </div>
   );
 };
