@@ -1,0 +1,17 @@
+{
+  "name": "GVCN Pro - Quản Lý Giáo Viên Chủ Nhiệm Tiểu Học TT27",
+  "short_name": "GVCN Pro",
+  "description": "Phần mềm Quản lý Giáo viên Chủ nhiệm Tiểu học chuẩn Thông tư 27/2020/TT-BGDĐT",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}

@@ -38,6 +38,7 @@ import { Student, Gender } from '@/types';
 import { parseStudentExcelFile } from '@/lib/excel-import';
 import { downloadStudentTemplate, exportStudentList } from '@/lib/excel-export';
 import { FormativeNotesModal } from '@/components/students/formative-notes-modal';
+import { Student360Modal } from '@/components/students/student-360-modal';
 import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
 
@@ -1004,6 +1005,13 @@ export default function StudentsPage() {
         student={selectedStudentForNotes}
         isOpen={Boolean(selectedStudentForNotes)}
         onClose={() => setSelectedStudentForNotes(null)}
+      />
+
+      {/* Student 360 Comprehensive Profile Modal */}
+      <Student360Modal
+        student={selectedStudentDetail}
+        isOpen={Boolean(selectedStudentDetail)}
+        onClose={() => setSelectedStudentDetail(null)}
       />
     </div>
   );

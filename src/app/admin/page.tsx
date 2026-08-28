@@ -39,6 +39,7 @@ import { useAuth } from '@/lib/auth-context';
 import { ClassInfo, GradeLevel, UserRole, TeacherProfile } from '@/types';
 import { parseTeacherExcelFile } from '@/lib/excel-import';
 import { downloadTeacherTemplate, exportTeacherList } from '@/lib/excel-export';
+import { SchoolIntelligenceDashboard } from '@/components/admin/school-intelligence-dashboard';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
@@ -135,6 +136,7 @@ export default function AdminPortalPage() {
   });
 
   // Metrics
+  const [adminTab, setAdminTab] = useState<'OVERVIEW' | 'CLASSES' | 'STAFF'>('OVERVIEW');
   const totalClasses = schoolClasses.length;
   const totalEstimatedStudents = allStudents.length;
   const totalTeachers = teachers.length;
@@ -461,7 +463,42 @@ export default function AdminPortalPage() {
         </div>
       </div>
 
+      {/* ADMIN NAVIGATION TABS */}
+      <div className="flex overflow-x-auto no-scrollbar gap-1.5 bg-white p-1 rounded-2xl border border-slate-200 shadow-xs text-xs font-bold scroll-smooth">
+        {[
+          { id: 'OVERVIEW', label: '📊 Thống Kê BGH & Toàn Trường', count: null },
+          { id: 'CLASSES', label: '🏫 Danh Sách Lớp Học', count: totalClasses },
+          { id: 'STAFF', label: '👥 Đội Ngũ Cán Bộ & GV', count: totalTeachers },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setAdminTab(tab.id as any)}
+            className={`h-9 px-4 flex items-center justify-center space-x-1.5 rounded-xl transition-all whitespace-nowrap cursor-pointer shrink-0 ${
+              adminTab === tab.id
+                ? 'bg-blue-600 text-white shadow-xs font-black'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+            }`}
+          >
+            <span>{tab.label}</span>
+            {tab.count !== null && (
+              <span
+                className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                  adminTab === tab.id ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
+                }`}
+              >
+                {tab.count}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* TAB 1: SCHOOL INTELLIGENCE FOR BGH */}
+      {adminTab === 'OVERVIEW' && <SchoolIntelligenceDashboard />}
+
       {/* SECTION 1: DANH SÁCH LỚP HỌC TOÀN TRƯỜNG */}
+      {adminTab === 'CLASSES' && (
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 sm:p-6 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
@@ -551,8 +588,10 @@ export default function AdminPortalPage() {
           </table>
         </div>
       </div>
+      )}
 
       {/* SECTION 2: DANH SÁCH GIÁO VIÊN & CÁN BỘ NHÀ TRƯỜNG */}
+      {adminTab === 'STAFF' && (
       <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 sm:p-6 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
@@ -759,6 +798,7 @@ export default function AdminPortalPage() {
           </table>
         </div>
       </div>
+      )}
 
       {/* Modal Add/Edit Class */}
       {isClassModalOpen && (

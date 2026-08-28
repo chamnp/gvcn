@@ -23,6 +23,7 @@ import { TERMS } from '@/lib/tt27-engine';
 import { TermType } from '@/types';
 import Link from 'next/link';
 import { useMobileNav } from './mobile-nav-context';
+import { NetworkStatusIndicator } from '@/components/ui/network-status-indicator';
 
 export const Header: React.FC = () => {
   const { schoolClasses, activeClassId, classInfo, switchClass, currentTerm, setCurrentTerm, autoCalendarTerm, schoolInfo } = useAppStore();
@@ -192,6 +193,9 @@ export const Header: React.FC = () => {
 
       {/* RIGHT: Quick Admin Gateway & User Profile Dropdown Pill */}
       <div className="flex items-center space-x-2 shrink-0">
+        {/* Network & PWA Status Indicator */}
+        <NetworkStatusIndicator />
+
         {isAdmin && (
           <Link
             href="/admin"
