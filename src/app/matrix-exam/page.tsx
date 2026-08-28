@@ -50,6 +50,7 @@ import {
 import { ImportQuestionBankModal } from '@/components/matrix-exam/import-question-bank-modal';
 import { AssignQuizModal } from '@/components/quiz/assign-quiz-modal';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
 
 const STORAGE_KEY = 'gvcn_pro_question_bank_v2';
 
@@ -125,7 +126,7 @@ export default function MatrixExamPage() {
   const [aiTopicInput, setAiTopicInput] = useState('');
   const [isAIGenerating, setIsAIGenerating] = useState(false);
 
-  // Load saved questions
+  // Load saved questions & Live fetch from Supabase
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -133,6 +134,34 @@ export default function MatrixExamPage() {
         setQuestions(JSON.parse(saved));
       }
     } catch (e) {}
+
+    supabase
+      .from('MatrixQuestion')
+      .select('*')
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          const mapped: ExamQuestion[] = data.map((q: any) => ({
+            id: q.id,
+            subjectCode: q.subjectCode,
+            grade: q.grade,
+            term: q.term,
+            strand: q.topic || q.strand || 'Chung',
+            level: (q.level === 1 ? 'MUC_1' : q.level === 2 ? 'MUC_2' : 'MUC_3') as TT27Level,
+            type: q.type === 'MCQ' || q.type === 'MULTIPLE_CHOICE' ? 'MULTIPLE_CHOICE' : 'ESSAY',
+            content: q.questionText || q.content,
+            options: Array.isArray(q.options) ? q.options : [],
+            correctAnswer: q.correctAnswer,
+            points: Number(q.points || 1),
+            explanation: q.explanation,
+            createdAt: q.createdAt,
+          }));
+          setQuestions((prev) => {
+            const dbIds = new Set(mapped.map((m) => m.id));
+            const localOnly = prev.filter((p) => !dbIds.has(p.id));
+            return [...mapped, ...localOnly];
+          });
+        }
+      });
   }, []);
 
   const saveQuestions = (newQuestions: ExamQuestion[]) => {
@@ -140,6 +169,23 @@ export default function MatrixExamPage() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newQuestions));
     } catch (e) {}
+
+    const dbRows = newQuestions.map((q) => ({
+      id: q.id,
+      grade: q.grade,
+      subjectCode: q.subjectCode,
+      term: q.term,
+      topic: q.strand,
+      level: q.level === 'MUC_1' ? 1 : q.level === 'MUC_2' ? 2 : 3,
+      type: q.type === 'MULTIPLE_CHOICE' ? 'MCQ' : 'ESSAY',
+      questionText: q.content,
+      options: q.options || [],
+      correctAnswer: q.correctAnswer,
+      explanation: q.explanation || '',
+      points: q.points,
+      createdAt: q.createdAt,
+    }));
+    supabase.from('MatrixQuestion').upsert(dbRows).then();
   };
 
   const termObj = TERMS.find((t) => t.id === selectedTerm);

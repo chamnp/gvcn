@@ -48,6 +48,7 @@ import { useAppStore, getDefaultPinForStudent } from '@/lib/store';
 import { TERMS, PRIMARY_SUBJECTS, TRAIT_DEFINITIONS, getLocalDateString } from '@/lib/tt27-engine';
 import { getSubjectTheme, DAYS_OF_WEEK, PERIODS } from '@/lib/timetable-data';
 import { TermType, DayOfWeek, ClassEvent, RewardProduct, RedemptionItem } from '@/types';
+import { supabase } from '@/lib/supabase';
 import { LeaveRequestModal } from '@/components/parent/leave-request-modal';
 import { ConferenceSchedulerModal } from '@/components/conference/conference-scheduler-modal';
 import { toast } from 'sonner';
@@ -171,6 +172,21 @@ export default function StudentPrivateReportPage({
       const savedPack = localStorage.getItem(`gvcn_pack_student_${student.id}_${todayStr}`);
       if (savedPack) setPackedSubjectCodes(JSON.parse(savedPack));
     } catch (e) {}
+
+    supabase
+      .from('StudentHomeworkProgress')
+      .select('*')
+      .eq('studentId', student.id)
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          const hwDone = data.filter((d: any) => d.type === 'HW_DONE' && d.isDone).map((d: any) => d.referenceId);
+          const packDone = data
+            .filter((d: any) => d.type === 'PACK_DONE' && d.isDone && d.referenceId.startsWith(todayStr))
+            .map((d: any) => d.referenceId.replace(`${todayStr}_`, ''));
+          if (hwDone.length > 0) setCompletedHwIds(hwDone);
+          if (packDone.length > 0) setPackedSubjectCodes(packDone);
+        }
+      });
   }, [student, todayStr]);
 
   // Determine tomorrow's day of week
@@ -367,25 +383,51 @@ export default function StudentPrivateReportPage({
   );
 
   const toggleCompleteHw = (hwId: string) => {
+    const isDone = completedHwIds.includes(hwId);
     setCompletedHwIds((prev) => {
-      const isDone = prev.includes(hwId);
       const updated = isDone ? prev.filter((id) => id !== hwId) : [...prev, hwId];
       try {
         localStorage.setItem(`gvcn_hw_done_student_${student.id}`, JSON.stringify(updated));
       } catch (e) {}
       return updated;
     });
+
+    supabase
+      .from('StudentHomeworkProgress')
+      .upsert({
+        id: `${student.id}_hw_${hwId}`,
+        studentId: student.id,
+        classId: student.classId || 'class-4a1',
+        type: 'HW_DONE',
+        referenceId: hwId,
+        isDone: !isDone,
+        updatedAt: new Date().toISOString(),
+      })
+      .then();
   };
 
   const togglePackSubject = (subjectCode: string) => {
+    const isPacked = packedSubjectCodes.includes(subjectCode);
     setPackedSubjectCodes((prev) => {
-      const isPacked = prev.includes(subjectCode);
       const updated = isPacked ? prev.filter((c) => c !== subjectCode) : [...prev, subjectCode];
       try {
         localStorage.setItem(`gvcn_pack_student_${student.id}_${todayStr}`, JSON.stringify(updated));
       } catch (e) {}
       return updated;
     });
+
+    supabase
+      .from('StudentHomeworkProgress')
+      .upsert({
+        id: `${student.id}_pack_${todayStr}_${subjectCode}`,
+        studentId: student.id,
+        classId: student.classId || 'class-4a1',
+        type: 'PACK_DONE',
+        referenceId: `${todayStr}_${subjectCode}`,
+        isDone: !isPacked,
+        updatedAt: new Date().toISOString(),
+      })
+      .then();
   };
 
   const handleSavePin = (e: React.FormEvent) => {

@@ -20,6 +20,7 @@ import {
 import { useAppStore } from '@/lib/store';
 import { scanEarlyInterventionAlerts } from '@/lib/early-intervention';
 import { getLocalDateString } from '@/lib/tt27-engine';
+import { supabase } from '@/lib/supabase';
 
 const STORAGE_KEY = 'gvcn_pro_read_notifications_v1';
 
@@ -56,7 +57,7 @@ export function NotificationCenter() {
 
   const todayStr = getLocalDateString();
 
-  // Load read notification IDs from localStorage
+  // Load read notification IDs from localStorage & Supabase
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -66,6 +67,18 @@ export function NotificationCenter() {
     } catch (e) {
       console.warn('Failed to load read notifications from localStorage', e);
     }
+
+    supabase
+      .from('TeacherConfig')
+      .select('readNotificationIds')
+      .then(({ data }) => {
+        if (data && data.length > 0 && Array.isArray(data[0].readNotificationIds)) {
+          setReadIds((prev) => {
+            const merged = Array.from(new Set([...prev, ...data[0].readNotificationIds]));
+            return merged;
+          });
+        }
+      });
   }, []);
 
   const saveReadIds = (newReadIds: string[]) => {
@@ -75,6 +88,15 @@ export function NotificationCenter() {
     } catch (e) {
       console.warn('Failed to save read notifications to localStorage', e);
     }
+
+    supabase
+      .from('TeacherConfig')
+      .update({
+        readNotificationIds: newReadIds,
+        updatedAt: new Date().toISOString(),
+      })
+      .eq('id', 'cfg-default')
+      .then();
   };
 
   const markAsRead = (id: string) => {

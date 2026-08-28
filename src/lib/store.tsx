@@ -1213,6 +1213,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           { data: dbLeave },
           { data: dbMoments },
           { data: dbConferences },
+          { data: dbIEPPlans },
+          { data: dbParentMeetings },
+          { data: dbHealthRecords },
+          { data: dbClassroomBooks },
+          { data: dbBorrowLogs },
+          { data: dbTeacherConfigs },
         ] = await Promise.all([
           supabase.from('SchoolInfo').select('*').single(),
           supabase.from('Class').select('*').order('grade', { ascending: true }),
@@ -1233,6 +1239,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           supabase.from('LeaveRequest').select('*').order('createdAt', { ascending: false }),
           supabase.from('ClassMoment').select('*').order('createdAt', { ascending: false }),
           supabase.from('ConferenceSlot').select('*').order('date', { ascending: true }),
+          supabase.from('IEPPlan').select('*').order('createdAt', { ascending: false }),
+          supabase.from('ParentMeeting').select('*').order('meetingDate', { ascending: false }),
+          supabase.from('HealthRecord').select('*'),
+          supabase.from('ClassroomBook').select('*').order('title', { ascending: true }),
+          supabase.from('BookBorrowLog').select('*').order('borrowDate', { ascending: false }),
+          supabase.from('TeacherConfig').select('*'),
         ]);
 
         if (!isMounted) return;
@@ -1261,6 +1273,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
           if (dbSchool.aiGenSettings && typeof dbSchool.aiGenSettings === 'object') {
             setAiGenSettingsState(dbSchool.aiGenSettings);
+          }
+        }
+
+        if (dbTeacherConfigs && dbTeacherConfigs.length > 0) {
+          const cfg = dbTeacherConfigs[0];
+          if (cfg.aiConfig && typeof cfg.aiConfig === 'object') {
+            setAiConfigState(cfg.aiConfig);
+            if (cfg.aiConfig.apiKey) setApiKeyState(cfg.aiConfig.apiKey);
+          }
+          if (cfg.aiGenSettings && typeof cfg.aiGenSettings === 'object') {
+            setAiGenSettingsState(cfg.aiGenSettings);
           }
         }
 
@@ -1384,6 +1407,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         if (dbConferences && dbConferences.length > 0) {
           setConferenceSlots(dbConferences);
+        }
+
+        if (dbIEPPlans && dbIEPPlans.length > 0) {
+          setAllIEPPlans(dbIEPPlans);
+        }
+
+        if (dbParentMeetings && dbParentMeetings.length > 0) {
+          setAllParentMeetings(dbParentMeetings);
+        }
+
+        if (dbHealthRecords && dbHealthRecords.length > 0) {
+          setAllHealthRecords(dbHealthRecords);
+        }
+
+        if (dbClassroomBooks && dbClassroomBooks.length > 0) {
+          setAllClassroomBooks(dbClassroomBooks);
+        }
+
+        if (dbBorrowLogs && dbBorrowLogs.length > 0) {
+          setAllBookBorrowLogs(dbBorrowLogs);
         }
       } catch (err) {
         console.warn('Supabase initial fetch error:', err);
@@ -1704,6 +1747,118 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           } else if (payload.eventType === 'UPDATE') {
             const newRow = payload.new as CustomSubject;
             setCustomSubjects((prev) => prev.map((s) => (s.id === newRow.id ? newRow : s)));
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'IEPPlan' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newRow = payload.new as IEPPlan;
+            setAllIEPPlans((prev) => (prev.some((p) => p.id === newRow.id) ? prev : [newRow, ...prev]));
+          } else if (payload.eventType === 'DELETE') {
+            const oldRow = payload.old as any;
+            setAllIEPPlans((prev) => prev.filter((p) => p.id !== oldRow.id));
+          } else if (payload.eventType === 'UPDATE') {
+            const newRow = payload.new as IEPPlan;
+            setAllIEPPlans((prev) => prev.map((p) => (p.id === newRow.id ? newRow : p)));
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'ParentMeeting' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newRow = payload.new as ParentMeetingDoc;
+            setAllParentMeetings((prev) => (prev.some((p) => p.id === newRow.id) ? prev : [newRow, ...prev]));
+          } else if (payload.eventType === 'DELETE') {
+            const oldRow = payload.old as any;
+            setAllParentMeetings((prev) => prev.filter((p) => p.id !== oldRow.id));
+          } else if (payload.eventType === 'UPDATE') {
+            const newRow = payload.new as ParentMeetingDoc;
+            setAllParentMeetings((prev) => prev.map((p) => (p.id === newRow.id ? newRow : p)));
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'HealthRecord' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newRow = payload.new as HealthRecord;
+            setAllHealthRecords((prev) => (prev.some((h) => h.id === newRow.id) ? prev : [newRow, ...prev]));
+          } else if (payload.eventType === 'DELETE') {
+            const oldRow = payload.old as any;
+            setAllHealthRecords((prev) => prev.filter((h) => h.id !== oldRow.id));
+          } else if (payload.eventType === 'UPDATE') {
+            const newRow = payload.new as HealthRecord;
+            setAllHealthRecords((prev) => prev.map((h) => (h.id === newRow.id ? newRow : h)));
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'ClassroomBook' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newRow = payload.new as ClassroomBook;
+            setAllClassroomBooks((prev) => (prev.some((b) => b.id === newRow.id) ? prev : [newRow, ...prev]));
+          } else if (payload.eventType === 'DELETE') {
+            const oldRow = payload.old as any;
+            setAllClassroomBooks((prev) => prev.filter((b) => b.id !== oldRow.id));
+          } else if (payload.eventType === 'UPDATE') {
+            const newRow = payload.new as ClassroomBook;
+            setAllClassroomBooks((prev) => prev.map((b) => (b.id === newRow.id ? newRow : b)));
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'BookBorrowLog' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newRow = payload.new as BookBorrowLog;
+            setAllBookBorrowLogs((prev) => (prev.some((l) => l.id === newRow.id) ? prev : [newRow, ...prev]));
+          } else if (payload.eventType === 'DELETE') {
+            const oldRow = payload.old as any;
+            setAllBookBorrowLogs((prev) => prev.filter((l) => l.id !== oldRow.id));
+          } else if (payload.eventType === 'UPDATE') {
+            const newRow = payload.new as BookBorrowLog;
+            setAllBookBorrowLogs((prev) => prev.map((l) => (l.id === newRow.id ? newRow : l)));
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'LeaveRequest' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newRow = payload.new as LeaveRequest;
+            setLeaveRequests((prev) => (prev.some((l) => l.id === newRow.id) ? prev : [newRow, ...prev]));
+          } else if (payload.eventType === 'DELETE') {
+            const oldRow = payload.old as any;
+            setLeaveRequests((prev) => prev.filter((l) => l.id !== oldRow.id));
+          } else if (payload.eventType === 'UPDATE') {
+            const newRow = payload.new as LeaveRequest;
+            setLeaveRequests((prev) => prev.map((l) => (l.id === newRow.id ? newRow : l)));
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'FormativeNote' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newRow = payload.new as FormativeNote;
+            setFormativeNotes((prev) => (prev.some((n) => n.id === newRow.id) ? prev : [newRow, ...prev]));
+          } else if (payload.eventType === 'DELETE') {
+            const oldRow = payload.old as any;
+            setFormativeNotes((prev) => prev.filter((n) => n.id !== oldRow.id));
+          } else if (payload.eventType === 'UPDATE') {
+            const newRow = payload.new as FormativeNote;
+            setFormativeNotes((prev) => prev.map((n) => (n.id === newRow.id ? newRow : n)));
           }
         }
       )
@@ -3638,6 +3793,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } catch (e) {}
       return next;
     });
+    supabase.from('QuizSubmission').insert(newSubmission).then();
     return newSubmission;
   };
 
@@ -3649,6 +3805,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } catch (e) {}
       return next;
     });
+    supabase.from('QuizSubmission').delete().eq('id', id).then();
   };
 
   // Phase 7: IEP Plans Actions
@@ -3671,18 +3828,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } catch (e) {}
       return next;
     });
+    supabase.from('IEPPlan').insert(newPlan).then();
     toast.success(`Đã tạo Kế hoạch Giáo dục Cá nhân cho em ${newPlan.studentName}!`);
     return newPlan;
   };
 
   const updateIEPPlan = (updated: IEPPlan) => {
+    const withTimestamp = { ...updated, updatedAt: new Date().toISOString() };
     setAllIEPPlans((prev) => {
-      const next = prev.map((p) => (p.id === updated.id ? { ...updated, updatedAt: new Date().toISOString() } : p));
+      const next = prev.map((p) => (p.id === updated.id ? withTimestamp : p));
       try {
         localStorage.setItem(STORAGE_PREFIX + 'iepPlans', JSON.stringify(next));
       } catch (e) {}
       return next;
     });
+    supabase.from('IEPPlan').update(withTimestamp).eq('id', updated.id).then();
     toast.success(`Đã cập nhật Kế hoạch IEP của em ${updated.studentName}!`);
   };
 
@@ -3694,6 +3854,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } catch (e) {}
       return next;
     });
+    supabase.from('IEPPlan').delete().eq('id', id).then();
     toast.success('Đã xóa hồ sơ Kế hoạch IEP!');
   };
 
@@ -3715,16 +3876,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try { localStorage.setItem(STORAGE_PREFIX + 'parentMeetings', JSON.stringify(next)); } catch (e) {}
       return next;
     });
+    supabase.from('ParentMeeting').insert(newDoc).then();
     toast.success(`Đã lưu biên bản cuộc họp phụ huynh!`);
     return newDoc;
   };
 
   const updateParentMeetingDoc = (updated: ParentMeetingDoc) => {
+    const withTimestamp = { ...updated, updatedAt: new Date().toISOString() };
     setAllParentMeetings((prev) => {
-      const next = prev.map((p) => (p.id === updated.id ? updated : p));
+      const next = prev.map((p) => (p.id === updated.id ? withTimestamp : p));
       try { localStorage.setItem(STORAGE_PREFIX + 'parentMeetings', JSON.stringify(next)); } catch (e) {}
       return next;
     });
+    supabase.from('ParentMeeting').update(withTimestamp).eq('id', updated.id).then();
     toast.success('Đã cập nhật biên bản cuộc họp phụ huynh!');
   };
 
@@ -3734,6 +3898,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try { localStorage.setItem(STORAGE_PREFIX + 'parentMeetings', JSON.stringify(next)); } catch (e) {}
       return next;
     });
+    supabase.from('ParentMeeting').delete().eq('id', id).then();
     toast.success('Đã xóa biên bản cuộc họp!');
   };
 
@@ -3756,16 +3921,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try { localStorage.setItem(STORAGE_PREFIX + 'healthRecords', JSON.stringify(next)); } catch (e) {}
       return next;
     });
+    supabase.from('HealthRecord').upsert(newRec).then();
     toast.success(`Đã lưu hồ sơ sức khỏe em ${newRec.studentName}!`);
     return newRec;
   };
 
   const updateHealthRecord = (updated: HealthRecord) => {
+    const withTimestamp = { ...updated, updatedAt: new Date().toISOString() };
     setAllHealthRecords((prev) => {
-      const next = prev.map((h) => (h.id === updated.id ? { ...updated, updatedAt: new Date().toISOString() } : h));
+      const next = prev.map((h) => (h.id === updated.id ? withTimestamp : h));
       try { localStorage.setItem(STORAGE_PREFIX + 'healthRecords', JSON.stringify(next)); } catch (e) {}
       return next;
     });
+    supabase.from('HealthRecord').update(withTimestamp).eq('id', updated.id).then();
     toast.success(`Đã cập nhật hồ sơ sức khỏe em ${updated.studentName}!`);
   };
 
@@ -3775,6 +3943,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try { localStorage.setItem(STORAGE_PREFIX + 'healthRecords', JSON.stringify(next)); } catch (e) {}
       return next;
     });
+    supabase.from('HealthRecord').delete().eq('id', id).then();
     toast.success('Đã xóa hồ sơ sức khỏe!');
   };
 
@@ -3795,6 +3964,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try { localStorage.setItem(STORAGE_PREFIX + 'classroomBooks', JSON.stringify(next)); } catch (e) {}
       return next;
     });
+    supabase.from('ClassroomBook').insert(newBook).then();
     toast.success(`Đã thêm sách "${newBook.title}" vào tủ sách lớp!`);
     return newBook;
   };
@@ -3805,6 +3975,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try { localStorage.setItem(STORAGE_PREFIX + 'classroomBooks', JSON.stringify(next)); } catch (e) {}
       return next;
     });
+    supabase.from('ClassroomBook').update(updated).eq('id', updated.id).then();
     toast.success('Đã cập nhật thông tin sách!');
   };
 
@@ -3814,6 +3985,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try { localStorage.setItem(STORAGE_PREFIX + 'classroomBooks', JSON.stringify(next)); } catch (e) {}
       return next;
     });
+    supabase.from('ClassroomBook').delete().eq('id', id).then();
     toast.success('Đã xóa sách khỏi tủ sách!');
   };
 
@@ -3835,10 +4007,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try { localStorage.setItem(STORAGE_PREFIX + 'bookBorrowLogs', JSON.stringify(next)); } catch (e) {}
       return next;
     });
+    supabase.from('BookBorrowLog').insert(newLog).then();
+
     // Decrease available copies
+    const targetBook = allClassroomBooks.find((b) => b.id === data.bookId);
+    const newAvail = Math.max(0, (targetBook?.availableCopies ?? 1) - 1);
     setAllClassroomBooks((prev) =>
-      prev.map((b) => (b.id === data.bookId ? { ...b, availableCopies: Math.max(0, b.availableCopies - 1) } : b))
+      prev.map((b) => (b.id === data.bookId ? { ...b, availableCopies: newAvail } : b))
     );
+    supabase.from('ClassroomBook').update({ availableCopies: newAvail }).eq('id', data.bookId).then();
+
     toast.success(`Em ${data.studentName} đã mượn sách "${data.bookTitle}"!`);
     return newLog;
   };
@@ -3846,25 +4024,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const returnBook = (logId: string, review?: string, stars?: number) => {
     const targetLog = allBookBorrowLogs.find((l) => l.id === logId);
     if (targetLog) {
+      const returnDate = new Date().toISOString().split('T')[0];
+      const updatedLog = {
+        status: 'RETURNED' as const,
+        returnDate,
+        studentReview: review || targetLog.studentReview,
+        ratingStars: stars || targetLog.ratingStars,
+      };
+
       setAllBookBorrowLogs((prev) => {
-        const next = prev.map((l) =>
-          l.id === logId
-            ? {
-                ...l,
-                status: 'RETURNED' as const,
-                returnDate: new Date().toISOString().split('T')[0],
-                studentReview: review || l.studentReview,
-                ratingStars: stars || l.ratingStars,
-              }
-            : l
-        );
+        const next = prev.map((l) => (l.id === logId ? { ...l, ...updatedLog } : l));
         try { localStorage.setItem(STORAGE_PREFIX + 'bookBorrowLogs', JSON.stringify(next)); } catch (e) {}
         return next;
       });
+      supabase.from('BookBorrowLog').update(updatedLog).eq('id', logId).then();
+
       // Increase available copies
+      const targetBook = allClassroomBooks.find((b) => b.id === targetLog.bookId);
+      const newAvail = Math.min(targetBook?.totalCopies ?? 1, (targetBook?.availableCopies ?? 0) + 1);
       setAllClassroomBooks((prev) =>
-        prev.map((b) => (b.id === targetLog.bookId ? { ...b, availableCopies: Math.min(b.totalCopies, b.availableCopies + 1) } : b))
+        prev.map((b) => (b.id === targetLog.bookId ? { ...b, availableCopies: newAvail } : b))
       );
+      supabase.from('ClassroomBook').update({ availableCopies: newAvail }).eq('id', targetLog.bookId).then();
+
       toast.success(`Đã trả sách "${targetLog.bookTitle}" vào tủ sách thành công!`);
     }
   };
