@@ -29,6 +29,10 @@ import {
   BookOpen,
   Star,
   Compass,
+  Zap,
+  Activity,
+  HeartHandshake,
+  LayoutGrid,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useAuth } from '@/lib/auth-context';
@@ -49,6 +53,8 @@ import { ClassMeetingPlannerModal } from '@/components/planner/class-meeting-pla
 import { ZaloMessageGeneratorModal } from '@/components/parent/zalo-message-generator-modal';
 import { scanEarlyInterventionAlerts } from '@/lib/early-intervention';
 import { toast } from 'sonner';
+
+type DashboardTab = 'TODAY' | 'ACADEMIC' | 'SCHEDULE';
 
 // Helper to calculate birthday information
 function getStudentBirthdayInfo(dobStr: string) {
@@ -109,6 +115,8 @@ export default function DashboardPage() {
   } = useAppStore();
   const { profile } = useAuth();
 
+  const [activeTab, setActiveTab] = useState<DashboardTab>('TODAY');
+  const [isFilterIncomplete, setIsFilterIncomplete] = useState(false);
   const [isAddEventModalOpen, setIsAddEventModalOpen] = useState(false);
   const [isConferenceModalOpen, setIsConferenceModalOpen] = useState(false);
   const [isDiagnosticOpen, setIsDiagnosticOpen] = useState(false);
@@ -262,9 +270,34 @@ export default function DashboardPage() {
       });
   }, [classEvents, eventFilter, todayStr]);
 
-  const nextUpcomingEvent = classEvents
-    .filter((e) => e.date >= todayStr)
-    .sort((a, b) => a.date.localeCompare(b.date))[0];
+  // Thời khóa biểu hôm nay
+  const todayDayOfWeek = useMemo((): DayOfWeek => {
+    const d = new Date().getDay();
+    const map: { [key: number]: DayOfWeek } = {
+      1: 'T2',
+      2: 'T3',
+      3: 'T4',
+      4: 'T5',
+      5: 'T6',
+      6: 'T2',
+      0: 'T2',
+    };
+    return map[d] || 'T2';
+  }, []);
+
+  const todayPeriods = useMemo(() => {
+    return timetable.filter((item) => item.day === todayDayOfWeek);
+  }, [timetable, todayDayOfWeek]);
+
+  // Đơn xin nghỉ phép chờ duyệt
+  const pendingLeaves = useMemo(() => {
+    return (leaveRequests || []).filter((r) => r.status === 'PENDING');
+  }, [leaveRequests]);
+
+  // Học sinh có lưu ý sức khỏe
+  const healthNoticeStudents = useMemo(() => {
+    return students.filter((s) => s.healthNotes && s.healthNotes.trim() !== '');
+  }, [students]);
 
   // Xử lý thêm sự kiện
   const handleCreateEvent = (e: React.FormEvent) => {
@@ -300,167 +333,102 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* 1. HERO BANNER */}
-      <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
-        {/* Glow & background patterns */}
+    <div className="space-y-6 pb-12 animate-in fade-in duration-300">
+      {/* 1. COMPACT HERO BANNER */}
+      <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-slate-900 rounded-3xl p-6 sm:p-7 text-white shadow-xl relative overflow-hidden">
         <div className="absolute right-0 top-0 bottom-0 opacity-10 flex items-center pr-8 pointer-events-none">
           <Award className="w-80 h-80 text-white" />
         </div>
 
-        <div className="relative z-10 max-w-3xl space-y-3">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold border border-white/20">
-              <Compass className="w-3.5 h-3.5 text-yellow-300" />
-              <span>Năm học: <strong>{schoolInfo.schoolYear || "2026-2027"}</strong></span>
-            </span>
-            <span className="inline-flex items-center gap-1.5 bg-yellow-400/20 text-yellow-300 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold border border-yellow-400/30">
-              <span>📚 Kỳ: {termName}</span>
-            </span>
-            <span className="inline-flex items-center gap-1.5 bg-emerald-500/20 text-emerald-300 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold border border-emerald-400/30">
-              <span>🏫 {classInfo.schoolName}</span>
-            </span>
-          </div>
+        <div className="relative z-10 space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1.5">
+              <div className="inline-flex items-center space-x-2 bg-white/15 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold border border-white/20">
+                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                <span>Năm học {classInfo.schoolYear || '2026-2027'}</span>
+                <span className="text-white/40">•</span>
+                <span className="font-bold text-amber-300">{termName} (TT27)</span>
+              </div>
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
+                Xin chào, {teacherDisplayName}! 👋
+              </h1>
+              <p className="text-sm text-blue-100 font-medium max-w-xl">
+                Bảng điều khiển quản lý và trợ lý sư phạm lớp <strong>{classInfo.name}</strong> ({schoolInfo?.name || 'Trường Tiểu học'}).
+              </p>
+            </div>
 
-          <h1 className="text-xl sm:text-3xl font-black tracking-tight leading-snug">
-            Xin chào {teacherDisplayName}! 🌟
-          </h1>
+            {/* 4 AI & Quick Action Buttons */}
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsDiagnosticOpen(true)}
+                className="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-slate-950 font-black text-xs shadow-md transition-all cursor-pointer hover:scale-105"
+              >
+                <Sparkles className="w-3.5 h-3.5 fill-current" />
+                <span>Chẩn Đoán AI</span>
+              </button>
 
-          <p className="text-blue-100 text-xs sm:text-sm leading-relaxed max-w-2xl">
-            Bảng điều khiển <strong>Lớp {classInfo.name}</strong> — {profile?.role === 'ADMIN' ? `GVCN: ${classInfo.teacherName || 'Chưa phân công'}` : `Theo dõi nề nếp, điểm danh và đánh giá TT27`}.
-          </p>
+              <button
+                type="button"
+                onClick={() => setIsPlannerModalOpen(true)}
+                className="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold text-xs backdrop-blur-md border border-white/30 transition-all cursor-pointer hover:scale-105"
+              >
+                <Compass className="w-3.5 h-3.5" />
+                <span>Kế Hoạch SHL</span>
+              </button>
 
-          <div className="flex flex-wrap gap-2.5 pt-1.5">
-            <Link
-              href="/assessment"
-              className="inline-flex items-center justify-center space-x-1.5 bg-white text-blue-900 font-bold text-xs px-4 py-2.5 rounded-2xl shadow-sm hover:bg-blue-50 transition-all cursor-pointer w-full sm:w-auto"
-            >
-              <FileSpreadsheet className="w-4 h-4 text-blue-600 shrink-0" />
-              <span>Bảng Đánh Giá TT27</span>
-            </Link>
-            <Link
-              href="/ai-assistant"
-              className="inline-flex items-center justify-center space-x-1.5 bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold text-xs px-4 py-2.5 rounded-2xl shadow-sm hover:opacity-90 transition-all cursor-pointer w-full sm:w-auto"
-            >
-              <Sparkles className="w-4 h-4 text-yellow-300 shrink-0" />
-              <span>Trợ Lý Sư Phạm AI</span>
-            </Link>
-            <button
-              type="button"
-              onClick={() => setIsDiagnosticOpen(true)}
-              className="inline-flex items-center justify-center space-x-1.5 bg-gradient-to-r from-pink-500 to-rose-600 text-white font-bold text-xs px-4 py-2.5 rounded-2xl shadow-sm hover:opacity-90 transition-all cursor-pointer w-full sm:w-auto"
-            >
-              <span>🤖 AI Chẩn Đoán Sư Phạm</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsPlannerModalOpen(true)}
-              className="inline-flex items-center justify-center space-x-1.5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold text-xs px-4 py-2.5 rounded-2xl shadow-sm hover:opacity-90 transition-all cursor-pointer w-full sm:w-auto"
-            >
-              <span>📝 Soạn Sinh Hoạt Lớp</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsZaloModalOpen(true)}
-              className="inline-flex items-center justify-center space-x-1.5 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold text-xs px-4 py-2.5 rounded-2xl shadow-sm hover:opacity-90 transition-all cursor-pointer w-full sm:w-auto"
-            >
-              <span>💬 Soạn Tin Zalo PH</span>
-            </button>
-            <Link
-              href="/classroom-tools"
-              className="inline-flex items-center justify-center space-x-1.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold text-xs px-4 py-2.5 rounded-2xl shadow-sm hover:opacity-90 transition-all cursor-pointer w-full sm:w-auto"
-            >
-              <span>🎡 Công Cụ Lớp</span>
-            </Link>
-            <Link
-              href="/parent-meetings"
-              className="inline-flex items-center justify-center space-x-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-xs px-4 py-2.5 rounded-2xl shadow-sm hover:opacity-90 transition-all cursor-pointer w-full sm:w-auto"
-            >
-              <span>📊 Họp Phụ Huynh</span>
-            </Link>
-            <Link
-              href="/health-records"
-              className="inline-flex items-center justify-center space-x-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-xs px-4 py-2.5 rounded-2xl shadow-sm hover:opacity-90 transition-all cursor-pointer w-full sm:w-auto"
-            >
-              <span>🩺 Sức Khỏe & BMI</span>
-            </Link>
-            <Link
-              href="/reading-corner"
-              className="inline-flex items-center justify-center space-x-1.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold text-xs px-4 py-2.5 rounded-2xl shadow-sm hover:opacity-90 transition-all cursor-pointer w-full sm:w-auto"
-            >
-              <span>📚 Tủ Sách Lớp</span>
-            </Link>
-            <Link
-              href="/iep"
-              className="inline-flex items-center justify-center space-x-1.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold text-xs px-4 py-2.5 rounded-2xl shadow-sm hover:opacity-90 transition-all cursor-pointer w-full sm:w-auto"
-            >
-              <span>📑 Kế Hoạch IEP</span>
-            </Link>
-            <Link
-              href="/attendance"
-              className="inline-flex items-center justify-center space-x-1.5 bg-white/10 hover:bg-white/20 text-white font-semibold text-xs px-4 py-2.5 rounded-2xl border border-white/25 backdrop-blur-sm transition-all cursor-pointer w-full sm:w-auto"
-            >
-              <CalendarCheck className="w-4 h-4 text-emerald-300 shrink-0" />
-              <span>Điểm Danh & Bán Trú</span>
-            </Link>
-            <button
-              type="button"
-              onClick={() => setIsAddEventModalOpen(true)}
-              className="inline-flex items-center justify-center space-x-1.5 bg-white/10 hover:bg-white/20 text-white font-semibold text-xs px-4 py-2.5 rounded-2xl border border-white/25 backdrop-blur-sm transition-all cursor-pointer w-full sm:w-auto"
-            >
-              <Plus className="w-4 h-4 text-yellow-300 shrink-0" />
-              <span>Thêm Sự Kiện Mới</span>
-            </button>
+              <button
+                type="button"
+                onClick={() => setIsZaloModalOpen(true)}
+                className="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold text-xs backdrop-blur-md border border-white/30 transition-all cursor-pointer hover:scale-105"
+              >
+                <HeartHandshake className="w-3.5 h-3.5" />
+                <span>Tin Nhắn Zalo</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsConferenceModalOpen(true)}
+                className="inline-flex items-center space-x-1.5 px-3 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold text-xs backdrop-blur-md border border-white/30 transition-all cursor-pointer hover:scale-105"
+              >
+                <Calendar className="w-3.5 h-3.5" />
+                <span>Lịch Gặp PH</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* 2. FESTIVE BIRTHDAY HIGHLIGHT HERO BANNER (If Today has Birthday) */}
+      {/* 2. FESTIVE BIRTHDAY BANNER (If Today Has Birthday) */}
       {todayBirthdays.length > 0 && (
-        <div className="bg-gradient-to-r from-rose-500 via-pink-500 to-amber-500 rounded-3xl p-5 sm:p-6 text-white shadow-lg relative overflow-hidden animate-in fade-in duration-300">
-          <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-15 pointer-events-none">
-            <Cake className="w-48 h-48 text-white" />
-          </div>
-
-          <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="flex items-center space-x-3.5">
-              <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-3xl shadow-inner shrink-0 animate-bounce">
+        <div className="bg-gradient-to-r from-pink-500 via-rose-500 to-amber-500 rounded-3xl p-5 text-white shadow-lg relative overflow-hidden animate-bounce-subtle">
+          <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl shadow-inner shrink-0">
                 🎂
               </div>
-              <div className="space-y-0.5">
-                <div className="inline-flex items-center gap-1.5 bg-white/20 text-white text-[11px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                  <PartyPopper className="w-3.5 h-3.5" />
-                  <span>Hôm nay là sinh nhật thành viên lớp {classInfo.name}!</span>
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 text-[11px] font-black uppercase tracking-wider mb-1">
+                  <PartyPopper className="w-3 h-3 text-amber-200" />
+                  <span>Hôm nay có {todayBirthdays.length} sinh nhật!</span>
                 </div>
-                <h2 className="text-lg sm:text-xl font-black">
-                  Chúc Mừng Sinh Nhật Em {todayBirthdays.map((b) => b.student.fullName).join(', ')} 🎉
-                </h2>
-                <p className="text-xs text-rose-100">
-                  Hôm nay tròn <strong>{todayBirthdays[0]?.turningAge || 10}</strong> tuổi. Chúc em luôn chăm ngoan, học giỏi và ngập tràn niềm vui!
-                </p>
+                <h3 className="text-base sm:text-lg font-black leading-snug">
+                  Chúc mừng sinh nhật:{' '}
+                  {todayBirthdays.map((b) => `${b.student.fullName} (${b.turningAge} tuổi)`).join(', ')}
+                </h3>
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2 shrink-0">
+            <div className="flex items-center gap-2">
               {todayBirthdays.map((b) => (
                 <button
                   key={b.student.id}
                   type="button"
                   onClick={() => handleCopyWish(b.student.fullName, b.turningAge, b.student.id)}
-                  className="inline-flex items-center space-x-1.5 bg-white text-rose-700 hover:bg-rose-50 px-4 py-2 rounded-2xl text-xs font-bold shadow-md transition-all cursor-pointer"
+                  className="px-3.5 py-2 rounded-xl bg-white text-rose-600 font-bold text-xs shadow-md hover:bg-rose-50 transition-all flex items-center gap-1.5 cursor-pointer shrink-0"
                 >
-                  {copiedWishId === b.student.id ? (
-                    <>
-                      <Check className="w-4 h-4 text-emerald-600" />
-                      <span className="text-emerald-600 font-bold">Đã sao chép lời chúc!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Gift className="w-4 h-4 text-rose-600" />
-                      <span className="sm:hidden">Chúc Zalo</span>
-                      <span className="hidden sm:inline">Sao Chép Lời Chúc Gửi Zalo ({b.student.fullName})</span>
-                    </>
-                  )}
+                  {copiedWishId === b.student.id ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedWishId === b.student.id ? 'Đã chép lời chúc' : `Gửi chúc mừng`}</span>
                 </button>
               ))}
             </div>
@@ -469,809 +437,753 @@ export default function DashboardPage() {
       )}
 
       {/* 3. KEY METRICS & KPI TILES GRID */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Sĩ số & Cơ cấu giới tính */}
-        <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs flex items-center justify-between">
-          <div className="min-w-0">
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Sĩ Số Lớp Học</p>
-            <h3 className="text-2xl font-black text-slate-900 mt-0.5">
-              {totalStudents} <span className="text-xs font-normal text-slate-500">học sinh</span>
-            </h3>
-            <div className="flex items-center gap-2 text-xs text-slate-500 mt-1.5">
-              <span className="text-blue-600 font-bold">👦 Nam: {maleCount}</span>
-              <span>•</span>
-              <span className="text-pink-600 font-bold">👧 Nữ: {femaleCount}</span>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+        {/* KPI 1: Sĩ số */}
+        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-xs hover:border-blue-300 transition-all flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500">SĨ SỐ LỚP</span>
+            <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+              <Users className="w-4 h-4" />
             </div>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 shadow-xs">
-            <Users className="w-6 h-6" />
+          <div className="mt-2">
+            <div className="text-2xl sm:text-3xl font-black text-slate-900">{totalStudents} <span className="text-xs font-medium text-slate-400">em</span></div>
+            <div className="flex items-center gap-2 text-[11px] text-slate-500 font-medium mt-1">
+              <span className="text-blue-600 font-bold">{maleCount} Nam</span> • <span className="text-pink-600 font-bold">{femaleCount} Nữ</span>
+            </div>
           </div>
         </div>
 
-        {/* Chuyên cần & Bán trú hôm nay */}
-        <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs flex items-center justify-between">
-          <div className="min-w-0">
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Chuyên Cần Hôm Nay</p>
-            <h3 className="text-2xl font-black text-emerald-600 mt-0.5">
+        {/* KPI 2: Chuyên cần */}
+        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-xs hover:border-emerald-300 transition-all flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500">ĐIỂM DANH HÔM NAY</span>
+            <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+              <CalendarCheck className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-2">
+            <div className="text-2xl sm:text-3xl font-black text-emerald-600">
               {presentCount}/{totalStudents}
-            </h3>
-            <p className="text-xs text-slate-500 mt-1.5 flex items-center gap-1">
-              <Utensils className="w-3.5 h-3.5 text-amber-500" />
-              <span>Ăn bán trú: <strong className="text-slate-800">{todayMeals}</strong> suất</span>
-            </p>
-          </div>
-          <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 shadow-xs">
-            <CalendarCheck className="w-6 h-6" />
-          </div>
-        </div>
-
-        {/* Khen thưởng TT27 */}
-        <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs flex items-center justify-between">
-          <div className="min-w-0">
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Khen Thưởng TT27</p>
-            <div className="flex items-baseline space-x-2 mt-0.5">
-              <h3 className="text-2xl font-black text-amber-600">{xuatSacCount}</h3>
-              <span className="text-xs font-bold text-amber-700">Xuất sắc</span>
-              <span className="text-slate-300">|</span>
-              <span className="text-lg font-black text-indigo-600">{tieuBieuCount}</span>
-              <span className="text-xs font-semibold text-indigo-700">Tiêu biểu</span>
             </div>
-            <p className="text-xs text-emerald-600 font-bold mt-1.5">
-              Đạt {Math.round(((xuatSacCount + tieuBieuCount) / (totalStudents || 1)) * 100)}% toàn lớp
-            </p>
-          </div>
-          <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 shadow-xs">
-            <Award className="w-6 h-6" />
+            <div className="flex items-center gap-2 text-[11px] text-slate-500 font-medium mt-1">
+              <span>Vắng: <strong className={absentCount > 0 ? 'text-rose-600' : 'text-slate-700'}>{absentCount}</strong></span> • <span>Ăn trưa: <strong className="text-teal-600">{todayMeals}</strong></span>
+            </div>
           </div>
         </div>
 
-        {/* Sao nề nếp thi đua */}
-        <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs flex items-center justify-between">
-          <div className="min-w-0">
-            <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Sao Nề Nếp Lớp</p>
-            <h3 className="text-2xl font-black text-amber-600 mt-0.5 flex items-center gap-1.5">
-              <span>⭐</span>
-              <span>{totalClassStars}</span>
-              <span className="text-xs font-normal text-slate-500">sao tích lũy</span>
-            </h3>
-            <p className="text-xs text-slate-500 mt-1.5 truncate">
-              {topStarStudents.length > 0 && topStarStudents[0].stars > 0 ? (
-                <>
-                  Dẫn đầu: <strong className="text-slate-900">{topStarStudents[0].fullName}</strong> ({topStarStudents[0].stars} ⭐)
-                </>
-              ) : (
-                <span className="text-slate-400">Chưa có sao nào được chấm</span>
-              )}
-            </p>
+        {/* KPI 3: Khen thưởng TT27 */}
+        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-xs hover:border-amber-300 transition-all flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500">XUẤT SẮC & TIÊU BIỂU</span>
+            <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+              <Award className="w-4 h-4" />
+            </div>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 shadow-xs">
-            <Sparkles className="w-6 h-6 text-purple-600" />
+          <div className="mt-2">
+            <div className="text-2xl sm:text-3xl font-black text-amber-600">
+              {xuatSacCount + tieuBieuCount} <span className="text-xs font-medium text-slate-400">em</span>
+            </div>
+            <div className="flex items-center gap-2 text-[11px] text-slate-500 font-medium mt-1">
+              <span>Xuất sắc: <strong className="text-amber-600">{xuatSacCount}</strong></span> • <span>Tiêu biểu: <strong className="text-blue-600">{tieuBieuCount}</strong></span>
+            </div>
+          </div>
+        </div>
+
+        {/* KPI 4: Sao thi đua */}
+        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-xs hover:border-purple-300 transition-all flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-slate-500">SAO THI ĐUA NỀ NẾP</span>
+            <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
+              <Flame className="w-4 h-4 text-purple-600" />
+            </div>
+          </div>
+          <div className="mt-2">
+            <div className="text-2xl sm:text-3xl font-black text-purple-600">
+              {totalClassStars} <span className="text-xs font-medium text-slate-400">⭐</span>
+            </div>
+            <div className="flex items-center gap-2 text-[11px] text-slate-500 font-medium mt-1">
+              <span>Ghi nhận: <strong className="text-slate-700">{activeClassStarLogs.length}</strong> lượt</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* 3.5. TT27 EVALUATION PROGRESS METER WIDGET */}
-      <div className="space-y-4">
-        <ProgressMeterWidget
-          progress={progress}
-          issues={issues}
-          isFilterIncomplete={false}
-          onToggleFilterIncomplete={() => {
-            // Direct navigate to /assessment
-            window.location.href = '/assessment';
-          }}
-          compact={false}
-        />
+      {/* 4. MODERN 3-TAB DASHBOARD NAVIGATION */}
+      <div className="flex items-center justify-between gap-3 border-b border-slate-200 pb-2">
+        <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-2xl border border-slate-200">
+          <button
+            type="button"
+            onClick={() => setActiveTab('TODAY')}
+            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 ${
+              activeTab === 'TODAY'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+            }`}
+          >
+            <Clock className="w-4 h-4" />
+            <span>Hôm Nay & Nề Nếp</span>
+            {pendingLeaves.length > 0 && (
+              <span className="bg-rose-500 text-white text-[10px] px-1.5 py-0.2 rounded-full font-black animate-pulse">
+                {pendingLeaves.length}
+              </span>
+            )}
+          </button>
 
-        {/* 3.6. EARLY INTERVENTION RADAR WIDGET */}
-        <EarlyInterventionWidget alerts={earlyAlerts} />
+          <button
+            type="button"
+            onClick={() => setActiveTab('ACADEMIC')}
+            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 ${
+              activeTab === 'ACADEMIC'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+            }`}
+          >
+            <Activity className="w-4 h-4" />
+            <span>Học Tập & Đánh Giá TT27</span>
+            {earlyAlerts.length > 0 && (
+              <span className="bg-amber-500 text-slate-950 text-[10px] px-1.5 py-0.2 rounded-full font-black">
+                {earlyAlerts.length}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('SCHEDULE')}
+            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all cursor-pointer flex items-center gap-2 ${
+              activeTab === 'SCHEDULE'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
+            }`}
+          >
+            <Calendar className="w-4 h-4" />
+            <span>Lịch Trình & Sự Kiện</span>
+            <span className="bg-slate-200 text-slate-700 text-[10px] px-1.5 py-0.2 rounded-full font-bold">
+              {classEvents.length}
+            </span>
+          </button>
+        </div>
+
+        {/* Action Link to Full Tools */}
+        <Link
+          href="/classroom-tools"
+          className="hidden md:inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-700 bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-200 transition-all hover:bg-blue-100"
+        >
+          <span>🎡 Mở Công Cụ Chiếu TV</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </Link>
       </div>
 
-      {/* 3.7. PENDING LEAVE REQUESTS & HEALTH NOTICES WIDGET */}
-      {leaveRequests.filter((r) => r.status === 'PENDING').length > 0 && (
-        <div className="bg-amber-50/80 border-2 border-amber-300 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4 animate-in fade-in">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-200 pb-3">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center font-bold text-xl shadow-xs shrink-0 animate-bounce">
-                📬
-              </div>
-              <div>
-                <h3 className="font-black text-amber-950 text-sm sm:text-base flex items-center gap-2">
-                  <span>Có {leaveRequests.filter((r) => r.status === 'PENDING').length} Đơn Xin Nghỉ Phép Chờ Cô Duyệt</span>
-                </h3>
-                <p className="text-xs text-amber-800">
-                  Duyệt đơn sẽ tự động ghi nhận học sinh vắng có phép vào Sổ Điểm Danh và điều chỉnh suất ăn bán trú.
-                </p>
-              </div>
-            </div>
-
-            <Link
-              href="/attendance"
-              className="text-xs font-bold text-amber-900 hover:text-amber-950 underline self-start sm:self-auto"
-            >
-              Xem Sổ Điểm Danh →
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {leaveRequests.filter((r) => r.status === 'PENDING').map((req) => (
-              <div
-                key={req.id}
-                className="bg-white p-4 rounded-2xl border border-amber-200 shadow-2xs space-y-2.5 flex flex-col justify-between"
-              >
-                <div className="space-y-1.5">
+      {/* ========================================================================= */}
+      {/* TAB 1: HÔM NAY & NỀ NẾP (TODAY & DYNAMICS) */}
+      {/* ========================================================================= */}
+      {activeTab === 'TODAY' && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          {/* Pending Leave Requests & Health Alerts Alert Box */}
+          {(pendingLeaves.length > 0 || healthNoticeStudents.length > 0) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Pending Leaves */}
+              {pendingLeaves.length > 0 && (
+                <div className="bg-rose-50 border-2 border-rose-200 rounded-2xl p-4 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="font-black text-slate-900 text-sm">{req.studentName}</span>
-                    <span className="bg-amber-100 text-amber-900 text-[10px] font-bold px-2 py-0.5 rounded-md">
-                      {req.startDate === req.endDate ? `Nghỉ ngày ${req.startDate}` : `Từ ${req.startDate} đến ${req.endDate}`}
-                    </span>
-                  </div>
-
-                  <p className="text-xs text-slate-700 leading-relaxed">
-                    <strong className="text-slate-900">Lý do:</strong> {req.reasonDetail}
-                  </p>
-
-                  {req.hasBoardingMealCancel && (
-                    <span className="inline-block bg-orange-100 text-orange-900 text-[10px] font-bold px-2 py-0.2 rounded mr-1">
-                      🍽️ Báo cắt suất ăn bán trú
-                    </span>
-                  )}
-
-                  {req.medicationNotes && (
-                    <div className="bg-rose-50 p-2 rounded-xl border border-rose-100 text-[11px] text-rose-900">
-                      <strong>💊 Dặn dò uống thuốc:</strong> {req.medicationNotes}
+                    <div className="flex items-center gap-2 text-rose-800 font-bold text-xs">
+                      <AlertCircle className="w-4 h-4 text-rose-600" />
+                      <span>ĐƠN XIN NGHỈ PHÉP CHỜ DUYỆT ({pendingLeaves.length})</span>
                     </div>
-                  )}
-
-                  <div className="text-[10px] text-slate-400">
-                    Gửi bởi: {req.parentName} ({req.parentPhone})
+                  </div>
+                  <div className="space-y-2">
+                    {pendingLeaves.slice(0, 3).map((req) => (
+                      <div key={req.id} className="bg-white rounded-xl p-3 border border-rose-100 shadow-xs flex items-center justify-between gap-3 text-xs">
+                        <div>
+                          <p className="font-bold text-slate-900">{req.studentName}</p>
+                          <p className="text-[11px] text-slate-500">{req.startDate} • Lý do: {req.reasonDetail || req.reasonType}</p>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              approveLeaveRequest(req.id);
+                              toast.success(`Đã duyệt đơn nghỉ phép của ${req.studentName}`);
+                            }}
+                            className="px-2.5 py-1 bg-emerald-600 text-white rounded-lg font-bold text-[11px] hover:bg-emerald-700 cursor-pointer"
+                          >
+                            Duyệt
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              rejectLeaveRequest(req.id);
+                              toast.error(`Đã từ chối đơn của ${req.studentName}`);
+                            }}
+                            className="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg font-bold text-[11px] hover:bg-slate-200 cursor-pointer"
+                          >
+                            Từ chối
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
+              )}
 
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-end space-x-2">
-                  <button
-                    type="button"
-                    onClick={() => rejectLeaveRequest(req.id)}
-                    className="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-bold transition-colors cursor-pointer"
-                  >
-                    Từ Chối
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => approveLeaveRequest(req.id)}
-                    className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-xs transition-colors cursor-pointer"
-                  >
-                    ✅ Duyệt Đơn & Đồng Bộ
-                  </button>
+              {/* Health Notices */}
+              {healthNoticeStudents.length > 0 && (
+                <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-amber-900 font-bold text-xs">
+                      <Zap className="w-4 h-4 text-amber-600" />
+                      <span>LƯU Ý SỨC KHỎE HỌC SINH ({healthNoticeStudents.length})</span>
+                    </div>
+                    <Link href="/health-records" className="text-[11px] font-bold text-amber-700 hover:underline">
+                      Xem sổ y tế →
+                    </Link>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {healthNoticeStudents.slice(0, 6).map((s) => (
+                      <span key={s.id} className="bg-white px-2.5 py-1 rounded-xl border border-amber-200 text-xs font-semibold text-slate-800 shadow-2xs">
+                        {s.fullName}: <span className="text-amber-700 font-bold">{s.healthNotes}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 3-Column Grid: Leaderboard, Today Timetable, Birthdays */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {/* Column 1: Top 5 Leaderboard */}
+            <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-4 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
+                      🏆
+                    </div>
+                    <div>
+                      <h3 className="font-black text-sm text-slate-900">Vinh Danh Sao Nề Nếp</h3>
+                      <p className="text-[11px] text-slate-400">Top 5 học sinh dẫn đầu lớp</p>
+                    </div>
+                  </div>
+                  <Link href="/behavior" className="text-xs font-bold text-purple-600 hover:underline">
+                    Xem tất cả →
+                  </Link>
+                </div>
+
+                <div className="space-y-2.5 mt-3">
+                  {topStarStudents.length === 0 ? (
+                    <div className="text-center py-6 text-slate-400 text-xs font-medium">
+                      Chưa có điểm sao nề nếp được ghi nhận.
+                    </div>
+                  ) : (
+                    topStarStudents.map((st, idx) => (
+                      <div key={st.id} className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-50 border border-slate-100 hover:bg-purple-50/50 transition-colors">
+                        <div className="flex items-center gap-2.5">
+                          <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${
+                            idx === 0 ? 'bg-amber-400 text-slate-950 shadow-xs' :
+                            idx === 1 ? 'bg-slate-300 text-slate-800' :
+                            idx === 2 ? 'bg-amber-700 text-white' : 'bg-slate-200 text-slate-600'
+                          }`}>
+                            {idx + 1}
+                          </span>
+                          <span className="text-xs font-bold text-slate-800">{st.fullName}</span>
+                        </div>
+                        <span className="text-xs font-black text-purple-600 bg-purple-100 px-2 py-0.5 rounded-lg">
+                          {st.stars} ⭐
+                        </span>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
-            ))}
+
+              <Link
+                href="/behavior"
+                className="w-full py-2.5 bg-purple-50 text-purple-700 hover:bg-purple-100 rounded-xl font-bold text-xs text-center transition-colors block"
+              >
+                + Cộng sao & Đánh giá nề nếp
+              </Link>
+            </div>
+
+            {/* Column 2: Today's Timetable */}
+            <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-4 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                      📅
+                    </div>
+                    <div>
+                      <h3 className="font-black text-sm text-slate-900">Thời Khóa Biểu Hôm Nay</h3>
+                      <p className="text-[11px] text-slate-400">{todayDayOfWeek} ({todayPeriods.length} tiết)</p>
+                    </div>
+                  </div>
+                  <Link href="/timetable" className="text-xs font-bold text-blue-600 hover:underline">
+                    Xem tuần →
+                  </Link>
+                </div>
+
+                <div className="space-y-2 mt-3">
+                  {todayPeriods.length === 0 ? (
+                    <div className="text-center py-6 text-slate-400 text-xs font-medium">
+                      Hôm nay không có lịch học xếp sẵn.
+                    </div>
+                  ) : (
+                    todayPeriods.slice(0, 5).map((p) => {
+                      const theme = getSubjectTheme(p.subjectCode);
+                      return (
+                        <div key={p.id} className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-50 border border-slate-100">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black text-slate-400 bg-slate-200 px-1.5 py-0.5 rounded">
+                              T{p.period}
+                            </span>
+                            <span className={`text-xs font-black px-2 py-0.5 rounded-lg border ${theme.bgColor} ${theme.textColor} ${theme.borderColor}`}>
+                              {p.subjectName || theme.name}
+                            </span>
+                          </div>
+                          <span className="text-[11px] text-slate-400 font-medium">
+                            {p.teacherName ? `GV: ${p.teacherName}` : ''}
+                          </span>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              <Link
+                href="/timetable"
+                className="w-full py-2.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-xl font-bold text-xs text-center transition-colors block"
+              >
+                Xem chi tiết thời khóa biểu
+              </Link>
+            </div>
+
+            {/* Column 3: Birthdays */}
+            <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-4 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-pink-50 text-pink-600 flex items-center justify-center font-bold">
+                      🎂
+                    </div>
+                    <div>
+                      <h3 className="font-black text-sm text-slate-900">Sinh Nhật Sắp Tới</h3>
+                      <p className="text-[11px] text-slate-400">30 ngày tới ({upcomingBirthdays.length} bạn)</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2 mt-3 max-h-56 overflow-y-auto">
+                  {upcomingBirthdays.length === 0 ? (
+                    <div className="text-center py-6 text-slate-400 text-xs font-medium">
+                      Không có sinh nhật nào trong 30 ngày tới.
+                    </div>
+                  ) : (
+                    upcomingBirthdays.slice(0, 4).map((b) => (
+                      <div key={b.student.id} className="flex items-center justify-between p-2 rounded-2xl bg-slate-50 border border-slate-100">
+                        <div>
+                          <p className="text-xs font-bold text-slate-800">{b.student.fullName}</p>
+                          <p className="text-[10px] text-slate-400">{b.formattedDate} • Còn {b.daysRemaining} ngày</p>
+                        </div>
+                        <span className="text-[10px] font-black text-pink-600 bg-pink-50 px-2 py-0.5 rounded-full border border-pink-200">
+                          {b.turningAge} tuổi
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsZaloModalOpen(true)}
+                className="w-full py-2.5 bg-pink-50 text-pink-700 hover:bg-pink-100 rounded-xl font-bold text-xs text-center transition-colors block cursor-pointer"
+              >
+                💌 Soạn thiệp mừng sinh nhật
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* 4. MAIN TWO-COLUMN LAYOUT */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* LEFT 2 COLUMNS: CLASS EVENTS CALENDAR & TT27 ASSESSMENT BREAKDOWN */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* WIDGET 1: LỊCH SỰ KIỆN & HOẠT ĐỘNG CỦA LỚP */}
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-9 h-9 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
-                  <Calendar className="w-5 h-5" />
-                </div>
-                <div className="min-w-0">
-                  <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <span className="truncate">Lịch Sự Kiện & Hoạt Động Của Lớp {classInfo.name}</span>
-                    <span className="bg-indigo-100 text-indigo-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                      {classEvents.length} sự kiện
-                    </span>
-                  </h2>
-                  <p className="text-xs text-slate-500">
-                    Theo dõi lịch thi, lễ hội, họp phụ huynh và hoạt động trải nghiệm.
-                  </p>
-                </div>
+      {/* ========================================================================= */}
+      {/* TAB 2: HỌC TẬP & ĐÁNH GIÁ TT27 (ACADEMIC & RADAR) */}
+      {/* ========================================================================= */}
+      {activeTab === 'ACADEMIC' && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          {/* Top 2 Widgets: Progress Meter & Early Intervention Radar */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <ProgressMeterWidget
+              progress={progress}
+              issues={issues}
+              isFilterIncomplete={isFilterIncomplete}
+              onToggleFilterIncomplete={() => setIsFilterIncomplete(!isFilterIncomplete)}
+            />
+            <EarlyInterventionWidget alerts={earlyAlerts} />
+          </div>
+
+          {/* TT27 Award Breakdown Chart & Student Table Preview */}
+          <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
+              <div>
+                <h3 className="font-black text-base text-slate-900">
+                  Biểu Đồ Phân Loại Kết Quả Giáo Dục — {termName}
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Tổng hợp {totalStudents} học sinh theo tiêu chuẩn Thông tư 27/2020/TT-BGDĐT
+                </p>
+              </div>
+              <Link
+                href="/assessment"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition-all shadow-xs shrink-0"
+              >
+                <span>Mở Bảng Đánh Giá Chi Tiết</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+
+            {/* Visual Multi-Segment Bar Chart */}
+            <div className="space-y-3">
+              <div className="h-5 w-full bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
+                {totalStudents > 0 && (
+                  <>
+                    <div
+                      style={{ width: `${(xuatSacCount / totalStudents) * 100}%` }}
+                      className="bg-amber-400 h-full transition-all duration-500"
+                      title={`Xuất sắc: ${xuatSacCount} em`}
+                    />
+                    <div
+                      style={{ width: `${(tieuBieuCount / totalStudents) * 100}%` }}
+                      className="bg-blue-500 h-full transition-all duration-500"
+                      title={`Tiêu biểu: ${tieuBieuCount} em`}
+                    />
+                    <div
+                      style={{ width: `${(hoanThanhCount / totalStudents) * 100}%` }}
+                      className="bg-emerald-500 h-full transition-all duration-500"
+                      title={`Hoàn thành: ${hoanThanhCount} em`}
+                    />
+                    <div
+                      style={{ width: `${(canCoGangCount / totalStudents) * 100}%` }}
+                      className="bg-slate-400 h-full transition-all duration-500"
+                      title={`Chưa hoàn thành: ${canCoGangCount} em`}
+                    />
+                  </>
+                )}
               </div>
 
-              <div className="flex items-center space-x-2">
-                <button
-                  type="button"
-                  onClick={() => setIsConferenceModalOpen(true)}
-                  className="inline-flex items-center space-x-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer"
-                >
-                  <span>📅 Khung Giờ Họp 1-1</span>
-                  {conferenceSlots.filter((s) => s.isBooked).length > 0 && (
-                    <span className="bg-purple-600 text-white text-[10px] px-1.5 py-0.2 rounded-full">
-                      {conferenceSlots.filter((s) => s.isBooked).length}
-                    </span>
-                  )}
-                </button>
+              {/* Legend with percentages */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-50 border border-amber-200/60">
+                  <div className="w-3 h-3 rounded-full bg-amber-400 shrink-0" />
+                  <div>
+                    <p className="font-bold text-amber-900">Xuất sắc</p>
+                    <p className="text-[11px] text-amber-700 font-semibold">
+                      {xuatSacCount} em ({totalStudents > 0 ? Math.round((xuatSacCount / totalStudents) * 100) : 0}%)
+                    </p>
+                  </div>
+                </div>
 
+                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-blue-50 border border-blue-200/60">
+                  <div className="w-3 h-3 rounded-full bg-blue-500 shrink-0" />
+                  <div>
+                    <p className="font-bold text-blue-900">Tiêu biểu</p>
+                    <p className="text-[11px] text-blue-700 font-semibold">
+                      {tieuBieuCount} em ({totalStudents > 0 ? Math.round((tieuBieuCount / totalStudents) * 100) : 0}%)
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-emerald-50 border border-emerald-200/60">
+                  <div className="w-3 h-3 rounded-full bg-emerald-500 shrink-0" />
+                  <div>
+                    <p className="font-bold text-emerald-900">Hoàn thành</p>
+                    <p className="text-[11px] text-emerald-700 font-semibold">
+                      {hoanThanhCount} em ({totalStudents > 0 ? Math.round((hoanThanhCount / totalStudents) * 100) : 0}%)
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+                  <div className="w-3 h-3 rounded-full bg-slate-400 shrink-0" />
+                  <div>
+                    <p className="font-bold text-slate-800">Chưa hoàn thành</p>
+                    <p className="text-[11px] text-slate-600 font-semibold">
+                      {canCoGangCount} em ({totalStudents > 0 ? Math.round((canCoGangCount / totalStudents) * 100) : 0}%)
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 3: LỊCH TRÌNH & SỰ KIỆN (SCHEDULE & TIMELINE) */}
+      {/* ========================================================================= */}
+      {activeTab === 'SCHEDULE' && (
+        <div className="space-y-6 animate-in fade-in duration-200">
+          {/* Class Events Timeline */}
+          <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+              <div>
+                <h3 className="font-black text-base text-slate-900">
+                  Lịch Hoạt Động & Kế Hoạch Của Lớp
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Các mốc kiểm tra định kỳ, họp phụ huynh và hoạt động trải nghiệm lớp {classInfo.name}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setIsAddEventModalOpen(true)}
-                  className="inline-flex items-center space-x-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer"
+                  className="px-3.5 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
                 >
-                  <Plus className="w-3.5 h-3.5" />
+                  <Plus className="w-4 h-4" />
                   <span>Thêm Sự Kiện</span>
                 </button>
               </div>
             </div>
 
             {/* Filter Tabs */}
-            <div className="flex flex-wrap gap-1.5">
-              {[
-                { id: 'ALL', label: 'Tất cả' },
-                { id: 'UPCOMING', label: 'Sắp tới' },
-                { id: 'EXAM', label: '🏆 Khảo sát & Thi' },
-                { id: 'MEETING', label: '👥 Họp Phụ huynh' },
-                { id: 'FESTIVAL', label: '🎪 Lễ hội & Khai giảng' },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setEventFilter(tab.id as any)}
-                  className={`px-3 py-1 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                    eventFilter === tab.id
-                      ? 'bg-indigo-600 text-white font-bold shadow-xs'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Events Timeline List */}
-            {sortedEvents.length > 0 ? (
-              <div className="space-y-3">
-                {sortedEvents.map((ev) => {
-                  const evDate = new Date(ev.date);
-                  const dayNum = evDate.getDate();
-                  const monthNum = evDate.getMonth() + 1;
-                  const isPast = ev.date < todayStr;
-                  const isTodayEvent = ev.date === todayStr;
-
-                  return (
-                    <div
-                      key={ev.id}
-                      className={`p-4 rounded-2xl border transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
-                        isTodayEvent
-                          ? 'bg-amber-50/70 border-amber-300 shadow-xs'
-                          : ev.isImportant
-                          ? 'bg-indigo-50/50 border-indigo-200'
-                          : 'bg-slate-50/60 border-slate-200 hover:border-slate-300'
-                      }`}
-                    >
-                      <div className="flex items-start space-x-3.5 min-w-0">
-                        {/* Date Block */}
-                        <div
-                          className={`w-12 h-13 rounded-2xl flex flex-col items-center justify-center shrink-0 font-bold border shadow-xs ${
-                            isTodayEvent
-                              ? 'bg-amber-500 text-white border-amber-600'
-                              : ev.isImportant
-                              ? 'bg-indigo-600 text-white border-indigo-700'
-                              : 'bg-white text-slate-800 border-slate-200'
-                          }`}
-                        >
-                          <span className="text-[10px] uppercase font-semibold leading-tight">Th.{monthNum}</span>
-                          <span className="text-lg font-black leading-tight">{dayNum}</span>
-                        </div>
-
-                        <div className="space-y-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            <h3 className="text-sm font-bold text-slate-900 truncate">{ev.title}</h3>
-                            {isTodayEvent && (
-                              <span className="bg-amber-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase">
-                                Hôm nay
-                              </span>
-                            )}
-                            {ev.isImportant && !isTodayEvent && (
-                              <span className="bg-rose-100 text-rose-700 text-[9px] font-bold px-2 py-0.5 rounded-full">
-                                Quan trọng
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-500">
-                            {ev.time && (
-                              <span className="flex items-center gap-1">
-                                <Clock className="w-3 h-3 text-slate-400" />
-                                <span>{ev.time}</span>
-                              </span>
-                            )}
-                            {ev.location && (
-                              <span className="flex items-center gap-1">
-                                <MapPin className="w-3 h-3 text-slate-400" />
-                                <span>{ev.location}</span>
-                              </span>
-                            )}
-                          </div>
-
-                          {ev.description && (
-                            <p className="text-xs text-slate-600 leading-relaxed pt-0.5">
-                              {ev.description}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center space-x-2 self-end sm:self-center shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (confirm(`Bạn có chắc muốn xóa sự kiện "${ev.title}"?`)) {
-                              deleteClassEvent(ev.id);
-                              toast.success('Đã xóa sự kiện thành công!');
-                            }
-                          }}
-                          className="w-7 h-7 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition-colors cursor-pointer"
-                          title="Xóa sự kiện"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="text-center py-8 text-slate-400 text-xs bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                <Calendar className="w-8 h-8 mx-auto mb-2 opacity-40 text-slate-400" />
-                <p>Chưa có sự kiện nào trong danh mục này.</p>
-                <button
-                  type="button"
-                  onClick={() => setIsAddEventModalOpen(true)}
-                  className="mt-2 text-indigo-600 hover:underline font-bold text-xs"
-                >
-                  + Thêm sự kiện đầu tiên
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* WIDGET 2: BẢNG TỔNG HỢP & BIỂU ĐỒ ĐÁNH GIÁ TT27 */}
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-5">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="min-w-0">
-                <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                  <FileSpreadsheet className="w-5 h-5 text-blue-600 shrink-0" />
-                  <span className="truncate">Chất Lượng Đánh Giá Học Sinh ({termName})</span>
-                </h2>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Phân bố kết quả khen thưởng và hoàn thành chương trình lớp học theo Thông tư 27.
-                </p>
-              </div>
-              <Link
-                href="/assessment"
-                className="text-xs text-blue-600 hover:text-blue-700 font-bold flex items-center gap-1"
-              >
-                <span>Xem đầy đủ</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-
-            {/* Visual Multi-Segment Bar Chart */}
-            <div className="space-y-2.5">
-              <div className="h-4 w-full bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
-                <div
-                  style={{ width: `${(xuatSacCount / (totalStudents || 1)) * 100}%` }}
-                  className="bg-amber-400 transition-all duration-500"
-                  title={`Xuất sắc: ${xuatSacCount}`}
-                />
-                <div
-                  style={{ width: `${(tieuBieuCount / (totalStudents || 1)) * 100}%` }}
-                  className="bg-indigo-500 transition-all duration-500"
-                  title={`Tiêu biểu: ${tieuBieuCount}`}
-                />
-                <div
-                  style={{ width: `${(hoanThanhCount / (totalStudents || 1)) * 100}%` }}
-                  className="bg-emerald-500 transition-all duration-500"
-                  title={`Hoàn thành: ${hoanThanhCount}`}
-                />
-                <div
-                  style={{ width: `${(canCoGangCount / (totalStudents || 1)) * 100}%` }}
-                  className="bg-rose-500 transition-all duration-500"
-                  title={`Cần cố gắng: ${canCoGangCount}`}
-                />
-              </div>
-
-              {/* Legend with percentages */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                <div className="p-2 rounded-xl bg-amber-50/70 border border-amber-200">
-                  <div className="flex items-center space-x-1.5 font-bold text-amber-900">
-                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
-                    <span>Xuất sắc</span>
-                  </div>
-                  <p className="text-xs font-black text-amber-700 mt-1">
-                    {xuatSacCount} em ({Math.round((xuatSacCount / (totalStudents || 1)) * 100)}%)
-                  </p>
-                </div>
-
-                <div className="p-2 rounded-xl bg-indigo-50/70 border border-indigo-200">
-                  <div className="flex items-center space-x-1.5 font-bold text-indigo-900">
-                    <span className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
-                    <span>Tiêu biểu</span>
-                  </div>
-                  <p className="text-xs font-black text-indigo-700 mt-1">
-                    {tieuBieuCount} em ({Math.round((tieuBieuCount / (totalStudents || 1)) * 100)}%)
-                  </p>
-                </div>
-
-                <div className="p-2 rounded-xl bg-emerald-50/70 border border-emerald-200">
-                  <div className="flex items-center space-x-1.5 font-bold text-emerald-900">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                    <span>Hoàn thành</span>
-                  </div>
-                  <p className="text-xs font-black text-emerald-700 mt-1">
-                    {hoanThanhCount} em ({Math.round((hoanThanhCount / (totalStudents || 1)) * 100)}%)
-                  </p>
-                </div>
-
-                <div className="p-2 rounded-xl bg-rose-50/70 border border-rose-200">
-                  <div className="flex items-center space-x-1.5 font-bold text-rose-900">
-                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
-                    <span>Cần cố gắng</span>
-                  </div>
-                  <p className="text-xs font-black text-rose-700 mt-1">
-                    {canCoGangCount} em ({Math.round((canCoGangCount / (totalStudents || 1)) * 100)}%)
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Student Table Preview */}
-            <div className="overflow-x-auto border border-slate-200 rounded-2xl">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
-                  <tr>
-                    <th className="py-2.5 px-3">STT</th>
-                    <th className="py-2.5 px-3">Họ và Tên</th>
-                    <th className="py-2.5 px-3">Môn học</th>
-                    <th className="py-2.5 px-3">Phẩm chất / NL</th>
-                    <th className="py-2.5 px-3">Danh hiệu</th>
-                    <th className="py-2.5 px-3 text-right">Học bạ</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {students.slice(0, 5).map((st, idx) => {
-                    const sAss = subjectAssessments.filter((a) => a.studentId === st.id && a.term === currentTerm);
-                    const tAss = traitAssessments.filter((a) => a.studentId === st.id && a.term === currentTerm);
-                    const summary = termSummaries.find((ts) => ts.studentId === st.id && ts.term === currentTerm);
-                    const evalRes = evaluateStudentTT27(sAss, tAss, currentTerm);
-                    const award = summary?.awardTitle || evalRes.awardTitle;
-
-                    return (
-                      <tr key={st.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="py-2.5 px-3 font-medium text-slate-500">{idx + 1}</td>
-                        <td className="py-2.5 px-3 font-bold text-slate-900">{st.fullName}</td>
-                        <td className="py-2.5 px-3">
-                          <span className="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded text-[11px] font-semibold">
-                            {evalRes.overallLearningLevel === 'T' ? 'Tất cả Tốt (T)' : 'Hoàn thành (H)'}
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-3">
-                          <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded text-[11px] font-semibold">
-                            {evalRes.overallTraitsLevel === 'T' ? 'Tốt (T)' : 'Đạt (Đ)'}
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-3">
-                          <span className={`px-2 py-0.5 rounded text-[11px] border font-bold ${getAwardBadgeClass(award)}`}>
-                            {award}
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-3 text-right">
-                          <Link
-                            href="/assessment"
-                            className="text-blue-600 hover:text-blue-800 font-bold"
-                          >
-                            Chi tiết
-                          </Link>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        {/* RIGHT 1 COLUMN: BIRTHDAYS, LEADERBOARD, TIMETABLE & FUND */}
-        <div className="space-y-6">
-          {/* WIDGET 3: LỊCH SINH NHẬT CÁC BẠN TRONG LỚP (BIRTHDAYS) */}
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-5 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Cake className="w-5 h-5 text-rose-500" />
-                <span>Sinh Nhật Trong Lớp</span>
-              </h2>
-              <span className="bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                {studentBirthdayList.filter((b) => b.isThisMonth).length} em trong tháng
-              </span>
-            </div>
-
-            <div className="space-y-2.5 text-xs">
-              {studentBirthdayList.slice(0, 4).map((b) => (
-                <div
-                  key={b.student.id}
-                  className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-2 ${
-                    b.isToday
-                      ? 'bg-rose-50 border-rose-300 shadow-xs'
-                      : b.isThisWeek
-                      ? 'bg-amber-50/70 border-amber-200'
-                      : 'bg-slate-50 border-slate-100'
-                  }`}
-                >
-                  <div className="flex items-center space-x-2.5 min-w-0">
-                    <div
-                      className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 ${
-                        b.isToday
-                          ? 'bg-rose-500 text-white animate-pulse'
-                          : b.isThisWeek
-                          ? 'bg-amber-100 text-amber-700'
-                          : 'bg-slate-200 text-slate-700'
-                      }`}
-                    >
-                      {b.isToday ? '🎂' : '🎁'}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-bold text-slate-900 truncate flex items-center gap-1">
-                        <span>{b.student.fullName}</span>
-                        {b.isToday && (
-                          <span className="bg-rose-500 text-white text-[9px] px-1.5 py-0.2 rounded-full">
-                            Hôm nay!
-                          </span>
-                        )}
-                      </p>
-                      <p className="text-[11px] text-slate-500">
-                        {b.formattedDate} • Tròn <strong>{b.turningAge}</strong> tuổi
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="shrink-0 text-right">
-                    {b.isToday ? (
-                      <button
-                        type="button"
-                        onClick={() => handleCopyWish(b.student.fullName, b.turningAge, b.student.id)}
-                        className="bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-bold px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
-                      >
-                        {copiedWishId === b.student.id ? 'Đã chép!' : 'Chúc mừng 🎉'}
-                      </button>
-                    ) : (
-                      <span className="text-[10px] font-semibold text-slate-400 bg-white px-2 py-0.5 rounded-md border border-slate-200">
-                        {b.daysRemaining === 1 ? 'Ngày mai' : `Còn ${b.daysRemaining} ngày`}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* WIDGET 4: BẢNG VINH DANH NGÔI SAO NỀ NẾP (TOP 5 LEADERBOARD) */}
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-5 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Flame className="w-5 h-5 text-amber-500" />
-                <span>Ngôi Sao Nề Nếp Tuần</span>
-              </h2>
-              <Link href="/behavior" className="text-xs text-blue-600 font-bold hover:underline">
-                Tặng sao →
-              </Link>
-            </div>
-
-            {topStarStudents.length > 0 ? (
-              <div className="space-y-2 text-xs">
-                {topStarStudents.map((st, i) => (
-                  <div
-                    key={st.id}
-                    className="flex items-center justify-between p-2.5 rounded-2xl bg-slate-50 border border-slate-100"
-                  >
-                    <div className="flex items-center space-x-2.5">
-                      <span
-                        className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${
-                          i === 0
-                            ? 'bg-amber-400 text-white shadow-xs'
-                            : i === 1
-                            ? 'bg-slate-300 text-slate-700'
-                            : i === 2
-                            ? 'bg-amber-700/60 text-white'
-                            : 'bg-slate-100 text-slate-600'
-                        }`}
-                      >
-                        {i + 1}
-                      </span>
-                      <div>
-                        <p className="font-bold text-slate-900">{st.fullName}</p>
-                        <p className="text-[10px] text-slate-400">{st.tags?.[0] || 'Học sinh'}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-1 bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full text-xs font-bold border border-amber-300">
-                      <span>⭐</span>
-                      <span>{st.stars} sao</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="py-6 text-center text-slate-400 text-xs space-y-1">
-                <p className="text-2xl">⭐</p>
-                <p className="font-semibold text-slate-600">Chưa có điểm sao tuần này</p>
-                <p className="text-[11px] text-slate-400">Vào Quản lý Nề nếp để khen thưởng và cộng sao cho các em</p>
-              </div>
-            )}
-          </div>
-
-          {/* WIDGET 5: THỜI KHÓA BIỂU HÔM NAY */}
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-5 space-y-3">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Clock className="w-5 h-5 text-blue-600" />
-                <span>Thời Khóa Biểu Hôm Nay</span>
-              </h2>
-              <Link href="/timetable" className="text-xs text-blue-600 font-bold hover:underline">
-                Xem tuần →
-              </Link>
-            </div>
-
-            <div className="space-y-1.5 text-xs">
-              {PERIODS.slice(0, 5).map((p) => {
-                const dayKey: DayOfWeek = (new Date().getDay() >= 1 && new Date().getDay() <= 5 ? `T${new Date().getDay() + 1}` : 'T2') as DayOfWeek;
-                const slot = timetable.find((s) => s.day === dayKey && s.period === p.period);
-                const theme = slot ? getSubjectTheme(slot.subjectCode) : null;
-
-                return (
-                  <div
-                    key={p.period}
-                    className={`flex items-center justify-between p-2 rounded-xl border transition-colors ${
-                      theme ? `${theme.bgColor} ${theme.borderColor}` : 'bg-slate-50 border-slate-200'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-2">
-                      <span className="font-bold text-slate-500 font-mono text-[10px] w-10">
-                        {p.name}
-                      </span>
-                      <span className="text-sm">{theme?.icon || '📚'}</span>
-                      <span className="font-bold text-slate-900 text-xs">
-                        {slot?.subjectName || 'Tự học / Nghỉ'}
-                      </span>
-                    </div>
-                    <span className="text-[10px] font-mono text-slate-500">{p.time}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* POP-UP MODAL: THÊM SỰ KIỆN MỚI CỦA LỚP */}
-      {isAddEventModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-indigo-50 to-purple-50">
-              <div className="flex items-center space-x-2.5">
-                <div className="w-9 h-9 rounded-2xl bg-indigo-600 text-white flex items-center justify-center font-bold">
-                  <Calendar className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-900">Thêm Sự Kiện / Hoạt Động Lớp</h3>
-                  <p className="text-xs text-slate-500">Lên lịch các kỳ thi, lễ hội và họp phụ huynh của lớp</p>
-                </div>
-              </div>
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
               <button
                 type="button"
-                onClick={() => setIsAddEventModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer"
+                onClick={() => setEventFilter('ALL')}
+                className={`px-3 py-1.5 rounded-xl font-bold cursor-pointer transition-all ${
+                  eventFilter === 'ALL' ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
               >
-                <X className="w-4 h-4" />
+                Tất cả ({classEvents.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setEventFilter('UPCOMING')}
+                className={`px-3 py-1.5 rounded-xl font-bold cursor-pointer transition-all ${
+                  eventFilter === 'UPCOMING' ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Sắp tới
+              </button>
+              <button
+                type="button"
+                onClick={() => setEventFilter('EXAM')}
+                className={`px-3 py-1.5 rounded-xl font-bold cursor-pointer transition-all ${
+                  eventFilter === 'EXAM' ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Kiểm tra
+              </button>
+              <button
+                type="button"
+                onClick={() => setEventFilter('MEETING')}
+                className={`px-3 py-1.5 rounded-xl font-bold cursor-pointer transition-all ${
+                  eventFilter === 'MEETING' ? 'bg-blue-600 text-white shadow-xs' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                Họp PH
               </button>
             </div>
 
-            <form onSubmit={handleCreateEvent} className="p-6 space-y-4 text-xs">
+            {/* Events Timeline */}
+            <div className="space-y-3">
+              {sortedEvents.length === 0 ? (
+                <div className="text-center py-10 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-slate-400 text-xs font-medium space-y-2">
+                  <Calendar className="w-8 h-8 mx-auto text-slate-300" />
+                  <p>Chưa có sự kiện nào phù hợp với bộ lọc.</p>
+                </div>
+              ) : (
+                sortedEvents.map((ev) => (
+                  <div
+                    key={ev.id}
+                    className={`p-4 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                      ev.isImportant
+                        ? 'bg-amber-50/70 border-amber-200'
+                        : 'bg-slate-50/70 border-slate-200 hover:border-blue-300'
+                    }`}
+                  >
+                    <div className="flex items-start space-x-3.5">
+                      <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 flex flex-col items-center justify-center font-black shrink-0 shadow-2xs">
+                        <span className="text-[10px] uppercase text-blue-600">
+                          Thg {parseInt(ev.date.split('-')[1])}
+                        </span>
+                        <span className="text-base text-slate-900 leading-none">
+                          {ev.date.split('-')[2]}
+                        </span>
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="font-black text-sm text-slate-900">{ev.title}</h4>
+                          {ev.isImportant && (
+                            <span className="bg-rose-500 text-white text-[10px] font-black px-1.5 py-0.2 rounded">
+                              Quan trọng
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-slate-500 flex items-center gap-2">
+                          <span>⏰ {ev.time}</span>
+                          {ev.location && <span>• 📍 {ev.location}</span>}
+                        </p>
+                        {ev.description && (
+                          <p className="text-xs text-slate-600 italic">{ev.description}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        deleteClassEvent(ev.id);
+                        toast.success('Đã xóa sự kiện thành công!');
+                      }}
+                      className="p-2 text-slate-400 hover:text-rose-600 hover:bg-white rounded-xl transition-colors self-end sm:self-center cursor-pointer"
+                      title="Xóa sự kiện"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* POP-UP MODAL: THÊM SỰ KIỆN MỚI CỦA LỚP */}
+      {/* ========================================================================= */}
+      {isAddEventModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-150">
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-5 text-white flex items-center justify-between">
+              <div className="flex items-center space-x-2.5">
+                <Calendar className="w-5 h-5" />
+                <h3 className="font-bold text-base">Thêm Sự Kiện Lớp Mới</h3>
+              </div>
+              <button
+                onClick={() => setIsAddEventModalOpen(false)}
+                className="p-1 rounded-full hover:bg-white/20 text-white/80 hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateEvent} className="p-6 space-y-4">
               <div>
-                <label className="block font-bold text-slate-700 mb-1 uppercase">Tên sự kiện / Hoạt động *</label>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Tên Sự Kiện / Kế Hoạch *
+                </label>
                 <input
                   type="text"
                   required
-                  placeholder="VD: Kiểm Tra Giữa Kỳ 1, Hội Thi Văn Nghệ 20/11..."
+                  placeholder="Ví dụ: Kiểm tra Giữa kỳ I môn Toán, Họp PHĐN..."
                   value={newEventTitle}
                   onChange={(e) => setNewEventTitle(e.target.value)}
-                  className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50 text-slate-900"
+                  className="w-full text-xs font-medium px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1 uppercase">Ngày diễn ra *</label>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Ngày Diễn Ra *
+                  </label>
                   <input
                     type="date"
                     required
                     value={newEventDate}
                     onChange={(e) => setNewEventDate(e.target.value)}
-                    className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50 text-slate-900"
+                    className="w-full text-xs font-medium px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1 uppercase">Khung giờ</label>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Thời Gian
+                  </label>
                   <input
                     type="text"
                     placeholder="08:00 - 10:30"
                     value={newEventTime}
                     onChange={(e) => setNewEventTime(e.target.value)}
-                    className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50 text-slate-900"
+                    className="w-full text-xs font-medium px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1 uppercase">Phân loại sự kiện</label>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Loại Sự Kiện
+                  </label>
                   <select
                     value={newEventType}
                     onChange={(e) => setNewEventType(e.target.value as ClassEventType)}
-                    className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50 text-slate-900 font-semibold cursor-pointer"
+                    className="w-full text-xs font-medium px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   >
-                    <option value="ACTIVITY">🎒 Hoạt động trải nghiệm</option>
-                    <option value="EXAM">🏆 Khảo sát & Thi đánh giá</option>
-                    <option value="MEETING">👥 Họp phụ huynh</option>
-                    <option value="FESTIVAL">🎪 Lễ hội / Khai giảng</option>
-                    <option value="HOLIDAY">🏖️ Nghỉ lễ</option>
-                    <option value="OTHER">📌 Khác</option>
+                    <option value="EXAM">Kiểm tra định kỳ (TT27)</option>
+                    <option value="MEETING">Họp phụ huynh</option>
+                    <option value="ACTIVITY">Hoạt động trải nghiệm</option>
+                    <option value="FESTIVAL">Lễ hội / Thi đua</option>
+                    <option value="OTHER">Khác</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700 mb-1 uppercase">Địa điểm</label>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Địa Điểm
+                  </label>
                   <input
                     type="text"
-                    placeholder="Phòng học, Sân trường..."
                     value={newEventLocation}
                     onChange={(e) => setNewEventLocation(e.target.value)}
-                    className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50 text-slate-900"
+                    className="w-full text-xs font-medium px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1 uppercase">Mô tả / Dặn dò học sinh</label>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Mô Tả / Lưu Ý Cho Học Sinh
+                </label>
                 <textarea
                   rows={2}
-                  placeholder="Dặn dò trang phục, đồ dùng mang theo..."
+                  placeholder="Ghi chú về đồ dùng học tập cần mang, đồng phục..."
                   value={newEventDesc}
                   onChange={(e) => setNewEventDesc(e.target.value)}
-                  className="w-full p-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-slate-50 text-slate-900 resize-none"
+                  className="w-full text-xs font-medium p-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
               <div className="flex items-center space-x-2 pt-1">
                 <input
                   type="checkbox"
-                  id="ev-imp"
+                  id="eventImportant"
                   checked={newEventImportant}
                   onChange={(e) => setNewEventImportant(e.target.checked)}
-                  className="w-4 h-4 text-indigo-600 rounded cursor-pointer"
+                  className="w-4 h-4 text-blue-600 rounded-md border-slate-300 focus:ring-blue-500"
                 />
-                <label htmlFor="ev-imp" className="text-xs font-semibold text-slate-700 cursor-pointer">
-                  Đánh dấu là sự kiện quan trọng (Ghim nổi bật)
+                <label htmlFor="eventImportant" className="text-xs font-bold text-slate-700 cursor-pointer">
+                  Đánh dấu là Sự kiện quan trọng (Ưu tiên thông báo)
                 </label>
               </div>
 
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">
+              <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setIsAddEventModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 cursor-pointer"
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors"
                 >
-                  Hủy
+                  Hủy Bỏ
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-md cursor-pointer"
+                  className="px-5 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20 transition-all cursor-pointer"
                 >
-                  Tạo Sự Kiện
+                  Lưu Sự Kiện
                 </button>
               </div>
             </form>
@@ -1283,7 +1195,6 @@ export default function DashboardPage() {
       <ConferenceSchedulerModal
         isOpen={isConferenceModalOpen}
         onClose={() => setIsConferenceModalOpen(false)}
-        isTeacher={true}
       />
 
       {/* AI Class Diagnostic Modal */}
