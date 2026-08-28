@@ -32,6 +32,7 @@ import {
   Plus,
   Minus,
   Settings2,
+  Armchair,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { Student } from '@/types';
@@ -165,22 +166,26 @@ export default function SeatingChartPage() {
   const [activeTab, setActiveTab] = useState<'SEATING' | 'TEAMS' | 'SETTINGS'>('SEATING');
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
 
-  // Flexible Number of Teams (from classInfo.numberOfTeams or default 4, range 2-8)
+  // 1. Flexible Number of Teams (from classInfo.numberOfTeams or default 4, range 2-8)
   const numTeams = classInfo.numberOfTeams && classInfo.numberOfTeams >= 2 && classInfo.numberOfTeams <= 8
     ? classInfo.numberOfTeams
     : 4;
+
+  // 2. Flexible Seats Per Desk (1: Bàn đơn, 2: Bàn đôi, 3: Bàn 3 chỗ, 4: Bàn 4 chỗ)
+  const seatsPerDesk = classInfo.seatsPerDesk && classInfo.seatsPerDesk >= 1 && classInfo.seatsPerDesk <= 4
+    ? classInfo.seatsPerDesk
+    : 2;
 
   const activeTeams = useMemo(() => {
     return ALL_TEAMS_PRESET.slice(0, numTeams);
   }, [numTeams]);
 
   // Seating grid dimensions:
-  // Default: Each team represents a block of 2 columns (e.g. 4 teams = 8 cols, 3 teams = 6 cols, 5 teams = 10 cols)
+  // Rows: default 5 rows
+  // Cols: numTeams * seatsPerDesk (e.g. 4 teams * 3 seats = 12 cols; 3 teams * 3 seats = 9 cols; 4 teams * 2 seats = 8 cols)
   const [customRows, setCustomRows] = useState(classInfo.seatingGridRows || 5);
-  const [customCols, setCustomCols] = useState(classInfo.seatingGridCols || numTeams * 2);
-
   const rows = customRows;
-  const cols = customCols;
+  const cols = numTeams * seatsPerDesk;
 
   // Lấy học sinh ở vị trí row, col
   const getStudentAt = (row: number, col: number) => {
@@ -204,8 +209,7 @@ export default function SeatingChartPage() {
 
   // Determine Team based on seat column index
   const getTeamForSeat = (col: number): TeamDef => {
-    const colsPerTeam = Math.max(1, Math.floor(cols / numTeams));
-    const teamIdx = Math.min(numTeams - 1, Math.floor(col / colsPerTeam));
+    const teamIdx = Math.min(numTeams - 1, Math.floor(col / seatsPerDesk));
     return activeTeams[teamIdx] || activeTeams[0];
   };
 
@@ -215,10 +219,20 @@ export default function SeatingChartPage() {
     updateClass({
       ...classInfo,
       numberOfTeams: count,
-      seatingGridCols: count * 2,
+      seatingGridCols: count * seatsPerDesk,
     });
-    setCustomCols(count * 2);
     toast.success(`Đã cập nhật lớp thành ${count} Tổ thi đua!`);
+  };
+
+  // Handle seats per desk change (1, 2, 3, 4 chỗ/bàn)
+  const handleChangeSeatsPerDesk = (newSeats: number) => {
+    const sCount = Math.max(1, Math.min(4, newSeats));
+    updateClass({
+      ...classInfo,
+      seatsPerDesk: sCount,
+      seatingGridCols: numTeams * sCount,
+    });
+    toast.success(`Đã chuyển cấu hình thành Bàn ${sCount} chỗ (${sCount} học sinh/bàn)! 🎉`);
   };
 
   // Click handler to swap / assign seats
@@ -341,7 +355,7 @@ export default function SeatingChartPage() {
   // 4. Xoay vòng đổi dãy bàn định kỳ (Tránh lệch mắt theo khuyến nghị y tế)
   const handleRotateAisles = () => {
     if (confirm('Xoay vòng dãy bàn (Dãy 1 sang Dãy 2, Dãy 2 sang Dãy 3,... Dãy cuối về Dãy 1)?')) {
-      const shiftCols = 2; // mỗi dãy bàn 2 cột
+      const shiftCols = seatsPerDesk; // mỗi dãy dịch chuyển đúng số ghế của 1 bàn
       students.forEach((s) => {
         if (s.seatRow !== undefined && s.seatRow >= 0 && s.seatCol !== undefined && s.seatCol >= 0) {
           const newCol = (s.seatCol + shiftCols) % cols;
@@ -424,7 +438,7 @@ export default function SeatingChartPage() {
         members,
       };
     });
-  }, [students, activeTeams, numTeams, cols]);
+  }, [students, activeTeams, numTeams, cols, seatsPerDesk]);
 
   return (
     <div className="space-y-4 pb-16 animate-in fade-in duration-300">
@@ -440,20 +454,47 @@ export default function SeatingChartPage() {
                 Sơ Đồ Chỗ Ngồi & Phân Chia Tổ
               </h1>
               <span className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-2xs">
-                Lớp {classInfo.name} ({numTeams} Tổ)
+                Lớp {classInfo.name} ({numTeams} Dãy • Bàn {seatsPerDesk} chỗ)
               </span>
               <span className="hidden sm:inline-flex bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-full">
                 {students.length - unassignedStudents.length}/{students.length} Đã Xếp Chỗ
               </span>
             </div>
             <p className="text-xs text-slate-500">
-              Kéo thả / 1-Click hoán đổi chỗ ngồi, tự động ưu tiên cận thị và liên thông {numTeams} Tổ thi đua
+              Kéo thả / 1-Click hoán đổi chỗ ngồi, hỗ trợ bàn 1-2-3-4 chỗ, tự động ưu tiên cận thị và liên thông {numTeams} Tổ
             </p>
           </div>
         </div>
 
-        {/* Action Buttons & Flexible Number of Teams Selector */}
+        {/* Action Buttons & Flexible Config Selectors */}
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Quick Seats per Desk Selector */}
+          <div className="flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200 text-xs">
+            <span className="text-[11px] font-bold text-slate-500 px-2 flex items-center gap-1">
+              <Armchair className="w-3.5 h-3.5" />
+              <span>Ghế/Bàn:</span>
+            </span>
+            {[
+              { id: 1, label: '1 Chỗ' },
+              { id: 2, label: '2 Chỗ (Đôi)' },
+              { id: 3, label: '3 Chỗ' },
+              { id: 4, label: '4 Chỗ' },
+            ].map((st) => (
+              <button
+                key={st.id}
+                onClick={() => handleChangeSeatsPerDesk(st.id)}
+                className={`px-2 py-1 rounded-xl font-bold transition-all cursor-pointer ${
+                  seatsPerDesk === st.id
+                    ? 'bg-amber-500 text-white shadow-2xs'
+                    : 'text-slate-700 hover:bg-slate-200'
+                }`}
+                title={`Cấu hình Bàn ${st.id} chỗ ngồi`}
+              >
+                {st.label}
+              </button>
+            ))}
+          </div>
+
           {/* Quick Number of Teams Selector */}
           <div className="flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200 text-xs">
             <span className="text-[11px] font-bold text-slate-500 px-2">Số Tổ:</span>
@@ -461,14 +502,14 @@ export default function SeatingChartPage() {
               <button
                 key={count}
                 onClick={() => handleChangeNumTeams(count)}
-                className={`px-2.5 py-1 rounded-xl font-bold transition-all cursor-pointer ${
+                className={`px-2 py-1 rounded-xl font-bold transition-all cursor-pointer ${
                   numTeams === count
                     ? 'bg-blue-600 text-white shadow-2xs'
                     : 'text-slate-700 hover:bg-slate-200'
                 }`}
                 title={`Chia lớp thành ${count} Tổ`}
               >
-                {count} Tổ
+                {count}
               </button>
             ))}
           </div>
@@ -500,7 +541,9 @@ export default function SeatingChartPage() {
             ✨
           </div>
           <div className="min-w-0">
-            <span className="text-xs font-bold text-white block truncate">Thuật toán xếp chỗ tự động ({numTeams} Tổ):</span>
+            <span className="text-xs font-bold text-white block truncate">
+              Thuật toán xếp chỗ tự động ({numTeams} Dãy bàn • Bàn {seatsPerDesk} chỗ • Tổng {rows * cols} chỗ):
+            </span>
             <span className="text-[11px] text-slate-300 block truncate">Chọn tiêu chí sư phạm phù hợp cho lớp học</span>
           </div>
         </div>
@@ -552,7 +595,7 @@ export default function SeatingChartPage() {
           }`}
         >
           <Grid3X3 className="w-4 h-4" />
-          <span>Sơ Đồ Lớp Học ({numTeams} Dãy Bàn)</span>
+          <span>Sơ Đồ Lớp Học ({numTeams} Dãy Bàn • Bàn {seatsPerDesk} Chỗ)</span>
         </button>
 
         <button
@@ -576,11 +619,11 @@ export default function SeatingChartPage() {
           }`}
         >
           <Sliders className="w-4 h-4" />
-          <span>Cấu Hình Bàn Ghế & Số Tổ</span>
+          <span>Cấu Hình Bàn Ghế & Số Chỗ</span>
         </button>
       </div>
 
-      {/* TAB 1: SƠ ĐỒ LỚP HỌC TRỰC QUAN THEO N TỔ */}
+      {/* TAB 1: SƠ ĐỒ LỚP HỌC TRỰC QUAN THEO N TỔ VÀ K CHỖ/BÀN */}
       {activeTab === 'SEATING' && (
         <div className="space-y-4">
           {/* Teacher Desk & Podium Area */}
@@ -609,7 +652,7 @@ export default function SeatingChartPage() {
                 className={`p-2 rounded-2xl bg-gradient-to-r ${team.headerBg} shadow-xs flex items-center justify-center space-x-1.5 truncate`}
               >
                 <span>{team.mascot}</span>
-                <span className="font-black truncate">DÃY {team.id} — {team.name.toUpperCase()}</span>
+                <span className="font-black truncate">DÃY {team.id} — {team.name.toUpperCase()} (Bàn {seatsPerDesk} chỗ)</span>
               </div>
             ))}
           </div>
@@ -630,21 +673,18 @@ export default function SeatingChartPage() {
                     style={{ gridTemplateColumns: `repeat(${numTeams}, minmax(0, 1fr))` }}
                   >
                     {activeTeams.map((team, blockIdx) => {
-                      const c1 = blockIdx * 2;
-                      const c2 = blockIdx * 2 + 1;
-                      const student1 = getStudentAt(r, c1);
-                      const student2 = getStudentAt(r, c2);
+                      const startCol = blockIdx * seatsPerDesk;
+                      const seatIndices = Array.from({ length: seatsPerDesk }, (_, i) => startCol + i);
 
                       return (
                         <div
                           key={blockIdx}
-                          className={`p-2 rounded-2xl border-2 bg-gradient-to-br ${team.cardBg} ${team.borderClass} shadow-2xs grid grid-cols-2 gap-2`}
+                          className={`p-2 rounded-2xl border-2 bg-gradient-to-br ${team.cardBg} ${team.borderClass} shadow-2xs grid gap-1.5`}
+                          style={{ gridTemplateColumns: `repeat(${seatsPerDesk}, minmax(0, 1fr))` }}
                         >
-                          {/* Seat 1 & 2 */}
-                          {[
-                            { col: c1, student: student1 },
-                            { col: c2, student: student2 },
-                          ].map(({ col, student }) => {
+                          {/* Seat slots (1, 2, 3 or 4 seats per desk) */}
+                          {seatIndices.map((col, slotIdx) => {
+                            const student = getStudentAt(r, col);
                             const isSelected = student && student.id === selectedStudentId;
                             const isTarget = selectedStudentId && !isSelected;
                             const isNearsighted =
@@ -656,7 +696,7 @@ export default function SeatingChartPage() {
                               <button
                                 key={col}
                                 onClick={() => handleCellClick(r, col)}
-                                className={`h-24 p-2 rounded-xl border text-left flex flex-col justify-between transition-all duration-150 relative cursor-pointer ${
+                                className={`h-24 p-1.5 sm:p-2 rounded-xl border text-left flex flex-col justify-between transition-all duration-150 relative cursor-pointer ${
                                   isSelected
                                     ? 'border-blue-600 ring-4 ring-blue-400 bg-blue-100 shadow-md scale-105 z-10'
                                     : isTarget
@@ -672,23 +712,23 @@ export default function SeatingChartPage() {
                                   <>
                                     <div className="flex items-center justify-between w-full">
                                       <span
-                                        className={`text-[9px] font-black px-1.5 py-0.2 rounded-md ${
+                                        className={`text-[8px] sm:text-[9px] font-black px-1.5 py-0.2 rounded-md ${
                                           student.gender === 'Nam'
                                             ? 'bg-blue-100 text-blue-800'
                                             : 'bg-pink-100 text-pink-800'
                                         }`}
                                       >
-                                        {student.gender === 'Nam' ? '👦 Nam' : '👧 Nữ'}
+                                        {student.gender === 'Nam' ? '👦' : '👧'} G{slotIdx + 1}
                                       </span>
 
-                                      <div className="flex items-center space-x-1">
+                                      <div className="flex items-center space-x-0.5">
                                         {isNearsighted && (
                                           <span title="Học sinh cận thị" className="text-xs">
                                             👓
                                           </span>
                                         )}
                                         {stars > 0 && (
-                                          <span className="bg-amber-100 text-amber-900 text-[9px] font-black px-1 py-0.2 rounded">
+                                          <span className="bg-amber-100 text-amber-900 text-[8px] sm:text-[9px] font-black px-1 py-0.2 rounded">
                                             ⭐{stars}
                                           </span>
                                         )}
@@ -696,22 +736,22 @@ export default function SeatingChartPage() {
                                     </div>
 
                                     <div className="my-auto">
-                                      <p className="font-bold text-slate-900 text-xs truncate leading-snug" title={student.fullName}>
+                                      <p className="font-bold text-slate-900 text-[11px] sm:text-xs truncate leading-snug" title={student.fullName}>
                                         {student.fullName}
                                       </p>
-                                      <p className="text-[9px] text-slate-400 truncate font-mono">
+                                      <p className="text-[8px] sm:text-[9px] text-slate-400 truncate font-mono">
                                         {student.studentCode}
                                       </p>
                                     </div>
 
-                                    <div className="flex items-center justify-between text-[8px] text-slate-400 border-t border-slate-100 pt-0.5">
-                                      <span>{student.isBoarding ? '🍱 Bán trú' : '🏠 Về'}</span>
-                                      <span className="font-bold text-slate-500">Bàn {r + 1}</span>
+                                    <div className="flex items-center justify-between text-[7px] sm:text-[8px] text-slate-400 border-t border-slate-100 pt-0.5">
+                                      <span className="truncate">{student.isBoarding ? '🍱 Bán trú' : '🏠 Về'}</span>
+                                      <span className="font-bold text-slate-500">B{r + 1}</span>
                                     </div>
                                   </>
                                 ) : (
-                                  <div className="h-full flex items-center justify-center text-slate-400 text-xs font-semibold">
-                                    + Xếp chỗ
+                                  <div className="h-full flex items-center justify-center text-slate-400 text-[10px] font-semibold">
+                                    + Ghế {slotIdx + 1}
                                   </div>
                                 )}
                               </button>
@@ -879,17 +919,50 @@ export default function SeatingChartPage() {
         </div>
       )}
 
-      {/* TAB 3: CẤU HÌNH KIỂU BỐ TRÍ BÀN GHẾ & SỐ TỔ */}
+      {/* TAB 3: CẤU HÌNH KIỂU BỐ TRÍ BÀN GHẾ & SỐ CHỖ */}
       {activeTab === 'SETTINGS' && (
         <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-6 max-w-3xl">
           <div>
             <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
               <Sliders className="w-5 h-5 text-blue-600" />
-              <span>Cấu Hình Số Tổ & Kích Thước Bàn Ghế Lớp {classInfo.name}</span>
+              <span>Cấu Hình Số Tổ, Số Ghế Mỗi Bàn & Kích Thước Lớp {classInfo.name}</span>
             </h3>
             <p className="text-xs text-slate-500 mt-1">
-              Điều chỉnh số lượng tổ thi đua và số hàng/cột bàn để phù hợp với phòng học thực tế.
+              Tùy biến số lượng tổ thi đua và số chỗ ngồi mỗi bàn (Bàn đơn, Bàn đôi, Bàn 3 chỗ, Bàn 4 chỗ) để chuẩn khớp với phòng học thực tế.
             </p>
+          </div>
+
+          {/* Choose Seats Per Desk */}
+          <div className="space-y-2">
+            <label className="block text-xs font-bold text-slate-700">
+              Kiểu bàn học trong lớp (Hiện tại: <strong className="text-amber-600">Bàn {seatsPerDesk} Chỗ</strong>):
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              {[
+                { id: 1, title: 'Bàn Đơn (1 Chỗ)', desc: '1 học sinh / bàn (mô hình trường quốc tế)', badge: '1 Chỗ' },
+                { id: 2, title: 'Bàn Đôi (2 Chỗ)', desc: '2 học sinh / bàn (phổ biến nhất)', badge: 'Khuyên Dùng' },
+                { id: 3, title: 'Bàn 3 Chỗ', desc: '3 học sinh / bàn (lớp sĩ số đông 45-55 em)', badge: '3 Chỗ Phổ Biến' },
+                { id: 4, title: 'Bàn 4 Chỗ', desc: '4 học sinh ghép cụm nhóm VNEN/STEM', badge: 'Bàn Cụm' },
+              ].map((st) => (
+                <button
+                  key={st.id}
+                  onClick={() => handleChangeSeatsPerDesk(st.id)}
+                  className={`p-3.5 rounded-2xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between space-y-2 ${
+                    seatsPerDesk === st.id
+                      ? 'border-amber-500 bg-amber-50/70 shadow-sm ring-2 ring-amber-400'
+                      : 'border-slate-200 hover:border-amber-300 bg-slate-50/50'
+                  }`}
+                >
+                  <div>
+                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-900">
+                      {st.badge}
+                    </span>
+                    <h4 className="font-bold text-xs text-slate-900 mt-1">{st.title}</h4>
+                    <p className="text-[10px] text-slate-500 mt-0.5 leading-snug">{st.desc}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Choose Number of Teams */}
@@ -916,14 +989,14 @@ export default function SeatingChartPage() {
                         <span key={t.id}>{t.mascot}</span>
                       ))}
                     </div>
-                    <span className="text-[10px] text-slate-500">{count * 2} Cột bàn</span>
+                    <span className="text-[10px] text-slate-500">{count * seatsPerDesk} Ghế / Hàng</span>
                   </button>
                 );
               })}
             </div>
           </div>
 
-          {/* Custom Rows & Columns */}
+          {/* Custom Rows */}
           <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">Số hàng bàn (Hàng ghế từ trên xuống)</label>
@@ -941,19 +1014,11 @@ export default function SeatingChartPage() {
               />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Số cột ghế tổng cộng</label>
-              <input
-                type="number"
-                min={4}
-                max={16}
-                value={customCols}
-                onChange={(e) => {
-                  const val = Number(e.target.value);
-                  setCustomCols(val);
-                  updateClass({ ...classInfo, seatingGridCols: val });
-                }}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold bg-white"
-              />
+              <label className="block text-xs font-bold text-slate-700 mb-1">Tổng sức chứa chỗ ngồi</label>
+              <div className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold bg-slate-100 text-slate-700 flex items-center justify-between">
+                <span>{rows} Hàng × {numTeams} Dãy × {seatsPerDesk} Chỗ</span>
+                <span className="text-blue-600 font-black">{rows * cols} Chỗ ngồi</span>
+              </div>
             </div>
           </div>
         </div>
