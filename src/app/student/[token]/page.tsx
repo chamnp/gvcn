@@ -193,7 +193,7 @@ export default function StudentPrivateReportPage({
 
   const studentRankInClass = useMemo(() => {
     if (!student || !studentClass) return 1;
-    const classStudents = allStudents.filter((s) => (s.classId || 'class-4a1') === studentClass.id);
+    const classStudents = allStudents.filter((s) => s.classId === studentClass.id);
     const ranked = classStudents
       .map((st) => ({
         id: st.id,
@@ -347,17 +347,17 @@ export default function StudentPrivateReportPage({
 
   // Class Homeworks
   const classHomeworks = allHomeworks.filter(
-    (h) => (h.classId || 'class-4a1') === studentClass.id
+    (h) => h.classId === studentClass.id
   );
 
   // Class Events
   const classEvents = allClassEvents.filter(
-    (e) => (e.classId || 'class-4a1') === studentClass.id
+    (e) => e.classId === studentClass.id
   );
 
   // Tomorrow slots from timetable
   const tomorrowSlots = timetable.filter(
-    (s) => s.day === tomorrowDayCode && (s.classId || 'class-4a1') === studentClass.id
+    (s) => s.day === tomorrowDayCode && s.classId === studentClass.id
   );
 
   const toggleCompleteHw = (hwId: string) => {
@@ -800,7 +800,9 @@ export default function StudentPrivateReportPage({
               <div className="bg-white p-4 rounded-3xl border border-slate-200 shadow-xs space-y-1">
                 <span className="text-[10px] font-bold text-slate-400 uppercase">Vị Trí Chỗ Ngồi</span>
                 <p className="text-lg sm:text-xl font-black text-slate-900">
-                  Hàng {student.seatRow + 1} - Bàn {student.seatCol + 1}
+                  {student.seatRow !== undefined && student.seatRow >= 0 && student.seatCol !== undefined && student.seatCol >= 0
+                    ? `Hàng ${student.seatRow + 1} - Bàn ${student.seatCol + 1}`
+                    : 'Chưa xếp chỗ'}
                 </p>
                 <p className="text-[11px] text-slate-500">Sơ đồ lớp {studentClass.name}</p>
               </div>
@@ -1255,7 +1257,7 @@ export default function StudentPrivateReportPage({
             <div className="space-y-2">
               {PERIODS.map((p) => {
                 const slot = timetable.find(
-                  (s) => s.day === selectedTimetableDay && s.period === p.period && (s.classId || 'class-4a1') === studentClass.id
+                  (s) => s.day === selectedTimetableDay && s.period === p.period && s.classId === studentClass.id
                 );
                 const theme = slot ? getSubjectTheme(slot.subjectCode, customSubjects) : null;
 

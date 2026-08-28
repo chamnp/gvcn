@@ -18,7 +18,7 @@ import { Student } from '@/types';
 import { toast } from 'sonner';
 
 export default function SeatingChartPage() {
-  const { students, updateSeatPosition, classInfo, getStudentStars } = useAppStore();
+  const { students, updateSeatPosition, swapSeatPositions, classInfo, getStudentStars } = useAppStore();
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
 
   const rows = classInfo.seatingGridRows || 5;
@@ -31,7 +31,7 @@ export default function SeatingChartPage() {
 
   // Học sinh chưa được xếp chỗ
   const unassignedStudents = students.filter(
-    (s) => s.seatRow === undefined || s.seatRow === null || s.seatRow >= rows || s.seatCol >= cols
+    (s) => s.seatRow === undefined || s.seatRow === null || s.seatRow < 0 || s.seatRow >= rows || s.seatCol === undefined || s.seatCol === null || s.seatCol < 0 || s.seatCol >= cols
   );
 
   // Xử lý click chọn đổi chỗ
@@ -39,9 +39,37 @@ export default function SeatingChartPage() {
     const studentInCell = getStudentAt(row, col);
 
     if (selectedStudentId) {
-      // Đang có 1 học sinh được chọn, thực hiện chuyển/đổi chỗ
-      updateSeatPosition(selectedStudentId, row, col);
-      toast.success('Đã cập nhật vị trí chỗ ngồi!');
+      if (selectedStudentId === studentInCell?.id) {
+        // Hủy chọn nếu click lại vào chính học sinh đó
+        setSelectedStudentId(null);
+        return;
+      }
+
+      const selectedStudent = students.find((s) => s.id === selectedStudentId);
+
+      if (studentInCell && selectedStudent) {
+        // Nếu học sinh được chọn đã có chỗ ngồi hợp lệ -> Hoán đổi vị trí
+        if (
+          selectedStudent.seatRow !== undefined &&
+          selectedStudent.seatRow >= 0 &&
+          selectedStudent.seatRow < rows &&
+          selectedStudent.seatCol !== undefined &&
+          selectedStudent.seatCol >= 0 &&
+          selectedStudent.seatCol < cols
+        ) {
+          swapSeatPositions(selectedStudentId, studentInCell.id);
+          toast.success(`Đã hoán đổi chỗ ngồi giữa em ${selectedStudent.fullName} và ${studentInCell.fullName}!`);
+        } else {
+          // Học sinh chọn chưa có chỗ -> Gán vào ô này, chuyển học sinh cũ ra danh sách chờ
+          updateSeatPosition(studentInCell.id, -1, -1);
+          updateSeatPosition(selectedStudentId, row, col);
+          toast.success(`Đã xếp ${selectedStudent.fullName} vào bàn (Bàn ${row + 1}, Cột ${col + 1})!`);
+        }
+      } else if (selectedStudent) {
+        // Chuyển vào bàn trống
+        updateSeatPosition(selectedStudentId, row, col);
+        toast.success(`Đã xếp ${selectedStudent.fullName} vào bàn (Bàn ${row + 1}, Cột ${col + 1})!`);
+      }
       setSelectedStudentId(null);
     } else if (studentInCell) {
       // Chọn học sinh này để chuẩn bị đổi chỗ
@@ -210,6 +238,47 @@ export default function SeatingChartPage() {
           ))}
         </div>
       </div>
+
+      {/* Unassigned Students Section (if any) */}
+      {unassignedStudents.length > 0 && (
+        <div className="bg-amber-50 rounded-2xl p-4 border border-amber-200 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+              <Users className="w-4 h-4 text-amber-700" />
+              Học sinh chưa xếp chỗ ({unassignedStudents.length} em):
+            </span>
+            <span className="text-[11px] text-amber-700">Click vào tên em rồi click vào bàn để xếp chỗ</span>
+          </div>
+          <div className="flex flex-wrap gap-2 pt-1">
+            {unassignedStudents.map((st) => {
+              const isSelected = st.id === selectedStudentId;
+              return (
+                <button
+                  key={st.id}
+                  onClick={() => {
+                    if (selectedStudentId === st.id) {
+                      setSelectedStudentId(null);
+                    } else {
+                      setSelectedStudentId(st.id);
+                      toast.info(`Đang chọn ${st.fullName}. Click vào bàn trống để xếp chỗ.`);
+                    }
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                    isSelected
+                      ? 'bg-blue-600 text-white border-blue-700 shadow-xs scale-105'
+                      : st.gender === 'Nam'
+                      ? 'bg-white text-blue-800 border-blue-200 hover:bg-blue-50'
+                      : 'bg-white text-pink-800 border-pink-200 hover:bg-pink-50'
+                  }`}
+                >
+                  <span>{st.fullName}</span>
+                  <span className="text-[10px] opacity-75 font-mono">({st.studentCode})</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Guide Note */}
       <div className="bg-slate-100 rounded-xl p-4 text-xs text-slate-600 flex items-start space-x-3 border border-slate-200">

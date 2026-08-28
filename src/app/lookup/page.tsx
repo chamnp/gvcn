@@ -42,9 +42,16 @@ export default function StudentLookupPortal() {
   const { schoolClasses, allStudents, schoolInfo } = useAppStore();
 
   // Selected Class
-  const [selectedClassId, setSelectedClassId] = useState<string>(
-    schoolClasses[3]?.id || schoolClasses[0]?.id || 'class-4a1'
-  );
+  const [selectedClassId, setSelectedClassId] = useState<string>(() => {
+    return schoolClasses[0]?.id || '';
+  });
+
+  // Sync selectedClassId if schoolClasses loads later
+  React.useEffect(() => {
+    if (!selectedClassId && schoolClasses.length > 0) {
+      setSelectedClassId(schoolClasses[0].id);
+    }
+  }, [schoolClasses, selectedClassId]);
 
   const [studentIdentifierInput, setStudentIdentifierInput] = useState('');
   const [pinInput, setPinInput] = useState('');
@@ -73,7 +80,7 @@ export default function StudentLookupPortal() {
 
     // Find student in selected class matching name or studentCode
     const classStudents = allStudents.filter(
-      (s) => (s.classId || 'class-4a1') === selectedClassId
+      (s) => s.classId === selectedClassId
     );
 
     const matchedStudent = classStudents.find((s) => {
@@ -127,12 +134,18 @@ export default function StudentLookupPortal() {
           </span>
         </div>
 
-        <Link
-          href={`/hw/${selectedClassId === 'class-4a1' ? 'c4a1-8f92a4' : selectedClassId}`}
-          className="text-xs font-bold text-blue-600 hover:text-blue-700 bg-white hover:bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 shadow-2xs transition-colors"
-        >
-          Trang Lớp Học →
-        </Link>
+        {(() => {
+          const selectedClassObj = schoolClasses.find((c) => c.id === selectedClassId);
+          const targetToken = selectedClassObj?.shareToken || selectedClassId;
+          return (
+            <Link
+              href={`/hw/${targetToken}`}
+              className="text-xs font-bold text-blue-600 hover:text-blue-700 bg-white hover:bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200 shadow-2xs transition-colors"
+            >
+              Trang Lớp Học →
+            </Link>
+          );
+        })()}
       </header>
 
       {/* MAIN LOOKUP CARD */}

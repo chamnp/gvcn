@@ -498,7 +498,8 @@ export default function AdminPortalPage() {
             <tbody className="divide-y divide-slate-100">
               {schoolClasses.map((cls) => {
                 const isCurrent = cls.id === activeClassId;
-                const studentCount = cls.id === 'class-4a1' ? allStudents.length : cls.totalStudents || 30;
+                const classStudentsCount = allStudents.filter((s) => s.classId === cls.id).length;
+                const studentCount = classStudentsCount > 0 ? classStudentsCount : cls.totalStudents || 0;
 
                 return (
                   <tr key={cls.id} className={`hover:bg-slate-50 transition-colors ${isCurrent ? 'bg-blue-50/50' : ''}`}>

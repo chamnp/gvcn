@@ -83,6 +83,9 @@ function parseDateValue(val: any): string {
     return `${yMatch[1]}-01-01`;
   }
 
+  if (val) {
+    console.warn(`[Excel Import] Không thể phân tích ngày sinh từ "${val}". Mặc định dùng "2016-01-01".`);
+  }
   return '2016-01-01';
 }
 

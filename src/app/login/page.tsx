@@ -88,19 +88,21 @@ export default function LoginPage() {
 
       {/* Auth Card */}
       <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm space-y-5">
-        {/* Quick Demo Login for Cô Nguyễn Thị Minh Hằng */}
-        <button
-          type="button"
-          onClick={() => {
-            localStorage.setItem('gvcn_mock_email', 'hangnm47@gmail.com');
-            localStorage.setItem('gvcn_active_class_id', 'class-4a1');
-            window.location.href = '/';
-          }}
-          className="w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs py-3 px-4 rounded-xl shadow-xs transition-all cursor-pointer"
-        >
-          <Sparkles className="w-4 h-4 text-amber-300" />
-          <span>Đăng nhập nhanh: Cô Nguyễn Thị Minh Hằng (GVCN 4A1)</span>
-        </button>
+        {/* Quick Demo Login for Development */}
+        {process.env.NODE_ENV === 'development' && (
+          <button
+            type="button"
+            onClick={() => {
+              localStorage.setItem('gvcn_mock_email', 'hangnm47@gmail.com');
+              localStorage.setItem('gvcn_active_class_id', 'class-4a1');
+              window.location.href = '/';
+            }}
+            className="w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs py-3 px-4 rounded-xl shadow-xs transition-all cursor-pointer"
+          >
+            <Sparkles className="w-4 h-4 text-amber-300" />
+            <span>Đăng nhập nhanh: Cô Nguyễn Thị Minh Hằng (Demo Dev)</span>
+          </button>
+        )}
 
         {/* Google OAuth Button */}
         <div>

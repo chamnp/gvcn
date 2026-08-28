@@ -164,6 +164,7 @@ interface AppContextType {
   clearClassStudents: () => void;
   loadDemoStudents: () => void;
   updateSeatPosition: (studentId: string, row: number, col: number) => void;
+  swapSeatPositions: (studentId1: string, studentId2: string) => void;
   updateStudentSecurity: (
     studentId: string,
     security: {
@@ -649,7 +650,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             isActivated: Boolean(st.isActivated),
             createdAt: st.createdAt,
           }));
-          setAllStudents(mappedStudents);
+          setAllStudents((prev) => {
+            const dbIds = new Set(mappedStudents.map((s) => s.id));
+            const localOnly = prev.filter((s) => !dbIds.has(s.id));
+            return [...mappedStudents, ...localOnly];
+          });
         }
 
         if (dbAssessments && dbAssessments.length > 0) {
@@ -700,7 +705,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
 
         if (dbHomeworks && dbHomeworks.length > 0) {
-          setAllHomeworks(dbHomeworks);
+          setAllHomeworks((prev) => {
+            const dbIds = new Set(dbHomeworks.map((h: any) => h.id));
+            const localOnly = prev.filter((h) => !dbIds.has(h.id));
+            return [...dbHomeworks, ...localOnly];
+          });
         }
 
         if (dbTimetable && dbTimetable.length > 0) {
@@ -708,7 +717,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
 
         if (dbEvents && dbEvents.length > 0) {
-          setAllClassEvents(dbEvents);
+          setAllClassEvents((prev) => {
+            const dbIds = new Set(dbEvents.map((e: any) => e.id));
+            const localOnly = prev.filter((e) => !dbIds.has(e.id));
+            return [...dbEvents, ...localOnly];
+          });
         }
 
         if (dbCustomSubjects && dbCustomSubjects.length > 0) {
@@ -1714,10 +1727,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateSeatPosition = (studentId: string, row: number, col: number) => {
+    const finalRow = row < 0 ? undefined : row;
+    const finalCol = col < 0 ? undefined : col;
     setAllStudents((prev) =>
-      prev.map((s) => (s.id === studentId ? { ...s, seatRow: row, seatCol: col } : s))
+      prev.map((s) => (s.id === studentId ? { ...s, seatRow: finalRow, seatCol: finalCol } : s))
     );
-    supabase.from('Student').update({ seatRow: row, seatCol: col, updatedAt: new Date().toISOString() }).eq('id', studentId).then();
+    supabase.from('Student').update({ seatRow: finalRow ?? null, seatCol: finalCol ?? null, updatedAt: new Date().toISOString() }).eq('id', studentId).then();
+  };
+
+  const swapSeatPositions = (studentId1: string, studentId2: string) => {
+    const s1 = allStudents.find((s) => s.id === studentId1);
+    const s2 = allStudents.find((s) => s.id === studentId2);
+    if (!s1 || !s2) return;
+
+    const s1Row = s1.seatRow;
+    const s1Col = s1.seatCol;
+    const s2Row = s2.seatRow;
+    const s2Col = s2.seatCol;
+
+    setAllStudents((prev) =>
+      prev.map((s) => {
+        if (s.id === studentId1) return { ...s, seatRow: s2Row, seatCol: s2Col };
+        if (s.id === studentId2) return { ...s, seatRow: s1Row, seatCol: s1Col };
+        return s;
+      })
+    );
+
+    supabase.from('Student').update({ seatRow: s2Row ?? null, seatCol: s2Col ?? null, updatedAt: new Date().toISOString() }).eq('id', studentId1).then();
+    supabase.from('Student').update({ seatRow: s1Row ?? null, seatCol: s1Col ?? null, updatedAt: new Date().toISOString() }).eq('id', studentId2).then();
   };
 
   const updateStudentSecurity = (
@@ -2673,6 +2710,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         clearClassStudents,
         loadDemoStudents,
         updateSeatPosition,
+        swapSeatPositions,
         updateStudentSecurity,
         resetStudentPin,
         regenerateStudentToken,

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AIProviderType } from '@/types';
+import { createClient } from '@supabase/supabase-js';
 
 export const runtime = 'nodejs';
 
@@ -12,6 +13,19 @@ const FALLBACK_MODELS_BY_PROVIDER: Record<AIProviderType, string[]> = {
 
 export async function POST(req: NextRequest) {
   try {
+    // Auth check if Authorization header is provided
+    const authHeader = req.headers.get('authorization');
+    if (authHeader) {
+      const supabaseAuth = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+      );
+      const { data: { user } } = await supabaseAuth.auth.getUser(authHeader.replace('Bearer ', ''));
+      if (!user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+    }
+
     const body = await req.json();
     const { provider = 'GEMINI', apiKey = '', baseUrl = '' } = body as {
       provider?: AIProviderType;

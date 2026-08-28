@@ -1,12 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 import { AIConfig } from '@/types';
+import { createClient } from '@supabase/supabase-js';
 
 export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   const startTime = Date.now();
   try {
+    // Auth check if Authorization header is provided
+    const authHeader = req.headers.get('authorization');
+    if (authHeader) {
+      const supabaseAuth = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+      );
+      const { data: { user } } = await supabaseAuth.auth.getUser(authHeader.replace('Bearer ', ''));
+      if (!user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+    }
+
     const body = await req.json();
     const { aiConfig } = body as { aiConfig: AIConfig };
 

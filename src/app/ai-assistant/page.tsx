@@ -245,48 +245,52 @@ export default function AIAssistantPage() {
 
     let realAICount = 0;
     let completedCount = 0;
+    const CONCURRENCY = isOnline ? 3 : 6;
+    let nextIndex = 0;
 
-    for (let i = 0; i < students.length; i++) {
-      // Check if user requested to cancel
-      if (abortSyncRef.current) {
-        toast.info(`Đã dừng quá trình sinh nhận xét. Đã hoàn tất ${completedCount}/${students.length} học sinh.`);
-        break;
-      }
+    const runWorker = async () => {
+      while (nextIndex < students.length && !abortSyncRef.current) {
+        const i = nextIndex++;
+        const student = students[i];
+        if (!student) break;
 
-      const student = students[i];
-      setGenerationProgress({
-        current: i + 1,
-        total: students.length,
-        currentStudentName: student.fullName,
-      });
-      setGeneratingStudentId(student.id);
-
-      const sAss = subjectAssessments.filter((a) => a.studentId === student.id && a.term === currentTerm);
-      const tAss = traitAssessments.filter((a) => a.studentId === student.id && a.term === currentTerm);
-      const studentStars = starLogs.filter((l) => l.studentId === student.id);
-      const studentAtt = attendances.filter((a) => a.studentId === student.id);
-
-      try {
-        const result = await generateStudentAICommentFull({
-          student,
-          subjects: sAss,
-          traits: tAss,
-          starLogs: studentStars,
-          attendances: studentAtt,
-          aiConfig,
-          aiGenSettings,
-          apiKey,
-          extraNotes: customNotes[student.id],
+        setGenerationProgress({
+          current: Math.min(completedCount + 1, students.length),
+          total: students.length,
+          currentStudentName: student.fullName,
         });
+        setGeneratingStudentId(student.id);
 
-        updateTermSummary(student.id, currentTerm, { teacherComment: result.comment });
-        setCommentSources((prev) => ({ ...prev, [student.id]: result }));
-        if (result.isRealAI) realAICount++;
-        completedCount++;
-      } catch (err) {
-        console.warn(`Lỗi khi tạo nhận xét cho em ${student.fullName}, tiếp tục em tiếp theo:`, err);
+        const sAss = subjectAssessments.filter((a) => a.studentId === student.id && a.term === currentTerm);
+        const tAss = traitAssessments.filter((a) => a.studentId === student.id && a.term === currentTerm);
+        const studentStars = starLogs.filter((l) => l.studentId === student.id);
+        const studentAtt = attendances.filter((a) => a.studentId === student.id);
+
+        try {
+          const result = await generateStudentAICommentFull({
+            student,
+            subjects: sAss,
+            traits: tAss,
+            starLogs: studentStars,
+            attendances: studentAtt,
+            aiConfig,
+            aiGenSettings,
+            apiKey,
+            extraNotes: customNotes[student.id],
+          });
+
+          updateTermSummary(student.id, currentTerm, { teacherComment: result.comment });
+          setCommentSources((prev) => ({ ...prev, [student.id]: result }));
+          if (result.isRealAI) realAICount++;
+          completedCount++;
+        } catch (err) {
+          console.warn(`Lỗi khi tạo nhận xét cho em ${student.fullName}, tiếp tục em tiếp theo:`, err);
+        }
       }
-    }
+    };
+
+    const workerPool = Array.from({ length: Math.min(CONCURRENCY, students.length) }, () => runWorker());
+    await Promise.all(workerPool);
 
     setIsGeneratingAll(false);
     setGenerationProgress(null);

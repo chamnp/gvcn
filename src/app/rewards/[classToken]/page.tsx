@@ -65,7 +65,7 @@ export default function PublicClassRewardsPage({
   // Students in this class
   const classStudents = useMemo(() => {
     if (!targetClass) return [];
-    return allStudents.filter((s) => (s.classId || 'class-4a1') === targetClass.id);
+    return allStudents.filter((s) => s.classId === targetClass.id);
   }, [allStudents, targetClass]);
 
   // Filtered students for search
