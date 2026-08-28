@@ -451,4 +451,84 @@ export interface PraiseCardTemplate {
   defaultMessage: string;
 }
 
+// Phase 8: Parent-Teacher Meeting Suite
+export type ParentMeetingType = 'DAU_NAM' | 'SO_KET_HK1' | 'TONG_KET_CUOI_NAM';
+
+export interface ParentCommitteeMember {
+  role: 'TRUONG_BAN' | 'PHO_BAN' | 'UY_VIEN';
+  fullName: string;
+  phone: string;
+  studentName: string;
+}
+
+export interface ParentMeetingDoc {
+  id: string;
+  classId: string;
+  meetingType: ParentMeetingType;
+  title: string;
+  meetingDate: string;
+  location: string;
+  presidedBy: string; // GVCN
+  secretary: string; // Thư ký cuộc họp
+  attendeesCount: number;
+  totalParents: number;
+  committeeMembers: ParentCommitteeMember[];
+  mainReports: string[];
+  discussionNotes: string;
+  agreedResolutions: string[];
+  createdAt: string;
+}
+
+// Phase 8: School Health Records & BMI
+export type BMICategory = 'SUY_DINH_DUONG' | 'BINH_THUONG' | 'NGUY_CO_THUA_CAN' | 'BEO_PHI';
+
+export interface HealthRecord {
+  id: string;
+  studentId: string;
+  studentName: string;
+  classId: string;
+  checkupDate: string;
+  heightCm: number;
+  weightKg: number;
+  bmi: number;
+  bmiCategory: BMICategory;
+  leftEye: string;
+  rightEye: string;
+  hasVisionDefect: boolean;
+  allergies: string[];
+  medicalNotes?: string;
+  vaccinationStatus?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+// Phase 8: Classroom Reading Corner & Library
+export type BookCategory = 'TRUYEN_TRANH' | 'KHOA_HOC' | 'VAN_HOC' | 'KY_NANG_SONG' | 'LICH_SU';
+
+export interface ClassroomBook {
+  id: string;
+  code: string;
+  title: string;
+  author: string;
+  category: BookCategory;
+  coverEmoji: string;
+  totalCopies: number;
+  availableCopies: number;
+  classId: string;
+}
+
+export interface BookBorrowLog {
+  id: string;
+  bookId: string;
+  bookTitle: string;
+  studentId: string;
+  studentName: string;
+  classId: string;
+  borrowDate: string;
+  returnDate?: string;
+  status: 'BORROWED' | 'RETURNED';
+  studentReview?: string;
+  ratingStars?: number;
+}
+
 

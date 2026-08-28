@@ -31,6 +31,10 @@ import {
   ConferenceSlot,
   QuizSubmission,
   IEPPlan,
+  ParentMeetingDoc,
+  HealthRecord,
+  ClassroomBook,
+  BookBorrowLog,
 } from '@/types';
 
 export const DEFAULT_AI_GEN_SETTINGS: AIGenerationSettings = {
@@ -308,6 +312,32 @@ interface AppContextType {
   addIEPPlan: (plan: Omit<IEPPlan, 'id' | 'createdAt'>) => IEPPlan;
   updateIEPPlan: (plan: IEPPlan) => void;
   deleteIEPPlan: (id: string) => void;
+
+  // Phase 8: Parent Meetings Management
+  parentMeetings: ParentMeetingDoc[];
+  allParentMeetings: ParentMeetingDoc[];
+  addParentMeetingDoc: (doc: Omit<ParentMeetingDoc, 'id' | 'createdAt'>) => ParentMeetingDoc;
+  updateParentMeetingDoc: (doc: ParentMeetingDoc) => void;
+  deleteParentMeetingDoc: (id: string) => void;
+
+  // Phase 8: Health Records Management
+  healthRecords: HealthRecord[];
+  allHealthRecords: HealthRecord[];
+  addHealthRecord: (rec: Omit<HealthRecord, 'id' | 'createdAt'>) => HealthRecord;
+  updateHealthRecord: (rec: HealthRecord) => void;
+  deleteHealthRecord: (id: string) => void;
+
+  // Phase 8: Classroom Books & Reading Corner
+  classroomBooks: ClassroomBook[];
+  allClassroomBooks: ClassroomBook[];
+  addClassroomBook: (book: Omit<ClassroomBook, 'id'>) => ClassroomBook;
+  updateClassroomBook: (book: ClassroomBook) => void;
+  deleteClassroomBook: (id: string) => void;
+
+  bookBorrowLogs: BookBorrowLog[];
+  allBookBorrowLogs: BookBorrowLog[];
+  borrowBook: (data: Omit<BookBorrowLog, 'id' | 'status'>) => BookBorrowLog;
+  returnBook: (logId: string, review?: string, stars?: number) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -355,6 +385,153 @@ export const INITIAL_IEP_PLANS: IEPPlan[] = [
   },
 ];
 
+
+export const INITIAL_PARENT_MEETINGS: ParentMeetingDoc[] = [
+  {
+    id: 'pm-01',
+    classId: 'class-4a1',
+    meetingType: 'DAU_NAM',
+    title: 'Hội Nghị Cha Mẹ Học Sinh Đầu Năm Học 2026 - 2027',
+    meetingDate: '2026-09-12',
+    location: 'Phòng học Lớp 4A1',
+    presidedBy: 'Cô giáo Nguyễn Thị Hương (GVCN)',
+    secretary: 'Bà Trần Thu Trang (Phụ huynh em Nguyễn Văn An)',
+    attendeesCount: 38,
+    totalParents: 40,
+    committeeMembers: [
+      { role: 'TRUONG_BAN', fullName: 'Ông Nguyễn Văn Hùng', phone: '0912.345.678', studentName: 'Nguyễn Văn An' },
+      { role: 'PHO_BAN', fullName: 'Bà Lê Thu Thảo', phone: '0988.765.432', studentName: 'Trần Thị Bình' },
+      { role: 'UY_VIEN', fullName: 'Bà Đỗ Hải Yến', phone: '0977.123.456', studentName: 'Đỗ Thu Hằng' },
+    ],
+    mainReports: [
+      'Báo cáo đặc điểm tình hình lớp 4A1: Sĩ số 40 em (22 Nam, 18 Nữ), 38 em ăn bán trú.',
+      'Phổ biến quy chế đánh giá học sinh tiểu học theo Thông tư 27/2020/TT-BGDĐT.',
+      'Triển khai phương hướng học tập 2 buổi/ngày, chương trình GDPT 2018 và phong trào thi đua.',
+    ],
+    discussionNotes: 'Phụ huynh thảo luận sôi nổi về việc phối hợp quản lý giờ tự học tại nhà và tham gia các câu lạc bộ năng khiếu.',
+    agreedResolutions: [
+      '100% phụ huynh nhất trí với kế hoạch giáo dục và thời khóa biểu 2 buổi/ngày.',
+      'Bầu ra Ban đại diện Cha mẹ học sinh gồm 03 ông/bà theo danh sách.',
+      'Cam kết đồng hành cùng nhà trường xây dựng lớp học hạnh phúc và an toàn.',
+    ],
+    createdAt: '2026-09-12T10:30:00Z',
+  },
+];
+
+export const INITIAL_HEALTH_RECORDS: HealthRecord[] = [
+  {
+    id: 'hr-01',
+    studentId: 'st-01',
+    studentName: 'Nguyễn Văn An',
+    classId: 'class-4a1',
+    checkupDate: '2026-09-15',
+    heightCm: 138,
+    weightKg: 32,
+    bmi: 16.8,
+    bmiCategory: 'BINH_THUONG',
+    leftEye: '10/10',
+    rightEye: '10/10',
+    hasVisionDefect: false,
+    allergies: [],
+    medicalNotes: 'Thể lực tốt, nhanh nhẹn, yêu thích thể thao.',
+    vaccinationStatus: 'Đã tiêm đủ theo chương trình TCMR',
+    createdAt: '2026-09-15T08:00:00Z',
+  },
+  {
+    id: 'hr-02',
+    studentId: 'st-02',
+    studentName: 'Trần Thị Bình',
+    classId: 'class-4a1',
+    checkupDate: '2026-09-15',
+    heightCm: 135,
+    weightKg: 28,
+    bmi: 15.4,
+    bmiCategory: 'BINH_THUONG',
+    leftEye: 'Cận 1.5D',
+    rightEye: 'Cận 1.75D',
+    hasVisionDefect: true,
+    allergies: ['Dị ứng hải sản có vỏ (tôm, cua)'],
+    medicalNotes: 'Cận thị học đường, đã xếp ngồi bàn 2 dãy giữa để quan sát bảng rõ hơn.',
+    vaccinationStatus: 'Đã tiêm đủ',
+    createdAt: '2026-09-15T08:15:00Z',
+  },
+  {
+    id: 'hr-03',
+    studentId: 'st-07',
+    studentName: 'Trần Văn Đức',
+    classId: 'class-4a1',
+    checkupDate: '2026-09-15',
+    heightCm: 132,
+    weightKg: 39,
+    bmi: 22.4,
+    bmiCategory: 'NGUY_CO_THUA_CAN',
+    leftEye: '10/10',
+    rightEye: '10/10',
+    hasVisionDefect: false,
+    allergies: [],
+    medicalNotes: 'Cần tăng cường vận động thể chất trong giờ ra chơi và tiết thể dục.',
+    vaccinationStatus: 'Đã tiêm đủ',
+    createdAt: '2026-09-15T08:30:00Z',
+  },
+];
+
+export const INITIAL_CLASSROOM_BOOKS: ClassroomBook[] = [
+  { id: 'b-01', code: 'S-01', title: 'Dế Mèn Phiêu Lưu Ký', author: 'Tô Hoài', category: 'VAN_HOC', coverEmoji: '🦗', totalCopies: 3, availableCopies: 2, classId: 'class-4a1' },
+  { id: 'b-02', code: 'S-02', title: 'Mười Vạn Câu Hỏi Vì Sao (Vũ Trụ & Trái Đất)', author: 'NXB Kim Đồng', category: 'KHOA_HOC', coverEmoji: '🪐', totalCopies: 2, availableCopies: 1, classId: 'class-4a1' },
+  { id: 'b-03', code: 'S-03', title: 'Kính Vạn Hoa (Tập 1)', author: 'Nguyễn Nhật Ánh', category: 'VAN_HOC', coverEmoji: '👓', totalCopies: 2, availableCopies: 2, classId: 'class-4a1' },
+  { id: 'b-04', code: 'S-04', title: 'Thần Đồng Đất Việt (Tập 1 - Trạng Tí)', author: 'Lê Linh', category: 'TRUYEN_TRANH', coverEmoji: '📜', totalCopies: 4, availableCopies: 3, classId: 'class-4a1' },
+  { id: 'b-05', code: 'S-05', title: 'Danh Nhân Thế Giới: Thomas Edison', author: 'NXB Trẻ', category: 'LICH_SU', coverEmoji: '💡', totalCopies: 2, availableCopies: 2, classId: 'class-4a1' },
+  { id: 'b-06', code: 'S-06', title: 'Cẩm Nang Kỹ Năng Sống Cho Học Sinh Tiểu Học', author: 'Nguyễn Như Mai', category: 'KY_NANG_SONG', coverEmoji: '🌟', totalCopies: 3, availableCopies: 3, classId: 'class-4a1' },
+  { id: 'b-07', code: 'S-07', title: 'Tôi Thấy Hoa Vàng Trên Cỏ Xanh', author: 'Nguyễn Nhật Ánh', category: 'VAN_HOC', coverEmoji: '🌼', totalCopies: 2, availableCopies: 1, classId: 'class-4a1' },
+  { id: 'b-08', code: 'S-08', title: 'Khoa Học Vui: Khám Phá Cơ Thể Người', author: 'NXB Kim Đồng', category: 'KHOA_HOC', coverEmoji: '🧬', totalCopies: 2, availableCopies: 2, classId: 'class-4a1' },
+];
+
+export const INITIAL_BORROW_LOGS: BookBorrowLog[] = [
+  {
+    id: 'log-01',
+    bookId: 'b-01',
+    bookTitle: 'Dế Mèn Phiêu Lưu Ký',
+    studentId: 'st-01',
+    studentName: 'Nguyễn Văn An',
+    classId: 'class-4a1',
+    borrowDate: '2026-09-18',
+    returnDate: '2026-09-22',
+    status: 'RETURNED',
+    studentReview: 'Cuốn sách rất hấp dẫn, em học được bài học về tình bạn và lòng dũng cảm của chú Dế Mèn!',
+    ratingStars: 5,
+  },
+  {
+    id: 'log-02',
+    bookId: 'b-02',
+    bookTitle: 'Mười Vạn Câu Hỏi Vì Sao (Vũ Trụ & Trái Đất)',
+    studentId: 'st-05',
+    studentName: 'Đỗ Thu Hằng',
+    classId: 'class-4a1',
+    borrowDate: '2026-09-20',
+    status: 'BORROWED',
+  },
+  {
+    id: 'log-03',
+    bookId: 'b-04',
+    bookTitle: 'Thần Đồng Đất Việt (Tập 1 - Trạng Tí)',
+    studentId: 'st-02',
+    studentName: 'Trần Thị Bình',
+    classId: 'class-4a1',
+    borrowDate: '2026-09-21',
+    status: 'BORROWED',
+  },
+  {
+    id: 'log-04',
+    bookId: 'b-07',
+    bookTitle: 'Tôi Thấy Hoa Vàng Trên Cỏ Xanh',
+    studentId: 'st-03',
+    studentName: 'Lê Hoàng Cường',
+    classId: 'class-4a1',
+    borrowDate: '2026-09-22',
+    status: 'BORROWED',
+  },
+];
+
 const STORAGE_PREFIX = 'gvcn_pro_';
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -376,6 +553,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [allHomeworks, setAllHomeworks] = useState<HomeworkAssignment[]>(INITIAL_HOMEWORKS);
   const [allQuizSubmissions, setAllQuizSubmissions] = useState<QuizSubmission[]>([]);
   const [allIEPPlans, setAllIEPPlans] = useState<IEPPlan[]>(INITIAL_IEP_PLANS);
+  const [allParentMeetings, setAllParentMeetings] = useState<ParentMeetingDoc[]>(INITIAL_PARENT_MEETINGS);
+  const [allHealthRecords, setAllHealthRecords] = useState<HealthRecord[]>(INITIAL_HEALTH_RECORDS);
+  const [allClassroomBooks, setAllClassroomBooks] = useState<ClassroomBook[]>(INITIAL_CLASSROOM_BOOKS);
+  const [allBookBorrowLogs, setAllBookBorrowLogs] = useState<BookBorrowLog[]>(INITIAL_BORROW_LOGS);
   const [allClassEvents, setAllClassEvents] = useState<ClassEvent[]>(INITIAL_CLASS_EVENTS);
   const [allTimetables, setAllTimetables] = useState<TimetableSlot[]>(
     INITIAL_TIMETABLE.map((t) => ({ ...t, classId: 'class-4a1' }))
@@ -792,6 +973,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const savedIEP = localStorage.getItem(STORAGE_PREFIX + 'iepPlans');
       if (savedIEP) {
         try { setAllIEPPlans(JSON.parse(savedIEP)); } catch (e) {}
+      }
+      const savedPM = localStorage.getItem(STORAGE_PREFIX + 'parentMeetings');
+      if (savedPM) {
+        try { setAllParentMeetings(JSON.parse(savedPM)); } catch (e) {}
+      }
+
+      const savedHR = localStorage.getItem(STORAGE_PREFIX + 'healthRecords');
+      if (savedHR) {
+        try { setAllHealthRecords(JSON.parse(savedHR)); } catch (e) {}
+      }
+
+      const savedBooks = localStorage.getItem(STORAGE_PREFIX + 'classroomBooks');
+      if (savedBooks) {
+        try { setAllClassroomBooks(JSON.parse(savedBooks)); } catch (e) {}
+      }
+
+      const savedBorrow = localStorage.getItem(STORAGE_PREFIX + 'bookBorrowLogs');
+      if (savedBorrow) {
+        try { setAllBookBorrowLogs(JSON.parse(savedBorrow)); } catch (e) {}
       }
     } catch (e) {
       console.warn('Error reading from localStorage:', e);
@@ -3294,6 +3494,178 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     toast.success('Đã xóa hồ sơ Kế hoạch IEP!');
   };
 
+  // Phase 8: Parent Meetings Actions
+  const parentMeetings = useMemo(
+    () => allParentMeetings.filter((p) => (p.classId || 'class-4a1') === activeClassId),
+    [allParentMeetings, activeClassId]
+  );
+
+  const addParentMeetingDoc = (data: Omit<ParentMeetingDoc, 'id' | 'createdAt'>): ParentMeetingDoc => {
+    const newDoc: ParentMeetingDoc = {
+      ...data,
+      id: `pm-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      classId: data.classId || activeClassId,
+      createdAt: new Date().toISOString(),
+    };
+    setAllParentMeetings((prev) => {
+      const next = [newDoc, ...prev];
+      try { localStorage.setItem(STORAGE_PREFIX + 'parentMeetings', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+    toast.success(`Đã lưu biên bản cuộc họp phụ huynh!`);
+    return newDoc;
+  };
+
+  const updateParentMeetingDoc = (updated: ParentMeetingDoc) => {
+    setAllParentMeetings((prev) => {
+      const next = prev.map((p) => (p.id === updated.id ? updated : p));
+      try { localStorage.setItem(STORAGE_PREFIX + 'parentMeetings', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+    toast.success('Đã cập nhật biên bản cuộc họp phụ huynh!');
+  };
+
+  const deleteParentMeetingDoc = (id: string) => {
+    setAllParentMeetings((prev) => {
+      const next = prev.filter((p) => p.id !== id);
+      try { localStorage.setItem(STORAGE_PREFIX + 'parentMeetings', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+    toast.success('Đã xóa biên bản cuộc họp!');
+  };
+
+  // Phase 8: Health Records Actions
+  const healthRecords = useMemo(
+    () => allHealthRecords.filter((h) => (h.classId || 'class-4a1') === activeClassId),
+    [allHealthRecords, activeClassId]
+  );
+
+  const addHealthRecord = (data: Omit<HealthRecord, 'id' | 'createdAt'>): HealthRecord => {
+    const newRec: HealthRecord = {
+      ...data,
+      id: `hr-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      classId: data.classId || activeClassId,
+      createdAt: new Date().toISOString(),
+    };
+    setAllHealthRecords((prev) => {
+      const filtered = prev.filter((h) => !(h.studentId === newRec.studentId && h.classId === newRec.classId));
+      const next = [newRec, ...filtered];
+      try { localStorage.setItem(STORAGE_PREFIX + 'healthRecords', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+    toast.success(`Đã lưu hồ sơ sức khỏe em ${newRec.studentName}!`);
+    return newRec;
+  };
+
+  const updateHealthRecord = (updated: HealthRecord) => {
+    setAllHealthRecords((prev) => {
+      const next = prev.map((h) => (h.id === updated.id ? { ...updated, updatedAt: new Date().toISOString() } : h));
+      try { localStorage.setItem(STORAGE_PREFIX + 'healthRecords', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+    toast.success(`Đã cập nhật hồ sơ sức khỏe em ${updated.studentName}!`);
+  };
+
+  const deleteHealthRecord = (id: string) => {
+    setAllHealthRecords((prev) => {
+      const next = prev.filter((h) => h.id !== id);
+      try { localStorage.setItem(STORAGE_PREFIX + 'healthRecords', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+    toast.success('Đã xóa hồ sơ sức khỏe!');
+  };
+
+  // Phase 8: Classroom Books Actions
+  const classroomBooks = useMemo(
+    () => allClassroomBooks.filter((b) => (b.classId || 'class-4a1') === activeClassId),
+    [allClassroomBooks, activeClassId]
+  );
+
+  const addClassroomBook = (data: Omit<ClassroomBook, 'id'>): ClassroomBook => {
+    const newBook: ClassroomBook = {
+      ...data,
+      id: `book-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      classId: data.classId || activeClassId,
+    };
+    setAllClassroomBooks((prev) => {
+      const next = [newBook, ...prev];
+      try { localStorage.setItem(STORAGE_PREFIX + 'classroomBooks', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+    toast.success(`Đã thêm sách "${newBook.title}" vào tủ sách lớp!`);
+    return newBook;
+  };
+
+  const updateClassroomBook = (updated: ClassroomBook) => {
+    setAllClassroomBooks((prev) => {
+      const next = prev.map((b) => (b.id === updated.id ? updated : b));
+      try { localStorage.setItem(STORAGE_PREFIX + 'classroomBooks', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+    toast.success('Đã cập nhật thông tin sách!');
+  };
+
+  const deleteClassroomBook = (id: string) => {
+    setAllClassroomBooks((prev) => {
+      const next = prev.filter((b) => b.id !== id);
+      try { localStorage.setItem(STORAGE_PREFIX + 'classroomBooks', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+    toast.success('Đã xóa sách khỏi tủ sách!');
+  };
+
+  // Book Borrow Logs Actions
+  const bookBorrowLogs = useMemo(
+    () => allBookBorrowLogs.filter((l) => (l.classId || 'class-4a1') === activeClassId),
+    [allBookBorrowLogs, activeClassId]
+  );
+
+  const borrowBook = (data: Omit<BookBorrowLog, 'id' | 'status'>): BookBorrowLog => {
+    const newLog: BookBorrowLog = {
+      ...data,
+      id: `log-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      classId: data.classId || activeClassId,
+      status: 'BORROWED',
+    };
+    setAllBookBorrowLogs((prev) => {
+      const next = [newLog, ...prev];
+      try { localStorage.setItem(STORAGE_PREFIX + 'bookBorrowLogs', JSON.stringify(next)); } catch (e) {}
+      return next;
+    });
+    // Decrease available copies
+    setAllClassroomBooks((prev) =>
+      prev.map((b) => (b.id === data.bookId ? { ...b, availableCopies: Math.max(0, b.availableCopies - 1) } : b))
+    );
+    toast.success(`Em ${data.studentName} đã mượn sách "${data.bookTitle}"!`);
+    return newLog;
+  };
+
+  const returnBook = (logId: string, review?: string, stars?: number) => {
+    const targetLog = allBookBorrowLogs.find((l) => l.id === logId);
+    if (targetLog) {
+      setAllBookBorrowLogs((prev) => {
+        const next = prev.map((l) =>
+          l.id === logId
+            ? {
+                ...l,
+                status: 'RETURNED' as const,
+                returnDate: new Date().toISOString().split('T')[0],
+                studentReview: review || l.studentReview,
+                ratingStars: stars || l.ratingStars,
+              }
+            : l
+        );
+        try { localStorage.setItem(STORAGE_PREFIX + 'bookBorrowLogs', JSON.stringify(next)); } catch (e) {}
+        return next;
+      });
+      // Increase available copies
+      setAllClassroomBooks((prev) =>
+        prev.map((b) => (b.id === targetLog.bookId ? { ...b, availableCopies: Math.min(b.totalCopies, b.availableCopies + 1) } : b))
+      );
+      toast.success(`Đã trả sách "${targetLog.bookTitle}" vào tủ sách thành công!`);
+    }
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -3351,6 +3723,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addIEPPlan,
         updateIEPPlan,
         deleteIEPPlan,
+        parentMeetings,
+        allParentMeetings,
+        addParentMeetingDoc,
+        updateParentMeetingDoc,
+        deleteParentMeetingDoc,
+        healthRecords,
+        allHealthRecords,
+        addHealthRecord,
+        updateHealthRecord,
+        deleteHealthRecord,
+        classroomBooks,
+        allClassroomBooks,
+        addClassroomBook,
+        updateClassroomBook,
+        deleteClassroomBook,
+        bookBorrowLogs,
+        allBookBorrowLogs,
+        borrowBook,
+        returnBook,
         classEvents,
         allClassEvents,
         addClassEvent,

@@ -25,6 +25,9 @@ import {
   Camera,
   Tv,
   Target,
+  Presentation,
+  HeartPulse,
+  BookMarked,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useAuth } from '@/lib/auth-context';
@@ -35,10 +38,13 @@ export const NAV_ITEMS = [
   { href: '/', label: 'Tổng quan Lớp', icon: LayoutDashboard, badge: null },
   { href: '/students', label: 'Hồ sơ Học sinh', icon: Users, badge: null },
   { href: '/classroom-tools', label: 'Công cụ Lớp học', icon: Tv, badge: 'Smart TV' },
+  { href: '/parent-meetings', label: 'Họp Phụ Huynh', icon: Presentation, badge: 'Chiếu TV' },
   { href: '/homework', label: 'Giao bài tập (QR)', icon: BookOpen, badge: 'Mới' },
   { href: '/moments', label: 'Khoảnh khắc Lớp', icon: Camera, badge: 'Feed' },
   { href: '/seating-chart', label: 'Sơ đồ Lớp học', icon: Grid3X3, badge: null },
   { href: '/attendance', label: 'Điểm danh & Bán trú', icon: CalendarCheck, badge: null },
+  { href: '/health-records', label: 'Sức Khỏe & Y Tế', icon: HeartPulse, badge: 'BMI' },
+  { href: '/reading-corner', label: 'Tủ Sách Lớp Học', icon: BookMarked, badge: 'Đọc sách' },
   { href: '/timetable', label: 'Thời khóa biểu', icon: Calendar, badge: '2 Buổi' },
   { href: '/behavior', label: 'Nề nếp & Tích sao', icon: Award, badge: null },
   { href: '/assessment', label: 'Đánh giá TT 27', icon: FileSpreadsheet, badge: 'Cốt lõi' },

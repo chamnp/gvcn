@@ -369,7 +369,25 @@ export default function DashboardPage() {
               href="/classroom-tools"
               className="inline-flex items-center justify-center space-x-1.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold text-xs px-4 py-2.5 rounded-2xl shadow-sm hover:opacity-90 transition-all cursor-pointer w-full sm:w-auto"
             >
-              <span>🎡 Công Cụ Lớp Học</span>
+              <span>🎡 Công Cụ Lớp</span>
+            </Link>
+            <Link
+              href="/parent-meetings"
+              className="inline-flex items-center justify-center space-x-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-xs px-4 py-2.5 rounded-2xl shadow-sm hover:opacity-90 transition-all cursor-pointer w-full sm:w-auto"
+            >
+              <span>📊 Họp Phụ Huynh</span>
+            </Link>
+            <Link
+              href="/health-records"
+              className="inline-flex items-center justify-center space-x-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-xs px-4 py-2.5 rounded-2xl shadow-sm hover:opacity-90 transition-all cursor-pointer w-full sm:w-auto"
+            >
+              <span>🩺 Sức Khỏe & BMI</span>
+            </Link>
+            <Link
+              href="/reading-corner"
+              className="inline-flex items-center justify-center space-x-1.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold text-xs px-4 py-2.5 rounded-2xl shadow-sm hover:opacity-90 transition-all cursor-pointer w-full sm:w-auto"
+            >
+              <span>📚 Tủ Sách Lớp</span>
             </Link>
             <Link
               href="/iep"
