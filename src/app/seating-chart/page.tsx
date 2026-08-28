@@ -29,15 +29,16 @@ import {
   ChevronRight,
   RefreshCw,
   Share2,
+  Plus,
+  Minus,
+  Settings2,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { Student } from '@/types';
 import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
 
-export type SeatingLayoutType = '4_AISLES' | '3_AISLES' | '4_CLUSTERS' | 'CUSTOM';
-
-interface TeamDef {
+export interface TeamDef {
   id: number;
   name: string;
   mascot: string;
@@ -47,10 +48,10 @@ interface TeamDef {
   bgBadge: string;
   headerBg: string;
   cardBg: string;
-  cols: number[]; // which grid columns belong to this team
+  gradient: string;
 }
 
-const TEAMS_PRESET: TeamDef[] = [
+export const ALL_TEAMS_PRESET: TeamDef[] = [
   {
     id: 1,
     name: 'Tổ 1',
@@ -61,7 +62,7 @@ const TEAMS_PRESET: TeamDef[] = [
     bgBadge: 'bg-amber-100 text-amber-900 border-amber-300',
     headerBg: 'from-amber-500 to-orange-500 text-white',
     cardBg: 'from-amber-50/70 via-white to-orange-50/30',
-    cols: [0, 1], // Cột 1, 2
+    gradient: 'from-amber-500 to-orange-500',
   },
   {
     id: 2,
@@ -73,7 +74,7 @@ const TEAMS_PRESET: TeamDef[] = [
     bgBadge: 'bg-blue-100 text-blue-900 border-blue-300',
     headerBg: 'from-blue-600 to-indigo-600 text-white',
     cardBg: 'from-blue-50/70 via-white to-indigo-50/30',
-    cols: [2, 3], // Cột 3, 4
+    gradient: 'from-blue-500 to-indigo-500',
   },
   {
     id: 3,
@@ -85,7 +86,7 @@ const TEAMS_PRESET: TeamDef[] = [
     bgBadge: 'bg-teal-100 text-teal-900 border-teal-300',
     headerBg: 'from-teal-600 to-emerald-600 text-white',
     cardBg: 'from-teal-50/70 via-white to-emerald-50/30',
-    cols: [4, 5], // Cột 5, 6
+    gradient: 'from-teal-500 to-emerald-500',
   },
   {
     id: 4,
@@ -97,7 +98,55 @@ const TEAMS_PRESET: TeamDef[] = [
     bgBadge: 'bg-purple-100 text-purple-900 border-purple-300',
     headerBg: 'from-purple-600 to-pink-600 text-white',
     cardBg: 'from-purple-50/70 via-white to-pink-50/30',
-    cols: [6, 7], // Cột 7, 8
+    gradient: 'from-purple-500 to-pink-500',
+  },
+  {
+    id: 5,
+    name: 'Tổ 5',
+    mascot: '🐯',
+    mascotName: 'Hổ Con',
+    colorName: 'Đỏ Lửa',
+    borderClass: 'border-rose-300 hover:border-rose-500',
+    bgBadge: 'bg-rose-100 text-rose-900 border-rose-300',
+    headerBg: 'from-rose-500 to-red-600 text-white',
+    cardBg: 'from-rose-50/70 via-white to-red-50/30',
+    gradient: 'from-rose-500 to-red-600',
+  },
+  {
+    id: 6,
+    name: 'Tổ 6',
+    mascot: '🦊',
+    mascotName: 'Cáo Nâu',
+    colorName: 'Cam Nắng',
+    borderClass: 'border-orange-300 hover:border-orange-500',
+    bgBadge: 'bg-orange-100 text-orange-900 border-orange-300',
+    headerBg: 'from-orange-500 to-amber-600 text-white',
+    cardBg: 'from-orange-50/70 via-white to-amber-50/30',
+    gradient: 'from-orange-500 to-amber-600',
+  },
+  {
+    id: 7,
+    name: 'Tổ 7',
+    mascot: '🦄',
+    mascotName: 'Kỳ Lân',
+    colorName: 'Hồng Phấn',
+    borderClass: 'border-fuchsia-300 hover:border-fuchsia-500',
+    bgBadge: 'bg-fuchsia-100 text-fuchsia-900 border-fuchsia-300',
+    headerBg: 'from-fuchsia-500 to-purple-600 text-white',
+    cardBg: 'from-fuchsia-50/70 via-white to-purple-50/30',
+    gradient: 'from-fuchsia-500 to-purple-600',
+  },
+  {
+    id: 8,
+    name: 'Tổ 8',
+    mascot: '🐉',
+    mascotName: 'Rồng Xanh',
+    colorName: 'Xanh Lá',
+    borderClass: 'border-emerald-300 hover:border-emerald-500',
+    bgBadge: 'bg-emerald-100 text-emerald-900 border-emerald-300',
+    headerBg: 'from-emerald-600 to-cyan-600 text-white',
+    cardBg: 'from-emerald-50/70 via-white to-cyan-50/30',
+    gradient: 'from-emerald-600 to-cyan-600',
   },
 ];
 
@@ -109,18 +158,29 @@ export default function SeatingChartPage() {
     swapSeatPositions,
     updateStudent,
     classInfo,
+    updateClass,
     getStudentStars,
   } = useAppStore();
 
   const [activeTab, setActiveTab] = useState<'SEATING' | 'TEAMS' | 'SETTINGS'>('SEATING');
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
-  const [layoutType, setLayoutType] = useState<SeatingLayoutType>('4_AISLES');
-  const [customRows, setCustomRows] = useState(classInfo.seatingGridRows || 5);
-  const [customCols, setCustomCols] = useState(classInfo.seatingGridCols || 8);
-  const [showPrintModal, setShowPrintModal] = useState(false);
 
-  const rows = layoutType === 'CUSTOM' ? customRows : 5;
-  const cols = layoutType === '3_AISLES' ? 6 : 8;
+  // Flexible Number of Teams (from classInfo.numberOfTeams or default 4, range 2-8)
+  const numTeams = classInfo.numberOfTeams && classInfo.numberOfTeams >= 2 && classInfo.numberOfTeams <= 8
+    ? classInfo.numberOfTeams
+    : 4;
+
+  const activeTeams = useMemo(() => {
+    return ALL_TEAMS_PRESET.slice(0, numTeams);
+  }, [numTeams]);
+
+  // Seating grid dimensions:
+  // Default: Each team represents a block of 2 columns (e.g. 4 teams = 8 cols, 3 teams = 6 cols, 5 teams = 10 cols)
+  const [customRows, setCustomRows] = useState(classInfo.seatingGridRows || 5);
+  const [customCols, setCustomCols] = useState(classInfo.seatingGridCols || numTeams * 2);
+
+  const rows = customRows;
+  const cols = customCols;
 
   // Lấy học sinh ở vị trí row, col
   const getStudentAt = (row: number, col: number) => {
@@ -142,18 +202,23 @@ export default function SeatingChartPage() {
     );
   }, [students, rows, cols]);
 
-  // Determine Team based on seat column
+  // Determine Team based on seat column index
   const getTeamForSeat = (col: number): TeamDef => {
-    if (layoutType === '3_AISLES') {
-      if (col < 2) return TEAMS_PRESET[0];
-      if (col < 4) return TEAMS_PRESET[1];
-      return TEAMS_PRESET[2];
-    }
-    // 4 Aisles (Default)
-    if (col < 2) return TEAMS_PRESET[0];
-    if (col < 4) return TEAMS_PRESET[1];
-    if (col < 6) return TEAMS_PRESET[2];
-    return TEAMS_PRESET[3];
+    const colsPerTeam = Math.max(1, Math.floor(cols / numTeams));
+    const teamIdx = Math.min(numTeams - 1, Math.floor(col / colsPerTeam));
+    return activeTeams[teamIdx] || activeTeams[0];
+  };
+
+  // Handle number of teams change
+  const handleChangeNumTeams = (newCount: number) => {
+    const count = Math.max(2, Math.min(8, newCount));
+    updateClass({
+      ...classInfo,
+      numberOfTeams: count,
+      seatingGridCols: count * 2,
+    });
+    setCustomCols(count * 2);
+    toast.success(`Đã cập nhật lớp thành ${count} Tổ thi đua!`);
   };
 
   // Click handler to swap / assign seats
@@ -275,7 +340,7 @@ export default function SeatingChartPage() {
 
   // 4. Xoay vòng đổi dãy bàn định kỳ (Tránh lệch mắt theo khuyến nghị y tế)
   const handleRotateAisles = () => {
-    if (confirm('Xoay vòng dãy bàn (Dãy 1 sang Dãy 2, Dãy 2 sang Dãy 3, Dãy 3 sang Dãy 4, Dãy 4 về Dãy 1)?')) {
+    if (confirm('Xoay vòng dãy bàn (Dãy 1 sang Dãy 2, Dãy 2 sang Dãy 3,... Dãy cuối về Dãy 1)?')) {
       const shiftCols = 2; // mỗi dãy bàn 2 cột
       students.forEach((s) => {
         if (s.seatRow !== undefined && s.seatRow >= 0 && s.seatCol !== undefined && s.seatCol >= 0) {
@@ -290,7 +355,7 @@ export default function SeatingChartPage() {
 
   // 5. Tự động đồng bộ Phân Tổ theo Sơ đồ chỗ ngồi hiện tại
   const handleSyncTeamsFromSeating = () => {
-    if (confirm('Bạn có muốn gán lại Tổ cho tất cả học sinh tương ứng với Dãy bàn đang ngồi không?')) {
+    if (confirm(`Bạn có muốn gán lại ${numTeams} Tổ cho tất cả học sinh tương ứng với Dãy bàn đang ngồi không?`)) {
       students.forEach((s) => {
         if (s.seatCol !== undefined && s.seatCol >= 0) {
           const team = getTeamForSeat(s.seatCol);
@@ -303,13 +368,44 @@ export default function SeatingChartPage() {
         }
       });
       confetti({ particleCount: 100 });
-      toast.success('Đã đồng bộ nhãn Tổ cho cả lớp theo Dãy bàn sơ đồ! 🎉');
+      toast.success(`Đã đồng bộ nhãn ${numTeams} Tổ cho cả lớp theo Dãy bàn sơ đồ! 🎉`);
+    }
+  };
+
+  // 6. Chia đều học sinh vào N Tổ cân bằng
+  const handleAutoBalanceTeams = () => {
+    if (confirm(`Chia đều cân bằng ${students.length} học sinh vào ${numTeams} Tổ (cân đối Nam/Nữ)?`)) {
+      const boys = students.filter((s) => s.gender === 'Nam');
+      const girls = students.filter((s) => s.gender === 'Nữ');
+
+      const shuffledBoys = [...boys].sort(() => Math.random() - 0.5);
+      const shuffledGirls = [...girls].sort(() => Math.random() - 0.5);
+
+      const balancedStudents: Student[] = [];
+      let bIdx = 0, gIdx = 0;
+      while (bIdx < shuffledBoys.length || gIdx < shuffledGirls.length) {
+        if (bIdx < shuffledBoys.length) balancedStudents.push(shuffledBoys[bIdx++]);
+        if (gIdx < shuffledGirls.length) balancedStudents.push(shuffledGirls[gIdx++]);
+      }
+
+      balancedStudents.forEach((st, idx) => {
+        const teamId = (idx % numTeams) + 1;
+        const otherTags = (st.tags || []).filter((t) => !t.includes('Tổ '));
+        const updatedTags = [...otherTags, `Tổ ${teamId}`];
+        updateStudent({
+          ...st,
+          tags: updatedTags,
+        });
+      });
+
+      confetti({ particleCount: 90 });
+      toast.success(`Đã chia đều cả lớp vào ${numTeams} Tổ cân bằng Nam - Nữ!`);
     }
   };
 
   // Compute team members for Team Management Tab
   const teamGroups = useMemo(() => {
-    return TEAMS_PRESET.map((t) => {
+    return activeTeams.map((t) => {
       const members = students.filter((s, idx) => {
         // First check tag
         const tagTeam = (s.tags || []).find((tag) => tag.includes('Tổ '));
@@ -320,7 +416,7 @@ export default function SeatingChartPage() {
         if (s.seatCol !== undefined && s.seatCol >= 0) {
           return getTeamForSeat(s.seatCol).id === t.id;
         }
-        return (idx % 4) + 1 === t.id;
+        return (idx % numTeams) + 1 === t.id;
       });
 
       return {
@@ -328,7 +424,7 @@ export default function SeatingChartPage() {
         members,
       };
     });
-  }, [students, layoutType]);
+  }, [students, activeTeams, numTeams, cols]);
 
   return (
     <div className="space-y-4 pb-16 animate-in fade-in duration-300">
@@ -344,27 +440,46 @@ export default function SeatingChartPage() {
                 Sơ Đồ Chỗ Ngồi & Phân Chia Tổ
               </h1>
               <span className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-2xs">
-                Lớp {classInfo.name}
+                Lớp {classInfo.name} ({numTeams} Tổ)
               </span>
               <span className="hidden sm:inline-flex bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold px-2 py-0.5 rounded-full">
                 {students.length - unassignedStudents.length}/{students.length} Đã Xếp Chỗ
               </span>
             </div>
             <p className="text-xs text-slate-500">
-              Kéo thả / 1-Click hoán đổi chỗ ngồi, tự động ưu tiên cận thị và liên thông 4 Tổ thi đua
+              Kéo thả / 1-Click hoán đổi chỗ ngồi, tự động ưu tiên cận thị và liên thông {numTeams} Tổ thi đua
             </p>
           </div>
         </div>
 
-        {/* Action Buttons */}
+        {/* Action Buttons & Flexible Number of Teams Selector */}
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Quick Number of Teams Selector */}
+          <div className="flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200 text-xs">
+            <span className="text-[11px] font-bold text-slate-500 px-2">Số Tổ:</span>
+            {[2, 3, 4, 5, 6].map((count) => (
+              <button
+                key={count}
+                onClick={() => handleChangeNumTeams(count)}
+                className={`px-2.5 py-1 rounded-xl font-bold transition-all cursor-pointer ${
+                  numTeams === count
+                    ? 'bg-blue-600 text-white shadow-2xs'
+                    : 'text-slate-700 hover:bg-slate-200'
+                }`}
+                title={`Chia lớp thành ${count} Tổ`}
+              >
+                {count} Tổ
+              </button>
+            ))}
+          </div>
+
           <button
             onClick={handleSyncTeamsFromSeating}
             className="px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs"
             title="Đồng bộ Tổ cho cả lớp theo Dãy bàn đang ngồi"
           >
             <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-            <span>Gán Tổ Theo Dãy Bàn</span>
+            <span>Gán Tổ Theo Dãy</span>
           </button>
 
           <button
@@ -385,7 +500,7 @@ export default function SeatingChartPage() {
             ✨
           </div>
           <div className="min-w-0">
-            <span className="text-xs font-bold text-white block truncate">Thuật toán xếp chỗ tự động thông minh:</span>
+            <span className="text-xs font-bold text-white block truncate">Thuật toán xếp chỗ tự động ({numTeams} Tổ):</span>
             <span className="text-[11px] text-slate-300 block truncate">Chọn tiêu chí sư phạm phù hợp cho lớp học</span>
           </div>
         </div>
@@ -396,7 +511,7 @@ export default function SeatingChartPage() {
             className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
           >
             <Eye className="w-3.5 h-3.5" />
-            <span>Ưu Tiên Cận Thị Bàn Đầu</span>
+            <span>Ưu Tiên Cận Thị</span>
           </button>
 
           <button
@@ -416,11 +531,12 @@ export default function SeatingChartPage() {
           </button>
 
           <button
-            onClick={handleRandomizeSeats}
-            className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5 transition-all cursor-pointer"
+            onClick={handleAutoBalanceTeams}
+            className="px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white flex items-center gap-1.5 transition-all cursor-pointer shadow-xs"
+            title="Chia đều cả lớp vào các tổ cân bằng giới tính"
           >
             <Shuffle className="w-3.5 h-3.5" />
-            <span>Ngẫu Nhiên</span>
+            <span>Chia Đều {numTeams} Tổ</span>
           </button>
         </div>
       </div>
@@ -436,7 +552,7 @@ export default function SeatingChartPage() {
           }`}
         >
           <Grid3X3 className="w-4 h-4" />
-          <span>Sơ Đồ Lớp Học (Chính)</span>
+          <span>Sơ Đồ Lớp Học ({numTeams} Dãy Bàn)</span>
         </button>
 
         <button
@@ -448,7 +564,7 @@ export default function SeatingChartPage() {
           }`}
         >
           <Users className="w-4 h-4" />
-          <span>Quản Lý 4 Tổ ({students.length} Học Sinh)</span>
+          <span>Quản Lý {numTeams} Tổ ({students.length} Học Sinh)</span>
         </button>
 
         <button
@@ -460,11 +576,11 @@ export default function SeatingChartPage() {
           }`}
         >
           <Sliders className="w-4 h-4" />
-          <span>Kiểu Bố Trí Bàn Ghế</span>
+          <span>Cấu Hình Bàn Ghế & Số Tổ</span>
         </button>
       </div>
 
-      {/* TAB 1: SƠ ĐỒ LỚP HỌC TRỰC QUAN */}
+      {/* TAB 1: SƠ ĐỒ LỚP HỌC TRỰC QUAN THEO N TỔ */}
       {activeTab === 'SEATING' && (
         <div className="space-y-4">
           {/* Teacher Desk & Podium Area */}
@@ -482,20 +598,23 @@ export default function SeatingChartPage() {
             </div>
           </div>
 
-          {/* 4 Aisles Column Header Labels */}
-          <div className="grid grid-cols-4 gap-3 text-center text-xs font-bold">
-            {TEAMS_PRESET.map((team) => (
+          {/* Dynamic N Aisles Column Header Labels */}
+          <div
+            className="grid gap-3 text-center text-xs font-bold"
+            style={{ gridTemplateColumns: `repeat(${numTeams}, minmax(0, 1fr))` }}
+          >
+            {activeTeams.map((team) => (
               <div
                 key={team.id}
-                className={`p-2 rounded-2xl bg-gradient-to-r ${team.headerBg} shadow-xs flex items-center justify-center space-x-1.5`}
+                className={`p-2 rounded-2xl bg-gradient-to-r ${team.headerBg} shadow-xs flex items-center justify-center space-x-1.5 truncate`}
               >
                 <span>{team.mascot}</span>
-                <span className="font-black">DÃY {team.id} — {team.name.toUpperCase()} ({team.mascotName})</span>
+                <span className="font-black truncate">DÃY {team.id} — {team.name.toUpperCase()}</span>
               </div>
             ))}
           </div>
 
-          {/* Seating Desks Grid with Aisle Separators */}
+          {/* Seating Desks Grid with Dynamic Blocks */}
           <div className="bg-white p-4 sm:p-6 rounded-3xl border border-slate-200 shadow-xs space-y-3 overflow-x-auto">
             <div className="min-w-[850px] space-y-3">
               {Array.from({ length: rows }).map((_, r) => (
@@ -505,10 +624,12 @@ export default function SeatingChartPage() {
                     Hàng {r + 1}
                   </div>
 
-                  {/* 4 Blocks of Desks */}
-                  <div className="grid grid-cols-4 gap-3 flex-1">
-                    {[0, 1, 2, 3].map((blockIdx) => {
-                      const team = TEAMS_PRESET[blockIdx];
+                  {/* N Blocks of Desks */}
+                  <div
+                    className="grid gap-3 flex-1"
+                    style={{ gridTemplateColumns: `repeat(${numTeams}, minmax(0, 1fr))` }}
+                  >
+                    {activeTeams.map((team, blockIdx) => {
                       const c1 = blockIdx * 2;
                       const c2 = blockIdx * 2 + 1;
                       const student1 = getStudentAt(r, c1);
@@ -519,7 +640,7 @@ export default function SeatingChartPage() {
                           key={blockIdx}
                           className={`p-2 rounded-2xl border-2 bg-gradient-to-br ${team.cardBg} ${team.borderClass} shadow-2xs grid grid-cols-2 gap-2`}
                         >
-                          {/* Seat 1 */}
+                          {/* Seat 1 & 2 */}
                           {[
                             { col: c1, student: student1 },
                             { col: c2, student: student2 },
@@ -648,31 +769,46 @@ export default function SeatingChartPage() {
         </div>
       )}
 
-      {/* TAB 2: QUẢN LÝ 4 TỔ (TEAM MANAGEMENT HUB) */}
+      {/* TAB 2: QUẢN LÝ DYNAMIC N TỔ (TEAM MANAGEMENT HUB) */}
       {activeTab === 'TEAMS' && (
         <div className="space-y-4">
           <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
                 <Users className="w-4 h-4 text-blue-600" />
-                <span>Danh Sách 4 Tổ Thi Đua & Hoạt Động Nhóm</span>
+                <span>Danh Sách {numTeams} Tổ Thi Đua & Hoạt Động Nhóm ({students.length} Học Sinh)</span>
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Các tổ thi đua được đồng bộ với Sổ Nề Nếp, Bảng Thi Đua và Bàn Điều Khiển Lớp Học
+                Các tổ thi đua được đồng bộ tự động với Sổ Nề Nếp, Bảng Thi Đua và Bàn Điều Khiển Lớp Học
               </p>
             </div>
 
-            <button
-              onClick={handleSyncTeamsFromSeating}
-              className="px-3.5 py-2 rounded-2xl text-xs font-bold bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xs flex items-center gap-1.5 cursor-pointer"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span>Gán Tổ Theo Sơ Đồ Chỗ Ngồi</span>
-            </button>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={handleAutoBalanceTeams}
+                className="px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 flex items-center gap-1.5 cursor-pointer shadow-2xs"
+              >
+                <Shuffle className="w-3.5 h-3.5 text-purple-600" />
+                <span>Chia Đều {numTeams} Tổ</span>
+              </button>
+
+              <button
+                onClick={handleSyncTeamsFromSeating}
+                className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xs flex items-center gap-1.5 cursor-pointer"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                <span>Gán Theo Sơ Đồ</span>
+              </button>
+            </div>
           </div>
 
-          {/* 4 Teams Columns Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Dynamic N Teams Columns Grid */}
+          <div
+            className="grid gap-4"
+            style={{
+              gridTemplateColumns: `repeat(${Math.min(4, numTeams)}, minmax(0, 1fr))`,
+            }}
+          >
             {teamGroups.map((team) => (
               <div
                 key={team.id}
@@ -707,7 +843,7 @@ export default function SeatingChartPage() {
                           <div className="min-w-0">
                             <p className="font-bold text-xs text-slate-900 truncate">{st.fullName}</p>
                             <p className="text-[9px] text-slate-400 font-mono">
-                              {st.studentCode} • {st.seatRow !== undefined && st.seatRow >= 0 ? `Bàn ${st.seatRow + 1}` : 'Chưa xếp chỗ'}
+                              {st.studentCode} • {st.seatRow !== undefined && st.seatRow >= 0 ? `Bàn ${st.seatRow + 1}` : 'Chưa xếp'}
                             </p>
                           </div>
                         </div>
@@ -725,12 +861,13 @@ export default function SeatingChartPage() {
                             });
                             toast.success(`Đã chuyển em ${st.fullName} sang Tổ ${newTeamId}!`);
                           }}
-                          className="text-[10px] font-bold bg-slate-100 rounded-lg px-1.5 py-1 border border-slate-200"
+                          className="text-[10px] font-bold bg-slate-100 rounded-lg px-1.5 py-1 border border-slate-200 cursor-pointer"
                         >
-                          <option value={1}>Tổ 1</option>
-                          <option value={2}>Tổ 2</option>
-                          <option value={3}>Tổ 3</option>
-                          <option value={4}>Tổ 4</option>
+                          {activeTeams.map((at) => (
+                            <option key={at.id} value={at.id}>
+                              {at.name}
+                            </option>
+                          ))}
                         </select>
                       </div>
                     ))}
@@ -742,96 +879,83 @@ export default function SeatingChartPage() {
         </div>
       )}
 
-      {/* TAB 3: CẤU HÌNH KIỂU BỐ TRÍ BÀN GHẾ */}
+      {/* TAB 3: CẤU HÌNH KIỂU BỐ TRÍ BÀN GHẾ & SỐ TỔ */}
       {activeTab === 'SETTINGS' && (
         <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-6 max-w-3xl">
           <div>
             <h3 className="font-bold text-base text-slate-900 flex items-center gap-2">
               <Sliders className="w-5 h-5 text-blue-600" />
-              <span>Cấu Hình Kiểu Bố Trí Bàn Ghế Lớp Học</span>
+              <span>Cấu Hình Số Tổ & Kích Thước Bàn Ghế Lớp {classInfo.name}</span>
             </h3>
             <p className="text-xs text-slate-500 mt-1">
-              Mỗi phòng học có kích thước và số dãy bàn khác nhau. Lựa chọn mẫu phù hợp với phòng học thực tế lớp {classInfo.name}.
+              Điều chỉnh số lượng tổ thi đua và số hàng/cột bàn để phù hợp với phòng học thực tế.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {[
-              {
-                id: '4_AISLES',
-                title: '4 Dãy Bàn Đôi (4 Tổ)',
-                desc: 'Phổ biến nhất tại các trường tiểu học Việt Nam. 4 dãy bàn riêng biệt tương ứng 4 tổ.',
-                badge: 'Khuyên Dùng',
-                cols: 8,
-                rows: 5,
-              },
-              {
-                id: '3_AISLES',
-                title: '3 Dãy Bàn (6 Cột)',
-                desc: 'Phòng học có 3 dãy bàn lớn. Phù hợp lớp học có bề ngang hẹp.',
-                badge: '3 Dãy',
-                cols: 6,
-                rows: 5,
-              },
-              {
-                id: 'CUSTOM',
-                title: 'Tùy Biến Tự Do',
-                desc: 'Tự điều chỉnh số hàng và số cột bàn theo ý muốn của cô giáo.',
-                badge: 'Tùy Chỉnh',
-                cols: customCols,
-                rows: customRows,
-              },
-            ].map((m) => (
-              <button
-                key={m.id}
-                onClick={() => setLayoutType(m.id as any)}
-                className={`p-4 rounded-3xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between space-y-3 ${
-                  layoutType === m.id
-                    ? 'border-blue-600 bg-blue-50/50 shadow-sm ring-2 ring-blue-400'
-                    : 'border-slate-200 hover:border-blue-300 bg-slate-50/50'
-                }`}
-              >
-                <div>
-                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
-                    {m.badge}
-                  </span>
-                  <h4 className="font-bold text-sm text-slate-900 mt-2">{m.title}</h4>
-                  <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">{m.desc}</p>
-                </div>
-
-                <div className="text-[11px] font-bold text-blue-600">
-                  {m.rows} Hàng × {m.cols} Cột ({m.rows * m.cols} chỗ ngồi)
-                </div>
-              </button>
-            ))}
+          {/* Choose Number of Teams */}
+          <div className="space-y-2">
+            <label className="block text-xs font-bold text-slate-700">
+              Số lượng Tổ trong lớp (Hiện tại: <strong className="text-blue-600">{numTeams} Tổ</strong>):
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+              {[2, 3, 4, 5, 6].map((count) => {
+                const teamExample = ALL_TEAMS_PRESET.slice(0, count);
+                return (
+                  <button
+                    key={count}
+                    onClick={() => handleChangeNumTeams(count)}
+                    className={`p-3 rounded-2xl border-2 text-center transition-all cursor-pointer flex flex-col justify-between items-center space-y-1.5 ${
+                      numTeams === count
+                        ? 'border-blue-600 bg-blue-50/70 shadow-sm ring-2 ring-blue-400'
+                        : 'border-slate-200 hover:border-blue-300 bg-slate-50/50'
+                    }`}
+                  >
+                    <span className="font-black text-sm text-slate-900">{count} TỔ</span>
+                    <div className="flex items-center space-x-0.5 text-sm">
+                      {teamExample.map((t) => (
+                        <span key={t.id}>{t.mascot}</span>
+                      ))}
+                    </div>
+                    <span className="text-[10px] text-slate-500">{count * 2} Cột bàn</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
-          {layoutType === 'CUSTOM' && (
-            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Số hàng bàn (Rows)</label>
-                <input
-                  type="number"
-                  min={3}
-                  max={8}
-                  value={customRows}
-                  onChange={(e) => setCustomRows(Number(e.target.value))}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Số cột ghế (Columns)</label>
-                <input
-                  type="number"
-                  min={4}
-                  max={12}
-                  value={customCols}
-                  onChange={(e) => setCustomCols(Number(e.target.value))}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold"
-                />
-              </div>
+          {/* Custom Rows & Columns */}
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Số hàng bàn (Hàng ghế từ trên xuống)</label>
+              <input
+                type="number"
+                min={3}
+                max={8}
+                value={customRows}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  setCustomRows(val);
+                  updateClass({ ...classInfo, seatingGridRows: val });
+                }}
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold bg-white"
+              />
             </div>
-          )}
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Số cột ghế tổng cộng</label>
+              <input
+                type="number"
+                min={4}
+                max={16}
+                value={customCols}
+                onChange={(e) => {
+                  const val = Number(e.target.value);
+                  setCustomCols(val);
+                  updateClass({ ...classInfo, seatingGridCols: val });
+                }}
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold bg-white"
+              />
+            </div>
+          </div>
         </div>
       )}
     </div>

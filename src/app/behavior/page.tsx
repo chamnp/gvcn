@@ -86,11 +86,15 @@ const PRESET_SAMPLE_IMAGES = [
   { name: 'Vở ô ly', url: 'https://images.unsplash.com/photo-1517842645767-c639042777db?w=500&auto=format&fit=crop&q=80' },
 ];
 
-const TEAMS_CONFIG = [
+const ALL_TEAMS_PRESET = [
   { id: 1, name: 'Tổ 1', mascot: '🦁', mascotName: 'Sư Tử', gradient: 'from-amber-500 to-orange-500', bgCard: 'from-amber-500/10 to-orange-500/5 border-amber-200 text-amber-900' },
   { id: 2, name: 'Tổ 2', mascot: '🦅', mascotName: 'Đại Bàng', gradient: 'from-blue-500 to-indigo-500', bgCard: 'from-blue-500/10 to-indigo-500/5 border-blue-200 text-blue-900' },
   { id: 3, name: 'Tổ 3', mascot: '🐬', mascotName: 'Cá Heo', gradient: 'from-teal-500 to-emerald-500', bgCard: 'from-teal-500/10 to-emerald-500/5 border-teal-200 text-teal-900' },
   { id: 4, name: 'Tổ 4', mascot: '🐼', mascotName: 'Gấu Trúc', gradient: 'from-purple-500 to-pink-500', bgCard: 'from-purple-500/10 to-pink-500/5 border-purple-200 text-purple-900' },
+  { id: 5, name: 'Tổ 5', mascot: '🐯', mascotName: 'Hổ Con', gradient: 'from-rose-500 to-red-600', bgCard: 'from-rose-500/10 to-red-500/5 border-rose-200 text-rose-900' },
+  { id: 6, name: 'Tổ 6', mascot: '🦊', mascotName: 'Cáo Nâu', gradient: 'from-orange-500 to-amber-600', bgCard: 'from-orange-500/10 to-amber-500/5 border-orange-200 text-orange-900' },
+  { id: 7, name: 'Tổ 7', mascot: '🦄', mascotName: 'Kỳ Lân', gradient: 'from-fuchsia-500 to-purple-600', bgCard: 'from-fuchsia-500/10 to-purple-500/5 border-fuchsia-200 text-fuchsia-900' },
+  { id: 8, name: 'Tổ 8', mascot: '🐉', mascotName: 'Rồng Xanh', gradient: 'from-emerald-600 to-cyan-600', bgCard: 'from-emerald-600/10 to-cyan-500/5 border-emerald-200 text-emerald-900' },
 ];
 
 export default function BehaviorPage() {
@@ -120,7 +124,16 @@ export default function BehaviorPage() {
 
   const [activeTab, setActiveTab] = useState<'TABLE' | 'LEADERBOARD' | 'CRITERIA' | 'SHOP' | 'REDEMPTIONS' | 'HISTORY'>('TABLE');
   const [tableViewMode, setTableViewMode] = useState<'TABLE' | 'CARDS'>('TABLE');
-  const [selectedTeamFilter, setSelectedTeamFilter] = useState<'ALL' | 1 | 2 | 3 | 4 | 'HIGH_STAR' | 'NEED_HELP'>('ALL');
+  const [selectedTeamFilter, setSelectedTeamFilter] = useState<'ALL' | number | 'HIGH_STAR' | 'NEED_HELP'>('ALL');
+
+  // Flexible Number of Teams
+  const numTeams = classInfo.numberOfTeams && classInfo.numberOfTeams >= 2 && classInfo.numberOfTeams <= 8
+    ? classInfo.numberOfTeams
+    : 4;
+
+  const activeTeams = useMemo(() => {
+    return ALL_TEAMS_PRESET.slice(0, numTeams);
+  }, [numTeams]);
 
   // Month selector for Leaderboard (default: current month 'YYYY-MM')
   const currentMonthKey = getLocalDateString().substring(0, 7);
@@ -167,19 +180,19 @@ export default function BehaviorPage() {
   // Share Link Modal
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
-  // Helper to determine student's team (1, 2, 3, 4)
+  // Helper to determine student's team (1, 2, ... numTeams)
   const getStudentTeam = (st: Student, idx: number): number => {
     const tagTeam = (st.tags || []).find((t) => t.includes('Tổ '));
     if (tagTeam) {
       const match = tagTeam.match(/Tổ\s*(\d)/i);
       if (match && match[1]) return Number(match[1]);
     }
-    return (idx % 4) + 1;
+    return (idx % numTeams) + 1;
   };
 
   // Team Stats for the Race
   const teamStats = useMemo(() => {
-    return TEAMS_CONFIG.map((t) => {
+    return activeTeams.map((t) => {
       const teamStudents = students.filter((st, idx) => getStudentTeam(st, idx) === t.id);
       const teamStars = teamStudents.reduce((acc, st) => {
         const balance = getStudentMonthlyStars(st.id, selectedMonth);
@@ -193,7 +206,7 @@ export default function BehaviorPage() {
         students: teamStudents,
       };
     });
-  }, [students, starLogs, selectedMonth, getStudentMonthlyStars]);
+  }, [students, starLogs, selectedMonth, activeTeams, numTeams, getStudentMonthlyStars]);
 
   // Total Stars across whole class
   const totalClassStars = useMemo(() => {
@@ -291,7 +304,7 @@ export default function BehaviorPage() {
       };
     });
 
-    if (selectedTeamFilter === 1 || selectedTeamFilter === 2 || selectedTeamFilter === 3 || selectedTeamFilter === 4) {
+    if (typeof selectedTeamFilter === 'number') {
       list = list.filter((s) => s.teamId === selectedTeamFilter);
     } else if (selectedTeamFilter === 'HIGH_STAR') {
       list.sort((a, b) => b.totalStars - a.totalStars);
@@ -526,8 +539,13 @@ export default function BehaviorPage() {
         </div>
       </div>
 
-      {/* 2. Interactive 4-Team Race Scoreboard & Top Metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      {/* 2. Interactive Dynamic Team Race Scoreboard & Top Metrics */}
+      <div
+        className="grid gap-3"
+        style={{
+          gridTemplateColumns: `repeat(${Math.min(4, numTeams)}, minmax(0, 1fr))`,
+        }}
+      >
         {teamStats.map((team) => (
           <div
             key={team.id}
@@ -610,31 +628,54 @@ export default function BehaviorPage() {
         <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-4 sm:p-5 space-y-4">
           {/* Controls Bar with Team Filter Pills & View Mode */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-            {/* Team Filter Pills */}
+            {/* Dynamic Team Filter Pills */}
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
-              {(
-                [
-                  { id: 'ALL', label: `🌟 Tất Cả (${students.length})` },
-                  { id: 1, label: '🦁 Tổ 1' },
-                  { id: 2, label: '🦅 Tổ 2' },
-                  { id: 3, label: '🐬 Tổ 3' },
-                  { id: 4, label: '🐼 Tổ 4' },
-                  { id: 'HIGH_STAR', label: '⭐ Nhiều Sao Nhất' },
-                  { id: 'NEED_HELP', label: '🌱 Cần Rèn Luyện' },
-                ] as const
-              ).map((f) => (
+              <button
+                onClick={() => setSelectedTeamFilter('ALL')}
+                className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer shrink-0 ${
+                  selectedTeamFilter === 'ALL'
+                    ? 'bg-amber-500 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                🌟 Tất Cả ({students.length})
+              </button>
+
+              {activeTeams.map((team) => (
                 <button
-                  key={f.id}
-                  onClick={() => setSelectedTeamFilter(f.id as any)}
+                  key={team.id}
+                  onClick={() => setSelectedTeamFilter(team.id)}
                   className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer shrink-0 ${
-                    selectedTeamFilter === f.id
+                    selectedTeamFilter === team.id
                       ? 'bg-amber-500 text-white shadow-xs'
                       : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
-                  {f.label}
+                  {team.mascot} {team.name}
                 </button>
               ))}
+
+              <button
+                onClick={() => setSelectedTeamFilter('HIGH_STAR')}
+                className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer shrink-0 ${
+                  selectedTeamFilter === 'HIGH_STAR'
+                    ? 'bg-amber-500 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                ⭐ Nhiều Sao Nhất
+              </button>
+
+              <button
+                onClick={() => setSelectedTeamFilter('NEED_HELP')}
+                className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer shrink-0 ${
+                  selectedTeamFilter === 'NEED_HELP'
+                    ? 'bg-amber-500 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                🌱 Cần Rèn Luyện
+              </button>
             </div>
 
             {/* View Mode & Search */}
