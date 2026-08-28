@@ -67,50 +67,48 @@ export function ClassMeetingPlannerModal({ isOpen, onClose }: ClassMeetingPlanne
     try {
       const topNames = topStars.map((t, idx) => `${idx + 1}. Em ${t.student.fullName} (${t.stars} sao 🌟)`).join(", ");
 
-      const script = `# 📋 KỊCH BẢN CHI TIẾT TIẾT SINH HOẠT LỚP & HOẠT ĐỘNG TRẢI NGHIỆM
-**Trường:** ${schoolInfo.name} — **Lớp:** ${classInfo.name} — **GVCN:** ${classInfo.teacherName}
-**Thời gian thực hiện:** Tiết 1 Sinh hoạt lớp — **Tuần thứ:** ${selectedWeek}
-**Sĩ số:** ${students.length} học sinh
+      const script = `📋 [KỊCH BẢN CHI TIẾT TIẾT SINH HOẠT LỚP & HOẠT ĐỘNG TRẢI NGHIỆM]
+🏫 Trường: ${schoolInfo.name} — Lớp: ${classInfo.name} — GVCN: ${classInfo.teacherName}
+⏰ Thời gian: Tiết 1 Sinh hoạt lớp — Tuần: ${selectedWeek} — Sĩ số: ${students.length} học sinh
 
----
+PHẦN I: SƠ KẾT THI ĐUA NỀ NẾP TUẦN ${selectedWeek} (Khoảng 15 phút)
+1. Lớp trưởng điều hành sơ kết:
+• 4 Tổ trưởng lần lượt báo cáo nề nếp chuyên cần, việc chuẩn bị bài tập, đồng phục và vệ sinh trực nhật của tổ trong tuần qua.
+• Lớp phó học tập nhận xét về tinh thần truy bài đầu giờ, phát biểu xây dựng bài trong các tiết học (Toán, Tiếng Việt, Tiếng Anh).
 
-### PHẦN I: SƠ KẾT THI ĐUA NỀ NẾP TUẦN ${selectedWeek} (Khoảng 15 phút)
-1. **Lớp trưởng điều hành sơ kết:**
-   - Lớp trưởng mời 4 Tổ trưởng lần lượt báo cáo nề nếp chuyên cần, việc chuẩn bị bài tập, đồng phục và vệ sinh trực nhật của tổ trong tuần qua.
-   - Lớp phó học tập nhận xét về tinh thần truy bài đầu giờ, phát biểu xây dựng bài trong các tiết học (Toán, Tiếng Việt, Tiếng Anh).
-2. **GVCN nhận xét và đánh giá:**
-   - *Ưu điểm:* Toàn lớp duy trì tốt nề nếp đi học chuyên cần, tích cực tham gia các tiết học.
-   - *Hạn chế cần khắc phục:* Một số bạn còn quên đồ dùng học tập hoặc nói chuyện riêng trong giờ thực hành.
-3. **Tuyên dương & Trao Cờ Luân Lưu:**
-   - Tuyên dương các bạn có số sao thi đua cao nhất tuần: ${topNames || "Toàn thể học sinh đạt chuẩn nề nếp"}.
-   - Trao Cờ thi đua cho Tổ xuất sắc nhất tuần và thưởng sao nề nếp vào bảng thi đua lớp.
+2. GVCN nhận xét và đánh giá:
+• Ưu điểm: Toàn lớp duy trì tốt nề nếp đi học chuyên cần, tích cực tham gia các tiết học.
+• Hạn chế cần khắc phục: Một số bạn còn quên đồ dùng học tập hoặc nói chuyện riêng trong giờ thực hành.
 
----
+3. Tuyên dương & Trao Cờ Luân Lưu:
+• Tuyên dương các bạn có số sao thi đua cao nhất tuần: ${topNames || "Toàn thể học sinh đạt chuẩn nề nếp"}.
+• Trao Cờ thi đua cho Tổ xuất sắc nhất tuần và thưởng sao nề nếp vào bảng thi đua lớp.
 
-### PHẦN II: SINH HOẠT CHUYÊN ĐỀ GDPT 2018 (Khoảng 15 phút)
-**Chủ đề tuần này:** ${selectedTheme.name}
-**Mục tiêu bài học:** ${selectedTheme.target}
+PHẦN II: SINH HOẠT CHUYÊN ĐỀ GDPT 2018 (Khoảng 15 phút)
+• Chủ đề tuần này: ${selectedTheme.name}
+• Mục tiêu bài học: ${selectedTheme.target}
 
-1. **Hoạt động 1: Khởi động & Xem tình huống thực tế:**
-   - GVCN trình chiếu hoặc kể câu chuyện ngắn liên quan đến chủ đề.
-   - Câu hỏi thảo luận lớp: "Theo các con, hành động nào thể hiện đúng tinh thần của chủ đề hôm nay?"
-2. **Hoạt động 2: Thảo luận nhóm & Đóng vai xử lý tình huống:**
-   - Chia 4 tổ thảo luận xử lý tình huống thực tế trong đời sống học đường.
-   - Đại diện các nhóm lên trình bày cách ứng xử văn minh, tôn trọng và yêu thương.
-3. **Hoạt động 3: Trò chơi tập thể "Thông Điệp Yêu Thương":**
-   - Mỗi học sinh viết 1 lời chúc hoặc lời khen tặng cho bạn cùng bàn dán lên Cây Hạnh Phúc của lớp.
+1. Hoạt động 1: Khởi động & Xem tình huống thực tế:
+• GVCN trình chiếu hoặc kể câu chuyện ngắn liên quan đến chủ đề.
+• Câu hỏi thảo luận lớp: "Theo các con, hành động nào thể hiện đúng tinh thần của chủ đề hôm nay?"
 
----
+2. Hoạt động 2: Thảo luận nhóm & Đóng vai xử lý tình huống:
+• Chia 4 tổ thảo luận xử lý tình huống thực tế trong đời sống học đường.
+• Đại diện các nhóm lên trình bày cách ứng xử văn minh, tôn trọng và yêu thương.
 
-### PHẦN III: PHƯƠNG HƯỚNG TUẦN ${selectedWeek + 1} & PHÂN CÔNG NHIỆM VỤ (Khoảng 5 phút)
-1. **Mục tiêu trọng tâm tuần tới:**
-   - Thi đua giữ vững nề nếp "Vở sạch chữ đẹp" và chuẩn bị tốt cho các bài kiểm tra định kỳ.
-   - Duy trì xếp hàng ngay ngắn khi ra về và giữ gìn vệ sinh chung.
-2. **Phân công trực nhật & Ban cán sự:**
-   - Tổ ${(selectedWeek % 4) + 1} chịu trách nhiệm trực nhật tuần mới (Lau bảng, giặt khăn, kê bàn ghế).
-   - Lớp trưởng và các tổ trưởng theo dõi, đôn đốc nề nếp hàng ngày.
+3. Hoạt động 3: Trò chơi tập thể "Thông Điệp Yêu Thương":
+• Mỗi học sinh viết 1 lời chúc hoặc lời khen tặng cho bạn cùng bàn dán lên Cây Hạnh Phúc của lớp.
 
-*GVCN kết luận tiết sinh hoạt, dặn dò các con nghỉ ngơi cuối tuần an toàn, vui vẻ và chuẩn bị chu đáo cho tuần học mới.*`;
+PHẦN III: PHƯƠNG HƯỚNG TUẦN ${selectedWeek + 1} & PHÂN CÔNG NHIỆM VỤ (Khoảng 5 phút)
+1. Mục tiêu trọng tâm tuần tới:
+• Thi đua giữ vững nề nếp "Vở sạch chữ đẹp" và chuẩn bị tốt cho các bài kiểm tra định kỳ.
+• Duy trì xếp hàng ngay ngắn khi ra về và giữ gìn vệ sinh chung.
+
+2. Phân công trực nhật & Ban cán sự:
+• Tổ ${(selectedWeek % 4) + 1} chịu trách nhiệm trực nhật tuần mới (Lau bảng, giặt khăn, kê bàn ghế).
+• Lớp trưởng và các tổ trưởng theo dõi, đôn đốc nề nếp hàng ngày.
+
+💬 Lời dặn dò của GVCN: Các con nghỉ ngơi cuối tuần an toàn, vui vẻ và chuẩn bị chu đáo cho tuần học mới!`;
 
       setMeetingScript(script);
       toast.success("Đã tạo kịch bản tiết sinh hoạt lớp hoàn chỉnh!");
@@ -124,7 +122,7 @@ export function ClassMeetingPlannerModal({ isOpen, onClose }: ClassMeetingPlanne
   const handleCopy = () => {
     if (!meetingScript) return;
     navigator.clipboard.writeText(meetingScript);
-    toast.success("Đã sao chép toàn bộ Kịch bản tiết sinh hoạt lớp!");
+    toast.success("Đã sao chép Kịch bản tiết sinh hoạt lớp (Văn bản sạch sẵn sàng gửi Zalo/In)!");
   };
 
   if (!isOpen) return null;

@@ -98,22 +98,12 @@ export function DigitalPraiseModal({
   };
 
   const handleCopyZaloMessage = () => {
-    const text = `💌 [THƯ KHEN NGỢI TỪ CÔ GIÁO CHỦ NHIỆM — LỚP ${className}]
-
-` +
-      `Kính gửi Phụ huynh em ${currentStudent.fullName},
-
-` +
-      `🎉 ${currentTemplate.title}
-` +
-      `"${customMessage}"
-
-` +
-      `Cô giáo rất tự hào về sự cố gắng của em trong tuần qua. Chúc em tiếp tục phát huy để luôn là niềm tự hào của bố mẹ và thầy cô nhé! ❤️
-
-` +
-      `---
-GVCN: ${teacherName} • Trường Tiểu học`;
+    const text = `💌 [THƯ KHEN NGỢI TỪ CÔ GIÁO CHỦ NHIỆM — LỚP ${className}]\n\n` +
+      `Kính gửi Phụ huynh em ${currentStudent.fullName},\n\n` +
+      `🎉 ${currentTemplate.title}\n` +
+      `"${customMessage}"\n\n` +
+      `Cô giáo rất tự hào về sự cố gắng của em trong tuần qua. Chúc em tiếp tục phát huy để luôn là niềm tự hào của bố mẹ và thầy cô nhé! ❤️\n\n` +
+      `GVCN: ${teacherName} — Lớp ${className}`;
 
     navigator.clipboard.writeText(text);
     confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } });
