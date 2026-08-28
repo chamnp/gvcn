@@ -136,7 +136,7 @@ export default function PublicClassRewardsPage({
   const displayMonthYear = `Tháng ${monthStr}/${yearStr}`;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-24 font-sans antialiased">
+    <div className="min-h-screen bg-slate-50 text-slate-900 pb-24 font-sans antialiased w-full max-w-full overflow-x-hidden">
       {/* 1. BRAND HEADER */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-2xs">
         <div className="max-w-5xl mx-auto px-3.5 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2">

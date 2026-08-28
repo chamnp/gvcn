@@ -267,7 +267,7 @@ export default function PublicClassHomeworkPortal({
     .slice(0, 5);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-20 font-sans">
+    <div className="min-h-screen bg-slate-50 text-slate-900 pb-20 font-sans w-full max-w-full overflow-x-hidden">
       <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
         <div className="max-w-6xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2">
           {/* Logo & School Name */}
@@ -421,7 +421,7 @@ export default function PublicClassHomeworkPortal({
             </div>
 
             {/* 3. NAVIGATION TABS */}
-            <div className="flex overflow-x-auto no-scrollbar gap-1.5 bg-white p-1 rounded-2xl border border-slate-200 shadow-xs text-xs font-bold scroll-smooth">
+            <div className="w-full max-w-full overflow-x-auto no-scrollbar flex items-center gap-1.5 bg-white p-1 rounded-2xl border border-slate-200 shadow-xs text-xs font-bold scroll-smooth">
               {[
                 { id: 'HOMEWORK', label: '📝 Bài Tập', count: classHomeworks.length },
                 { id: 'MOMENTS', label: '📸 Khoảnh Khắc Lớp', count: filteredMoments.length },

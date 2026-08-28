@@ -422,7 +422,7 @@ export default function StudentPrivateReportPage({
   });
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-20">
+    <div className="min-h-screen bg-slate-50 text-slate-900 pb-24 w-full max-w-full overflow-x-hidden">
       {/* 1. BRAND HEADER BAR */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
         <div className="max-w-5xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2">
@@ -624,7 +624,7 @@ export default function StudentPrivateReportPage({
         </div>
 
         {/* 5. MAIN NAVIGATION TABS FOR THIS CHILD */}
-        <div className="flex overflow-x-auto no-scrollbar gap-1.5 bg-white p-1 rounded-2xl border border-slate-200 shadow-xs text-xs font-bold scroll-smooth -mx-1 sm:mx-0 px-2 sm:px-1">
+        <div className="w-full max-w-full overflow-x-auto no-scrollbar flex items-center gap-1.5 bg-white p-1 rounded-2xl border border-slate-200 shadow-xs text-xs font-bold scroll-smooth">
           {[
             { id: 'REPORT', label: '📊 Điểm & Nhận Xét TT27' },
             { id: 'REWARDS', label: `🎁 Shop Đổi Quà (${studentMonthlyStars.available} ⭐)` },
@@ -1366,7 +1366,7 @@ export default function StudentPrivateReportPage({
 
       {/* FLOATING STICKY BOTTOM CART BAR FOR MOBILE */}
       {activeTab === 'REWARDS' && cartItems.length > 0 && (
-        <div className="lg:hidden fixed bottom-4 left-3 right-3 z-40 bg-slate-900/95 backdrop-blur-md text-white p-3 rounded-2xl shadow-2xl border border-slate-700 flex items-center justify-between gap-2 animate-in slide-in-from-bottom duration-200">
+        <div className="lg:hidden fixed bottom-4 left-3 right-3 max-w-lg mx-auto z-40 bg-slate-900/95 backdrop-blur-md text-white p-3 rounded-2xl shadow-2xl border border-slate-700 flex items-center justify-between gap-2 animate-in slide-in-from-bottom duration-200">
           <div className="flex items-center space-x-2.5 min-w-0 flex-1">
             <div className="w-9 h-9 rounded-xl bg-purple-600 flex items-center justify-center text-white shrink-0 font-bold">
               <ShoppingCart className="w-4 h-4" />

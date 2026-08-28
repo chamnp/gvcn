@@ -22,9 +22,9 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
   // OR if not logged in / not authorized yet -> Render clean standalone canvas (NO sidebar/header/bottom-nav)
   if (isStandalonePage || !user || !isAuthorized) {
     return (
-      <div className="flex-1 min-h-screen flex flex-col bg-slate-50">
+      <div className="flex-1 min-h-screen flex flex-col bg-slate-50 w-full max-w-full overflow-x-hidden min-w-0">
         <AuthGuard>
-          <main className="flex-1 overflow-y-auto">
+          <main className="flex-1 w-full max-w-full overflow-y-auto overflow-x-hidden">
             {children}
           </main>
         </AuthGuard>
@@ -37,7 +37,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
     <>
       <Sidebar />
       <MobileSidebar />
-      <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen w-full max-w-full overflow-x-hidden">
         <Header />
         <main className="flex-1 p-3 sm:p-6 pb-20 lg:pb-6 overflow-y-auto max-w-7xl w-full mx-auto">
           <AuthGuard>{children}</AuthGuard>

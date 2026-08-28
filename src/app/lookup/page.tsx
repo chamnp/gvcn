@@ -114,7 +114,7 @@ export default function StudentLookupPortal() {
   const selectedClass = schoolClasses.find((c) => c.id === selectedClassId) || schoolClasses[0];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-50/50 text-slate-900 flex flex-col justify-between p-3.5 sm:p-6 font-sans">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-50/50 text-slate-900 flex flex-col justify-between p-3.5 sm:p-6 font-sans w-full max-w-full overflow-x-hidden">
       {/* TOP HEADER BRANDING */}
       <header className="max-w-xl w-full mx-auto flex items-center justify-between py-2">
         <div className="flex items-center space-x-2.5">
