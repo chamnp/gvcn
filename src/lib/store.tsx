@@ -971,65 +971,62 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const savedKey = localStorage.getItem(STORAGE_PREFIX + 'apiKey');
 
       if (savedSchool) {
-        const parsedSchool = JSON.parse(savedSchool);
-        if (
-          parsedSchool.name === 'Trường Tiểu học Chu Văn An' ||
-          parsedSchool.principalName === 'Cô Ngô Thị Thúy' ||
-          parsedSchool.principalName === 'Thầy/Cô Hiệu Trưởng' ||
-          parsedSchool.schoolYear === '2025-2026' ||
-          !parsedSchool.name
-        ) {
+        try {
+          const parsedSchool = JSON.parse(savedSchool);
+          if (parsedSchool && parsedSchool.name) {
+            setSchoolInfo(parsedSchool);
+          } else {
+            setSchoolInfo(INITIAL_SCHOOL_INFO);
+          }
+        } catch (e) {
           setSchoolInfo(INITIAL_SCHOOL_INFO);
-          localStorage.setItem(STORAGE_PREFIX + 'schoolInfo', JSON.stringify(INITIAL_SCHOOL_INFO));
-        } else {
-          setSchoolInfo(parsedSchool);
         }
       } else {
         setSchoolInfo(INITIAL_SCHOOL_INFO);
       }
 
       if (savedClasses) {
-        const parsedClasses = JSON.parse(savedClasses);
-        const upgradedClasses = parsedClasses.map((c: any) => {
-          const cleanName = (c.name || 'lop').toLowerCase().replace(/[^a-z0-9]/g, '');
-          const initialMatch = INITIAL_SCHOOL_CLASSES.find((ic) => ic.id === c.id || ic.name === c.name);
-          const is4A1 = c.id === 'class-4a1' || c.name === '4A1';
-          return {
-            ...c,
-            totalStudents: is4A1 ? 55 : c.totalStudents || initialMatch?.totalStudents || 35,
-            teacherName: is4A1 && (!c.teacherName || c.teacherName === 'Cô Nguyễn Thị Mai' || c.teacherName === 'Cô Nguyễn Ngọc Ánh') ? 'Cô Nguyễn Thị Minh Hằng' : c.teacherName || initialMatch?.teacherName || 'Giáo viên',
-            schoolName: c.schoolName === 'Trường Tiểu học Chu Văn An' ? INITIAL_SCHOOL_INFO.name : c.schoolName || INITIAL_SCHOOL_INFO.name,
-            schoolYear: c.schoolYear === '2025-2026' ? '2026-2027' : c.schoolYear || '2026-2027',
-            shareToken: c.shareToken || initialMatch?.shareToken || `c${cleanName}-${Math.random().toString(36).substring(2, 8)}`,
-          };
-        });
-        setSchoolClasses(upgradedClasses);
+        try {
+          const parsedClasses = JSON.parse(savedClasses);
+          if (Array.isArray(parsedClasses)) {
+            const upgradedClasses = parsedClasses.map((c: any) => {
+              const cleanName = (c.name || 'lop').toLowerCase().replace(/[^a-z0-9]/g, '');
+              const initialMatch = INITIAL_SCHOOL_CLASSES.find((ic) => ic.id === c.id || ic.name === c.name);
+              return {
+                ...c,
+                totalStudents: c.totalStudents || initialMatch?.totalStudents || 35,
+                teacherName: c.teacherName || initialMatch?.teacherName || 'Giáo viên',
+                schoolName: c.schoolName || INITIAL_SCHOOL_INFO.name,
+                schoolYear: c.schoolYear || INITIAL_SCHOOL_INFO.schoolYear || '2026-2027',
+                shareToken: c.shareToken || initialMatch?.shareToken || `c${cleanName}-${Math.random().toString(36).substring(2, 8)}`,
+              };
+            });
+            setSchoolClasses(upgradedClasses);
+          } else {
+            setSchoolClasses(INITIAL_SCHOOL_CLASSES);
+          }
+        } catch (e) {
+          setSchoolClasses(INITIAL_SCHOOL_CLASSES);
+        }
       } else {
         setSchoolClasses(INITIAL_SCHOOL_CLASSES);
       }
 
       if (savedActiveId) setActiveClassId(savedActiveId);
       if (savedStudents) {
-        const parsedStudents = JSON.parse(savedStudents);
-        // Check if cached 4A1 students is the old 12-student demo list (starts with 'Nguyễn Văn An' and has <= 12 students)
-        const isOldDemo4A1 =
-          parsedStudents.filter((s: any) => (s.classId || 'class-4a1') === 'class-4a1').length <= 12 &&
-          parsedStudents.some((s: any) => s.fullName === 'Nguyễn Văn An');
-
-        if (isOldDemo4A1) {
-          const otherClasses = parsedStudents.filter((s: any) => s.classId && s.classId !== 'class-4a1');
-          const real4A1 = INITIAL_STUDENTS.filter((s) => (s.classId || 'class-4a1') === 'class-4a1');
-          const combined = [...otherClasses, ...real4A1];
-          setAllStudents(combined);
-          try {
-            localStorage.setItem(STORAGE_PREFIX + 'students', JSON.stringify(combined));
-          } catch (e) {}
-        } else {
-          const upgradedStudents = parsedStudents.map((st: any) => ({
-            ...st,
-            shareToken: st.shareToken || `s-${(st.id || 'hs').toLowerCase().replace(/[^a-z0-9]/g, '')}-${Math.random().toString(36).substring(2, 8)}`,
-          }));
-          setAllStudents(upgradedStudents);
+        try {
+          const parsedStudents = JSON.parse(savedStudents);
+          if (Array.isArray(parsedStudents)) {
+            const upgradedStudents = parsedStudents.map((st: any) => ({
+              ...st,
+              shareToken: st.shareToken || `s-${(st.id || 'hs').toLowerCase().replace(/[^a-z0-9]/g, '')}-${Math.random().toString(36).substring(2, 8)}`,
+            }));
+            setAllStudents(upgradedStudents);
+          } else {
+            setAllStudents(INITIAL_STUDENTS);
+          }
+        } catch (e) {
+          setAllStudents(INITIAL_STUDENTS);
         }
       } else {
         setAllStudents(INITIAL_STUDENTS);
@@ -1048,8 +1045,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setCurrentTerm(realCalendarTerm);
       }
 
-      if (savedAtt) setAttendances(JSON.parse(savedAtt));
-      if (savedStars) setStarLogs(JSON.parse(savedStars));
+      if (savedAtt) {
+        try {
+          const parsed = JSON.parse(savedAtt);
+          if (Array.isArray(parsed)) setAttendances(parsed);
+        } catch (e) {}
+      }
+      if (savedStars) {
+        try {
+          const parsed = JSON.parse(savedStars);
+          if (Array.isArray(parsed)) setStarLogs(parsed);
+        } catch (e) {}
+      }
       
       const savedCriteria = localStorage.getItem(STORAGE_PREFIX + 'starCriteria');
       if (savedCriteria) {
@@ -1072,11 +1079,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setRewardRedemptions(INITIAL_REDEMPTIONS);
       }
 
-      if (savedTt) setAllTimetables(JSON.parse(savedTt));
-      if (savedCs) setCustomSubjects(JSON.parse(savedCs));
-      if (savedHw) setAllHomeworks(JSON.parse(savedHw));
+      if (savedTt) {
+        try { const p = JSON.parse(savedTt); if (Array.isArray(p)) setAllTimetables(p); } catch (e) {}
+      }
+      if (savedCs) {
+        try { const p = JSON.parse(savedCs); if (Array.isArray(p)) setCustomSubjects(p); } catch (e) {}
+      }
+      if (savedHw) {
+        try { const p = JSON.parse(savedHw); if (Array.isArray(p)) setAllHomeworks(p); } catch (e) {}
+      }
       const savedEvents = localStorage.getItem(STORAGE_PREFIX + 'classEvents');
-      if (savedEvents) setAllClassEvents(JSON.parse(savedEvents));
+      if (savedEvents) {
+        try { const p = JSON.parse(savedEvents); if (Array.isArray(p)) setAllClassEvents(p); } catch (e) {}
+      }
 
       const savedAiConfig = localStorage.getItem(STORAGE_PREFIX + 'aiConfig');
       if (savedAiConfig) {
@@ -1105,15 +1120,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       if (savedSubAss) {
-        setSubjectAssessments(JSON.parse(savedSubAss));
+        try { const p = JSON.parse(savedSubAss); if (Array.isArray(p)) setSubjectAssessments(p); } catch (e) {}
       }
 
       if (savedTraitAss) {
-        setTraitAssessments(JSON.parse(savedTraitAss));
+        try { const p = JSON.parse(savedTraitAss); if (Array.isArray(p)) setTraitAssessments(p); } catch (e) {}
       }
 
       if (savedSummaries) {
-        setTermSummaries(JSON.parse(savedSummaries));
+        try { const p = JSON.parse(savedSummaries); if (Array.isArray(p)) setTermSummaries(p); } catch (e) {}
       }
 
       const savedNotes = localStorage.getItem(STORAGE_PREFIX + 'formativeNotes');

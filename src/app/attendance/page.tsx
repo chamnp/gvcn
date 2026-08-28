@@ -33,7 +33,7 @@ export default function AttendancePage() {
   const [monthlySearch, setMonthlySearch] = useState('');
 
   // Lọc điểm danh theo ngày đã chọn
-  const dayAttendances = students.map((st) => {
+  const dayAttendances = (students || []).map((st) => {
     const record = attendances.find((a) => a.studentId === st.id && a.date === selectedDate);
     return {
       student: st,
