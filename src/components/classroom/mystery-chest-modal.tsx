@@ -4,7 +4,6 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   X,
   Sparkles,
-  Gift,
   Award,
   RotateCcw,
   Volume2,
@@ -273,8 +272,15 @@ export function MysteryChestModal({
   };
 
   // Handle Shuffle Animation & Position Swap
+  // Fix: Immediately close all boxes & active popover so no boxes leak their content
   const handleShuffle = () => {
     if (isShuffling) return;
+
+    // Reset opened states so all boxes become closed mystery boxes before shuffling
+    setOpenedBoxIndices([]);
+    setActiveRevealedIndex(null);
+    setIsSavedToLog(false);
+    setIsAnswerRevealed(false);
 
     setIsShuffling(true);
     setShuffleKey((prev) => prev + 1);
@@ -283,6 +289,7 @@ export function MysteryChestModal({
     // After animation duration, swap the items
     setTimeout(() => {
       setChestItems((prev) => shuffleChestItems(prev));
+      setOpenedBoxIndices([]);
       setIsShuffling(false);
       toast.success('🎲 Đã xáo trộn thứ tự các hộp quà! Mời các em chọn số!');
     }, 1500);
@@ -1118,15 +1125,15 @@ export function MysteryChestModal({
                 </span>
               </span>
               <span>
-                Đã mở: <strong className="text-amber-400">{openedBoxIndices.length}</strong> / {boxCount}
+                Đã mở: <strong className="text-amber-400">{isShuffling ? 0 : openedBoxIndices.length}</strong> / {boxCount}
               </span>
             </div>
 
             {/* Dynamic CSS Grid */}
             <div className={`grid ${getGridColsClass()} gap-3 sm:gap-4 select-none`}>
               {chestItems.map((item, idx) => {
-                const isOpened = openedBoxIndices.includes(idx);
-                const isCurrentlyActive = activeRevealedIndex === idx;
+                const isOpened = !isShuffling && openedBoxIndices.includes(idx);
+                const isCurrentlyActive = !isShuffling && activeRevealedIndex === idx;
 
                 return (
                   <button
@@ -1153,7 +1160,9 @@ export function MysteryChestModal({
                     {/* 3D Gift Box Visual Container */}
                     <div
                       className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr ${
-                        item.color || CHEST_GRADIENT_COLORS[idx % CHEST_GRADIENT_COLORS.length]
+                        isOpened
+                          ? item.color || CHEST_GRADIENT_COLORS[idx % CHEST_GRADIENT_COLORS.length]
+                          : CHEST_GRADIENT_COLORS[idx % CHEST_GRADIENT_COLORS.length]
                       } text-white flex items-center justify-center text-3xl sm:text-4xl shadow-lg shadow-orange-500/20 transition-transform ${
                         isOpened
                           ? 'rotate-0 scale-95'
