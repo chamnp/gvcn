@@ -10,6 +10,8 @@ import {
   X,
 } from 'lucide-react';
 import { Student } from '@/types';
+import { useAppStore } from '@/lib/store';
+import { getLocalDateString } from '@/lib/tt27-engine';
 import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
 
@@ -41,9 +43,27 @@ export function LiveLeaderboardModal({
   isOpen,
   onClose,
   className = '4A1',
+  students,
 }: LiveLeaderboardModalProps) {
+  const { addStarLog } = useAppStore();
   const [groups, setGroups] = useState<GroupState[]>(INITIAL_GROUPS);
   const targetStars = 30;
+
+  const handleAwardStarsToLeadingGroup = (group: GroupState) => {
+    if (students.length === 0) return;
+    const today = getLocalDateString();
+    // Assuming students are roughly in 4 groups or award to all students associated with group name/tag or first quarter
+    const groupStudentCount = Math.ceil(students.length / 4);
+    const startIndex = (group.id - 1) * groupStudentCount;
+    const groupStudents = students.slice(startIndex, startIndex + groupStudentCount);
+
+    groupStudents.forEach((s) => {
+      addStarLog(s.id, 2, 'Thi đua tổ', `Tổ ${group.id} (${group.name}) dẫn đầu đường đua sao`, 'Thành tích thi đua nề nếp tổ xuất sắc', today);
+    });
+
+    confetti({ particleCount: 80, spread: 75 });
+    toast.success(`Đã cộng +2 ⭐ vào sổ nề nếp cho tất cả thành viên ${group.name}!`);
+  };
 
   const handleAddStars = (groupId: number, delta: number) => {
     setGroups((prev) =>
@@ -118,7 +138,7 @@ export function LiveLeaderboardModal({
 
         <div className="p-4 sm:p-6 overflow-y-auto flex-1 space-y-6">
           {leadingGroup && leadingGroup.stars > 0 && (
-            <div className="p-4 rounded-3xl bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-rose-500/20 border border-amber-500/40 flex items-center justify-between gap-3 animate-in zoom-in-95">
+            <div className="p-4 rounded-3xl bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-rose-500/20 border border-amber-500/40 flex flex-col sm:flex-row items-center justify-between gap-3 animate-in zoom-in-95">
               <div className="flex items-center space-x-3">
                 <span className="text-3xl">👑</span>
                 <div>
@@ -130,7 +150,17 @@ export function LiveLeaderboardModal({
                   </h4>
                 </div>
               </div>
-              <span className="text-3xl shrink-0">{leadingGroup.mascot}</span>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => handleAwardStarsToLeadingGroup(leadingGroup)}
+                  className="px-3.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-950 font-black text-xs shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+                >
+                  <Award className="w-4 h-4" />
+                  <span>+2 ⭐ Thưởng Toàn Tổ Vào Sổ</span>
+                </button>
+                <span className="text-3xl shrink-0">{leadingGroup.mascot}</span>
+              </div>
             </div>
           )}
 

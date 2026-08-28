@@ -38,7 +38,10 @@ export function SmartTeamGeneratorModal({
 }: SmartTeamGeneratorModalProps) {
   const [numTeams, setNumTeams] = useState<number>(4);
   const [strategy, setStrategy] = useState<'RANDOM' | 'BALANCE_GENDER'>('BALANCE_GENDER');
+  const [assignRoles, setAssignRoles] = useState<boolean>(true);
   const [teams, setTeams] = useState<{ id: number; name: string; badge: string; members: Student[] }[]>([]);
+
+  const ROLES = ['👑 Trưởng nhóm', '📝 Thư ký', '🎤 Báo cáo viên', '🎨 Hỗ trợ / Thiết kế'];
 
   const generateTeams = () => {
     if (students.length === 0) return;
@@ -88,7 +91,8 @@ export function SmartTeamGeneratorModal({
     teams.forEach((t) => {
       text += `${t.badge} ${t.name.toUpperCase()} (${t.members.length} em):\n`;
       t.members.forEach((m, idx) => {
-        text += `  ${idx + 1}. ${m.fullName} (${m.gender})\n`;
+        const roleStr = assignRoles && idx < ROLES.length ? ` [${ROLES[idx]}]` : '';
+        text += `  ${idx + 1}. ${m.fullName} (${m.gender})${roleStr}\n`;
       });
       text += '\n';
     });
@@ -177,6 +181,16 @@ export function SmartTeamGeneratorModal({
                 <option value="RANDOM">🎲 Ngẫu nhiên hoàn toàn</option>
               </select>
             </div>
+
+            <label className="flex items-center space-x-1.5 font-bold text-slate-700 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={assignRoles}
+                onChange={(e) => setAssignRoles(e.target.checked)}
+                className="rounded text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5"
+              />
+              <span>👑 Phân vai trò nhóm</span>
+            </label>
           </div>
 
           <button
@@ -231,9 +245,16 @@ export function SmartTeamGeneratorModal({
                             key={m.id}
                             className="bg-white/90 p-2 rounded-xl border border-slate-100 flex items-center justify-between gap-1.5 shadow-2xs"
                           >
-                            <span className="font-bold text-slate-800 truncate">
-                              {mIdx + 1}. {m.fullName}
-                            </span>
+                            <div className="flex flex-col truncate">
+                              <span className="font-bold text-slate-800 truncate">
+                                {mIdx + 1}. {m.fullName}
+                              </span>
+                              {assignRoles && mIdx < ROLES.length && (
+                                <span className="text-[9px] font-black text-indigo-700">
+                                  {ROLES[mIdx]}
+                                </span>
+                              )}
+                            </div>
                             <span
                               className={`text-[9px] font-bold px-1.5 py-0.2 rounded-md shrink-0 ${
                                 m.gender === 'Nam'

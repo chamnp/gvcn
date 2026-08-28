@@ -11,6 +11,8 @@ import {
   Award,
 } from 'lucide-react';
 import { Student } from '@/types';
+import { useAppStore } from '@/lib/store';
+import { getLocalDateString } from '@/lib/tt27-engine';
 import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
 
@@ -35,6 +37,7 @@ function getShortName(fullName: string): string {
 }
 
 export function LuckyWheelModal({ isOpen, onClose, students }: LuckyWheelModalProps) {
+  const { addStarLog } = useAppStore();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const [availableStudents, setAvailableStudents] = useState<Student[]>(students);
@@ -45,15 +48,26 @@ export function LuckyWheelModal({ isOpen, onClose, students }: LuckyWheelModalPr
   const [winner, setWinner] = useState<Student | null>(null);
   const [multiWinners, setMultiWinners] = useState<Student[]>([]);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [awardedWinnerIds, setAwardedWinnerIds] = useState<string[]>([]);
 
   const rotationRef = useRef<number>(0);
   const animationFrameRef = useRef<number | null>(null);
+
+  const handleAwardStar = (st: Student) => {
+    if (awardedWinnerIds.includes(st.id)) return;
+    const today = getLocalDateString();
+    addStarLog(st.id, 1, 'Khen thưởng', 'Vòng quay may mắn gọi tên phát biểu tích cực', 'Học sinh tích cực phát biểu xây dựng bài', today);
+    setAwardedWinnerIds((prev) => [...prev, st.id]);
+    confetti({ particleCount: 50, spread: 60 });
+    toast.success(`Đã cộng +1 ⭐ vào Sổ nề nếp cho em ${st.fullName}!`);
+  };
 
   useEffect(() => {
     setAvailableStudents(students);
     setPickedStudents([]);
     setWinner(null);
     setMultiWinners([]);
+    setAwardedWinnerIds([]);
   }, [students, isOpen]);
 
   const playTickSound = () => {
@@ -408,6 +422,26 @@ export function LuckyWheelModal({ isOpen, onClose, students }: LuckyWheelModalPr
                 <div className="inline-block bg-white/20 px-3 py-1 rounded-full text-xs font-bold">
                   Mã HS: {winner.studentCode} • {winner.gender}
                 </div>
+
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    disabled={awardedWinnerIds.includes(winner.id)}
+                    onClick={() => handleAwardStar(winner)}
+                    className={`px-4 py-2 rounded-xl font-black text-xs uppercase tracking-wider shadow-md transition-all cursor-pointer inline-flex items-center gap-1.5 ${
+                      awardedWinnerIds.includes(winner.id)
+                        ? 'bg-emerald-700 text-white opacity-90'
+                        : 'bg-slate-950 text-amber-300 hover:bg-slate-900 active:scale-95'
+                    }`}
+                  >
+                    <Award className="w-4 h-4" />
+                    <span>
+                      {awardedWinnerIds.includes(winner.id)
+                        ? 'Đã cộng 1 ⭐ vào sổ!'
+                        : '+1 ⭐ Thưởng Sao Vào Sổ'}
+                    </span>
+                  </button>
+                </div>
               </div>
             )}
 
@@ -418,11 +452,25 @@ export function LuckyWheelModal({ isOpen, onClose, students }: LuckyWheelModalPr
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {multiWinners.map((w, idx) => (
-                    <div key={w.id} className="bg-white/15 p-2 rounded-xl font-bold flex items-center gap-2">
-                      <span className="w-5 h-5 rounded-full bg-amber-400 text-slate-900 flex items-center justify-center text-xs font-black">
-                        {idx + 1}
-                      </span>
-                      <span className="truncate">{w.fullName}</span>
+                    <div key={w.id} className="bg-white/15 p-2 rounded-xl font-bold flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 truncate">
+                        <span className="w-5 h-5 rounded-full bg-amber-400 text-slate-900 flex items-center justify-center text-xs font-black shrink-0">
+                          {idx + 1}
+                        </span>
+                        <span className="truncate">{w.fullName}</span>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={awardedWinnerIds.includes(w.id)}
+                        onClick={() => handleAwardStar(w)}
+                        className={`text-[10px] px-2 py-0.5 rounded-md font-black shrink-0 cursor-pointer ${
+                          awardedWinnerIds.includes(w.id)
+                            ? 'bg-emerald-600 text-white'
+                            : 'bg-amber-400 hover:bg-amber-500 text-slate-950'
+                        }`}
+                      >
+                        {awardedWinnerIds.includes(w.id) ? '✓ 1⭐' : '+1⭐'}
+                      </button>
                     </div>
                   ))}
                 </div>

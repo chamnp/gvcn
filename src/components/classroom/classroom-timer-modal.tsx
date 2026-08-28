@@ -37,15 +37,68 @@ export function ClassroomTimerModal({ isOpen, onClose, className = '4A1' }: Clas
   const [secondsRemaining, setSecondsRemaining] = useState(300);
   const [isRunning, setIsRunning] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [ambientFocusMusic, setAmbientFocusMusic] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const ambientIntervalRef = useRef<any>(null);
+
+  const playLofiChords = () => {
+    try {
+      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const chords = [
+        [261.63, 329.63, 392.0], // C
+        [220.0, 261.63, 329.63], // Am
+        [174.61, 220.0, 261.63], // F
+        [196.0, 246.94, 293.66], // G
+      ];
+      let step = 0;
+
+      const trigger = () => {
+        const chord = chords[step % chords.length];
+        const now = audioCtx.currentTime;
+        chord.forEach((freq) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now);
+          gain.gain.setValueAtTime(0.02, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 3.8);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 4);
+        });
+        step++;
+      };
+
+      trigger();
+      ambientIntervalRef.current = setInterval(trigger, 4000);
+    } catch (e) {}
+  };
+
+  const stopLofiChords = () => {
+    if (ambientIntervalRef.current) {
+      clearInterval(ambientIntervalRef.current);
+      ambientIntervalRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    if (isRunning && ambientFocusMusic) {
+      playLofiChords();
+    } else {
+      stopLofiChords();
+    }
+    return () => stopLofiChords();
+  }, [isRunning, ambientFocusMusic]);
 
   useEffect(() => {
     if (!isOpen) {
       setIsRunning(false);
       setIsFinished(false);
+      stopLofiChords();
     }
   }, [isOpen]);
 
@@ -153,6 +206,19 @@ export function ClassroomTimerModal({ isOpen, onClose, className = '4A1' }: Clas
           </div>
 
           <div className="flex items-center space-x-2">
+            <button
+              type="button"
+              onClick={() => setAmbientFocusMusic(!ambientFocusMusic)}
+              className={`px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer ${
+                ambientFocusMusic
+                  ? 'bg-amber-400 text-slate-950 shadow-md'
+                  : 'bg-white/15 hover:bg-white/25 text-white'
+              }`}
+              title={ambientFocusMusic ? 'Tắt nhạc Lo-Fi' : 'Bật nhạc Lo-Fi tập trung'}
+            >
+              <span>🎵</span>
+              <span className="hidden sm:inline">Nhạc Lo-Fi</span>
+            </button>
             <button
               type="button"
               onClick={() => setSoundEnabled(!soundEnabled)}
