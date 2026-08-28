@@ -1098,7 +1098,11 @@ export default function StudentPrivateReportPage({
                     <div
                       key={rd.id}
                       className={`p-3.5 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-                        rd.status === 'PENDING' ? 'bg-amber-50/40 border-amber-200' : 'bg-slate-50/50 border-slate-200'
+                        rd.status === 'PENDING'
+                          ? 'bg-amber-50/50 border-amber-200 shadow-2xs'
+                          : rd.status === 'DELIVERED'
+                          ? 'bg-emerald-50/40 border-emerald-200'
+                          : 'bg-slate-50 border-slate-200 opacity-70'
                       }`}
                     >
                       <div className="space-y-1">
@@ -1106,14 +1110,21 @@ export default function StudentPrivateReportPage({
                           <span
                             className={`text-[10px] font-black px-2.5 py-0.5 rounded-full ${
                               rd.status === 'PENDING'
-                                ? 'bg-amber-100 text-amber-800'
-                                : 'bg-emerald-100 text-emerald-800'
+                                ? 'bg-amber-100 text-amber-800 animate-pulse'
+                                : rd.status === 'DELIVERED'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : 'bg-slate-200 text-slate-700'
                             }`}
                           >
-                            {rd.status === 'PENDING' ? '⏳ Đang chờ cô trao quà' : '🎉 Đã nhận quà'}
+                            {rd.status === 'PENDING'
+                              ? '⏳ Đang chờ cô trao quà'
+                              : rd.status === 'DELIVERED'
+                              ? '🎉 Đã nhận quà'
+                              : '❌ Đã hủy đơn & hoàn sao'}
                           </span>
                           <span className="text-xs text-slate-400">
                             Ngày {new Date(rd.requestedAt).toLocaleDateString('vi-VN')}
+                            {rd.deliveredAt && ` • Đã nhận: ${new Date(rd.deliveredAt).toLocaleDateString('vi-VN')}`}
                           </span>
                         </div>
 
@@ -1121,15 +1132,23 @@ export default function StudentPrivateReportPage({
                           {rd.items.map((it, idx) => (
                             <span
                               key={idx}
-                              className="bg-white px-2 py-0.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-800"
+                              className="bg-white px-2 py-0.5 rounded-lg border border-slate-200 text-xs font-bold text-slate-800 shadow-2xs"
                             >
                               {it.productName} (x{it.quantity})
                             </span>
                           ))}
                         </div>
+
+                        {rd.studentNote && (
+                          <p className="text-[11px] text-slate-500 italic pt-0.5">
+                            Lời dặn của con: &ldquo;{rd.studentNote}&rdquo;
+                          </p>
+                        )}
                       </div>
 
-                      <span className="font-black text-amber-600 text-sm shrink-0">-{rd.totalStars} ⭐</span>
+                      <span className={`font-black text-sm shrink-0 ${rd.status === 'CANCELLED' ? 'text-slate-400 line-through' : 'text-amber-600'}`}>
+                        -{rd.totalStars} ⭐
+                      </span>
                     </div>
                   ))}
                 </div>

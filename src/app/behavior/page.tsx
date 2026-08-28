@@ -1206,18 +1206,24 @@ export default function BehaviorPage() {
             </div>
 
             {/* Filter */}
-            <div className="flex items-center gap-1.5">
-              {(['ALL', 'PENDING', 'DELIVERED'] as const).map((f) => (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {(['ALL', 'PENDING', 'DELIVERED', 'CANCELLED'] as const).map((f) => (
                 <button
                   key={f}
-                  onClick={() => setRedemptionFilter(f)}
+                  onClick={() => setRedemptionFilter(f as any)}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
                     redemptionFilter === f
                       ? 'bg-purple-600 text-white shadow-xs'
                       : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
-                  {f === 'ALL' ? 'Tất Cả' : f === 'PENDING' ? `Chưa Trả (${pendingRedemptionsCount})` : 'Đã Trả'}
+                  {f === 'ALL'
+                    ? 'Tất Cả'
+                    : f === 'PENDING'
+                    ? `Chưa Trả (${pendingRedemptionsCount})`
+                    : f === 'DELIVERED'
+                    ? 'Đã Trả'
+                    : 'Đã Hủy'}
                 </button>
               ))}
             </div>
@@ -1239,7 +1245,9 @@ export default function BehaviorPage() {
                     className={`p-4 rounded-3xl border transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${
                       rd.status === 'PENDING'
                         ? 'bg-purple-50/30 border-purple-200'
-                        : 'bg-slate-50/50 border-slate-200'
+                        : rd.status === 'DELIVERED'
+                        ? 'bg-emerald-50/20 border-emerald-200'
+                        : 'bg-slate-50 border-slate-200 opacity-70'
                     }`}
                   >
                     <div className="flex items-start space-x-3 min-w-0 flex-1">
@@ -1257,10 +1265,16 @@ export default function BehaviorPage() {
                             className={`text-[10px] font-black px-2.5 py-0.5 rounded-full ${
                               rd.status === 'PENDING'
                                 ? 'bg-amber-100 text-amber-800 animate-pulse'
-                                : 'bg-emerald-100 text-emerald-800'
+                                : rd.status === 'DELIVERED'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : 'bg-slate-200 text-slate-700'
                             }`}
                           >
-                            {rd.status === 'PENDING' ? '⏳ Chưa trả quà' : '✅ Đã trả quà'}
+                            {rd.status === 'PENDING'
+                              ? '⏳ Chưa trả quà'
+                              : rd.status === 'DELIVERED'
+                              ? '✅ Đã trả quà'
+                              : '❌ Đã hủy'}
                           </span>
                         </div>
 

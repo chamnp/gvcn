@@ -3015,9 +3015,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     // Create redemption record
+    const targetStudent = allStudents.find((s) => s.id === data.studentId);
+    const resolvedClassId = targetStudent?.classId || activeClassId || 'class-4a1';
+
     const newRedemption: RewardRedemption = {
       id: `rd-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      classId: activeClassId,
+      classId: resolvedClassId,
       studentId: data.studentId,
       studentName: data.studentName,
       studentCode: data.studentCode,
