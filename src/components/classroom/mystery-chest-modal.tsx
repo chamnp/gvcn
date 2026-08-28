@@ -271,27 +271,45 @@ export function MysteryChestModal({
     });
   };
 
-  // Handle Shuffle Animation & Position Swap
-  // Fix: Immediately close all boxes & active popover so no boxes leak their content
+  // Handle Shuffle: ONLY shuffle the UNOPENED boxes, keeping already opened ones in place!
   const handleShuffle = () => {
     if (isShuffling) return;
 
-    // Reset opened states so all boxes become closed mystery boxes before shuffling
-    setOpenedBoxIndices([]);
+    // Find unopened box indices
+    const unopenedIndices = chestItems
+      .map((_, idx) => idx)
+      .filter((idx) => !openedBoxIndices.includes(idx));
+
+    if (unopenedIndices.length <= 1) {
+      if (unopenedIndices.length === 0) {
+        toast.info('Tất cả hộp quà đã mở hết! Bấm "Đặt lại" để chơi ván mới.');
+      } else {
+        toast.info('Chỉ còn 1 hộp quà chưa mở, không cần xáo trộn!');
+      }
+      return;
+    }
+
+    // Close any active revealed popup overlay so screen is clean
     setActiveRevealedIndex(null);
-    setIsSavedToLog(false);
     setIsAnswerRevealed(false);
 
     setIsShuffling(true);
     setShuffleKey((prev) => prev + 1);
     playShuffleSound();
 
-    // After animation duration, swap the items
+    // After animation duration, swap ONLY the unopened items among unopened positions
     setTimeout(() => {
-      setChestItems((prev) => shuffleChestItems(prev));
-      setOpenedBoxIndices([]);
+      setChestItems((prev) => {
+        const next = [...prev];
+        const unopenedItems = unopenedIndices.map((idx) => next[idx]);
+        const shuffledUnopened = shuffleChestItems(unopenedItems);
+        unopenedIndices.forEach((origIdx, i) => {
+          next[origIdx] = shuffledUnopened[i];
+        });
+        return next;
+      });
       setIsShuffling(false);
-      toast.success('🎲 Đã xáo trộn thứ tự các hộp quà! Mời các em chọn số!');
+      toast.success(`🎲 Đã xáo trộn ${unopenedIndices.length} hộp quà chưa mở! Mời các em chọn tiếp!`);
     }, 1500);
   };
 
@@ -546,7 +564,7 @@ export function MysteryChestModal({
                   ? 'bg-amber-300 text-slate-950 animate-pulse'
                   : 'bg-white/20 hover:bg-white/30 text-white active:scale-95'
               }`}
-              title="Xáo trộn thứ tự các hộp quà (Phím S / Space)"
+              title="Xáo trộn các hộp quà chưa mở (Phím S / Space)"
             >
               <Shuffle className={`w-3.5 h-3.5 ${isShuffling ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">Xáo Trộn Hộp</span>
@@ -622,7 +640,7 @@ export function MysteryChestModal({
                   setSelectedPackId(id);
                   saveSettings(boxCount, id, soundEnabled);
                 }}
-                className="px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-amber-300 font-bold text-xs focus:ring-1 focus:ring-amber-400"
+                className="px-2.5 py-1 rounded-lg bg-slate-800 border border-slate-700 text-amber-300 font-bold text-xs focus:ring-1 focus:ring-amber-400 cursor-pointer"
               >
                 {allPacks.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -1120,20 +1138,21 @@ export function MysteryChestModal({
                 <Sparkles className="w-3.5 h-3.5 text-amber-400" />
                 <span>
                   {isShuffling
-                    ? '🌀 Đang xáo trộn thứ tự các hộp quà...'
+                    ? '🌀 Đang xáo trộn các hộp quà chưa mở...'
                     : '👉 Nhấp chuột vào hộp quà hoặc bấm phím số để lật mở:'}
                 </span>
               </span>
               <span>
-                Đã mở: <strong className="text-amber-400">{isShuffling ? 0 : openedBoxIndices.length}</strong> / {boxCount}
+                Đã mở: <strong className="text-amber-400">{openedBoxIndices.length}</strong> / {boxCount}
               </span>
             </div>
 
             {/* Dynamic CSS Grid */}
             <div className={`grid ${getGridColsClass()} gap-3 sm:gap-4 select-none`}>
               {chestItems.map((item, idx) => {
-                const isOpened = !isShuffling && openedBoxIndices.includes(idx);
-                const isCurrentlyActive = !isShuffling && activeRevealedIndex === idx;
+                const isOpened = openedBoxIndices.includes(idx);
+                const isCurrentlyActive = activeRevealedIndex === idx;
+                const isUnopenedAndShuffling = isShuffling && !isOpened;
 
                 return (
                   <button
@@ -1151,9 +1170,9 @@ export function MysteryChestModal({
                       isCurrentlyActive
                         ? 'bg-amber-500/25 border-amber-400 scale-105 shadow-xl shadow-amber-500/30 ring-2 ring-amber-400'
                         : isOpened
-                        ? 'bg-slate-800/60 border-slate-700 opacity-75 hover:opacity-100 hover:border-amber-400/80'
-                        : isShuffling
-                        ? 'bg-amber-500/15 border-amber-400/60 animate-bounce scale-95 duration-300'
+                        ? 'bg-slate-800/60 border-slate-700 opacity-80 hover:opacity-100 hover:border-amber-400/80'
+                        : isUnopenedAndShuffling
+                        ? 'bg-amber-500/15 border-amber-400/60 animate-bounce scale-95 duration-300 shadow-lg shadow-amber-500/20'
                         : 'bg-gradient-to-b from-slate-800 to-slate-850 border-slate-700 hover:border-amber-400 hover:scale-105 shadow-lg active:scale-95 hover:shadow-amber-500/10'
                     }`}
                   >
@@ -1166,7 +1185,7 @@ export function MysteryChestModal({
                       } text-white flex items-center justify-center text-3xl sm:text-4xl shadow-lg shadow-orange-500/20 transition-transform ${
                         isOpened
                           ? 'rotate-0 scale-95'
-                          : isShuffling
+                          : isUnopenedAndShuffling
                           ? 'animate-spin duration-700'
                           : 'group-hover:rotate-6 group-hover:scale-110'
                       }`}
