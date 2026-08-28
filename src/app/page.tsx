@@ -43,6 +43,7 @@ import { DAYS_OF_WEEK, PERIODS, getSubjectTheme } from '@/lib/timetable-data';
 import { DayOfWeek, ClassEvent, ClassEventType } from '@/types';
 import { ProgressMeterWidget } from '@/components/assessment/progress-meter-widget';
 import { EarlyInterventionWidget } from '@/components/dashboard/early-intervention-widget';
+import { ConferenceSchedulerModal } from '@/components/conference/conference-scheduler-modal';
 import { scanEarlyInterventionAlerts } from '@/lib/early-intervention';
 import { toast } from 'sonner';
 
@@ -97,10 +98,15 @@ export default function DashboardPage() {
     classEvents,
     addClassEvent,
     deleteClassEvent,
+    leaveRequests,
+    approveLeaveRequest,
+    rejectLeaveRequest,
+    conferenceSlots,
   } = useAppStore();
   const { profile } = useAuth();
 
   const [isAddEventModalOpen, setIsAddEventModalOpen] = useState(false);
+  const [isConferenceModalOpen, setIsConferenceModalOpen] = useState(false);
   const [copiedWishId, setCopiedWishId] = useState<string | null>(null);
   const [eventFilter, setEventFilter] = useState<'ALL' | 'UPCOMING' | 'EXAM' | 'MEETING' | 'FESTIVAL'>('ALL');
 
@@ -493,6 +499,89 @@ export default function DashboardPage() {
         <EarlyInterventionWidget alerts={earlyAlerts} />
       </div>
 
+      {/* 3.7. PENDING LEAVE REQUESTS & HEALTH NOTICES WIDGET */}
+      {leaveRequests.filter((r) => r.status === 'PENDING').length > 0 && (
+        <div className="bg-amber-50/80 border-2 border-amber-300 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4 animate-in fade-in">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-200 pb-3">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center font-bold text-xl shadow-xs shrink-0 animate-bounce">
+                📬
+              </div>
+              <div>
+                <h3 className="font-black text-amber-950 text-sm sm:text-base flex items-center gap-2">
+                  <span>Có {leaveRequests.filter((r) => r.status === 'PENDING').length} Đơn Xin Nghỉ Phép Chờ Cô Duyệt</span>
+                </h3>
+                <p className="text-xs text-amber-800">
+                  Duyệt đơn sẽ tự động ghi nhận học sinh vắng có phép vào Sổ Điểm Danh và điều chỉnh suất ăn bán trú.
+                </p>
+              </div>
+            </div>
+
+            <Link
+              href="/attendance"
+              className="text-xs font-bold text-amber-900 hover:text-amber-950 underline self-start sm:self-auto"
+            >
+              Xem Sổ Điểm Danh →
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {leaveRequests.filter((r) => r.status === 'PENDING').map((req) => (
+              <div
+                key={req.id}
+                className="bg-white p-4 rounded-2xl border border-amber-200 shadow-2xs space-y-2.5 flex flex-col justify-between"
+              >
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="font-black text-slate-900 text-sm">{req.studentName}</span>
+                    <span className="bg-amber-100 text-amber-900 text-[10px] font-bold px-2 py-0.5 rounded-md">
+                      {req.startDate === req.endDate ? `Nghỉ ngày ${req.startDate}` : `Từ ${req.startDate} đến ${req.endDate}`}
+                    </span>
+                  </div>
+
+                  <p className="text-xs text-slate-700 leading-relaxed">
+                    <strong className="text-slate-900">Lý do:</strong> {req.reasonDetail}
+                  </p>
+
+                  {req.hasBoardingMealCancel && (
+                    <span className="inline-block bg-orange-100 text-orange-900 text-[10px] font-bold px-2 py-0.2 rounded mr-1">
+                      🍽️ Báo cắt suất ăn bán trú
+                    </span>
+                  )}
+
+                  {req.medicationNotes && (
+                    <div className="bg-rose-50 p-2 rounded-xl border border-rose-100 text-[11px] text-rose-900">
+                      <strong>💊 Dặn dò uống thuốc:</strong> {req.medicationNotes}
+                    </div>
+                  )}
+
+                  <div className="text-[10px] text-slate-400">
+                    Gửi bởi: {req.parentName} ({req.parentPhone})
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-end space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => rejectLeaveRequest(req.id)}
+                    className="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    Từ Chối
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => approveLeaveRequest(req.id)}
+                    className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-xs transition-colors cursor-pointer"
+                  >
+                    ✅ Duyệt Đơn & Đồng Bộ
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* 4. MAIN TWO-COLUMN LAYOUT */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* LEFT 2 COLUMNS: CLASS EVENTS CALENDAR & TT27 ASSESSMENT BREAKDOWN */}
@@ -518,6 +607,19 @@ export default function DashboardPage() {
               </div>
 
               <div className="flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setIsConferenceModalOpen(true)}
+                  className="inline-flex items-center space-x-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                >
+                  <span>📅 Khung Giờ Họp 1-1</span>
+                  {conferenceSlots.filter((s) => s.isBooked).length > 0 && (
+                    <span className="bg-purple-600 text-white text-[10px] px-1.5 py-0.2 rounded-full">
+                      {conferenceSlots.filter((s) => s.isBooked).length}
+                    </span>
+                  )}
+                </button>
+
                 <button
                   type="button"
                   onClick={() => setIsAddEventModalOpen(true)}
@@ -1108,6 +1210,13 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Conference Scheduler Modal */}
+      <ConferenceSchedulerModal
+        isOpen={isConferenceModalOpen}
+        onClose={() => setIsConferenceModalOpen(false)}
+        isTeacher={true}
+      />
     </div>
   );
 }

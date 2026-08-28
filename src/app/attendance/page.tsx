@@ -18,7 +18,7 @@ import { getLocalDateString } from '@/lib/tt27-engine';
 import { toast } from 'sonner';
 
 export default function AttendancePage() {
-  const { students, attendances, updateAttendance, batchSetAttendance, classInfo } = useAppStore();
+  const { students, attendances, updateAttendance, batchSetAttendance, classInfo, leaveRequests } = useAppStore();
   const [selectedDate, setSelectedDate] = useState<string>(() => getLocalDateString());
 
   // Lọc điểm danh theo ngày đã chọn
@@ -179,11 +179,47 @@ ${absentList ? `\nDanh sách học sinh vắng:\n${absentList}` : '\n(Cả lớp
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {dayAttendances.map((item, idx) => (
-                <tr key={item.student.id} className="hover:bg-slate-50/80 transition-colors">
-                  <td className="py-3 px-4 text-center font-medium text-slate-400">{idx + 1}</td>
-                  <td className="py-3 px-4 font-mono font-semibold text-slate-600">{item.student.studentCode}</td>
-                  <td className="py-3 px-4 font-bold text-slate-900">{item.student.fullName}</td>
+              {dayAttendances.map((item, idx) => {
+                const approvedLeave = leaveRequests.find(
+                  (r) =>
+                    r.studentId === item.student.id &&
+                    r.status === 'APPROVED' &&
+                    r.startDate <= selectedDate &&
+                    r.endDate >= selectedDate
+                );
+                const pendingLeave = leaveRequests.find(
+                  (r) =>
+                    r.studentId === item.student.id &&
+                    r.status === 'PENDING' &&
+                    r.startDate <= selectedDate &&
+                    r.endDate >= selectedDate
+                );
+
+                return (
+                  <tr key={item.student.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-3 px-4 text-center font-medium text-slate-400">{idx + 1}</td>
+                    <td className="py-3 px-4 font-mono font-semibold text-slate-600">{item.student.studentCode}</td>
+                    <td className="py-3 px-4 font-bold text-slate-900">
+                      <div className="flex items-center space-x-2">
+                        <span>{item.student.fullName}</span>
+                        {approvedLeave && (
+                          <span
+                            className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full"
+                            title={approvedLeave.reasonDetail}
+                          >
+                            📋 Đã duyệt nghỉ phép
+                          </span>
+                        )}
+                        {pendingLeave && (
+                          <span
+                            className="bg-amber-100 text-amber-900 text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse"
+                            title={pendingLeave.reasonDetail}
+                          >
+                            ⏳ Đơn chờ duyệt
+                          </span>
+                        )}
+                      </div>
+                    </td>
                   
                   {/* Status Toggle Buttons */}
                   <td className="py-3 px-4 text-center">
@@ -259,7 +295,8 @@ ${absentList ? `\nDanh sách học sinh vắng:\n${absentList}` : '\n(Cả lớp
                     />
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

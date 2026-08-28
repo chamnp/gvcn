@@ -26,6 +26,9 @@ import {
   RewardRedemption,
   RedemptionItem,
   FormativeNote,
+  LeaveRequest,
+  ClassMoment,
+  ConferenceSlot,
 } from '@/types';
 
 export const DEFAULT_AI_GEN_SETTINGS: AIGenerationSettings = {
@@ -262,6 +265,34 @@ interface AppContextType {
   exportAllDataJSON: () => string;
   importAllDataJSON: (jsonStr: string) => { success: boolean; error?: string };
   resetData: () => void;
+
+  // Phase 3: Leave Requests & Health/Pickup Notes
+  leaveRequests: LeaveRequest[];
+  createLeaveRequest: (req: Omit<LeaveRequest, 'id' | 'status' | 'createdAt'>) => void;
+  approveLeaveRequest: (id: string, teacherNote?: string) => void;
+  rejectLeaveRequest: (id: string, teacherNote?: string) => void;
+
+  // Phase 3: Classroom Moments Feed
+  classMoments: ClassMoment[];
+  addClassMoment: (moment: Omit<ClassMoment, 'id' | 'likesCount' | 'createdAt'>) => void;
+  likeClassMoment: (id: string, userToken: string) => void;
+  deleteClassMoment: (id: string) => void;
+
+  // Phase 3: Parent Conference 1-on-1 Scheduler
+  conferenceSlots: ConferenceSlot[];
+  createConferenceSlot: (slot: Omit<ConferenceSlot, 'id' | 'isBooked' | 'createdAt'>) => void;
+  bookConferenceSlot: (
+    slotId: string,
+    bookingData: {
+      studentId: string;
+      studentName: string;
+      parentName: string;
+      parentPhone: string;
+      discussionTopics?: string;
+    }
+  ) => void;
+  cancelConferenceBooking: (slotId: string) => void;
+  deleteConferenceSlot: (slotId: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -316,6 +347,100 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       tags: ['Mỹ thuật', 'Giúp bạn'],
       isImportant: false,
       createdAt: '2026-08-26T09:15:00Z',
+    },
+  ]);
+  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([
+    {
+      id: 'lr-1',
+      classId: 'class-4a1',
+      studentId: 'st-04',
+      studentName: 'Phạm Thị Dung',
+      parentName: 'Mẹ Hoàng Thị Mai',
+      parentPhone: '0912345678',
+      startDate: new Date().toISOString().split('T')[0],
+      endDate: new Date().toISOString().split('T')[0],
+      reasonType: 'OM_DAU',
+      reasonDetail: 'Cháu bị sốt nhẹ và đau họng từ tối qua, gia đình xin phép cô cho cháu nghỉ học 1 ngày để đi khám bệnh.',
+      hasBoardingMealCancel: true,
+      medicationNotes: 'Nếu chiều cháu đỡ sốt và đi học, nhờ cô cho cháu uống gói Hapacol 250mg lúc 14h.',
+      status: 'PENDING',
+      createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+    },
+  ]);
+  const [classMoments, setClassMoments] = useState<ClassMoment[]>([
+    {
+      id: 'mom-1',
+      classId: 'class-4a1',
+      teacherName: 'Cô Nguyễn Thị Hoa',
+      category: 'ACADEMIC',
+      title: 'Tiết học thực hành STEM: Chế tạo chong chóng gió và đo năng lượng sạch 🌪️',
+      content: 'Hôm nay các con lớp 4A1 đã có một buổi trải nghiệm Khoa học cực kỳ sôi nổi! Cả lớp tự tay tính toán, cắt dán cánh quạt và thử nghiệm đo lực gió. Tinh thần làm việc nhóm và tính sáng tạo của các con rất tuyệt vời!',
+      imageUrls: [
+        'https://images.unsplash.com/photo-1577896851231-70ef18881754?w=800&auto=format&fit=crop&q=80',
+        'https://images.unsplash.com/photo-1509062522246-3755977927d7?w=800&auto=format&fit=crop&q=80',
+      ],
+      taggedStudentIds: ['st-01', 'st-02', 'st-03'],
+      likesCount: 18,
+      likedBy: [],
+      createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+    },
+    {
+      id: 'mom-2',
+      classId: 'class-4a1',
+      teacherName: 'Cô Nguyễn Thị Hoa',
+      category: 'PRAISE',
+      title: 'Chúc mừng đội tuyển kéo co Lớp 4A1 xuất sắc giành giải Nhất cấp trường! 🏆',
+      content: 'Sau 3 vòng thi đấu kiên cường và đoàn kết, đội kéo co lớp 4A1 đã mang về cúp vô địch cho lớp chúng ta. Cảm ơn sự cổ vũ hết mình của tất cả các bạn và phụ huynh!',
+      imageUrls: [
+        'https://images.unsplash.com/photo-1571260899304-425eee4c7efc?w=800&auto=format&fit=crop&q=80',
+      ],
+      taggedStudentIds: ['st-04', 'st-05', 'st-06', 'st-07'],
+      likesCount: 29,
+      likedBy: [],
+      createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
+    },
+  ]);
+  const [conferenceSlots, setConferenceSlots] = useState<ConferenceSlot[]>([
+    {
+      id: 'conf-1',
+      classId: 'class-4a1',
+      title: 'Trao đổi riêng kết quả học tập & rèn luyện Giữa HK1',
+      date: '2026-09-05',
+      startTime: '08:00',
+      endTime: '08:20',
+      type: 'IN_PERSON',
+      location: 'Phòng học 4A1 (Tầng 2, Nhà B)',
+      isBooked: true,
+      bookedStudentId: 'st-01',
+      bookedStudentName: 'Nguyễn Văn An',
+      bookedParentName: 'Nguyễn Văn Bình',
+      bookedParentPhone: '0901234567',
+      parentDiscussionTopics: 'Muốn trao đổi với cô về phương pháp rèn thêm môn Toán tư duy ở nhà cho con.',
+      createdAt: '2026-08-25T08:00:00Z',
+    },
+    {
+      id: 'conf-2',
+      classId: 'class-4a1',
+      title: 'Trao đổi riêng kết quả học tập & rèn luyện Giữa HK1',
+      date: '2026-09-05',
+      startTime: '08:25',
+      endTime: '08:45',
+      type: 'IN_PERSON',
+      location: 'Phòng học 4A1 (Tầng 2, Nhà B)',
+      isBooked: false,
+      createdAt: '2026-08-25T08:00:00Z',
+    },
+    {
+      id: 'conf-3',
+      classId: 'class-4a1',
+      title: 'Trao đổi riêng kết quả học tập & rèn luyện Giữa HK1',
+      date: '2026-09-05',
+      startTime: '08:50',
+      endTime: '09:10',
+      type: 'ONLINE_MEET',
+      location: 'Google Meet (Link sẽ gửi qua Zalo trước 15p)',
+      isBooked: false,
+      createdAt: '2026-08-25T08:00:00Z',
     },
   ]);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -582,6 +707,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const savedNotes = localStorage.getItem(STORAGE_PREFIX + 'formativeNotes');
       if (savedNotes) {
         try { setFormativeNotes(JSON.parse(savedNotes)); } catch (e) {}
+      }
+
+      const savedLeave = localStorage.getItem(STORAGE_PREFIX + 'leaveRequests');
+      if (savedLeave) {
+        try { setLeaveRequests(JSON.parse(savedLeave)); } catch (e) {}
+      }
+
+      const savedMoments = localStorage.getItem(STORAGE_PREFIX + 'classMoments');
+      if (savedMoments) {
+        try { setClassMoments(JSON.parse(savedMoments)); } catch (e) {}
+      }
+
+      const savedConf = localStorage.getItem(STORAGE_PREFIX + 'conferenceSlots');
+      if (savedConf) {
+        try { setConferenceSlots(JSON.parse(savedConf)); } catch (e) {}
       }
     } catch (e) {
       console.warn('Error reading from localStorage:', e);
@@ -1117,6 +1257,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     safeSet(STORAGE_PREFIX + 'customSubjects', JSON.stringify(customSubjects));
     safeSet(STORAGE_PREFIX + 'homeworks', JSON.stringify(allHomeworks));
     safeSet(STORAGE_PREFIX + 'formativeNotes', JSON.stringify(formativeNotes));
+    safeSet(STORAGE_PREFIX + 'leaveRequests', JSON.stringify(leaveRequests));
+    safeSet(STORAGE_PREFIX + 'classMoments', JSON.stringify(classMoments));
+    safeSet(STORAGE_PREFIX + 'conferenceSlots', JSON.stringify(conferenceSlots));
     safeSet(STORAGE_PREFIX + 'apiKey', apiKey);
   }, [
     isLoaded,
@@ -1137,6 +1280,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     customSubjects,
     allHomeworks,
     formativeNotes,
+    leaveRequests,
+    classMoments,
+    conferenceSlots,
     apiKey,
   ]);
 
@@ -2783,6 +2929,167 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     toast.success('Đã xóa ghi chú');
   };
 
+  // PHASE 3: LEAVE REQUEST ACTIONS
+  const createLeaveRequest = (req: Omit<LeaveRequest, 'id' | 'status' | 'createdAt'>) => {
+    const newReq: LeaveRequest = {
+      ...req,
+      id: `lr-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      status: 'PENDING',
+      createdAt: new Date().toISOString(),
+    };
+    setLeaveRequests((prev) => [newReq, ...prev]);
+    toast.success('Đã gửi đơn xin nghỉ phép đến Giáo viên chủ nhiệm!');
+  };
+
+  const approveLeaveRequest = (id: string, teacherNote?: string) => {
+    const req = leaveRequests.find((r) => r.id === id);
+    if (!req) return;
+
+    setLeaveRequests((prev) =>
+      prev.map((r) =>
+        r.id === id
+          ? {
+              ...r,
+              status: 'APPROVED',
+              teacherNote: teacherNote || r.teacherNote || 'Đã duyệt đơn xin nghỉ phép của học sinh.',
+              reviewedAt: new Date().toISOString(),
+            }
+          : r
+      )
+    );
+
+    // AUTO-SYNC ATTENDANCE: Cập nhật học sinh sang VANG_CO_PHEP vào ngày nghỉ
+    updateAttendance(
+      req.studentId,
+      req.startDate,
+      'VANG_CO_PHEP',
+      !req.hasBoardingMealCancel,
+      `Đơn xin nghỉ phép trực tuyến (${req.reasonDetail})`
+    );
+
+    toast.success(`Đã duyệt đơn xin nghỉ của em ${req.studentName} và đồng bộ Sổ điểm danh!`);
+  };
+
+  const rejectLeaveRequest = (id: string, teacherNote?: string) => {
+    setLeaveRequests((prev) =>
+      prev.map((r) =>
+        r.id === id
+          ? {
+              ...r,
+              status: 'REJECTED',
+              teacherNote: teacherNote || 'Giáo viên chưa thể duyệt đơn này',
+              reviewedAt: new Date().toISOString(),
+            }
+          : r
+      )
+    );
+    toast.info('Đã từ chối đơn xin nghỉ phép');
+  };
+
+  // PHASE 3: CLASSROOM MOMENTS ACTIONS
+  const addClassMoment = (moment: Omit<ClassMoment, 'id' | 'likesCount' | 'createdAt'>) => {
+    const newMoment: ClassMoment = {
+      ...moment,
+      id: `mom-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      likesCount: 0,
+      likedBy: [],
+      createdAt: new Date().toISOString(),
+    };
+    setClassMoments((prev) => [newMoment, ...prev]);
+    toast.success('Đã đăng bài viết khoảnh khắc lớp học thành công!');
+  };
+
+  const likeClassMoment = (id: string, userToken: string) => {
+    setClassMoments((prev) =>
+      prev.map((m) => {
+        if (m.id !== id) return m;
+        const alreadyLiked = m.likedBy?.includes(userToken);
+        if (alreadyLiked) {
+          return {
+            ...m,
+            likesCount: Math.max(0, m.likesCount - 1),
+            likedBy: m.likedBy?.filter((t) => t !== userToken),
+          };
+        } else {
+          return {
+            ...m,
+            likesCount: m.likesCount + 1,
+            likedBy: [...(m.likedBy || []), userToken],
+          };
+        }
+      })
+    );
+  };
+
+  const deleteClassMoment = (id: string) => {
+    setClassMoments((prev) => prev.filter((m) => m.id !== id));
+    toast.success('Đã xóa bài viết khoảnh khắc');
+  };
+
+  // PHASE 3: PARENT CONFERENCE 1-ON-1 ACTIONS
+  const createConferenceSlot = (slot: Omit<ConferenceSlot, 'id' | 'isBooked' | 'createdAt'>) => {
+    const newSlot: ConferenceSlot = {
+      ...slot,
+      id: `conf-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      isBooked: false,
+      createdAt: new Date().toISOString(),
+    };
+    setConferenceSlots((prev) => [...prev, newSlot]);
+    toast.success('Đã tạo khung giờ hẹn trao đổi phụ huynh!');
+  };
+
+  const bookConferenceSlot = (
+    slotId: string,
+    bookingData: {
+      studentId: string;
+      studentName: string;
+      parentName: string;
+      parentPhone: string;
+      discussionTopics?: string;
+    }
+  ) => {
+    setConferenceSlots((prev) =>
+      prev.map((s) =>
+        s.id === slotId
+          ? {
+              ...s,
+              isBooked: true,
+              bookedStudentId: bookingData.studentId,
+              bookedStudentName: bookingData.studentName,
+              bookedParentName: bookingData.parentName,
+              bookedParentPhone: bookingData.parentPhone,
+              parentDiscussionTopics: bookingData.discussionTopics,
+            }
+          : s
+      )
+    );
+    toast.success('Đã đăng ký lịch hẹn trao đổi với Giáo viên chủ nhiệm thành công!');
+  };
+
+  const cancelConferenceBooking = (slotId: string) => {
+    setConferenceSlots((prev) =>
+      prev.map((s) =>
+        s.id === slotId
+          ? {
+              ...s,
+              isBooked: false,
+              bookedStudentId: undefined,
+              bookedStudentName: undefined,
+              bookedParentName: undefined,
+              bookedParentPhone: undefined,
+              parentDiscussionTopics: undefined,
+            }
+          : s
+      )
+    );
+    toast.success('Đã hủy đặt lịch hẹn');
+  };
+
+  const deleteConferenceSlot = (slotId: string) => {
+    setConferenceSlots((prev) => prev.filter((s) => s.id !== slotId));
+    toast.success('Đã xóa khung giờ hẹn');
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -2860,6 +3167,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         formativeNotes,
         addFormativeNote,
         deleteFormativeNote,
+        leaveRequests,
+        createLeaveRequest,
+        approveLeaveRequest,
+        rejectLeaveRequest,
+        classMoments,
+        addClassMoment,
+        likeClassMoment,
+        deleteClassMoment,
+        conferenceSlots,
+        createConferenceSlot,
+        bookConferenceSlot,
+        cancelConferenceBooking,
+        deleteConferenceSlot,
         updateSubjectAssessment,
         batchSetSubjectLevel,
         updateTraitAssessment,

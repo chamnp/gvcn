@@ -48,6 +48,8 @@ import { useAppStore, getDefaultPinForStudent } from '@/lib/store';
 import { TERMS, PRIMARY_SUBJECTS, TRAIT_DEFINITIONS, getLocalDateString } from '@/lib/tt27-engine';
 import { getSubjectTheme, DAYS_OF_WEEK, PERIODS } from '@/lib/timetable-data';
 import { TermType, DayOfWeek, ClassEvent, RewardProduct, RedemptionItem } from '@/types';
+import { LeaveRequestModal } from '@/components/parent/leave-request-modal';
+import { ConferenceSchedulerModal } from '@/components/conference/conference-scheduler-modal';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
 
@@ -112,6 +114,8 @@ export default function StudentPrivateReportPage({
     allClassEvents,
     currentTerm: globalTerm,
     updateStudentSecurity,
+    leaveRequests,
+    conferenceSlots,
   } = useAppStore();
 
   // Find student strictly by shareToken, id, or studentCode (Mã định danh)
@@ -138,6 +142,8 @@ export default function StudentPrivateReportPage({
 
   // PIN Setup / Change Modal State
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+  const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
+  const [isConferenceModalOpen, setIsConferenceModalOpen] = useState(false);
   const [newPin, setNewPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [parentPhoneInput, setParentPhoneInput] = useState(student?.parentPhone || '');
@@ -508,6 +514,40 @@ export default function StudentPrivateReportPage({
             </button>
           </div>
         )}
+
+        {/* 2.5. PARENT QUICK ACTIONS BAR */}
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center space-x-3 min-w-0">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold flex items-center justify-center text-lg shadow-xs shrink-0">
+              👩‍🏫
+            </div>
+            <div className="min-w-0">
+              <h4 className="font-black text-slate-900 text-xs sm:text-sm truncate">
+                Tương Tác Với GVCN — {studentClass.teacherName}
+              </h4>
+              <p className="text-[11px] text-slate-500 truncate">
+                Gửi đơn xin nghỉ phép, dặn dò uống thuốc hoặc đặt lịch hẹn gặp cô 1-1
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsLeaveModalOpen(true)}
+              className="inline-flex items-center space-x-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs px-3.5 py-2 rounded-xl border border-blue-200 transition-colors cursor-pointer"
+            >
+              <span>📋 Xin Nghỉ Phép & Dặn Thuốc</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsConferenceModalOpen(true)}
+              className="inline-flex items-center space-x-1 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs px-3.5 py-2 rounded-xl border border-purple-200 transition-colors cursor-pointer"
+            >
+              <span>📅 Đặt Lịch Gặp Cô</span>
+            </button>
+          </div>
+        </div>
 
         {/* 3. BIRTHDAY SPECIAL GREETING CARD */}
         {birthdayInfo && (birthdayInfo.isToday || birthdayInfo.isThisMonth) && (
@@ -1457,6 +1497,21 @@ export default function StudentPrivateReportPage({
           </div>
         </div>
       )}
+
+      {/* Leave Request & Health Modal */}
+      <LeaveRequestModal
+        student={student}
+        isOpen={isLeaveModalOpen}
+        onClose={() => setIsLeaveModalOpen(false)}
+      />
+
+      {/* Conference Scheduler Modal */}
+      <ConferenceSchedulerModal
+        isOpen={isConferenceModalOpen}
+        onClose={() => setIsConferenceModalOpen(false)}
+        isTeacher={false}
+        currentStudent={student}
+      />
     </div>
   );
 }

@@ -36,7 +36,10 @@ import {
 import { useAppStore } from '@/lib/store';
 import { getSubjectTheme, DAYS_OF_WEEK, PERIODS } from '@/lib/timetable-data';
 import { getLocalDateString } from '@/lib/tt27-engine';
-import { DayOfWeek, ClassEvent, ClassEventType } from '@/types';
+import { DayOfWeek, ClassEvent, ClassEventType, Student } from '@/types';
+import { LeaveRequestModal } from '@/components/parent/leave-request-modal';
+import { MomentsFeedCard } from '@/components/moments/moments-feed-card';
+import { ConferenceSchedulerModal } from '@/components/conference/conference-scheduler-modal';
 import { toast } from 'sonner';
 
 // Helper to calculate birthday information
@@ -152,10 +155,17 @@ export default function PublicClassHomeworkPortal({
   // Student Local Checklist (State stored in localStorage)
   const [completedHwIds, setCompletedHwIds] = useState<string[]>([]);
   const [packedSubjectCodes, setPackedSubjectCodes] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<'HOMEWORK' | 'EVENTS' | 'BACKPACK' | 'TIMETABLE'>('HOMEWORK');
+  const [activeTab, setActiveTab] = useState<'HOMEWORK' | 'MOMENTS' | 'CONFERENCE' | 'EVENTS' | 'BACKPACK' | 'TIMETABLE'>('HOMEWORK');
   const [selectedTimetableDay, setSelectedTimetableDay] = useState<DayOfWeek>('T2');
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [eventFilter, setEventFilter] = useState<'ALL' | 'EXAM' | 'MEETING' | 'FESTIVAL'>('ALL');
+  const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
+  const [isConferenceModalOpen, setIsConferenceModalOpen] = useState(false);
+  const [selectedStudentForLeave, setSelectedStudentForLeave] = useState<Student | null>(null);
+
+  const { classMoments, conferenceSlots } = useAppStore();
+  const filteredMoments = classMoments.filter((m) => m.classId === currentClass.id || !m.classId);
+  const filteredConferences = conferenceSlots.filter((s) => s.classId === currentClass.id || !s.classId);
 
   const todayStr = getLocalDateString();
 
@@ -353,6 +363,27 @@ export default function PublicClassHomeworkPortal({
                     </div>
                   </div>
                 )}
+
+                {/* Quick Action Buttons for Parents */}
+                <div className="flex flex-wrap gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedStudentForLeave(classStudents[0] || null);
+                      setIsLeaveModalOpen(true);
+                    }}
+                    className="inline-flex items-center space-x-1.5 bg-white/20 hover:bg-white/30 text-white font-bold text-xs px-3.5 py-2 rounded-xl backdrop-blur-md transition-colors cursor-pointer border border-white/20"
+                  >
+                    <span>📋 Xin Nghỉ Phép & Dặn Dò Thuốc</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsConferenceModalOpen(true)}
+                    className="inline-flex items-center space-x-1.5 bg-white/20 hover:bg-white/30 text-white font-bold text-xs px-3.5 py-2 rounded-xl backdrop-blur-md transition-colors cursor-pointer border border-white/20"
+                  >
+                    <span>📅 Đặt Lịch Hẹn Gặp Cô (1-1)</span>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -385,13 +416,15 @@ export default function PublicClassHomeworkPortal({
               </Link>
             </div>
 
-            {/* 3. NAVIGATION TABS (4 TABS: HOMEWORK, EVENTS, BACKPACK, TIMETABLE) */}
+            {/* 3. NAVIGATION TABS */}
             <div className="flex overflow-x-auto no-scrollbar gap-1.5 bg-white p-1 rounded-2xl border border-slate-200 shadow-xs text-xs font-bold scroll-smooth">
               {[
                 { id: 'HOMEWORK', label: '📝 Bài Tập', count: classHomeworks.length },
+                { id: 'MOMENTS', label: '📸 Khoảnh Khắc Lớp', count: filteredMoments.length },
+                { id: 'CONFERENCE', label: '📅 Lịch Họp 1-1', count: filteredConferences.filter(s => !s.isBooked).length },
                 { id: 'BACKPACK', label: '🎒 Soạn Sách Vở', count: null },
                 { id: 'TIMETABLE', label: '🗓️ Thời Khóa Biểu', count: null },
-                { id: 'EVENTS', label: '📅 Sự Kiện', count: classEvents.length },
+                { id: 'EVENTS', label: '🎪 Sự Kiện', count: classEvents.length },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -778,6 +811,87 @@ export default function PublicClassHomeworkPortal({
                 </div>
               </div>
             )}
+
+            {/* TAB CONTENT 5: CLASSROOM MOMENTS */}
+            {activeTab === 'MOMENTS' && (
+              <div className="space-y-4 animate-in fade-in">
+                {filteredMoments.length === 0 ? (
+                  <div className="bg-white rounded-3xl border border-slate-200 p-8 text-center space-y-2">
+                    <div className="w-14 h-14 rounded-full bg-pink-50 text-pink-600 flex items-center justify-center mx-auto text-2xl">
+                      📸
+                    </div>
+                    <h3 className="font-bold text-sm text-slate-800">Chưa Có Bài Viết Khoảnh Khắc Lớp</h3>
+                    <p className="text-xs text-slate-500">Cô giáo sẽ sớm chia sẻ những bức ảnh và câu chuyện học tập vui vẻ của lớp tại đây!</p>
+                  </div>
+                ) : (
+                  filteredMoments.map((m) => (
+                    <MomentsFeedCard key={m.id} moment={m} isTeacher={false} />
+                  ))
+                )}
+              </div>
+            )}
+
+            {/* TAB CONTENT 6: PARENT CONFERENCE SCHEDULER */}
+            {activeTab === 'CONFERENCE' && (
+              <div className="bg-white rounded-3xl border border-slate-200 p-5 sm:p-6 space-y-4 animate-in fade-in">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <div>
+                    <h3 className="font-black text-slate-900 text-sm sm:text-base">
+                      Lịch Hẹn Họp & Trao Đổi 1-1 Với Cô Giáo
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Chọn khung giờ thuận tiện để trao đổi riêng về sự tiến bộ của con
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  {filteredConferences.length === 0 ? (
+                    <div className="py-8 text-center text-slate-400">
+                      Hiện chưa có đợt hẹn trao đổi nào được mở.
+                    </div>
+                  ) : (
+                    filteredConferences.map((slot) => (
+                      <div
+                        key={slot.id}
+                        className="p-4 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50"
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center space-x-2">
+                            <span className="font-black text-slate-900 text-xs sm:text-sm">
+                              📅 {slot.date} ({slot.startTime} - {slot.endTime})
+                            </span>
+                            <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded-md">
+                              {slot.type === 'IN_PERSON' ? 'Trực tiếp' : 'Trực tuyến'}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-600">{slot.title}</p>
+                          {slot.location && (
+                            <p className="text-[11px] text-slate-400">📍 {slot.location}</p>
+                          )}
+                        </div>
+
+                        <div>
+                          {slot.isBooked ? (
+                            <span className="bg-slate-200 text-slate-600 text-xs font-bold px-3 py-1.5 rounded-xl inline-block">
+                              Đã kín lịch
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setIsConferenceModalOpen(true)}
+                              className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition-colors cursor-pointer shadow-xs"
+                            >
+                              Đăng Ký Khung Giờ Này
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* RIGHT 1 COLUMN: SIDE CONTACT & SCHOOL INFO PANEL */}
@@ -863,6 +977,21 @@ export default function PublicClassHomeworkPortal({
           </div>
         </div>
       )}
+
+      {/* Leave Request & Health Modal */}
+      <LeaveRequestModal
+        student={selectedStudentForLeave}
+        isOpen={isLeaveModalOpen}
+        onClose={() => setIsLeaveModalOpen(false)}
+      />
+
+      {/* Conference Scheduler Modal */}
+      <ConferenceSchedulerModal
+        isOpen={isConferenceModalOpen}
+        onClose={() => setIsConferenceModalOpen(false)}
+        isTeacher={false}
+        currentStudent={classStudents[0] || null}
+      />
     </div>
   );
 }

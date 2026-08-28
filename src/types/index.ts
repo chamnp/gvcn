@@ -327,3 +327,71 @@ export interface EarlyInterventionAlert {
   actionType?: 'CONTACT_PARENT' | 'CHANGE_SEAT' | 'TUTORING' | 'REWARD_ENCOURAGE';
 }
 
+// ----------------------------------------------------
+// Phase 3: Parent Connection & Classroom Moments Types
+// ----------------------------------------------------
+export type LeaveRequestReason = 'OM_DAU' | 'VIEC_GIA_DINH' | 'KHAM_BENH' | 'NGHI_PHEP' | 'KHAC';
+export type LeaveRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+
+export interface LeaveRequest {
+  id: string;
+  classId: string;
+  studentId: string;
+  studentName: string;
+  parentName: string;
+  parentPhone: string;
+  startDate: string; // YYYY-MM-DD
+  endDate: string; // YYYY-MM-DD
+  reasonType: LeaveRequestReason;
+  reasonDetail: string;
+  hasBoardingMealCancel?: boolean; // Hủy ăn bán trú ngày nghỉ
+  medicationNotes?: string; // Dặn dò uống thuốc theo đơn
+  pickupPerson?: {
+    name: string;
+    phone: string;
+    relationship?: string;
+  };
+  status: LeaveRequestStatus;
+  teacherNote?: string;
+  createdAt: string;
+  reviewedAt?: string;
+}
+
+export type MomentCategory = 'ACADEMIC' | 'EXPERIENCE' | 'PRAISE' | 'MEMORIES';
+
+export interface ClassMoment {
+  id: string;
+  classId: string;
+  teacherName: string;
+  category: MomentCategory;
+  title: string;
+  content: string;
+  imageUrls: string[];
+  taggedStudentIds?: string[];
+  likesCount: number;
+  likedBy?: string[]; // studentTokens or IPs
+  createdAt: string;
+}
+
+export type ConferenceType = 'IN_PERSON' | 'PHONE' | 'ONLINE_MEET' | 'ZALO';
+
+export interface ConferenceSlot {
+  id: string;
+  classId: string;
+  title: string;
+  date: string; // YYYY-MM-DD
+  startTime: string; // HH:mm e.g. '08:00'
+  endTime: string; // HH:mm e.g. '08:20'
+  type: ConferenceType;
+  location?: string; // e.g. 'Phòng học 4A1' or 'https://meet.google.com/...'
+  isBooked: boolean;
+  bookedStudentId?: string;
+  bookedStudentName?: string;
+  bookedParentName?: string;
+  bookedParentPhone?: string;
+  parentDiscussionTopics?: string;
+  teacherNotes?: string;
+  createdAt: string;
+}
+
+
