@@ -24,6 +24,7 @@ import { TermType } from '@/types';
 import Link from 'next/link';
 import { useMobileNav } from './mobile-nav-context';
 import { NetworkStatusIndicator } from '@/components/ui/network-status-indicator';
+import { NotificationCenter } from '@/components/layout/notification-center';
 
 export const Header: React.FC = () => {
   const { schoolClasses, activeClassId, classInfo, switchClass, currentTerm, setCurrentTerm, autoCalendarTerm, schoolInfo } = useAppStore();
@@ -195,6 +196,9 @@ export const Header: React.FC = () => {
       <div className="flex items-center space-x-2 shrink-0">
         {/* Network & PWA Status Indicator */}
         <NetworkStatusIndicator />
+
+        {/* Live Notification Center */}
+        <NotificationCenter />
 
         {isAdmin && (
           <Link

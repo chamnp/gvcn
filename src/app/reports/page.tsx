@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { exportTT27Form1, exportVnEduTemplate } from '@/lib/excel-export';
+import { exportVnEduAssessmentExcel } from '@/lib/vnedu-export';
+import { AIClassDiagnosticModal } from '@/components/assessment/ai-class-diagnostic-modal';
 import {
   TERMS,
   PRIMARY_SUBJECTS,
@@ -39,6 +41,7 @@ export default function ReportsPage() {
 
   const [selectedStudentId, setSelectedStudentId] = useState<string>(students[0]?.id || '');
   const [isGuardrailsOpen, setIsGuardrailsOpen] = useState(false);
+  const [isDiagnosticOpen, setIsDiagnosticOpen] = useState(false);
   const termName = TERMS.find((t) => t.id === currentTerm)?.name || currentTerm;
 
   const subjects = PRIMARY_SUBJECTS.filter((s) => s.applicableGrades.includes(classInfo.grade));
@@ -113,6 +116,11 @@ export default function ReportsPage() {
         issues={issues}
       />
 
+      <AIClassDiagnosticModal
+        isOpen={isDiagnosticOpen}
+        onClose={() => setIsDiagnosticOpen(false)}
+      />
+
       {/* Export Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Card 1: Form 1 TT27 */}
@@ -149,14 +157,14 @@ export default function ReportsPage() {
             <div>
               <h3 className="text-base font-bold text-slate-900">File Nhập Điểm Chuẩn VnEdu / SMAS</h3>
               <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                Định dạng các cột mã môn, mức đánh giá và điểm số tương thích hoàn toàn để tải lên trực tiếp cổng quản lý giáo dục ngành VnEdu, SMAS, CSDL Bộ GD&ĐT.
+                Định dạng các cột mã môn, mức đánh giá và nhận xét tương thích hoàn toàn để tải lên trực tiếp cổng quản lý giáo dục ngành VnEdu, SMAS, CSDL Bộ GD&ĐT.
               </p>
             </div>
           </div>
           <button
             onClick={() => {
-              exportVnEduTemplate(classInfo, students, subjectAssessments, currentTerm);
-              toast.success('Đã tải xuống file nhập điểm VnEdu/SMAS!');
+              exportVnEduAssessmentExcel(students, subjectAssessments, traitAssessments, termSummaries, classInfo, currentTerm);
+              toast.success('Đã tải xuống file nhập điểm vnEdu/SMAS tương thích 100%!');
             }}
             className="w-full inline-flex items-center justify-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs py-2.5 rounded-xl shadow-xs transition-colors"
           >
@@ -165,21 +173,49 @@ export default function ReportsPage() {
           </button>
         </div>
 
-        {/* Card 3: Sổ Chủ Nhiệm Điện Tử (A4 PDF) */}
-        <div className="bg-gradient-to-br from-indigo-900 to-slate-900 text-white p-5 rounded-2xl shadow-md md:col-span-2 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        {/* Card 3: Học Bạ & Phiếu Đánh Giá Định Kỳ Mẫu 1 (A4 PDF Toàn Lớp) */}
+        <div className="bg-gradient-to-br from-blue-900 to-indigo-950 text-white p-5 rounded-2xl shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start space-x-4">
+            <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl shadow-inner shrink-0">
+              🎓
+            </div>
+            <div className="space-y-1">
+              <span className="inline-block bg-blue-500/30 text-blue-200 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider border border-blue-400/30">
+                1-Click In Toàn Lớp
+              </span>
+              <h3 className="text-base font-black text-white">
+                Học Bạ & Phiếu Đánh Giá Mẫu 1 TT27
+              </h3>
+              <p className="text-xs text-blue-200/90 leading-relaxed max-w-xl">
+                Xuất liên tục toàn bộ phiếu đánh giá của 40 học sinh chuẩn khổ A4/A3 hai mặt có chữ ký GVCN & BGH.
+              </p>
+            </div>
+          </div>
+
+          <Link
+            href="/reports/hoc-ba"
+            className="inline-flex items-center justify-center space-x-2 bg-white hover:bg-blue-50 text-blue-950 font-black text-xs px-5 py-3 rounded-xl shadow-lg transition-all shrink-0 cursor-pointer"
+          >
+            <Printer className="w-4 h-4 text-blue-600" />
+            <span>Mở & In Học Bạ Mẫu 1 →</span>
+          </Link>
+        </div>
+
+        {/* Card 4: Sổ Chủ Nhiệm Điện Tử (A4 PDF) */}
+        <div className="bg-gradient-to-br from-indigo-900 to-slate-900 text-white p-5 rounded-2xl shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-start space-x-4">
             <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl shadow-inner shrink-0">
               📘
             </div>
             <div className="space-y-1">
               <span className="inline-block bg-indigo-500/30 text-indigo-200 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider border border-indigo-400/30">
-                Chuẩn Mẫu Bộ GD&ĐT
+                Sổ Chủ Nhiệm A4
               </span>
               <h3 className="text-base font-black text-white">
                 Sổ Chủ Nhiệm Lớp Điện Tử (Khổ A4 Chuẩn In Ấn)
               </h3>
               <p className="text-xs text-indigo-200/90 leading-relaxed max-w-xl">
-                Tổng hợp đầy đủ trang bìa, danh sách trích ngang học sinh, thời khóa biểu 2 buổi/ngày, bảng tổng hợp đánh giá TT27 và phần duyệt của Ban Giám Hiệu.
+                Tổng hợp đầy đủ trang bìa, danh sách trích ngang học sinh, thời khóa biểu, bảng tổng hợp đánh giá và duyệt BGH.
               </p>
             </div>
           </div>
@@ -189,8 +225,37 @@ export default function ReportsPage() {
             className="inline-flex items-center justify-center space-x-2 bg-white hover:bg-indigo-50 text-indigo-950 font-black text-xs px-5 py-3 rounded-xl shadow-lg transition-all shrink-0 cursor-pointer"
           >
             <Printer className="w-4 h-4 text-indigo-600" />
-            <span>Mở & In Sổ Chủ Nhiệm (A4) →</span>
+            <span>Mở & In Sổ Chủ Nhiệm →</span>
           </Link>
+        </div>
+
+        {/* Card 5: AI Class Diagnostic Banner */}
+        <div className="bg-gradient-to-r from-purple-900 via-indigo-900 to-blue-900 text-white p-5 rounded-2xl shadow-md md:col-span-2 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start space-x-4">
+            <div className="w-12 h-12 rounded-2xl bg-purple-500/30 backdrop-blur-md flex items-center justify-center text-2xl shadow-inner shrink-0 animate-pulse">
+              🤖
+            </div>
+            <div className="space-y-1">
+              <span className="inline-block bg-purple-400/30 text-purple-200 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider border border-purple-400/30">
+                AI Chẩn Đoán Lớp Học & Họp Phụ Huynh
+              </span>
+              <h3 className="text-base font-black text-white">
+                Trợ Lý AI Chẩn Đoán Sư Phạm & Soạn Báo Cáo Sơ Kết Lớp {classInfo.name}
+              </h3>
+              <p className="text-xs text-purple-200/90 leading-relaxed max-w-xl">
+                Quét phổ điểm toàn lớp, phát hiện điểm trũng kiến thức và tự động soạn sẵn bài phát biểu tổng kết học kỳ của GVCN.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsDiagnosticOpen(true)}
+            className="inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-purple-400 to-pink-400 hover:from-purple-500 hover:to-pink-500 text-purple-950 font-black text-xs px-5 py-3 rounded-xl shadow-lg transition-all shrink-0 cursor-pointer"
+          >
+            <Sparkles className="w-4 h-4 text-purple-900" />
+            <span>Chạy Chẩn Đoán AI Ngay</span>
+          </button>
         </div>
       </div>
 
