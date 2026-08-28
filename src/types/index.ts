@@ -596,3 +596,28 @@ export interface QuizTeam {
   score: number;
   memberIds?: string[];
 }
+
+// Phase 10: Mystery Chest & Secret Gift Box Arena
+export type MysteryChestContentType = 'REWARD' | 'QUESTION' | 'CHALLENGE';
+
+export interface MysteryChestItem {
+  id: string;
+  type: MysteryChestContentType;
+  title: string;
+  badge: string;
+  starPoints?: number;
+  desc: string;
+  answer?: string;
+  color?: string;
+}
+
+export interface MysteryChestPack {
+  id: string;
+  title: string;
+  description: string;
+  category: 'REWARD' | 'CHALLENGE' | 'QUIZ' | 'MIXED';
+  icon: string;
+  items: MysteryChestItem[];
+  isCustom?: boolean;
+}
+
