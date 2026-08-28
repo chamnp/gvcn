@@ -32,6 +32,7 @@ import {
   FileSpreadsheet,
   BarChart3,
   AlertTriangle,
+  Send,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { TERMS, PRIMARY_SUBJECTS } from '@/lib/tt27-engine';
@@ -47,6 +48,7 @@ import {
   downloadQuestionBankTemplate,
 } from '@/lib/question-bank-importer';
 import { ImportQuestionBankModal } from '@/components/matrix-exam/import-question-bank-modal';
+import { AssignQuizModal } from '@/components/quiz/assign-quiz-modal';
 import { toast } from 'sonner';
 
 const STORAGE_KEY = 'gvcn_pro_question_bank_v2';
@@ -79,6 +81,7 @@ export default function MatrixExamPage() {
 
   // Modals
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [isQuestionModalOpen, setIsQuestionModalOpen] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState<ExamQuestion | null>(null);
 
@@ -472,6 +475,15 @@ export default function MatrixExamPage() {
           >
             <Printer className="w-4 h-4" />
             <span>In Đề Thi (Ctrl + P)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsAssignModalOpen(true)}
+            className="inline-flex items-center space-x-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-xs px-4 py-2 rounded-xl shadow-md transition-all cursor-pointer"
+          >
+            <Send className="w-3.5 h-3.5" />
+            <span>Giao Bài Cho HS</span>
           </button>
         </div>
       </div>
@@ -1262,6 +1274,17 @@ export default function MatrixExamPage() {
           </div>
         </div>
       )}
+
+      {/* ========================================================================= */}
+      {/* 10. MODAL: GIAO BÀI TẬP TRẮC NGHIỆM ONLINE */}
+      {/* ========================================================================= */}
+      <AssignQuizModal
+        isOpen={isAssignModalOpen}
+        onClose={() => setIsAssignModalOpen(false)}
+        selectedQuestions={examQuestions}
+        subjectCode={selectedSubject}
+        subjectName={currentSubjectObj.name}
+      />
     </div>
   );
 }

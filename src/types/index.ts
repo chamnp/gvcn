@@ -221,7 +221,26 @@ export interface HomeworkAssignment {
   assignedDate: string; // YYYY-MM-DD
   dueDate: string; // YYYY-MM-DD
   reminderNotes?: string; // Dặn dò chuẩn bị sách vở đồ dùng
+  isQuiz?: boolean; // True if this homework is an interactive quiz/exam
+  quizQuestions?: any[]; // ExamQuestion[] from question bank
+  timeLimitMinutes?: number; // e.g. 15, 20, 40 minutes (0 for unlimited)
   createdAt: string;
+}
+
+export interface QuizSubmission {
+  id: string;
+  homeworkId: string;
+  classId: string;
+  studentId: string;
+  studentName: string;
+  answers: Record<string, string>; // questionId -> answer ('A', 'B', 'C', 'D' or text)
+  score: number; // e.g. 9.0
+  totalPoints: number; // e.g. 10.0
+  correctCount: number;
+  totalCount: number;
+  timeSpentSeconds?: number;
+  submittedAt: string;
+  teacherFeedback?: string;
 }
 
 export interface SchoolInfo {

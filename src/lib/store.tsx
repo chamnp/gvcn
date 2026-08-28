@@ -29,6 +29,7 @@ import {
   LeaveRequest,
   ClassMoment,
   ConferenceSlot,
+  QuizSubmission,
 } from '@/types';
 
 export const DEFAULT_AI_GEN_SETTINGS: AIGenerationSettings = {
@@ -149,6 +150,12 @@ interface AppContextType {
   addHomework: (hw: Omit<HomeworkAssignment, 'id' | 'createdAt'>) => void;
   updateHomework: (hw: HomeworkAssignment) => void;
   deleteHomework: (id: string) => void;
+
+  // Quiz Submissions Management
+  quizSubmissions: QuizSubmission[];
+  allQuizSubmissions: QuizSubmission[];
+  submitQuiz: (submission: Omit<QuizSubmission, 'id' | 'submittedAt'>) => QuizSubmission;
+  deleteQuizSubmission: (id: string) => void;
 
   // Class Events Management
   classEvents: ClassEvent[];
@@ -316,6 +323,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [rewardRedemptions, setRewardRedemptions] = useState<RewardRedemption[]>(INITIAL_REDEMPTIONS);
   const [customSubjects, setCustomSubjects] = useState<CustomSubject[]>(INITIAL_CUSTOM_SUBJECTS);
   const [allHomeworks, setAllHomeworks] = useState<HomeworkAssignment[]>(INITIAL_HOMEWORKS);
+  const [allQuizSubmissions, setAllQuizSubmissions] = useState<QuizSubmission[]>([]);
   const [allClassEvents, setAllClassEvents] = useState<ClassEvent[]>(INITIAL_CLASS_EVENTS);
   const [allTimetables, setAllTimetables] = useState<TimetableSlot[]>(
     INITIAL_TIMETABLE.map((t) => ({ ...t, classId: 'class-4a1' }))
@@ -722,6 +730,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const savedConf = localStorage.getItem(STORAGE_PREFIX + 'conferenceSlots');
       if (savedConf) {
         try { setConferenceSlots(JSON.parse(savedConf)); } catch (e) {}
+      }
+
+      const savedQuizSubs = localStorage.getItem(STORAGE_PREFIX + 'quizSubmissions');
+      if (savedQuizSubs) {
+        try { setAllQuizSubmissions(JSON.parse(savedQuizSubs)); } catch (e) {}
       }
     } catch (e) {
       console.warn('Error reading from localStorage:', e);
@@ -3144,6 +3157,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     supabase.from('ConferenceSlot').delete().eq('id', slotId).then();
   };
 
+  const quizSubmissions = useMemo(
+    () => allQuizSubmissions.filter((s) => (s.classId || 'class-4a1') === activeClassId),
+    [allQuizSubmissions, activeClassId]
+  );
+
+  const submitQuiz = (data: Omit<QuizSubmission, 'id' | 'submittedAt'>): QuizSubmission => {
+    const newSubmission: QuizSubmission = {
+      ...data,
+      id: `sub-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+      submittedAt: new Date().toISOString(),
+    };
+    setAllQuizSubmissions((prev) => {
+      const filtered = prev.filter(
+        (s) => !(s.homeworkId === newSubmission.homeworkId && s.studentId === newSubmission.studentId)
+      );
+      const next = [newSubmission, ...filtered];
+      try {
+        localStorage.setItem(STORAGE_PREFIX + 'quizSubmissions', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+    return newSubmission;
+  };
+
+  const deleteQuizSubmission = (id: string) => {
+    setAllQuizSubmissions((prev) => {
+      const next = prev.filter((s) => s.id !== id);
+      try {
+        localStorage.setItem(STORAGE_PREFIX + 'quizSubmissions', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -3192,6 +3239,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addHomework,
         updateHomework,
         deleteHomework,
+        quizSubmissions,
+        allQuizSubmissions,
+        submitQuiz,
+        deleteQuizSubmission,
         classEvents,
         allClassEvents,
         addClassEvent,
