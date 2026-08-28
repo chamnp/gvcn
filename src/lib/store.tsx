@@ -30,6 +30,7 @@ import {
   ClassMoment,
   ConferenceSlot,
   QuizSubmission,
+  IEPPlan,
 } from '@/types';
 
 export const DEFAULT_AI_GEN_SETTINGS: AIGenerationSettings = {
@@ -300,9 +301,59 @@ interface AppContextType {
   ) => void;
   cancelConferenceBooking: (slotId: string) => void;
   deleteConferenceSlot: (slotId: string) => void;
+
+  // Phase 7: IEP Plans Management
+  iepPlans: IEPPlan[];
+  allIEPPlans: IEPPlan[];
+  addIEPPlan: (plan: Omit<IEPPlan, 'id' | 'createdAt'>) => IEPPlan;
+  updateIEPPlan: (plan: IEPPlan) => void;
+  deleteIEPPlan: (id: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
+
+export const INITIAL_IEP_PLANS: IEPPlan[] = [
+  {
+    id: 'iep-01',
+    studentId: 'st-07',
+    studentName: 'Trần Văn Đức',
+    classId: 'class-4a1',
+    category: 'CAN_HO_TRO',
+    subjectCodes: ['TOAN', 'TIENG_VIET'],
+    difficultyAreas: ['Tính nhẩm phép trừ có nhớ trong phạm vi 1000', 'Đọc ngọng âm L/N', 'Chính tả còn sai phụ âm đầu'],
+    strengths: 'Chăm chỉ, lễ phép, thích môn Mỹ thuật và vẽ tranh rất đẹp.',
+    shortTermGoal: 'Nắm vững quy tắc trừ có nhớ 3 chữ số, phát âm đúng L/N trong giờ đọc và giảm 50% lỗi chính tả.',
+    interventionStrategies: '- Chia nhỏ phép tính và dùng que tính/mô hình trực quan.\n- Sử dụng thẻ từ flashcard phân biệt L/N đầu mỗi tiết học.\n- Xếp em ngồi cùng bạn Đỗ Thu Hằng (Lớp phó học tập) để hỗ trợ 1-1.',
+    buddyStudentId: 'st-05',
+    buddyStudentName: 'Đỗ Thu Hằng',
+    parentAction: 'Gia đình cùng con đọc to 10 phút truyện cổ tích mỗi tối và kiểm tra bài tập nháp trước khi viết vào vở.',
+    evaluationNotes: 'Em đã có nhiều tiến bộ, đọc tự tin hơn và tính nhẩm phép cộng trừ nhanh hơn 30%.',
+    status: 'IN_PROGRESS',
+    startDate: '2026-08-20',
+    reviewDate: '2026-09-30',
+    createdAt: '2026-08-20T08:00:00Z',
+  },
+  {
+    id: 'iep-02',
+    studentId: 'st-01',
+    studentName: 'Nguyễn Văn An',
+    classId: 'class-4a1',
+    category: 'NANG_KHIEU',
+    subjectCodes: ['TOAN', 'TIN_HOC'],
+    difficultyAreas: [],
+    strengths: 'Tư duy logic xuất sắc, tính nhẩm cực nhanh, hào hứng với các bài toán đố tư duy và thuật toán Scratch.',
+    shortTermGoal: 'Hoàn thành các bài toán tư duy Olympic Toán Tiểu học và tham gia Đội tuyển Tin học trẻ của trường.',
+    interventionStrategies: '- Giao thêm 2-3 bài toán mở rộng Mức 3 (Vận dụng cao) sau khi hoàn thành bài tập chung của lớp.\n- Hướng dẫn em làm bài tập dự án STEM và hỗ trợ các bạn trong nhóm học tập.',
+    buddyStudentId: 'st-02',
+    buddyStudentName: 'Trần Thị Bình',
+    parentAction: 'Tạo điều kiện cho em tham gia CLB Toán tư duy và rèn luyện kỹ năng tự học.',
+    evaluationNotes: 'Em đạt 10/10 các bài kiểm tra định kỳ và tích cực hướng dẫn các bạn trong tổ.',
+    status: 'IN_PROGRESS',
+    startDate: '2026-08-20',
+    reviewDate: '2026-10-15',
+    createdAt: '2026-08-20T08:30:00Z',
+  },
+];
 
 const STORAGE_PREFIX = 'gvcn_pro_';
 
@@ -324,6 +375,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [customSubjects, setCustomSubjects] = useState<CustomSubject[]>(INITIAL_CUSTOM_SUBJECTS);
   const [allHomeworks, setAllHomeworks] = useState<HomeworkAssignment[]>(INITIAL_HOMEWORKS);
   const [allQuizSubmissions, setAllQuizSubmissions] = useState<QuizSubmission[]>([]);
+  const [allIEPPlans, setAllIEPPlans] = useState<IEPPlan[]>(INITIAL_IEP_PLANS);
   const [allClassEvents, setAllClassEvents] = useState<ClassEvent[]>(INITIAL_CLASS_EVENTS);
   const [allTimetables, setAllTimetables] = useState<TimetableSlot[]>(
     INITIAL_TIMETABLE.map((t) => ({ ...t, classId: 'class-4a1' }))
@@ -735,6 +787,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const savedQuizSubs = localStorage.getItem(STORAGE_PREFIX + 'quizSubmissions');
       if (savedQuizSubs) {
         try { setAllQuizSubmissions(JSON.parse(savedQuizSubs)); } catch (e) {}
+      }
+
+      const savedIEP = localStorage.getItem(STORAGE_PREFIX + 'iepPlans');
+      if (savedIEP) {
+        try { setAllIEPPlans(JSON.parse(savedIEP)); } catch (e) {}
       }
     } catch (e) {
       console.warn('Error reading from localStorage:', e);
@@ -3191,6 +3248,52 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  // Phase 7: IEP Plans Actions
+  const iepPlans = useMemo(
+    () => allIEPPlans.filter((p) => (p.classId || 'class-4a1') === activeClassId),
+    [allIEPPlans, activeClassId]
+  );
+
+  const addIEPPlan = (data: Omit<IEPPlan, 'id' | 'createdAt'>): IEPPlan => {
+    const newPlan: IEPPlan = {
+      ...data,
+      id: `iep-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      classId: data.classId || activeClassId,
+      createdAt: new Date().toISOString(),
+    };
+    setAllIEPPlans((prev) => {
+      const next = [newPlan, ...prev];
+      try {
+        localStorage.setItem(STORAGE_PREFIX + 'iepPlans', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+    toast.success(`Đã tạo Kế hoạch Giáo dục Cá nhân cho em ${newPlan.studentName}!`);
+    return newPlan;
+  };
+
+  const updateIEPPlan = (updated: IEPPlan) => {
+    setAllIEPPlans((prev) => {
+      const next = prev.map((p) => (p.id === updated.id ? { ...updated, updatedAt: new Date().toISOString() } : p));
+      try {
+        localStorage.setItem(STORAGE_PREFIX + 'iepPlans', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+    toast.success(`Đã cập nhật Kế hoạch IEP của em ${updated.studentName}!`);
+  };
+
+  const deleteIEPPlan = (id: string) => {
+    setAllIEPPlans((prev) => {
+      const next = prev.filter((p) => p.id !== id);
+      try {
+        localStorage.setItem(STORAGE_PREFIX + 'iepPlans', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+    toast.success('Đã xóa hồ sơ Kế hoạch IEP!');
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -3243,6 +3346,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         allQuizSubmissions,
         submitQuiz,
         deleteQuizSubmission,
+        iepPlans,
+        allIEPPlans,
+        addIEPPlan,
+        updateIEPPlan,
+        deleteIEPPlan,
         classEvents,
         allClassEvents,
         addClassEvent,

@@ -413,4 +413,42 @@ export interface ConferenceSlot {
   createdAt: string;
 }
 
+// Phase 7: Individualized Education Plan (IEP) & Remedial / Gifted Student Support
+export type IEPCategory = 'CAN_HO_TRO' | 'NANG_KHIEU';
+export type IEPStatus = 'IN_PROGRESS' | 'COMPLETED' | 'NEEDS_ADJUSTMENT';
+
+export interface IEPPlan {
+  id: string;
+  studentId: string;
+  studentName: string;
+  classId: string;
+  category: IEPCategory;
+  subjectCodes: string[]; // e.g. ['TOAN', 'TIENG_VIET']
+  difficultyAreas: string[]; // e.g. ['Tính nhẩm có nhớ', 'Đọc ngọng l/n']
+  strengths?: string; // Thế mạnh của em
+  shortTermGoal: string; // Mục tiêu ngắn hạn (1 tháng)
+  interventionStrategies: string; // Biện pháp sư phạm can thiệp
+  buddyStudentId?: string; // Đôi bạn cùng tiến
+  buddyStudentName?: string;
+  parentAction?: string; // Kế hoạch phối hợp với phụ huynh
+  evaluationNotes?: string; // Đánh giá tiến bộ
+  status: IEPStatus;
+  startDate: string; // YYYY-MM-DD
+  reviewDate: string; // YYYY-MM-DD
+  createdAt: string;
+  updatedAt?: string;
+}
+
+// Phase 7: Digital Praise Postcards
+export interface PraiseCardTemplate {
+  id: string;
+  title: string;
+  category: 'HOC_TAP' | 'NE_NEP' | 'PHAM_CHAT' | 'TIEN_BO' | 'DAC_BIET';
+  badge: string; // Emoji
+  bgGradient: string;
+  borderColor: string;
+  textColor: string;
+  defaultMessage: string;
+}
+
 

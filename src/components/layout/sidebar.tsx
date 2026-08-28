@@ -21,9 +21,10 @@ import {
   LogOut,
   UserCircle,
   ShieldCheck,
-  ChevronDown,
   BookOpen,
   Camera,
+  Tv,
+  Target,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useAuth } from '@/lib/auth-context';
@@ -33,6 +34,7 @@ export const NAV_ITEMS = [
   { href: '/admin', label: 'Quản Trị Trường', icon: ShieldCheck, badge: 'Admin' },
   { href: '/', label: 'Tổng quan Lớp', icon: LayoutDashboard, badge: null },
   { href: '/students', label: 'Hồ sơ Học sinh', icon: Users, badge: null },
+  { href: '/classroom-tools', label: 'Công cụ Lớp học', icon: Tv, badge: 'Smart TV' },
   { href: '/homework', label: 'Giao bài tập (QR)', icon: BookOpen, badge: 'Mới' },
   { href: '/moments', label: 'Khoảnh khắc Lớp', icon: Camera, badge: 'Feed' },
   { href: '/seating-chart', label: 'Sơ đồ Lớp học', icon: Grid3X3, badge: null },
@@ -40,6 +42,7 @@ export const NAV_ITEMS = [
   { href: '/timetable', label: 'Thời khóa biểu', icon: Calendar, badge: '2 Buổi' },
   { href: '/behavior', label: 'Nề nếp & Tích sao', icon: Award, badge: null },
   { href: '/assessment', label: 'Đánh giá TT 27', icon: FileSpreadsheet, badge: 'Cốt lõi' },
+  { href: '/iep', label: 'Kế hoạch IEP TT27', icon: Target, badge: 'Phụ đạo' },
   { href: '/matrix-exam', label: 'Ma trận Đề TT27', icon: BookOpen, badge: 'Mới' },
   { href: '/ai-assistant', label: 'Trợ lý Nhận xét AI', icon: Sparkles, badge: 'AI Pro' },
   { href: '/reports', label: 'Báo cáo & Xuất Excel', icon: FileDown, badge: null },
