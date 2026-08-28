@@ -393,7 +393,7 @@ export const INITIAL_PARENT_MEETINGS: ParentMeetingDoc[] = [
     meetingType: 'DAU_NAM',
     title: 'Hội Nghị Cha Mẹ Học Sinh Đầu Năm Học 2026 - 2027',
     meetingDate: '2026-09-12',
-    location: 'Phòng học Lớp 4A1',
+    location: 'Phòng học Lớp 4A1 (Tầng 2 - Dãy nhà A)',
     presidedBy: 'Cô giáo Nguyễn Thị Hương (GVCN)',
     secretary: 'Bà Trần Thu Trang (Phụ huynh em Nguyễn Văn An)',
     attendeesCount: 38,
@@ -402,6 +402,156 @@ export const INITIAL_PARENT_MEETINGS: ParentMeetingDoc[] = [
       { role: 'TRUONG_BAN', fullName: 'Ông Nguyễn Văn Hùng', phone: '0912.345.678', studentName: 'Nguyễn Văn An' },
       { role: 'PHO_BAN', fullName: 'Bà Lê Thu Thảo', phone: '0988.765.432', studentName: 'Trần Thị Bình' },
       { role: 'UY_VIEN', fullName: 'Bà Đỗ Hải Yến', phone: '0977.123.456', studentName: 'Đỗ Thu Hằng' },
+    ],
+    agendaTopics: [
+      {
+        id: 'ag-01',
+        title: '1. Chào Mừng & Giới Thiệu Mục Tiêu Cuộc Họp',
+        iconEmoji: '👋',
+        durationMinutes: 5,
+        layout: 'TITLE',
+        isEnabled: true,
+        talkingPoints: [
+          'Gửi lời chào trân trọng và cảm ơn chân thành đến Quý phụ huynh đã dành thời gian tham dự.',
+          'Mục đích cuộc họp: Thống nhất kế hoạch giáo dục, quy chế nề nếp và bầu Ban đại diện CMHS.',
+          'Thông điệp chủ đạo: "Đồng hành gắn kết - Vì một lớp học hạnh phúc và tỏa sáng".',
+        ],
+        importantNote: 'Tạo không khí ấm áp, gần gũi, cởi mở ngay từ những phút đầu tiên.',
+      },
+      {
+        id: 'ag-02',
+        title: '2. Báo Cáo Đặc Điểm Tình Hình Lớp 4A1',
+        iconEmoji: '👥',
+        durationMinutes: 10,
+        layout: 'STATS',
+        isEnabled: true,
+        talkingPoints: [
+          'Tổng sĩ số: 40 học sinh (22 Nam, 18 Nữ) — 100% đúng độ tuổi quy định.',
+          'Bán trú: 38 em đăng ký ăn trưa và nghỉ trưa tại trường.',
+          'Thuận lợi: Phòng học trang bị Smart TV/Máy chiếu, phụ huynh nhiệt tình, học sinh ngoan ngoãn.',
+          'Khó khăn: Một số em còn bỡ ngỡ với lượng kiến thức Lớp 4 (bước ngoặt chuyển cấp tiểu học).',
+        ],
+        importantNote: 'Nhấn mạnh đặc thù tâm sinh lý và chương trình học lớp 4 đòi hỏi tính tự lập cao hơn.',
+      },
+      {
+        id: 'ag-03',
+        title: '3. Chương Trình GDPT 2018 & Quy Chế Đánh Giá TT27',
+        iconEmoji: '📚',
+        durationMinutes: 20,
+        layout: 'GRID_CARDS',
+        isEnabled: true,
+        talkingPoints: [
+          'Đánh giá theo Thông tư 27/2020/TT-BGDĐT: Đánh giá thường xuyên bằng nhận xét khích lệ.',
+          'Môn học & hoạt động: Xếp loại 3 mức (T - Hoàn thành tốt, H - Hoàn thành, C - Chưa hoàn thành).',
+          '5 Phẩm chất & 10 Năng lực: Rèn luyện tính trung thực, chăm chỉ, trách nhiệm và tự học.',
+          'Không so sánh áp đặt điểm số giữa các học sinh, tôn trọng sự tiến bộ và cá tính riêng.',
+        ],
+        importantNote: 'Giải thích rõ để phụ huynh không bị áp lực về bảng điểm số, tập trung vào sự tiến bộ hàng ngày.',
+      },
+      {
+        id: 'ag-04',
+        title: '4. Quy Định Nề Nếp, Chuyên Cần & Bán Trú',
+        iconEmoji: '🍱',
+        durationMinutes: 15,
+        layout: 'BULLETS',
+        isEnabled: true,
+        talkingPoints: [
+          'Giờ giấc: Có mặt tại lớp trước 7h30 sáng; tan học buổi chiều lúc 16h30.',
+          'Đồng phục: Mặc đồng phục trường vào thứ Hai, thứ Tư, thứ Sáu; đeo khăn quàng đỏ đầy đủ.',
+          'Đơn xin nghỉ phép: Gửi trực tuyến qua Cổng Lớp Học hoặc báo GVCN trước 7h15 để chốt suất ăn bán trú.',
+          'Đồ dùng học tập: Chuẩn bị đầy đủ sách vở, bút mực, thước kẻ theo thời khóa biểu 2 buổi/ngày.',
+        ],
+        importantNote: 'Nhắc nhở phụ huynh phối hợp rèn thói quen tự xếp sách vở vào cặp từ tối hôm trước.',
+      },
+      {
+        id: 'ag-05',
+        title: '5. Bầu Ban Đại Diện Cha Mẹ Học Sinh Lớp',
+        iconEmoji: '🤝',
+        durationMinutes: 15,
+        layout: 'COMMITTEE',
+        isEnabled: true,
+        talkingPoints: [
+          'Tiêu chuẩn: Phụ huynh nhiệt tình, có trách nhiệm, có thời gian gắn kết cùng tập thể lớp.',
+          'Cơ cấu: 01 Trưởng ban, 01 Phó ban, 01 Ủy viên.',
+          'Nhiệm vụ: Cầu nối trao đổi thông tin giữa GVCN, Nhà trường và toàn thể phụ huynh.',
+        ],
+        importantNote: 'Tiến hành biểu quyết dân chủ, công khai và minh bạch.',
+      },
+      {
+        id: 'ag-06',
+        title: '6. Thảo Luận, Hỏi Đáp & Ký Cam Kết Đồng Hành',
+        iconEmoji: '💬',
+        durationMinutes: 20,
+        layout: 'SPEECH',
+        isEnabled: true,
+        talkingPoints: [
+          'Kính mời Quý phụ huynh phát biểu ý kiến đóng góp xây dựng kế hoạch lớp.',
+          'GVCN giải đáp các thắc mắc về bán trú, câu lạc bộ ngoại khóa và phương pháp tự học ở nhà.',
+          'Ký bản cam kết phối hợp giáo dục giữa Gia đình & Nhà trường năm học 2026 - 2027.',
+        ],
+        importantNote: 'Lắng nghe chân thành, ghi chép đầy đủ vào biên bản cuộc họp.',
+      },
+    ],
+    individualNotes: [
+      {
+        studentId: 'st-01',
+        studentName: 'Nguyễn Văn An',
+        academicSummary: 'Tiếp thu bài cực nhanh, xuất sắc môn Toán & Tin học.',
+        behaviorSummary: 'Ngoan ngoãn, gương mẫu, tích cực giơ tay phát biểu.',
+        actionItemForParents: 'Khuyến khích con rèn thêm chữ viết nắn nót và đọc thêm sách mở rộng vốn từ.',
+        isPriorityDiscussion: false,
+        parentPhone: '0912.345.678',
+      },
+      {
+        studentId: 'st-02',
+        studentName: 'Trần Thị Bình',
+        academicSummary: 'Chăm chỉ, học đều các môn, chữ viết rất đẹp.',
+        behaviorSummary: 'Lễ phép, hòa đồng, là Đôi bạn cùng tiến gương mẫu.',
+        actionItemForParents: 'Lưu ý kiểm tra độ cận thị định kỳ vì con bị cận 1.5D.',
+        isPriorityDiscussion: false,
+        parentPhone: '0988.765.432',
+      },
+      {
+        studentId: 'st-07',
+        studentName: 'Trần Văn Đức',
+        academicSummary: 'Tính nhẩm phép trừ có nhớ còn chậm, đọc đôi lúc nhầm L/N.',
+        behaviorSummary: 'Hiền lành, hơi rụt rè, thích môn Mỹ thuật và vẽ tranh.',
+        actionItemForParents: 'Cần gặp riêng: Gia đình cùng con đọc truyện to 10p mỗi tối và rèn tính nhẩm kiên nhẫn.',
+        isPriorityDiscussion: true,
+        parentPhone: '0933.555.777',
+      },
+      {
+        studentId: 'st-05',
+        studentName: 'Đỗ Thu Hằng',
+        academicSummary: 'Năng khiếu Tiếng Việt, viết văn cảm xúc, diễn đạt tốt.',
+        behaviorSummary: 'Tự tin, năng nổ, quản lý tổ học tập rất tốt.',
+        actionItemForParents: 'Tiếp tục phát huy thế mạnh làm MC và phụ trách Đội của lớp.',
+        isPriorityDiscussion: false,
+        parentPhone: '0977.123.456',
+      },
+    ],
+    aiSpeechScript: `Kính thưa toàn thể Quý phụ huynh học sinh Lớp 4A1!
+
+Lời đầu tiên, cho phép tôi - Nguyễn Thị Hương, Giáo viên chủ nhiệm lớp 4A1 - được gửi lời chào trân trọng nhất và lời cảm ơn chân thành tới toàn thể Quý vị đã dành thời gian quý báu về tham dự buổi Hội nghị Cha mẹ học sinh đầu năm học 2026 - 2027 hôm nay.
+
+Năm học Lớp 4 là một năm học vô cùng đặc biệt. Đây là giai đoạn chuyển tiếp quan trọng ở bậc Tiểu học khi khối lượng kiến thức các môn Toán, Tiếng Việt, Khoa học bắt đầu nâng cao và đòi hỏi các con tư duy độc lập, tự giác hơn rất nhiều.
+
+Tập thể Lớp 4A1 của chúng ta năm nay gồm 40 học sinh (22 nam, 18 nữ), với 38 em ăn bán trú. Qua những tuần đầu làm quen, tôi vô cùng vui mừng nhận thấy các con rất ngoan ngoãn, lễ phép, hòa đồng và luôn sẵn sàng giúp đỡ bạn bè. 
+
+Để giúp các con phát triển toàn diện cả về tri thức lẫn nhân cách theo đúng tinh thần Thông tư 27/2020 của Bộ Giáo dục & Đào tạo, tôi rất mong muốn nhận được sự đồng hành chặt chẽ, thấu hiểu và chia sẻ từ Quý phụ huynh. Chúng ta không đặt nặng áp lực điểm số, mà sẽ cùng nhau ghi nhận từng bước tiến bộ nhỏ mỗi ngày của các con.
+
+Xin kính chúc Quý phụ huynh sức khỏe, hạnh phúc và thành công. Chúc cho tập thể Lớp 4A1 của chúng ta một năm học mới gặt hái thật nhiều niềm vui và thành tích rực rỡ!
+
+Xin trân trọng cảm ơn!`,
+    faqList: [
+      {
+        question: 'Lên lớp 4 chương trình có nặng hơn nhiều không và làm sao để con không bị đuối?',
+        suggestedAnswer: 'Chương trình Lớp 4 mở rộng nhiều dạng toán tư duy và bài văn miêu tả. Cô giáo sẽ phân hóa bài tập theo 3 mức độ, có đôi bạn cùng tiến kèm cặp và gửi bài luyện tập trực tuyến nhẹ nhàng. Phụ huynh chỉ cần đồng hành nhắc con ôn bài 30-45 phút mỗi tối.',
+      },
+      {
+        question: 'Chế độ ăn bán trú và ngủ trưa của các con được chăm sóc như thế nào?',
+        suggestedAnswer: 'Bếp ăn trường thực hiện nghiêm ngặt quy trình vệ sinh an toàn thực phẩm 3 bước, thực đơn thay đổi theo tuần. Phòng ngủ bán trú có điều hòa, chiếu cói sạch sẽ và cô giáo chủ nhiệm cùng cô bảo mẫu trực tiếp quản lý giấc ngủ trưa.',
+      },
     ],
     mainReports: [
       'Báo cáo đặc điểm tình hình lớp 4A1: Sĩ số 40 em (22 Nam, 18 Nữ), 38 em ăn bán trú.',

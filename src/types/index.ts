@@ -461,6 +461,29 @@ export interface ParentCommitteeMember {
   studentName: string;
 }
 
+export type MeetingSlideLayout = 'TITLE' | 'STATS' | 'BULLETS' | 'GRID_CARDS' | 'COMMITTEE' | 'SPEECH';
+
+export interface MeetingAgendaTopic {
+  id: string;
+  title: string;
+  iconEmoji: string;
+  durationMinutes: number;
+  layout: MeetingSlideLayout;
+  talkingPoints: string[];
+  importantNote?: string;
+  isEnabled: boolean;
+}
+
+export interface IndividualStudentMeetingNote {
+  studentId: string;
+  studentName: string;
+  academicSummary: string;
+  behaviorSummary: string;
+  actionItemForParents: string;
+  isPriorityDiscussion: boolean;
+  parentPhone?: string;
+}
+
 export interface ParentMeetingDoc {
   id: string;
   classId: string;
@@ -473,10 +496,15 @@ export interface ParentMeetingDoc {
   attendeesCount: number;
   totalParents: number;
   committeeMembers: ParentCommitteeMember[];
+  agendaTopics: MeetingAgendaTopic[];
+  individualNotes: IndividualStudentMeetingNote[];
+  aiSpeechScript?: string;
+  faqList?: { question: string; suggestedAnswer: string }[];
   mainReports: string[];
   discussionNotes: string;
   agreedResolutions: string[];
   createdAt: string;
+  updatedAt?: string;
 }
 
 // Phase 8: School Health Records & BMI
