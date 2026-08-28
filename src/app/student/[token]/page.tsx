@@ -609,14 +609,14 @@ export default function StudentPrivateReportPage({
             </div>
 
             {/* Badges / Honors */}
-            <div className="flex flex-wrap sm:flex-col items-start sm:items-end gap-1.5 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-              <div className="h-8 px-3 inline-flex items-center space-x-1.5 bg-amber-50 border border-amber-300 text-amber-900 rounded-xl shadow-xs text-xs font-black">
-                <Crown className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:flex md:flex-col items-stretch md:items-end gap-2 w-full md:w-auto shrink-0 pt-3 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+              <div className="h-9 px-3.5 inline-flex items-center justify-center space-x-1.5 bg-amber-50 border border-amber-300 text-amber-900 rounded-xl shadow-2xs text-xs font-black">
+                <Crown className="w-4 h-4 text-amber-600 shrink-0" />
                 <span>Hạng #{studentRankInClass} Thi Đua Tháng</span>
               </div>
 
-              <div className="h-8 px-3 inline-flex items-center space-x-1.5 bg-purple-50 border border-purple-200 text-purple-800 rounded-xl text-xs font-bold">
-                <Star className="w-3.5 h-3.5 text-purple-600 fill-purple-600 shrink-0" />
+              <div className="h-9 px-3.5 inline-flex items-center justify-center space-x-1.5 bg-purple-50 border border-purple-200 text-purple-800 rounded-xl text-xs font-bold shadow-2xs">
+                <Star className="w-4 h-4 text-purple-600 fill-purple-600 shrink-0" />
                 <span>{studentMonthlyStars.available} ⭐ Khả Dụng Đổi Quà</span>
               </div>
             </div>
@@ -624,7 +624,7 @@ export default function StudentPrivateReportPage({
         </div>
 
         {/* 5. MAIN NAVIGATION TABS FOR THIS CHILD */}
-        <div className="flex overflow-x-auto no-scrollbar gap-1.5 bg-white p-1 rounded-2xl border border-slate-200 shadow-xs text-xs font-bold scroll-smooth">
+        <div className="flex overflow-x-auto no-scrollbar gap-1.5 bg-white p-1 rounded-2xl border border-slate-200 shadow-xs text-xs font-bold scroll-smooth -mx-1 sm:mx-0 px-2 sm:px-1">
           {[
             { id: 'REPORT', label: '📊 Điểm & Nhận Xét TT27' },
             { id: 'REWARDS', label: `🎁 Shop Đổi Quà (${studentMonthlyStars.available} ⭐)` },
@@ -976,7 +976,7 @@ export default function StudentPrivateReportPage({
               </div>
 
               {/* CART SIDEBAR / CHECKOUT SECTION */}
-              <div className="space-y-4">
+              <div id="cart-section" className="space-y-4">
                 <div className="bg-white rounded-3xl border-2 border-purple-200 p-4 sm:p-5 shadow-md space-y-4 sticky top-20">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                     <div className="flex items-center space-x-2">
@@ -1363,6 +1363,36 @@ export default function StudentPrivateReportPage({
           </div>
         )}
       </main>
+
+      {/* FLOATING STICKY BOTTOM CART BAR FOR MOBILE */}
+      {activeTab === 'REWARDS' && cartItems.length > 0 && (
+        <div className="lg:hidden fixed bottom-4 left-3 right-3 z-40 bg-slate-900/95 backdrop-blur-md text-white p-3 rounded-2xl shadow-2xl border border-slate-700 flex items-center justify-between gap-2 animate-in slide-in-from-bottom duration-200">
+          <div className="flex items-center space-x-2.5 min-w-0 flex-1">
+            <div className="w-9 h-9 rounded-xl bg-purple-600 flex items-center justify-center text-white shrink-0 font-bold">
+              <ShoppingCart className="w-4 h-4" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-black truncate">
+                {cartItems.reduce((sum, item) => sum + item.quantity, 0)} Món Quà Trong Giỏ
+              </p>
+              <p className="text-[11px] text-amber-400 font-bold">
+                Tổng: -{totalCartStars} ⭐
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              document.getElementById('cart-section')?.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="h-9 px-4 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-black text-xs rounded-xl shadow-md shrink-0 flex items-center gap-1 cursor-pointer"
+          >
+            <span>Xem Giỏ Hàng</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* 12. CRITERIA MODAL FOR STUDENTS */}
       {isCriteriaModalOpen && (
