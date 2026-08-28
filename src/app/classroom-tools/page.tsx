@@ -41,13 +41,14 @@ import { SmartPairMatcherModal } from '@/components/classroom/smart-pair-matcher
 import { DailyMoodModal } from '@/components/classroom/daily-mood-modal';
 import { BrainBreakModal } from '@/components/classroom/brain-break-modal';
 import { TaskCanvasModal } from '@/components/classroom/task-canvas-modal';
+import { TeamQuizBattleModal } from '@/components/classroom/team-quiz-battle-modal';
 
-type ToolCategory = 'ALL' | 'INTERACTION' | 'MANAGEMENT' | 'ENERGY';
+type ToolCategory = 'ALL' | 'GAMES' | 'INTERACTION' | 'MANAGEMENT' | 'ENERGY';
 
 interface ClassroomToolItem {
   id: string;
   keyNumber: string;
-  category: 'INTERACTION' | 'MANAGEMENT' | 'ENERGY';
+  category: 'GAMES' | 'INTERACTION' | 'MANAGEMENT' | 'ENERGY';
   title: string;
   shortTitle: string;
   desc: string;
@@ -84,6 +85,7 @@ export default function ClassroomToolsPage() {
   const [isMoodOpen, setIsMoodOpen] = useState(false);
   const [isBrainBreakOpen, setIsBrainBreakOpen] = useState(false);
   const [isTaskCanvasOpen, setIsTaskCanvasOpen] = useState(false);
+  const [isTeamQuizOpen, setIsTeamQuizOpen] = useState(false);
 
   // Digital Clock
   useEffect(() => {
@@ -98,7 +100,7 @@ export default function ClassroomToolsPage() {
     return () => clearInterval(timer);
   }, []);
 
-  // Keyboard Shortcuts (1-9, 0, Cmd+K)
+  // Keyboard Shortcuts (1-9, 0, G, Cmd+K)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't trigger if typing in an input
@@ -110,7 +112,11 @@ export default function ClassroomToolsPage() {
         return;
       }
 
-      switch (e.key) {
+      switch (e.key.toLowerCase()) {
+        case 'g':
+          e.preventDefault();
+          setIsTeamQuizOpen(true);
+          break;
         case '1':
           e.preventDefault();
           setIsWheelOpen(true);
@@ -162,6 +168,24 @@ export default function ClassroomToolsPage() {
 
   const TOOLS: ClassroomToolItem[] = useMemo(
     () => [
+      // 0. Team Quiz Arena (Game Học Tập Mới)
+      {
+        id: 'quizgame',
+        keyNumber: 'G',
+        category: 'GAMES',
+        title: 'Đấu Trí Đua Xe Về Đích — Game Học Tập 2-8 Đội',
+        shortTitle: 'Đua Xe Đấu Trí',
+        desc: 'Game thi đấu trắc nghiệm Toán, Tiếng Việt, Tiếng Anh 2-8 đội/tổ trên Smart TV kèm cộng sao tự động.',
+        iconEmoji: '🏎️',
+        tag: 'Game Học Tập 2-8 Đội',
+        tagColor: 'bg-amber-100/90 text-amber-900 border-amber-300 font-bold',
+        cardBg: 'from-amber-50/95 via-white to-orange-50/50 border-amber-200/90 hover:border-amber-400 hover:shadow-amber-500/20',
+        gradient: 'from-amber-500 via-orange-500 to-red-500',
+        actionText: 'Vào Game [G] →',
+        actionColor: 'text-amber-800 font-black',
+        onClick: () => setIsTeamQuizOpen(true),
+        isOpen: isTeamQuizOpen,
+      },
       // 1. Lucky Wheel
       {
         id: 'wheel',
@@ -492,7 +516,8 @@ export default function ClassroomToolsPage() {
           <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
             {(
               [
-                { id: 'ALL', label: '🌟 Tất Cả (12)', activeClass: 'from-blue-600 to-indigo-600 text-white shadow-blue-500/25' },
+                { id: 'ALL', label: '🌟 Tất Cả (13)', activeClass: 'from-blue-600 to-indigo-600 text-white shadow-blue-500/25' },
+                { id: 'GAMES', label: '🎮 Game Học Tập (Mới)', activeClass: 'from-amber-500 to-orange-600 text-slate-950 shadow-amber-500/25 font-black' },
                 { id: 'INTERACTION', label: '🎲 Tương Tác & Gọi Tên (4)', activeClass: 'from-indigo-600 to-blue-600 text-white shadow-indigo-500/25' },
                 { id: 'MANAGEMENT', label: '⏱️ Quản Lý Tiết Dạy (4)', activeClass: 'from-emerald-600 to-teal-600 text-white shadow-emerald-500/25' },
                 { id: 'ENERGY', label: '🏆 Nề Nếp & Cảm Xúc (4)', activeClass: 'from-purple-600 to-pink-600 text-white shadow-purple-500/25' },
@@ -808,6 +833,13 @@ export default function ClassroomToolsPage() {
       <BrainBreakModal isOpen={isBrainBreakOpen} onClose={() => setIsBrainBreakOpen(false)} className={classInfo.name} />
 
       <TaskCanvasModal isOpen={isTaskCanvasOpen} onClose={() => setIsTaskCanvasOpen(false)} students={students} className={classInfo.name} />
+
+      <TeamQuizBattleModal
+        isOpen={isTeamQuizOpen}
+        onClose={() => setIsTeamQuizOpen(false)}
+        students={students}
+        className={classInfo.name}
+      />
     </div>
   );
 }

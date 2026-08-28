@@ -164,6 +164,7 @@ export interface ClassInfo {
   totalStudents: number;
   seatingGridRows: number;
   seatingGridCols: number;
+  numberOfTeams?: number; // Số lượng tổ trong lớp (2 đến 8 tổ, mặc định: 4)
   shareToken?: string; // Mã ngẫu nhiên bảo mật cho link public phụ huynh (VD: c4a1-8f92a4)
 }
 
@@ -561,4 +562,36 @@ export interface BookBorrowLog {
   ratingStars?: number;
 }
 
+// Phase 9: Classroom Game & Interactive Quiz Arena
+export interface QuizQuestion {
+  id: string;
+  question: string;
+  options: string[]; // 4 options [A, B, C, D]
+  correctIndex: number; // 0, 1, 2, 3
+  explanation?: string;
+  timeLimit?: number; // default 15s
+  subjectCode?: string;
+  grade?: GradeLevel;
+}
 
+export interface QuizPack {
+  id: string;
+  title: string;
+  description: string;
+  subjectCode: string;
+  grade: GradeLevel | 'ALL';
+  category: 'MATH' | 'VIETNAMESE' | 'ENGLISH' | 'SCIENCE_SOCIAL' | 'TRIVIA_LOGIC';
+  questions: QuizQuestion[];
+  isCustom?: boolean;
+}
+
+export interface QuizTeam {
+  id: number;
+  name: string;
+  mascot: string;
+  color: string;
+  gradient: string;
+  trackColor: string;
+  score: number;
+  memberIds?: string[];
+}
