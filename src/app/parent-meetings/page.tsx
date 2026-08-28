@@ -34,6 +34,7 @@ import { toast } from 'sonner';
 export default function ParentMeetingsPage() {
   const {
     parentMeetings,
+    addParentMeetingDoc,
     updateParentMeetingDoc,
     classInfo,
     schoolInfo,
@@ -53,6 +54,55 @@ export default function ParentMeetingsPage() {
   const [studentNoteModalOpen, setStudentNoteModalOpen] = useState(false);
 
   const currentMeeting = activeMeeting || parentMeetings[0];
+
+  const handleCreateNewMeeting = () => {
+    const newDoc = addParentMeetingDoc({
+      classId: classInfo.id,
+      meetingType: 'DAU_NAM',
+      title: `Họp Phụ Huynh Lớp ${classInfo.name} - Đầu Năm Học ${schoolInfo.schoolYear || '2026-2027'}`,
+      meetingDate: new Date().toISOString().split('T')[0],
+      location: `Phòng học lớp ${classInfo.name}`,
+      presidedBy: classInfo.teacherName || 'Giáo viên chủ nhiệm',
+      secretary: 'Ban Thư ký Lớp',
+      attendeesCount: 0,
+      totalParents: students.length,
+      agendaTopics: [],
+      committeeMembers: [],
+      mainReports: [],
+      discussionNotes: '',
+      agreedResolutions: [],
+      individualNotes: [],
+      aiSpeechScript: '',
+      faqList: [],
+    });
+    setActiveMeeting(newDoc);
+    toast.success('Đã tạo cuộc họp phụ huynh mới!');
+  };
+
+  // Empty state guard
+  if (!currentMeeting) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6 animate-in fade-in">
+        <div className="w-24 h-24 rounded-3xl bg-blue-50 flex items-center justify-center text-5xl shadow-sm border border-blue-100">
+          📋
+        </div>
+        <div className="space-y-2 max-w-md">
+          <h2 className="text-2xl font-black text-slate-900">Chưa Có Cuộc Họp Phụ Huynh Nào</h2>
+          <p className="text-sm text-slate-500">
+            Tạo cuộc họp đầu tiên để bắt đầu thiết kế nội dung trao đổi, chuẩn bị slide trình chiếu TV và sổ tay trao đổi 1-1.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={handleCreateNewMeeting}
+          className="inline-flex items-center space-x-2 px-6 py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black text-sm shadow-lg transition-all cursor-pointer"
+        >
+          <Plus className="w-5 h-5" />
+          <span>Tạo Cuộc Họp Phụ Huynh Đầu Tiên</span>
+        </button>
+      </div>
+    );
+  }
 
   if (isPrintingMinutes && currentMeeting) {
     return (
@@ -184,7 +234,7 @@ export default function ParentMeetingsPage() {
           <button
             key={tab.id}
             type="button"
-            onClick={() => setActiveTab(tab.id as any)}
+            onClick={() => setActiveTab(tab.id as 'AGENDA' | 'STUDENTS' | 'SPEECH' | 'MINUTES')}
             className={`px-4 py-2.5 rounded-2xl font-bold text-xs transition-all whitespace-nowrap cursor-pointer ${
               activeTab === tab.id
                 ? 'bg-blue-600 text-white shadow-xs'

@@ -135,6 +135,7 @@ export default function AIAssistantPage() {
           baseUrl: aiConfig?.baseUrl,
         }),
       });
+      if (!res.ok) throw new Error('API returned ' + res.status);
       const data = await res.json();
       if (data.success && Array.isArray(data.models)) {
         setAvailableModels(data.models);

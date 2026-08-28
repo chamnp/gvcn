@@ -13,12 +13,12 @@ import {
   Award,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
-import { ClassroomBook, BookBorrowLog } from '@/types';
+import { ClassroomBook, BookBorrowLog, BookCategory } from '@/types';
 import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
 
 export default function ReadingCornerPage() {
-  const { classroomBooks, bookBorrowLogs, borrowBook, returnBook, students, classInfo } = useAppStore();
+  const { classroomBooks, addClassroomBook, bookBorrowLogs, borrowBook, returnBook, students, classInfo } = useAppStore();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
@@ -29,6 +29,11 @@ export default function ReadingCornerPage() {
   const [selectedStudentId, setSelectedStudentId] = useState<string>(students[0]?.id || '');
   const [studentReview, setStudentReview] = useState('');
   const [ratingStars, setRatingStars] = useState(5);
+  const [isAddBookOpen, setIsAddBookOpen] = useState(false);
+  const [newBookTitle, setNewBookTitle] = useState('');
+  const [newBookAuthor, setNewBookAuthor] = useState('');
+  const [newBookCategory, setNewBookCategory] = useState<BookCategory>('VAN_HOC');
+  const [newBookQuantity, setNewBookQuantity] = useState(1);
 
   const filteredBooks = useMemo(() => {
     return classroomBooks.filter((b) => {
@@ -68,6 +73,25 @@ export default function ReadingCornerPage() {
     });
 
     setIsBorrowModalOpen(false);
+  };
+
+  const handleAddBookSubmit = () => {
+    if (!newBookTitle.trim() || !newBookAuthor.trim()) return;
+    addClassroomBook({
+      classId: classInfo.id,
+      code: `S${classroomBooks.length + 1}`.padStart(4, '0'),
+      title: newBookTitle.trim(),
+      author: newBookAuthor.trim(),
+      category: newBookCategory,
+      totalCopies: newBookQuantity,
+      availableCopies: newBookQuantity,
+      coverEmoji: '📖',
+    });
+    setIsAddBookOpen(false);
+    setNewBookTitle('');
+    setNewBookAuthor('');
+    setNewBookQuantity(1);
+    toast.success(`Đã thêm sách "${newBookTitle.trim()}" vào tủ sách lớp!`);
   };
 
   const handleReturnSubmit = () => {
@@ -372,6 +396,52 @@ export default function ReadingCornerPage() {
           </div>
         </div>
       )}
+
+      {/* Add Book Modal */}
+      {isAddBookOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in" onClick={() => setIsAddBookOpen(false)}>
+          <div className="bg-white max-w-md w-full rounded-3xl overflow-hidden shadow-2xl border border-slate-200" onClick={(e) => e.stopPropagation()}>
+            <div className="p-5 border-b border-slate-100 bg-gradient-to-r from-emerald-600 to-teal-600 text-white">
+              <h3 className="font-black text-base">📚 Thêm Sách Mới Vào Tủ Sách Lớp</h3>
+              <p className="text-xs text-emerald-100">Bổ sung sách vào kho lưu trữ của lớp</p>
+            </div>
+            <div className="p-5 space-y-4 text-xs text-slate-700">
+              <div>
+                <label className="block font-bold mb-1">Tên Sách (*):</label>
+                <input type="text" value={newBookTitle} onChange={(e) => setNewBookTitle(e.target.value)} placeholder="VD: Dế Mèn Phiêu Lưu Ký..." className="w-full p-2.5 rounded-xl border border-slate-300 text-xs" />
+              </div>
+              <div>
+                <label className="block font-bold mb-1">Tác Giả (*):</label>
+                <input type="text" value={newBookAuthor} onChange={(e) => setNewBookAuthor(e.target.value)} placeholder="VD: Tô Hoài..." className="w-full p-2.5 rounded-xl border border-slate-300 text-xs" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold mb-1">Thể Loại:</label>
+                  <select value={newBookCategory} onChange={(e) => setNewBookCategory(e.target.value as BookCategory)} className="w-full p-2.5 rounded-xl border border-slate-300 text-xs">
+                    <option value="VAN_HOC">Văn Học</option>
+                    <option value="KHOA_HOC">Khoa Học</option>
+                    <option value="TRUYEN_TRANH">Truyện Tranh / Cổ Tích</option>
+                    <option value="KY_NANG_SONG">Kỹ Năng Sống</option>
+                    <option value="LICH_SU">Lịch Sử</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold mb-1">Số Lượng:</label>
+                  <input type="number" min={1} max={20} value={newBookQuantity} onChange={(e) => setNewBookQuantity(Number(e.target.value))} className="w-full p-2.5 rounded-xl border border-slate-300 text-xs text-center" />
+                </div>
+              </div>
+            </div>
+            <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-between">
+              <button type="button" onClick={() => setIsAddBookOpen(false)} className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200 cursor-pointer">Hủy</button>
+              <button type="button" onClick={handleAddBookSubmit} className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs cursor-pointer flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Thêm Sách</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

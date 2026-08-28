@@ -536,7 +536,7 @@ export default function MatrixExamPage() {
           <button
             key={tab.id}
             type="button"
-            onClick={() => setActiveTab(tab.id as any)}
+            onClick={() => setActiveTab(tab.id as 'BANK' | 'MATRIX' | 'EXAM' | 'ANSWER')}
             className={`h-9 px-4 flex items-center justify-center space-x-1.5 rounded-xl transition-all whitespace-nowrap cursor-pointer shrink-0 ${
               activeTab === tab.id
                 ? 'bg-indigo-600 text-white shadow-xs font-black'
@@ -606,7 +606,7 @@ export default function MatrixExamPage() {
 
                 <select
                   value={filterLevel}
-                  onChange={(e) => setFilterLevel(e.target.value as any)}
+                  onChange={(e) => setFilterLevel(e.target.value as 'ALL' | TT27Level)}
                   className="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-bold bg-white text-slate-700"
                 >
                   <option value="ALL">Tất cả Mức độ</option>
@@ -617,7 +617,7 @@ export default function MatrixExamPage() {
 
                 <select
                   value={filterType}
-                  onChange={(e) => setFilterType(e.target.value as any)}
+                  onChange={(e) => setFilterType(e.target.value as 'ALL' | QuestionType)}
                   className="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-bold bg-white text-slate-700 hidden sm:block"
                 >
                   <option value="ALL">Tất cả Dạng</option>

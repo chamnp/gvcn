@@ -547,7 +547,7 @@ export default function BehaviorPage() {
           return (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id as 'TABLE' | 'LEADERBOARD' | 'CRITERIA' | 'SHOP' | 'REDEMPTIONS' | 'HISTORY')}
               className={`h-9 px-3 sm:px-3.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shrink-0 cursor-pointer whitespace-nowrap ${
                 isActive ? 'bg-blue-600 text-white shadow-xs font-black' : 'text-slate-600 hover:bg-slate-100'
               }`}
@@ -776,7 +776,7 @@ export default function BehaviorPage() {
                               </div>
                               <p className="text-[10px] text-slate-400 flex items-center gap-1">
                                 <Clock className="w-3 h-3 text-slate-400" />
-                                <span>{new Date(logDate(latestLog)).toLocaleDateString('vi-VN')}</span>
+                                <span>{new Date(latestLog.date || latestLog.createdAt).toLocaleDateString('vi-VN')}</span>
                               </p>
                             </div>
                           ) : (

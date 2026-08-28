@@ -150,7 +150,7 @@ export default function IEPManagementPage() {
             <button
               key={tab.id}
               type="button"
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id as 'ALL' | 'CAN_HO_TRO' | 'NANG_KHIEU')}
               className={`flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeTab === tab.id
                   ? 'bg-blue-600 text-white shadow-xs'

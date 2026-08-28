@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import {
   Camera,
@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   Trash2,
   ArrowLeft,
+  Upload,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { MomentCategory } from '@/types';
@@ -39,6 +40,24 @@ export default function MomentsPage() {
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [imageUrlInput, setImageUrlInput] = useState('');
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64 = event.target?.result as string;
+        if (base64) {
+          setImageUrls((prev) => [...prev, base64]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
 
   const handleAddImageUrl = (urlToAdd?: string) => {
     const url = urlToAdd || imageUrlInput.trim();
@@ -200,11 +219,29 @@ export default function MomentsPage() {
               ))}
             </div>
 
+            {/* File Upload Button */}
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileUpload}
+              multiple
+              accept="image/*"
+              className="hidden"
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full py-3 border-2 border-dashed border-pink-300 bg-pink-50/50 hover:bg-pink-100/60 rounded-2xl text-xs font-bold text-pink-700 flex items-center justify-center gap-2 cursor-pointer transition-colors"
+            >
+              <Upload className="w-4 h-4" />
+              <span>Tải Ảnh Từ Máy Tính / Điện Thoại</span>
+            </button>
+
             {/* Custom URL Input */}
             <div className="flex gap-2">
               <input
                 type="url"
-                placeholder="Dán đường dẫn ảnh trực tuyến (https://...)..."
+                placeholder="Hoặc dán đường dẫn ảnh (https://...)..."
                 value={imageUrlInput}
                 onChange={(e) => setImageUrlInput(e.target.value)}
                 className="flex-1 px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:ring-2 focus:ring-pink-500 focus:outline-none"

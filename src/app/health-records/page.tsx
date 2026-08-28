@@ -111,7 +111,7 @@ export default function HealthRecordsPage() {
             <button
               key={tab.id}
               type="button"
-              onClick={() => setFilterTab(tab.id as any)}
+              onClick={() => setFilterTab(tab.id as 'ALL' | 'VISION' | 'ALLERGY' | 'BMI')}
               className={`flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 filterTab === tab.id
                   ? 'bg-emerald-600 text-white shadow-xs'

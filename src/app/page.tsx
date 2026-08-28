@@ -90,6 +90,7 @@ function getStudentBirthdayInfo(dobStr: string) {
 export default function DashboardPage() {
   const {
     classInfo,
+    schoolInfo,
     students,
     currentTerm,
     subjectAssessments,
@@ -311,7 +312,7 @@ export default function DashboardPage() {
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 bg-white/15 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold border border-white/20">
               <Compass className="w-3.5 h-3.5 text-yellow-300" />
-              <span>Năm học: <strong>2026-2027</strong></span>
+              <span>Năm học: <strong>{schoolInfo.schoolYear || "2026-2027"}</strong></span>
             </span>
             <span className="inline-flex items-center gap-1.5 bg-yellow-400/20 text-yellow-300 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold border border-yellow-400/30">
               <span>📚 Kỳ: {termName}</span>
