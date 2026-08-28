@@ -521,7 +521,7 @@ export default function StudentPrivateReportPage({
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold flex items-center justify-center text-lg shadow-xs shrink-0">
               👩‍🏫
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <h4 className="font-black text-slate-900 text-xs sm:text-sm truncate">
                 Tương Tác Với GVCN — {studentClass.teacherName}
               </h4>
@@ -531,18 +531,18 @@ export default function StudentPrivateReportPage({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full sm:w-auto shrink-0">
             <button
               type="button"
               onClick={() => setIsLeaveModalOpen(true)}
-              className="inline-flex items-center space-x-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs px-3.5 py-2 rounded-xl border border-blue-200 transition-colors cursor-pointer"
+              className="w-full inline-flex items-center justify-center space-x-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs px-3.5 py-2.5 rounded-xl border border-blue-200 transition-colors cursor-pointer"
             >
               <span>📋 Xin Nghỉ Phép & Dặn Thuốc</span>
             </button>
             <button
               type="button"
               onClick={() => setIsConferenceModalOpen(true)}
-              className="inline-flex items-center space-x-1 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs px-3.5 py-2 rounded-xl border border-purple-200 transition-colors cursor-pointer"
+              className="w-full inline-flex items-center justify-center space-x-1 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold text-xs px-3.5 py-2.5 rounded-xl border border-purple-200 transition-colors cursor-pointer"
             >
               <span>📅 Đặt Lịch Gặp Cô</span>
             </button>
@@ -1276,15 +1276,15 @@ export default function StudentPrivateReportPage({
                 <p className="text-[11px] sm:text-xs text-slate-500">Chương trình học chuẩn 2 buổi/ngày kèm ăn bán trú.</p>
               </div>
 
-              <div className="grid grid-cols-5 gap-1 pt-1 sm:pt-0">
+              <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-1 sm:py-0 sm:grid sm:grid-cols-5">
                 {DAYS_OF_WEEK.map((d) => (
                   <button
                     key={d.id}
                     type="button"
                     onClick={() => setSelectedTimetableDay(d.id)}
-                    className={`h-8 px-2 flex items-center justify-center rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                    className={`h-8 px-2.5 sm:px-2 flex items-center justify-center rounded-xl text-xs font-bold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
                       selectedTimetableDay === d.id
-                        ? 'bg-blue-600 text-white shadow-xs'
+                        ? 'bg-blue-600 text-white shadow-xs font-black'
                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
                   >

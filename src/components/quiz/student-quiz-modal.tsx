@@ -403,10 +403,10 @@ export function StudentQuizModal({
 
         {/* Submit Footer */}
         {!isSubmitted && questions.length > 0 && (
-          <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0">
-            <div className="text-xs text-slate-600 font-bold">
+          <div className="p-3.5 sm:p-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+            <div className="text-xs text-slate-600 font-bold text-center sm:text-left w-full sm:w-auto">
               {Object.keys(answers).length === questions.length ? (
-                <span className="text-emerald-600 flex items-center gap-1">
+                <span className="text-emerald-600 flex items-center justify-center sm:justify-start gap-1">
                   <Check className="w-4 h-4" /> Đã trả lời đầy đủ {questions.length} câu
                 </span>
               ) : (
@@ -417,7 +417,7 @@ export function StudentQuizModal({
             <button
               type="button"
               onClick={handleSubmit}
-              className="inline-flex items-center space-x-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-xs px-6 py-2.5 rounded-2xl shadow-lg transition-all cursor-pointer"
+              className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-xs px-6 py-2.5 rounded-2xl shadow-lg transition-all cursor-pointer"
             >
               <Send className="w-4 h-4" />
               <span>Nộp Bài Thi Ngay</span>

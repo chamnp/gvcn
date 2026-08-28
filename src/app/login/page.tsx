@@ -141,27 +141,30 @@ export default function LoginPage() {
         </div>
 
         {/* Mode Tabs */}
-        <div className="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-xl text-xs font-bold">
+        <div className="grid grid-cols-3 gap-1 bg-slate-100 p-1 rounded-xl text-[11px] sm:text-xs font-bold">
           <button
+            type="button"
             onClick={() => setMode('LOGIN')}
-            className={`py-1.5 rounded-lg transition-all ${
-              mode === 'LOGIN' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+            className={`py-2 rounded-lg transition-all text-center ${
+              mode === 'LOGIN' ? 'bg-white text-slate-900 shadow-xs font-black' : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             Đăng Nhập
           </button>
           <button
+            type="button"
             onClick={() => setMode('SIGNUP')}
-            className={`py-1.5 rounded-lg transition-all ${
-              mode === 'SIGNUP' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+            className={`py-2 rounded-lg transition-all text-center ${
+              mode === 'SIGNUP' ? 'bg-white text-slate-900 shadow-xs font-black' : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             Đăng Ký
           </button>
           <button
+            type="button"
             onClick={() => setMode('MAGIC_LINK')}
-            className={`py-1.5 rounded-lg transition-all ${
-              mode === 'MAGIC_LINK' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-800'
+            className={`py-2 rounded-lg transition-all text-center ${
+              mode === 'MAGIC_LINK' ? 'bg-white text-slate-900 shadow-xs font-black' : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             Magic Link

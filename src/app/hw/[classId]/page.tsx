@@ -369,23 +369,23 @@ export default function PublicClassHomeworkPortal({
                 )}
 
                 {/* Quick Action Buttons for Parents */}
-                <div className="flex flex-wrap gap-2 pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 w-full sm:w-auto">
                   <button
                     type="button"
                     onClick={() => {
                       setSelectedStudentForLeave(classStudents[0] || null);
                       setIsLeaveModalOpen(true);
                     }}
-                    className="inline-flex items-center space-x-1.5 bg-white/20 hover:bg-white/30 text-white font-bold text-xs px-3.5 py-2 rounded-xl backdrop-blur-md transition-colors cursor-pointer border border-white/20"
+                    className="inline-flex items-center justify-center space-x-1.5 bg-white/20 hover:bg-white/30 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl backdrop-blur-md transition-colors cursor-pointer border border-white/20 w-full"
                   >
-                    <span>📋 Xin Nghỉ Phép & Dặn Dò Thuốc</span>
+                    <span>📋 Xin Nghỉ Phép & Dặn Thuốc</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsConferenceModalOpen(true)}
-                    className="inline-flex items-center space-x-1.5 bg-white/20 hover:bg-white/30 text-white font-bold text-xs px-3.5 py-2 rounded-xl backdrop-blur-md transition-colors cursor-pointer border border-white/20"
+                    className="inline-flex items-center justify-center space-x-1.5 bg-white/20 hover:bg-white/30 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl backdrop-blur-md transition-colors cursor-pointer border border-white/20 w-full"
                   >
-                    <span>📅 Đặt Lịch Hẹn Gặp Cô (1-1)</span>
+                    <span>📅 Đặt Lịch Gặp Cô (1-1)</span>
                   </button>
                 </div>
               </div>
@@ -804,15 +804,15 @@ export default function PublicClassHomeworkPortal({
                   </div>
 
                   {/* Day Picker Grid for Mobile/Tablet */}
-                  <div className="grid grid-cols-5 gap-1 pt-1 sm:pt-0">
+                  <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-1 sm:py-0 sm:grid sm:grid-cols-5">
                     {DAYS_OF_WEEK.map((d) => (
                       <button
                         key={d.id}
                         type="button"
                         onClick={() => setSelectedTimetableDay(d.id)}
-                        className={`h-8 px-2 flex items-center justify-center rounded-xl text-xs font-bold transition-colors cursor-pointer ${
+                        className={`h-8 px-2.5 sm:px-2 flex items-center justify-center rounded-xl text-xs font-bold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
                           selectedTimetableDay === d.id
-                            ? 'bg-blue-600 text-white shadow-xs'
+                            ? 'bg-blue-600 text-white shadow-xs font-black'
                             : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                         }`}
                       >

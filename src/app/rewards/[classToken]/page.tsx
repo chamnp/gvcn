@@ -149,20 +149,21 @@ export default function PublicClassRewardsPage({
             </div>
           </div>
 
-          <div className="flex items-center space-x-2 shrink-0">
+          <div className="flex items-center space-x-1.5 shrink-0">
             <button
               onClick={handleCopyLink}
-              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="h-8 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl transition-colors flex items-center gap-1 cursor-pointer"
+              title="Sao chép liên kết"
             >
               <Copy className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Sao chép link</span>
+              <span className="hidden sm:inline">Sao chép</span>
             </button>
 
             <Link
               href="/lookup"
-              className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5"
+              className="h-8 px-3 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1"
             >
-              <span>Đổi Quà Cho Con</span>
+              <span>Đổi Quà</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -186,13 +187,13 @@ export default function PublicClassRewardsPage({
               </p>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0 bg-white/20 backdrop-blur-md p-2 rounded-2xl border border-white/20">
+            <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto shrink-0 bg-white/20 backdrop-blur-md p-2 rounded-2xl border border-white/20">
               <label className="text-xs font-bold text-white">Tháng:</label>
               <input
                 type="month"
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
-                className="px-2.5 py-1 bg-white text-slate-900 rounded-xl text-xs font-bold focus:outline-none"
+                className="px-2.5 py-1 bg-white text-slate-900 rounded-xl text-xs font-bold focus:outline-none w-full sm:w-auto"
               />
             </div>
           </div>

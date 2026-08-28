@@ -116,7 +116,7 @@ export function LeaveRequestModal({ student, isOpen, onClose }: LeaveRequestModa
               <Calendar className="w-3.5 h-3.5 text-blue-600" />
               <span>Thời Gian Xin Nghỉ:</span>
             </label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <span className="text-[11px] text-slate-500 block mb-1">Từ ngày:</span>
                 <input
@@ -247,7 +247,7 @@ export function LeaveRequestModal({ student, isOpen, onClose }: LeaveRequestModa
             </label>
 
             {hasPickupPerson && (
-              <div className="pt-2 grid grid-cols-2 gap-2 animate-in fade-in">
+              <div className="pt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 animate-in fade-in">
                 <input
                   type="text"
                   placeholder="Họ tên người đón (VD: Bác Nguyễn Thị Lan)"
@@ -267,18 +267,18 @@ export function LeaveRequestModal({ student, isOpen, onClose }: LeaveRequestModa
           </div>
 
           {/* Footer Submit */}
-          <div className="pt-2 flex items-center justify-between border-t border-slate-100">
+          <div className="pt-3 flex flex-col-reverse sm:flex-row items-center justify-between gap-2 border-t border-slate-100">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 rounded-xl border border-slate-200 font-bold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-200 font-bold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer text-center"
             >
               Hủy Bỏ
             </button>
 
             <button
               type="submit"
-              className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black shadow-md transition-all cursor-pointer flex items-center space-x-1.5"
+              className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black shadow-md transition-all cursor-pointer flex items-center justify-center space-x-1.5 text-center"
             >
               <CheckCircle2 className="w-4 h-4" />
               <span>Gửi Đơn Đến Giáo Viên</span>
