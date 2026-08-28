@@ -54,6 +54,7 @@ interface ClassroomToolItem {
   iconEmoji: string;
   tag: string;
   tagColor: string;
+  cardBg: string;
   gradient: string;
   actionText: string;
   actionColor: string;
@@ -66,7 +67,7 @@ export default function ClassroomToolsPage() {
 
   const [category, setCategory] = useState<ToolCategory>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<'DESKTOP' | 'LAUNCHPAD'>('DESKTOP');
+  const [viewMode, setViewMode] = useState<'LAUNCHPAD' | 'DESKTOP'>('LAUNCHPAD');
   const [currentTime, setCurrentTime] = useState<string>('');
   const [hoveredToolId, setHoveredToolId] = useState<string | null>(null);
 
@@ -171,10 +172,11 @@ export default function ClassroomToolsPage() {
         desc: 'Quay số gọi học sinh phát biểu công bằng, kèm pháo hoa và cộng sao thi đua trực tiếp.',
         iconEmoji: '🎡',
         tag: '1-Click Gọi Tên',
-        tagColor: 'bg-blue-50 text-blue-700 border-blue-200',
-        gradient: 'from-blue-500 to-indigo-600',
+        tagColor: 'bg-blue-100/80 text-blue-800 border-blue-300/80',
+        cardBg: 'from-blue-50/90 via-white to-indigo-50/40 border-blue-200/80 hover:border-blue-400 hover:shadow-blue-500/15',
+        gradient: 'from-blue-600 via-indigo-600 to-violet-600',
         actionText: 'Mở vòng quay [1] →',
-        actionColor: 'text-blue-600',
+        actionColor: 'text-blue-700 font-bold',
         onClick: () => setIsWheelOpen(true),
         isOpen: isWheelOpen,
       },
@@ -188,10 +190,11 @@ export default function ClassroomToolsPage() {
         desc: 'Đếm ngược hoạt động nhóm (1p, 2p, 5p, 10p, 15p) kèm nhạc nền Lo-Fi êm dịu.',
         iconEmoji: '⏱️',
         tag: 'Toàn Màn Hình',
-        tagColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-        gradient: 'from-emerald-500 to-teal-600',
+        tagColor: 'bg-emerald-100/80 text-emerald-800 border-emerald-300/80',
+        cardBg: 'from-emerald-50/90 via-white to-teal-50/40 border-emerald-200/80 hover:border-emerald-400 hover:shadow-emerald-500/15',
+        gradient: 'from-emerald-500 via-teal-500 to-cyan-600',
         actionText: 'Mở đồng hồ [2] →',
-        actionColor: 'text-emerald-600',
+        actionColor: 'text-emerald-700 font-bold',
         onClick: () => setIsTimerOpen(true),
         isOpen: isTimerOpen,
       },
@@ -205,10 +208,11 @@ export default function ClassroomToolsPage() {
         desc: 'Bắt micro đo âm lượng thời gian thực, hiển thị bóng nảy và thưởng sao khi lớp yên tĩnh.',
         iconEmoji: '🔊',
         tag: 'Micro Live',
-        tagColor: 'bg-teal-50 text-teal-700 border-teal-200',
-        gradient: 'from-teal-500 to-cyan-600',
+        tagColor: 'bg-teal-100/80 text-teal-800 border-teal-300/80',
+        cardBg: 'from-teal-50/90 via-white to-cyan-50/40 border-teal-200/80 hover:border-teal-400 hover:shadow-teal-500/15',
+        gradient: 'from-teal-500 via-cyan-600 to-emerald-600',
         actionText: 'Đo tiếng ồn [3] →',
-        actionColor: 'text-teal-600',
+        actionColor: 'text-teal-700 font-bold',
         onClick: () => setIsNoiseOpen(true),
         isOpen: isNoiseOpen,
       },
@@ -222,10 +226,11 @@ export default function ClassroomToolsPage() {
         desc: 'Đổi trạng thái học tập (Đỏ: Lắng nghe • Vàng: Thảo luận đôi • Xanh: Hoạt động tự do).',
         iconEmoji: '🚦',
         tag: 'Phím 1-2-3',
-        tagColor: 'bg-rose-50 text-rose-700 border-rose-200',
-        gradient: 'from-rose-500 to-pink-600',
+        tagColor: 'bg-rose-100/80 text-rose-800 border-rose-300/80',
+        cardBg: 'from-rose-50/90 via-white to-pink-50/40 border-rose-200/80 hover:border-rose-400 hover:shadow-rose-500/15',
+        gradient: 'from-rose-500 via-pink-600 to-red-600',
         actionText: 'Chiếu đèn hiệu [4] →',
-        actionColor: 'text-rose-600',
+        actionColor: 'text-rose-700 font-bold',
         onClick: () => setIsTrafficOpen(true),
         isOpen: isTrafficOpen,
       },
@@ -239,10 +244,11 @@ export default function ClassroomToolsPage() {
         desc: 'Chuông định tâm 5s lắng dịu lớp học, tiếng vỗ tay hoan hô, tiếng trống dồn hồi hộp.',
         iconEmoji: '🔔',
         tag: 'Phát Loa Lớp',
-        tagColor: 'bg-purple-50 text-purple-700 border-purple-200',
-        gradient: 'from-purple-500 to-indigo-600',
+        tagColor: 'bg-purple-100/80 text-purple-800 border-purple-300/80',
+        cardBg: 'from-purple-50/90 via-white to-fuchsia-50/40 border-purple-200/80 hover:border-purple-400 hover:shadow-purple-500/15',
+        gradient: 'from-purple-500 via-fuchsia-600 to-indigo-600',
         actionText: 'Bảng âm thanh [5] →',
-        actionColor: 'text-purple-600',
+        actionColor: 'text-purple-700 font-bold',
         onClick: () => setIsSoundboardOpen(true),
         isOpen: isSoundboardOpen,
       },
@@ -256,10 +262,11 @@ export default function ClassroomToolsPage() {
         desc: '6 hộp quà 3D lấp lánh mở phần thưởng tinh thần bất ngờ cho các bạn tiến bộ.',
         iconEmoji: '🎁',
         tag: 'Khen Thưởng',
-        tagColor: 'bg-amber-50 text-amber-800 border-amber-200',
-        gradient: 'from-amber-400 to-orange-500',
+        tagColor: 'bg-amber-100/80 text-amber-900 border-amber-300/80',
+        cardBg: 'from-amber-50/90 via-white to-orange-50/40 border-amber-200/80 hover:border-amber-400 hover:shadow-amber-500/15',
+        gradient: 'from-amber-400 via-orange-500 to-rose-500',
         actionText: 'Mở hộp quà [6] →',
-        actionColor: 'text-amber-700',
+        actionColor: 'text-amber-800 font-bold',
         onClick: () => setIsChestOpen(true),
         isOpen: isChestOpen,
       },
@@ -273,10 +280,11 @@ export default function ClassroomToolsPage() {
         desc: 'Ghép cặp đôi toàn lớp hoặc bốc thăm 1 cặp đôi lên bảng đóng vai hội thoại đối kháng.',
         iconEmoji: '🤝',
         tag: 'Think-Pair',
-        tagColor: 'bg-teal-50 text-teal-700 border-teal-200',
-        gradient: 'from-teal-600 to-emerald-600',
+        tagColor: 'bg-teal-100/80 text-teal-800 border-teal-300/80',
+        cardBg: 'from-teal-50/90 via-white to-emerald-50/40 border-teal-200/80 hover:border-teal-400 hover:shadow-teal-500/15',
+        gradient: 'from-teal-500 via-emerald-600 to-green-600',
         actionText: 'Ghép cặp đôi [7] →',
-        actionColor: 'text-teal-600',
+        actionColor: 'text-teal-700 font-bold',
         onClick: () => setIsPairOpen(true),
         isOpen: isPairOpen,
       },
@@ -290,10 +298,11 @@ export default function ClassroomToolsPage() {
         desc: 'Chia 2-8 nhóm cân bằng giới tính và chỉ định vai trò Trưởng nhóm, Thư ký, Báo cáo viên.',
         iconEmoji: '👥',
         tag: 'Phân Vai Trò',
-        tagColor: 'bg-indigo-50 text-indigo-700 border-indigo-200',
-        gradient: 'from-indigo-500 to-purple-600',
+        tagColor: 'bg-indigo-100/80 text-indigo-800 border-indigo-300/80',
+        cardBg: 'from-indigo-50/90 via-white to-blue-50/40 border-indigo-200/80 hover:border-indigo-400 hover:shadow-indigo-500/15',
+        gradient: 'from-indigo-500 via-blue-600 to-purple-600',
         actionText: 'Chia nhóm [8] →',
-        actionColor: 'text-indigo-600',
+        actionColor: 'text-indigo-700 font-bold',
         onClick: () => setIsTeamGenOpen(true),
         isOpen: isTeamGenOpen,
       },
@@ -307,10 +316,11 @@ export default function ClassroomToolsPage() {
         desc: 'Bảng điểm 4 Tổ (Sư Tử 🦁, Đại Bàng 🦅, Cá Heo 🐬, Gấu Trúc 🐼) tranh tài nề nếp.',
         iconEmoji: '🏆',
         tag: 'Đua Sao',
-        tagColor: 'bg-amber-50 text-amber-800 border-amber-200',
-        gradient: 'from-amber-500 to-rose-500',
+        tagColor: 'bg-amber-100/80 text-amber-900 border-amber-300/80',
+        cardBg: 'from-amber-50/90 via-white to-rose-50/40 border-amber-200/80 hover:border-amber-400 hover:shadow-amber-500/15',
+        gradient: 'from-amber-500 via-orange-500 to-red-500',
         actionText: 'Chiếu bảng đua [9] →',
-        actionColor: 'text-amber-700',
+        actionColor: 'text-amber-800 font-bold',
         onClick: () => setIsLeaderboardOpen(true),
         isOpen: isLeaderboardOpen,
       },
@@ -324,10 +334,11 @@ export default function ClassroomToolsPage() {
         desc: 'Ghi nhận 5 vùng cảm xúc (☀️ Nắng ấm, 🌈 Cầu vồng, ☁️ Mây trắng, 🌧️ Mưa, ⛈️ Giông bão).',
         iconEmoji: '☀️',
         tag: 'SEL Cảm Xúc',
-        tagColor: 'bg-orange-50 text-orange-800 border-orange-200',
-        gradient: 'from-amber-400 to-rose-400',
+        tagColor: 'bg-orange-100/80 text-orange-900 border-orange-300/80',
+        cardBg: 'from-yellow-50/90 via-white to-pink-50/40 border-yellow-200/80 hover:border-yellow-400 hover:shadow-yellow-500/15',
+        gradient: 'from-yellow-400 via-orange-400 to-pink-500',
         actionText: 'Điểm danh tâm trạng [0] →',
-        actionColor: 'text-orange-700',
+        actionColor: 'text-orange-800 font-bold',
         onClick: () => setIsMoodOpen(true),
         isOpen: isMoodOpen,
       },
@@ -341,10 +352,11 @@ export default function ClassroomToolsPage() {
         desc: 'Vận động ngộ nghĩnh (Hít thở, Vỗ tay nhịp điệu, Chim bay cò bay) xua tan mệt mỏi.',
         iconEmoji: '🧘',
         tag: 'Nạp Năng Lượng',
-        tagColor: 'bg-rose-50 text-rose-700 border-rose-200',
-        gradient: 'from-rose-500 to-pink-600',
+        tagColor: 'bg-rose-100/80 text-rose-800 border-rose-300/80',
+        cardBg: 'from-rose-50/90 via-white to-purple-50/40 border-rose-200/80 hover:border-rose-400 hover:shadow-rose-500/15',
+        gradient: 'from-rose-500 via-pink-500 to-purple-500',
         actionText: 'Tập thể dục 2p →',
-        actionColor: 'text-rose-600',
+        actionColor: 'text-rose-700 font-bold',
         onClick: () => setIsBrainBreakOpen(true),
         isOpen: isBrainBreakOpen,
       },
@@ -358,10 +370,11 @@ export default function ClassroomToolsPage() {
         desc: 'Chiếu chữ to nhiệm vụ bài tập cần hoàn thành kèm đếm ngược và vinh danh gương sáng.',
         iconEmoji: '📋',
         tag: 'Trực Quan TV',
-        tagColor: 'bg-cyan-50 text-cyan-700 border-cyan-200',
-        gradient: 'from-cyan-600 to-blue-700',
+        tagColor: 'bg-sky-100/80 text-sky-800 border-sky-300/80',
+        cardBg: 'from-sky-50/90 via-white to-blue-50/40 border-sky-200/80 hover:border-sky-400 hover:shadow-sky-500/15',
+        gradient: 'from-sky-500 via-blue-600 to-indigo-600',
         actionText: 'Chiếu bảng nhiệm vụ →',
-        actionColor: 'text-cyan-700',
+        actionColor: 'text-sky-700 font-bold',
         onClick: () => setIsTaskCanvasOpen(true),
         isOpen: isTaskCanvasOpen,
       },
@@ -396,22 +409,22 @@ export default function ClassroomToolsPage() {
 
   return (
     <div className="relative min-h-[calc(100vh-8.5rem)] flex flex-col justify-between space-y-4 pb-20 animate-in fade-in duration-300">
-      {/* 1. Header Control Bar */}
-      <div className="bg-white/90 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-slate-200/80 shadow-xs flex flex-wrap items-center justify-between gap-3">
+      {/* 1. Header Control Bar with Vibrant Gradient Accent */}
+      <div className="bg-white/95 backdrop-blur-md rounded-3xl p-3.5 sm:p-4 border border-slate-200/90 shadow-sm flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center text-xl shadow-md shadow-blue-500/20">
+          <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-purple-600 text-white flex items-center justify-center text-2xl shadow-md shadow-indigo-500/25 ring-4 ring-indigo-50">
             🎡
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-base sm:text-lg font-black text-slate-900 leading-tight">
-                Bàn Điều Khiển Lớp Học
+                Bộ Công Cụ Lớp Học Trực Quan
               </h1>
-              <span className="bg-blue-100 text-blue-800 text-[10px] font-black px-2 py-0.5 rounded-full">
+              <span className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-2xs">
                 Lớp {classInfo.name}
               </span>
-              <span className="hidden sm:inline-flex bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                {students.length} Học sinh
+              <span className="hidden sm:inline-flex bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+                👥 {students.length} Học sinh
               </span>
             </div>
             <p className="text-xs text-slate-500 hidden sm:block">
@@ -423,7 +436,7 @@ export default function ClassroomToolsPage() {
         {/* Center Clock & Quick Search */}
         <div className="flex items-center gap-2.5">
           {currentTime && (
-            <div className="hidden md:flex items-center space-x-1.5 bg-slate-900 text-amber-400 px-3 py-1.5 rounded-xl font-mono text-xs font-black shadow-xs">
+            <div className="hidden md:flex items-center space-x-1.5 bg-gradient-to-r from-slate-900 to-indigo-950 text-amber-400 px-3.5 py-1.5 rounded-2xl font-mono text-xs font-black shadow-xs border border-indigo-900/50">
               <Clock className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
               <span>{currentTime}</span>
             </div>
@@ -431,48 +444,124 @@ export default function ClassroomToolsPage() {
 
           {/* Quick Search */}
           <div className="relative">
-            <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Tìm công cụ (⌘K)..."
-              className="pl-8 pr-3 py-1.5 bg-slate-100 border border-slate-200 rounded-xl text-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500 w-36 sm:w-48 transition-all"
+              className="pl-8.5 pr-3 py-1.5 bg-slate-100/80 border border-slate-200 rounded-2xl text-xs focus:outline-hidden focus:ring-2 focus:ring-blue-500 w-36 sm:w-52 transition-all shadow-2xs"
             />
           </div>
 
           {/* View Mode Toggle */}
-          <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200 text-xs font-bold">
+          <div className="flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200 text-xs font-bold shadow-2xs">
+            <button
+              onClick={() => setViewMode('LAUNCHPAD')}
+              className={`px-2.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center space-x-1 ${
+                viewMode === 'LAUNCHPAD'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+              title="Xem tất cả dạng lưới (Grid Mode)"
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline text-[11px]">Lưới</span>
+            </button>
             <button
               onClick={() => setViewMode('DESKTOP')}
-              className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                viewMode === 'DESKTOP' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-500 hover:text-slate-900'
+              className={`px-2.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center space-x-1 ${
+                viewMode === 'DESKTOP'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
               title="Bàn làm việc thu gọn (Desktop Mode)"
             >
-              <Monitor className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setViewMode('LAUNCHPAD')}
-              className={`p-1.5 rounded-lg transition-all cursor-pointer ${
-                viewMode === 'LAUNCHPAD' ? 'bg-white text-blue-600 shadow-xs' : 'text-slate-500 hover:text-slate-900'
-              }`}
-              title="Xem tất cả dạng lưới (Launchpad Grid)"
-            >
-              <LayoutGrid className="w-4 h-4" />
+              <Monitor className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline text-[11px]">Bàn làm việc</span>
             </button>
           </div>
         </div>
       </div>
 
       {/* 2. Main Stage Content */}
-      {viewMode === 'DESKTOP' ? (
-        /* SINGLE-PAGE COMPACT WORKSPACE */
+      {viewMode === 'LAUNCHPAD' ? (
+        /* VIBRANT GRID VIEW (DEFAULT) */
+        <div className="space-y-4">
+          {/* Category Filters with Vibrant Pills */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs">
+            {(
+              [
+                { id: 'ALL', label: '🌟 Tất Cả (12)', activeClass: 'from-blue-600 to-indigo-600 text-white shadow-blue-500/25' },
+                { id: 'INTERACTION', label: '🎲 Tương Tác & Gọi Tên (4)', activeClass: 'from-indigo-600 to-blue-600 text-white shadow-indigo-500/25' },
+                { id: 'MANAGEMENT', label: '⏱️ Quản Lý Tiết Dạy (4)', activeClass: 'from-emerald-600 to-teal-600 text-white shadow-emerald-500/25' },
+                { id: 'ENERGY', label: '🏆 Nề Nếp & Cảm Xúc (4)', activeClass: 'from-purple-600 to-pink-600 text-white shadow-purple-500/25' },
+              ] as const
+            ).map((c) => (
+              <button
+                key={c.id}
+                onClick={() => setCategory(c.id)}
+                className={`px-4 py-2 rounded-2xl font-bold transition-all cursor-pointer shrink-0 shadow-2xs ${
+                  category === c.id
+                    ? `bg-gradient-to-r ${c.activeClass} shadow-md`
+                    : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200/90'
+                }`}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+
+          {/* 12 Colorful Rich Tool Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredTools.map((tool) => (
+              <div
+                key={tool.id}
+                onClick={tool.onClick}
+                className={`group bg-gradient-to-br ${tool.cardBg} rounded-3xl p-5 border-2 shadow-xs hover:shadow-xl transition-all duration-200 cursor-pointer flex flex-col justify-between space-y-4 hover:-translate-y-1`}
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div
+                      className={`w-13 h-13 rounded-2xl bg-gradient-to-tr ${tool.gradient} text-white flex items-center justify-center text-3xl shadow-lg group-hover:scale-110 transition-transform ring-4 ring-white/90`}
+                    >
+                      {tool.iconEmoji}
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className={`text-[11px] font-black px-2.5 py-0.5 rounded-full border shadow-2xs ${tool.tagColor}`}>
+                        {tool.tag}
+                      </span>
+                      <kbd className="bg-white border border-slate-300 text-slate-600 text-[10px] font-mono font-black px-2 py-0.5 rounded-lg shadow-2xs">
+                        {tool.keyNumber}
+                      </kbd>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-base font-black text-slate-900 group-hover:text-blue-700 transition-colors leading-snug">
+                      {tool.title}
+                    </h3>
+                    <p className="text-xs text-slate-600 mt-1.5 leading-relaxed line-clamp-2">{tool.desc}</p>
+                  </div>
+                </div>
+
+                <div
+                  className={`pt-3 border-t border-slate-200/60 flex items-center justify-between text-xs ${tool.actionColor} group-hover:translate-x-1 transition-transform`}
+                >
+                  <span>{tool.actionText}</span>
+                  <ChevronRight className="w-4 h-4" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        /* SINGLE-PAGE COMPACT DESKTOP WORKSPACE */
         <div className="space-y-4">
           {/* Quick Trigger Strip */}
-          <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-4 text-white shadow-md border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-3">
+          <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-4 sm:p-5 text-white shadow-md border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-3">
             <div className="flex items-center space-x-3 min-w-0">
-              <div className="w-9 h-9 rounded-xl bg-amber-400/20 text-amber-300 flex items-center justify-center text-lg shrink-0">
+              <div className="w-10 h-10 rounded-2xl bg-amber-400/20 text-amber-300 flex items-center justify-center text-xl shrink-0 ring-2 ring-amber-400/30">
                 ✨
               </div>
               <div className="min-w-0">
@@ -488,31 +577,31 @@ export default function ClassroomToolsPage() {
             <div className="flex items-center gap-2 flex-wrap shrink-0">
               <button
                 onClick={() => setIsWheelOpen(true)}
-                className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-colors cursor-pointer shadow-xs"
+                className="bg-blue-600 hover:bg-blue-500 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-colors cursor-pointer shadow-xs"
               >
                 <span>🎡 Gọi Tên</span>
-                <kbd className="bg-blue-800 text-[10px] px-1.5 py-0.2 rounded font-mono">1</kbd>
+                <kbd className="bg-blue-800 text-[10px] px-1.5 py-0.2 rounded font-mono font-bold">1</kbd>
               </button>
               <button
                 onClick={() => setIsTimerOpen(true)}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-colors cursor-pointer shadow-xs"
+                className="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-colors cursor-pointer shadow-xs"
               >
                 <span>⏱️ Hẹn Giờ</span>
-                <kbd className="bg-emerald-800 text-[10px] px-1.5 py-0.2 rounded font-mono">2</kbd>
+                <kbd className="bg-emerald-800 text-[10px] px-1.5 py-0.2 rounded font-mono font-bold">2</kbd>
               </button>
               <button
                 onClick={() => setIsNoiseOpen(true)}
-                className="bg-teal-600 hover:bg-teal-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-colors cursor-pointer shadow-xs"
+                className="bg-teal-600 hover:bg-teal-500 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-colors cursor-pointer shadow-xs"
               >
                 <span>🔊 Đo Ồn</span>
-                <kbd className="bg-teal-800 text-[10px] px-1.5 py-0.2 rounded font-mono">3</kbd>
+                <kbd className="bg-teal-800 text-[10px] px-1.5 py-0.2 rounded font-mono font-bold">3</kbd>
               </button>
               <button
                 onClick={() => setIsTrafficOpen(true)}
-                className="bg-rose-600 hover:bg-rose-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-colors cursor-pointer shadow-xs"
+                className="bg-rose-600 hover:bg-rose-500 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-colors cursor-pointer shadow-xs"
               >
                 <span>🚦 Đèn Hiệu</span>
-                <kbd className="bg-rose-800 text-[10px] px-1.5 py-0.2 rounded font-mono">4</kbd>
+                <kbd className="bg-rose-800 text-[10px] px-1.5 py-0.2 rounded font-mono font-bold">4</kbd>
               </button>
             </div>
           </div>
@@ -520,13 +609,13 @@ export default function ClassroomToolsPage() {
           {/* 3 Categories Smart Action Hub */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Category 1: Tương Tác & Gọi Tên */}
-            <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs space-y-3">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+            <div className="bg-gradient-to-br from-blue-50/60 via-white to-indigo-50/40 rounded-3xl p-4 border border-blue-200/80 shadow-2xs space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-blue-100">
                 <div className="flex items-center space-x-2">
-                  <span className="text-base">🎲</span>
-                  <h3 className="font-bold text-sm text-slate-800">Tương Tác & Gọi Tên</h3>
+                  <span className="text-lg">🎲</span>
+                  <h3 className="font-black text-sm text-slate-800">Tương Tác & Gọi Tên</h3>
                 </div>
-                <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                <span className="text-[11px] font-black text-blue-700 bg-blue-100 px-2.5 py-0.5 rounded-full">
                   4 Công cụ
                 </span>
               </div>
@@ -536,11 +625,11 @@ export default function ClassroomToolsPage() {
                   <button
                     key={t.id}
                     onClick={t.onClick}
-                    className="p-3 rounded-xl border border-slate-100 hover:border-blue-300 bg-slate-50/50 hover:bg-blue-50/40 text-left transition-all group cursor-pointer flex flex-col justify-between space-y-2"
+                    className="p-3 rounded-2xl border border-blue-100 hover:border-blue-300 bg-white hover:bg-blue-50/60 text-left transition-all group cursor-pointer flex flex-col justify-between space-y-2 shadow-2xs hover:shadow-sm"
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-2xl group-hover:scale-110 transition-transform">{t.iconEmoji}</span>
-                      <kbd className="bg-white border border-slate-200 text-slate-500 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded shadow-2xs">
+                      <kbd className="bg-slate-100 border border-slate-200 text-slate-600 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded shadow-2xs">
                         {t.keyNumber}
                       </kbd>
                     </div>
@@ -548,7 +637,7 @@ export default function ClassroomToolsPage() {
                       <div className="font-bold text-xs text-slate-800 group-hover:text-blue-700 leading-tight">
                         {t.shortTitle}
                       </div>
-                      <div className="text-[10px] text-slate-400 truncate mt-0.5">{t.tag}</div>
+                      <div className="text-[10px] text-slate-500 truncate mt-0.5">{t.tag}</div>
                     </div>
                   </button>
                 ))}
@@ -556,13 +645,13 @@ export default function ClassroomToolsPage() {
             </div>
 
             {/* Category 2: Quản Lý Tiết Dạy */}
-            <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs space-y-3">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+            <div className="bg-gradient-to-br from-emerald-50/60 via-white to-teal-50/40 rounded-3xl p-4 border border-emerald-200/80 shadow-2xs space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-emerald-100">
                 <div className="flex items-center space-x-2">
-                  <span className="text-base">⏱️</span>
-                  <h3 className="font-bold text-sm text-slate-800">Quản Lý Tiết Dạy</h3>
+                  <span className="text-lg">⏱️</span>
+                  <h3 className="font-black text-sm text-slate-800">Quản Lý Tiết Dạy</h3>
                 </div>
-                <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
+                <span className="text-[11px] font-black text-emerald-700 bg-emerald-100 px-2.5 py-0.5 rounded-full">
                   4 Công cụ
                 </span>
               </div>
@@ -572,11 +661,11 @@ export default function ClassroomToolsPage() {
                   <button
                     key={t.id}
                     onClick={t.onClick}
-                    className="p-3 rounded-xl border border-slate-100 hover:border-emerald-300 bg-slate-50/50 hover:bg-emerald-50/40 text-left transition-all group cursor-pointer flex flex-col justify-between space-y-2"
+                    className="p-3 rounded-2xl border border-emerald-100 hover:border-emerald-300 bg-white hover:bg-emerald-50/60 text-left transition-all group cursor-pointer flex flex-col justify-between space-y-2 shadow-2xs hover:shadow-sm"
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-2xl group-hover:scale-110 transition-transform">{t.iconEmoji}</span>
-                      <kbd className="bg-white border border-slate-200 text-slate-500 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded shadow-2xs">
+                      <kbd className="bg-slate-100 border border-slate-200 text-slate-600 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded shadow-2xs">
                         {t.keyNumber}
                       </kbd>
                     </div>
@@ -584,7 +673,7 @@ export default function ClassroomToolsPage() {
                       <div className="font-bold text-xs text-slate-800 group-hover:text-emerald-700 leading-tight">
                         {t.shortTitle}
                       </div>
-                      <div className="text-[10px] text-slate-400 truncate mt-0.5">{t.tag}</div>
+                      <div className="text-[10px] text-slate-500 truncate mt-0.5">{t.tag}</div>
                     </div>
                   </button>
                 ))}
@@ -592,13 +681,13 @@ export default function ClassroomToolsPage() {
             </div>
 
             {/* Category 3: Nề Nếp & Cảm Xúc */}
-            <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs space-y-3">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+            <div className="bg-gradient-to-br from-purple-50/60 via-white to-pink-50/40 rounded-3xl p-4 border border-purple-200/80 shadow-2xs space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-purple-100">
                 <div className="flex items-center space-x-2">
-                  <span className="text-base">🏆</span>
-                  <h3 className="font-bold text-sm text-slate-800">Nề Nếp & Cảm Xúc</h3>
+                  <span className="text-lg">🏆</span>
+                  <h3 className="font-black text-sm text-slate-800">Nề Nếp & Cảm Xúc</h3>
                 </div>
-                <span className="text-[11px] font-bold text-purple-600 bg-purple-50 px-2 py-0.5 rounded-full">
+                <span className="text-[11px] font-black text-purple-700 bg-purple-100 px-2.5 py-0.5 rounded-full">
                   4 Công cụ
                 </span>
               </div>
@@ -608,11 +697,11 @@ export default function ClassroomToolsPage() {
                   <button
                     key={t.id}
                     onClick={t.onClick}
-                    className="p-3 rounded-xl border border-slate-100 hover:border-purple-300 bg-slate-50/50 hover:bg-purple-50/40 text-left transition-all group cursor-pointer flex flex-col justify-between space-y-2"
+                    className="p-3 rounded-2xl border border-purple-100 hover:border-purple-300 bg-white hover:bg-purple-50/60 text-left transition-all group cursor-pointer flex flex-col justify-between space-y-2 shadow-2xs hover:shadow-sm"
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-2xl group-hover:scale-110 transition-transform">{t.iconEmoji}</span>
-                      <kbd className="bg-white border border-slate-200 text-slate-500 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded shadow-2xs">
+                      <kbd className="bg-slate-100 border border-slate-200 text-slate-600 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded shadow-2xs">
                         {t.keyNumber}
                       </kbd>
                     </div>
@@ -620,7 +709,7 @@ export default function ClassroomToolsPage() {
                       <div className="font-bold text-xs text-slate-800 group-hover:text-purple-700 leading-tight">
                         {t.shortTitle}
                       </div>
-                      <div className="text-[10px] text-slate-400 truncate mt-0.5">{t.tag}</div>
+                      <div className="text-[10px] text-slate-500 truncate mt-0.5">{t.tag}</div>
                     </div>
                   </button>
                 ))}
@@ -628,80 +717,11 @@ export default function ClassroomToolsPage() {
             </div>
           </div>
         </div>
-      ) : (
-        /* LAUNCHPAD FULL GRID VIEW */
-        <div className="space-y-4">
-          {/* Category Filters */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
-            {(
-              [
-                { id: 'ALL', label: '🌟 Tất Cả (12)' },
-                { id: 'INTERACTION', label: '🎲 Tương Tác & Gọi Tên (4)' },
-                { id: 'MANAGEMENT', label: '⏱️ Quản Lý Tiết Dạy (4)' },
-                { id: 'ENERGY', label: '🏆 Nề Nếp & Cảm Xúc (4)' },
-              ] as const
-            ).map((c) => (
-              <button
-                key={c.id}
-                onClick={() => setCategory(c.id)}
-                className={`px-3.5 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
-                  category === c.id
-                    ? 'bg-blue-600 text-white shadow-xs'
-                    : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                }`}
-              >
-                {c.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
-            {filteredTools.map((tool) => (
-              <div
-                key={tool.id}
-                onClick={tool.onClick}
-                className="group bg-white rounded-2xl p-4 border border-slate-200/80 hover:border-blue-500 shadow-2xs hover:shadow-lg transition-all cursor-pointer flex flex-col justify-between space-y-3"
-              >
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div
-                      className={`w-11 h-11 rounded-xl bg-gradient-to-tr ${tool.gradient} text-white flex items-center justify-center text-2xl shadow-md group-hover:scale-105 transition-transform`}
-                    >
-                      {tool.iconEmoji}
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${tool.tagColor}`}>
-                        {tool.tag}
-                      </span>
-                      <kbd className="bg-slate-100 border border-slate-200 text-slate-500 text-[10px] font-mono font-bold px-1.5 py-0.5 rounded">
-                        {tool.keyNumber}
-                      </kbd>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors leading-snug">
-                      {tool.title}
-                    </h3>
-                    <p className="text-[11px] text-slate-500 mt-1 leading-relaxed line-clamp-2">{tool.desc}</p>
-                  </div>
-                </div>
-
-                <div
-                  className={`pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs font-bold ${tool.actionColor} group-hover:translate-x-0.5 transition-transform`}
-                >
-                  <span>{tool.actionText}</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
       )}
 
       {/* 3. Floating Interactive macOS / iPadOS Dock at Bottom */}
       <div className="fixed bottom-3 sm:bottom-5 left-1/2 -translate-x-1/2 z-40 max-w-[95vw] sm:max-w-max">
-        <div className="backdrop-blur-xl bg-slate-900/90 text-white border border-white/20 shadow-2xl p-2 sm:p-2.5 rounded-3xl flex items-center gap-1.5 sm:gap-2.5">
+        <div className="backdrop-blur-2xl bg-slate-900/90 text-white border border-white/25 shadow-2xl p-2 sm:p-2.5 rounded-3xl flex items-center gap-1.5 sm:gap-2.5 ring-1 ring-black/10">
           {TOOLS.map((t) => (
             <div key={t.id} className="relative group">
               <button
@@ -710,7 +730,7 @@ export default function ClassroomToolsPage() {
                 onMouseLeave={() => setHoveredToolId(null)}
                 className={`w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center text-xl sm:text-2xl transition-all duration-200 cursor-pointer ${
                   t.isOpen
-                    ? 'bg-blue-600 scale-110 shadow-lg shadow-blue-500/50 ring-2 ring-white/50'
+                    ? 'bg-blue-600 scale-110 shadow-lg shadow-blue-500/50 ring-2 ring-white/60'
                     : 'bg-white/10 hover:bg-white/25 hover:scale-115 hover:-translate-y-1'
                 }`}
               >
@@ -740,14 +760,14 @@ export default function ClassroomToolsPage() {
               onClick={() => setViewMode((prev) => (prev === 'LAUNCHPAD' ? 'DESKTOP' : 'LAUNCHPAD'))}
               className={`w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center text-lg sm:text-xl transition-all duration-200 cursor-pointer ${
                 viewMode === 'LAUNCHPAD'
-                  ? 'bg-purple-600 scale-110 shadow-lg shadow-purple-500/50'
+                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 scale-110 shadow-lg shadow-purple-500/50'
                   : 'bg-white/10 hover:bg-white/25 hover:scale-115 hover:-translate-y-1'
               }`}
             >
-              <LayoutGrid className="w-5 h-5 text-purple-300" />
+              <LayoutGrid className="w-5 h-5 text-purple-200" />
             </button>
             <div className="absolute -top-10 left-1/2 -translate-x-1/2 pointer-events-none opacity-0 group-hover:opacity-100 transition-all duration-150 transform group-hover:-translate-y-1 bg-slate-950/95 text-white text-[11px] font-bold px-2.5 py-1 rounded-xl shadow-xl border border-white/15 whitespace-nowrap flex items-center space-x-1 z-50">
-              <span>{viewMode === 'LAUNCHPAD' ? 'Bàn làm việc' : 'Tất cả (Launchpad)'}</span>
+              <span>{viewMode === 'LAUNCHPAD' ? 'Bàn làm việc' : 'Dạng lưới (Grid)'}</span>
               <kbd className="bg-white/20 text-slate-200 text-[9px] px-1 py-0.2 rounded font-mono">⌘K</kbd>
             </div>
           </div>
