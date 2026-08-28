@@ -60,7 +60,7 @@ export default function ReportsPage() {
   const errorCount = issues.filter((i) => i.type === 'ERROR').length;
 
   return (
-    <div className="space-y-6 pb-12 animate-in fade-in duration-300">
+    <div className="space-y-5 pb-12 animate-in fade-in duration-300">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -91,18 +91,49 @@ export default function ReportsPage() {
         </button>
       </div>
 
+      {/* Sleek Compact AI Diagnostic Banner (Đẩy lên đầu & thu nhỏ tinh gọn) */}
+      <div className="bg-gradient-to-r from-purple-900 via-indigo-900 to-blue-900 text-white px-4 py-3 sm:px-5 sm:py-3.5 rounded-2xl shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center space-x-3 min-w-0">
+          <div className="w-9 h-9 rounded-xl bg-purple-500/30 backdrop-blur-md flex items-center justify-center text-lg shadow-inner shrink-0 animate-pulse">
+            🤖
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h3 className="text-xs sm:text-sm font-black text-white truncate">
+                AI Chẩn Đoán Sư Phạm & Soạn Báo Cáo Họp PH Lớp {classInfo.name}
+              </h3>
+              <span className="hidden md:inline-block bg-purple-400/30 text-purple-200 text-[10px] font-black px-2 py-0.2 rounded-full uppercase">
+                Trợ Lý AI
+              </span>
+            </div>
+            <p className="text-[11px] text-purple-200/90 truncate">
+              Quét phổ điểm, phát hiện điểm trũng kiến thức và tự động soạn sẵn bài phát biểu sơ kết học kỳ.
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setIsDiagnosticOpen(true)}
+          className="inline-flex items-center justify-center space-x-1.5 bg-gradient-to-r from-purple-400 to-pink-400 hover:from-purple-500 hover:to-pink-500 text-purple-950 font-black text-xs px-4 py-2 rounded-xl shadow-sm transition-all shrink-0 cursor-pointer self-start sm:self-auto"
+        >
+          <Sparkles className="w-3.5 h-3.5 text-purple-950 fill-current" />
+          <span>Chẩn Đoán AI Ngay</span>
+        </button>
+      </div>
+
       {/* Export & Print Cards Grid (One-Page Hub) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Card 1: Form 1 TT27 Excel */}
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between space-y-4">
           <div className="flex items-start space-x-3.5">
-            <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
-              <FileSpreadsheet className="w-6 h-6" />
+            <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+              <FileSpreadsheet className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-900">Bảng Tổng Hợp Đánh Giá (Mẫu 1 - TT27)</h3>
+              <h3 className="text-sm font-bold text-slate-900">Bảng Tổng Hợp Đánh Giá (Mẫu 1 - TT27)</h3>
               <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                Xuất file Excel đầy đủ tiêu chuẩn theo Phụ lục ban hành kèm Thông tư 27/2020/TT-BGDĐT gồm tất cả các môn học, mức độ T/H/C, điểm số và 5 phẩm chất, năng lực.
+                Xuất file Excel đầy đủ tiêu chuẩn Phụ lục TT27 gồm tất cả môn học, mức độ T/H/C, điểm số và 5 phẩm chất, năng lực.
               </p>
             </div>
           </div>
@@ -122,13 +153,13 @@ export default function ReportsPage() {
         {/* Card 2: VnEdu / SMAS Import */}
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs flex flex-col justify-between space-y-4">
           <div className="flex items-start space-x-3.5">
-            <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
-              <ExternalLink className="w-6 h-6" />
+            <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+              <ExternalLink className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-900">File Nhập Điểm Chuẩn VnEdu / SMAS</h3>
+              <h3 className="text-sm font-bold text-slate-900">File Nhập Điểm Chuẩn VnEdu / SMAS</h3>
               <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-                Định dạng các cột mã môn, mức đánh giá và nhận xét tương thích hoàn toàn để tải lên trực tiếp cổng quản lý giáo dục ngành VnEdu, SMAS, CSDL Bộ GD&ĐT.
+                Định dạng các cột mã môn, mức đánh giá và nhận xét tương thích 100% để tải lên cổng VnEdu, SMAS, CSDL Bộ GD&ĐT.
               </p>
             </div>
           </div>
@@ -147,18 +178,18 @@ export default function ReportsPage() {
 
         {/* Card 3: Học Bạ & Phiếu Đánh Giá Định Kỳ Mẫu 1 (A4 PDF Toàn Lớp) */}
         <div className="bg-gradient-to-br from-blue-900 to-indigo-950 text-white p-5 rounded-2xl shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-start space-x-4">
-            <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl shadow-inner shrink-0">
+          <div className="flex items-start space-x-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-xl shadow-inner shrink-0">
               🎓
             </div>
-            <div className="space-y-1">
-              <span className="inline-block bg-blue-500/30 text-blue-200 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider border border-blue-400/30">
+            <div className="space-y-0.5">
+              <span className="inline-block bg-blue-500/30 text-blue-200 text-[10px] font-black px-2 py-0.2 rounded-full uppercase tracking-wider border border-blue-400/30">
                 1-Click In Toàn Lớp
               </span>
-              <h3 className="text-base font-black text-white">
+              <h3 className="text-sm font-black text-white">
                 Học Bạ & Phiếu Đánh Giá Mẫu 1 TT27
               </h3>
-              <p className="text-xs text-blue-200/90 leading-relaxed max-w-xl">
+              <p className="text-xs text-blue-200/90 leading-relaxed">
                 Xuất liên tục toàn bộ phiếu đánh giá của 40 học sinh chuẩn khổ A4/A3 hai mặt có chữ ký GVCN & BGH.
               </p>
             </div>
@@ -166,84 +197,84 @@ export default function ReportsPage() {
 
           <Link
             href="/reports/hoc-ba"
-            className="inline-flex items-center justify-center space-x-2 bg-white hover:bg-blue-50 text-blue-950 font-black text-xs px-5 py-3 rounded-xl shadow-lg transition-all shrink-0 cursor-pointer"
+            className="inline-flex items-center justify-center space-x-2 bg-white hover:bg-blue-50 text-blue-950 font-black text-xs px-4 py-2.5 rounded-xl shadow-md transition-all shrink-0 cursor-pointer"
           >
             <Printer className="w-4 h-4 text-blue-600" />
-            <span>Mở & In Học Bạ Mẫu 1 →</span>
+            <span>In Học Bạ Mẫu 1 →</span>
           </Link>
         </div>
 
         {/* Card 4: Sổ Chủ Nhiệm Điện Tử (A4 PDF) */}
         <div className="bg-gradient-to-br from-indigo-900 to-slate-900 text-white p-5 rounded-2xl shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-start space-x-4">
-            <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl shadow-inner shrink-0">
+          <div className="flex items-start space-x-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-xl shadow-inner shrink-0">
               📘
             </div>
-            <div className="space-y-1">
-              <span className="inline-block bg-indigo-500/30 text-indigo-200 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider border border-indigo-400/30">
+            <div className="space-y-0.5">
+              <span className="inline-block bg-indigo-500/30 text-indigo-200 text-[10px] font-black px-2 py-0.2 rounded-full uppercase tracking-wider border border-indigo-400/30">
                 Sổ Chủ Nhiệm A4
               </span>
-              <h3 className="text-base font-black text-white">
-                Sổ Chủ Nhiệm Lớp Điện Tử (Khổ A4 Chuẩn In Ấn)
+              <h3 className="text-sm font-black text-white">
+                Sổ Chủ Nhiệm Lớp Điện Tử (Khổ A4)
               </h3>
-              <p className="text-xs text-indigo-200/90 leading-relaxed max-w-xl">
-                Tổng hợp đầy đủ trang bìa, danh sách trích ngang học sinh, thời khóa biểu, bảng tổng hợp đánh giá và duyệt BGH.
+              <p className="text-xs text-indigo-200/90 leading-relaxed">
+                Tổng hợp đầy đủ trang bìa, trích ngang học sinh, thời khóa biểu, bảng tổng hợp đánh giá và duyệt BGH.
               </p>
             </div>
           </div>
 
           <Link
             href="/reports/so-chu-nhiem"
-            className="inline-flex items-center justify-center space-x-2 bg-white hover:bg-indigo-50 text-indigo-950 font-black text-xs px-5 py-3 rounded-xl shadow-lg transition-all shrink-0 cursor-pointer"
+            className="inline-flex items-center justify-center space-x-2 bg-white hover:bg-indigo-50 text-indigo-950 font-black text-xs px-4 py-2.5 rounded-xl shadow-md transition-all shrink-0 cursor-pointer"
           >
             <Printer className="w-4 h-4 text-indigo-600" />
-            <span>Mở & In Sổ Chủ Nhiệm →</span>
+            <span>In Sổ Chủ Nhiệm →</span>
           </Link>
         </div>
 
         {/* Card 5: In Giấy Khen & Bằng Khen 1-Click */}
         <div className="bg-gradient-to-br from-amber-900 to-yellow-950 text-white p-5 rounded-2xl shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-start space-x-4">
-            <div className="w-12 h-12 rounded-2xl bg-amber-500/30 backdrop-blur-md flex items-center justify-center text-2xl shadow-inner shrink-0">
+          <div className="flex items-start space-x-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-amber-500/30 backdrop-blur-md flex items-center justify-center text-xl shadow-inner shrink-0">
               📜
             </div>
-            <div className="space-y-1">
-              <span className="inline-block bg-amber-500/30 text-amber-200 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider border border-amber-400/30">
+            <div className="space-y-0.5">
+              <span className="inline-block bg-amber-500/30 text-amber-200 text-[10px] font-black px-2 py-0.2 rounded-full uppercase tracking-wider border border-amber-400/30">
                 1-Click In Toàn Lớp
               </span>
-              <h3 className="text-base font-black text-white">
-                Giấy Khen & Bằng Khen Học Sinh Tiểu Học
+              <h3 className="text-sm font-black text-white">
+                Giấy Khen & Bằng Khen Học Sinh
               </h3>
-              <p className="text-xs text-amber-200/90 leading-relaxed max-w-xl">
-                In màu khổ A4/A5 hàng loạt: Học sinh Xuất sắc, Học sinh Tiêu biểu, Kiện tướng Toán, Vở sạch chữ đẹp, Bông hoa việc tốt.
+              <p className="text-xs text-amber-200/90 leading-relaxed">
+                In màu khổ A4/A5 hàng loạt: Học sinh Xuất sắc, Tiêu biểu, Kiện tướng Toán, Vở sạch chữ đẹp.
               </p>
             </div>
           </div>
 
           <Link
             href="/reports/certificates"
-            className="inline-flex items-center justify-center space-x-2 bg-white hover:bg-amber-50 text-amber-950 font-black text-xs px-5 py-3 rounded-xl shadow-lg transition-all shrink-0 cursor-pointer"
+            className="inline-flex items-center justify-center space-x-2 bg-white hover:bg-amber-50 text-amber-950 font-black text-xs px-4 py-2.5 rounded-xl shadow-md transition-all shrink-0 cursor-pointer"
           >
             <Printer className="w-4 h-4 text-amber-600" />
-            <span>Mở & In Giấy Khen →</span>
+            <span>In Giấy Khen →</span>
           </Link>
         </div>
 
         {/* Card 6: Phiếu Báo Điểm Cá Nhân (In / Gửi Zalo PH) */}
         <div className="bg-gradient-to-br from-teal-900 to-emerald-950 text-white p-5 rounded-2xl shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-start space-x-4">
-            <div className="w-12 h-12 rounded-2xl bg-teal-500/30 backdrop-blur-md flex items-center justify-center text-2xl shadow-inner shrink-0">
+          <div className="flex items-start space-x-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-teal-500/30 backdrop-blur-md flex items-center justify-center text-xl shadow-inner shrink-0">
               📄
             </div>
-            <div className="space-y-1">
-              <span className="inline-block bg-teal-500/30 text-teal-200 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider border border-teal-400/30">
+            <div className="space-y-0.5">
+              <span className="inline-block bg-teal-500/30 text-teal-200 text-[10px] font-black px-2 py-0.2 rounded-full uppercase tracking-wider border border-teal-400/30">
                 Xem & In Cá Nhân
               </span>
-              <h3 className="text-base font-black text-white">
-                Phiếu Báo Kết Quả Học Tập Cá Nhân (Từng Em)
+              <h3 className="text-sm font-black text-white">
+                Phiếu Báo Kết Quả Học Tập Cá Nhân
               </h3>
-              <p className="text-xs text-teal-200/90 leading-relaxed max-w-xl">
-                Xem trước phiếu liên lạc đẹp mắt của từng học sinh, sao chép link gửi riêng phụ huynh hoặc in ấn nhanh chóng.
+              <p className="text-xs text-teal-200/90 leading-relaxed">
+                Xem trước phiếu liên lạc từng em, sao chép link gửi riêng phụ huynh hoặc in ấn nhanh chóng.
               </p>
             </div>
           </div>
@@ -251,27 +282,27 @@ export default function ReportsPage() {
           <button
             type="button"
             onClick={() => setIsIndividualModalOpen(true)}
-            className="inline-flex items-center justify-center space-x-2 bg-white hover:bg-teal-50 text-teal-950 font-black text-xs px-5 py-3 rounded-xl shadow-lg transition-all shrink-0 cursor-pointer"
+            className="inline-flex items-center justify-center space-x-2 bg-white hover:bg-teal-50 text-teal-950 font-black text-xs px-4 py-2.5 rounded-xl shadow-md transition-all shrink-0 cursor-pointer"
           >
             <Printer className="w-4 h-4 text-teal-600" />
             <span>Mở Phiếu Báo Điểm →</span>
           </button>
         </div>
 
-        {/* Card 7: Soạn Tin Nhắn Zalo / SMS Sổ Liên Lạc */}
-        <div className="bg-gradient-to-br from-cyan-900 to-blue-950 text-white p-5 rounded-2xl shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-start space-x-4">
-            <div className="w-12 h-12 rounded-2xl bg-cyan-500/30 backdrop-blur-md flex items-center justify-center text-2xl shadow-inner shrink-0">
+        {/* Card 7: Soạn Tin Nhắn Zalo Sổ Liên Lạc */}
+        <div className="bg-gradient-to-br from-cyan-900 to-blue-950 text-white p-5 rounded-2xl shadow-md md:col-span-2 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start space-x-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-cyan-500/30 backdrop-blur-md flex items-center justify-center text-xl shadow-inner shrink-0">
               💬
             </div>
-            <div className="space-y-1">
-              <span className="inline-block bg-cyan-500/30 text-cyan-200 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider border border-cyan-400/30">
+            <div className="space-y-0.5">
+              <span className="inline-block bg-cyan-500/30 text-cyan-200 text-[10px] font-black px-2 py-0.2 rounded-full uppercase tracking-wider border border-cyan-400/30">
                 Cá Nhân Hóa Từng Em
               </span>
-              <h3 className="text-base font-black text-white">
+              <h3 className="text-sm font-black text-white">
                 Soạn Tin Nhắn Zalo Sổ Liên Lạc Điện Tử
               </h3>
-              <p className="text-xs text-cyan-200/90 leading-relaxed max-w-xl">
+              <p className="text-xs text-cyan-200/90 leading-relaxed">
                 Tự động tạo tin nhắn Zalo kèm điểm số, nhận xét, số sao và link tra cứu riêng có mã PIN cho từng phụ huynh.
               </p>
             </div>
@@ -280,39 +311,10 @@ export default function ReportsPage() {
           <button
             type="button"
             onClick={() => setIsZaloModalOpen(true)}
-            className="inline-flex items-center justify-center space-x-2 bg-white hover:bg-cyan-50 text-cyan-950 font-black text-xs px-5 py-3 rounded-xl shadow-lg transition-all shrink-0 cursor-pointer"
+            className="inline-flex items-center justify-center space-x-2 bg-white hover:bg-cyan-50 text-cyan-950 font-black text-xs px-4 py-2.5 rounded-xl shadow-md transition-all shrink-0 cursor-pointer"
           >
             <MessageSquare className="w-4 h-4 text-cyan-600" />
             <span>Mở Soạn Tin Zalo →</span>
-          </button>
-        </div>
-
-        {/* Card 8: AI Class Diagnostic Banner */}
-        <div className="bg-gradient-to-r from-purple-900 via-indigo-900 to-blue-900 text-white p-5 rounded-2xl shadow-md md:col-span-2 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-start space-x-4">
-            <div className="w-12 h-12 rounded-2xl bg-purple-500/30 backdrop-blur-md flex items-center justify-center text-2xl shadow-inner shrink-0 animate-pulse">
-              🤖
-            </div>
-            <div className="space-y-1">
-              <span className="inline-block bg-purple-400/30 text-purple-200 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider border border-purple-400/30">
-                AI Chẩn Đoán Lớp Học & Họp Phụ Huynh
-              </span>
-              <h3 className="text-base font-black text-white">
-                Trợ Lý AI Chẩn Đoán Sư Phạm & Soạn Báo Cáo Sơ Kết Lớp {classInfo.name}
-              </h3>
-              <p className="text-xs text-purple-200/90 leading-relaxed max-w-xl">
-                Quét phổ điểm toàn lớp, phát hiện điểm trũng kiến thức và tự động soạn sẵn bài phát biểu tổng kết học kỳ của GVCN.
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setIsDiagnosticOpen(true)}
-            className="inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-purple-400 to-pink-400 hover:from-purple-500 hover:to-pink-500 text-purple-950 font-black text-xs px-5 py-3 rounded-xl shadow-lg transition-all shrink-0 cursor-pointer"
-          >
-            <Sparkles className="w-4 h-4 text-purple-900" />
-            <span>Chạy Chẩn Đoán AI Ngay</span>
           </button>
         </div>
       </div>
