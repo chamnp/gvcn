@@ -646,16 +646,16 @@ export default function DashboardPage() {
         {/* LEFT 2 COLUMNS: ACADEMIC PROGRESS, EVALUATION RADAR & CLASS EVENTS */}
         {/* ========================================================================= */}
         <div className="lg:col-span-2 space-y-6">
-          {/* A. PROGRESS METER & EARLY INTERVENTION RADAR */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <ProgressMeterWidget
-              progress={progress}
-              issues={issues}
-              isFilterIncomplete={isFilterIncomplete}
-              onToggleFilterIncomplete={() => setIsFilterIncomplete(!isFilterIncomplete)}
-            />
-            <EarlyInterventionWidget alerts={earlyAlerts} />
-          </div>
+          {/* A. PROGRESS METER */}
+          <ProgressMeterWidget
+            progress={progress}
+            issues={issues}
+            isFilterIncomplete={isFilterIncomplete}
+            onToggleFilterIncomplete={() => setIsFilterIncomplete(!isFilterIncomplete)}
+          />
+
+          {/* B. EARLY INTERVENTION RADAR */}
+          <EarlyInterventionWidget alerts={earlyAlerts} />
 
           {/* B. TT27 AWARD CLASSIFICATION & VISUAL BREAKDOWN */}
           <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-5">

@@ -54,30 +54,30 @@ export function EarlyInterventionWidget({ alerts }: EarlyInterventionWidgetProps
     <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-5 sm:p-6 space-y-4">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold text-xl shadow-xs shrink-0">
+        <div className="flex items-start sm:items-center space-x-3 min-w-0 flex-1">
+          <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-600 flex items-center justify-center font-bold text-xl shadow-xs shrink-0 mt-0.5 sm:mt-0">
             🚨
           </div>
-          <div>
-            <div className="flex items-center space-x-2">
-              <h3 className="font-black text-sm sm:text-base text-slate-900">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="font-black text-sm sm:text-base text-slate-900 leading-snug">
                 Radar Cảnh Báo Sớm Học Sinh Cần Hỗ Trợ
               </h3>
               {criticalCount > 0 ? (
-                <span className="bg-rose-100 text-rose-800 text-[10px] font-black px-2.5 py-0.5 rounded-full animate-pulse">
+                <span className="bg-rose-100 text-rose-800 text-[10px] font-black px-2.5 py-0.5 rounded-full animate-pulse shrink-0">
                   {criticalCount} Cần Can Thiệp Gấp!
                 </span>
               ) : alerts.length > 0 ? (
-                <span className="bg-amber-100 text-amber-900 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                <span className="bg-amber-100 text-amber-900 text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0">
                   {alerts.length} Lưu ý
                 </span>
               ) : (
-                <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0">
                   Lớp Ổn Định
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
               Tự động quét chuyên cần, điểm số sa sút, nề nếp sao và thị lực chỗ ngồi theo thời gian thực.
             </p>
           </div>

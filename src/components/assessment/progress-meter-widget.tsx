@@ -128,17 +128,17 @@ export function ProgressMeterWidget({
     <div className="bg-gradient-to-br from-white to-slate-50 rounded-3xl border border-slate-200/90 shadow-sm p-4 sm:p-5 space-y-4">
       {/* Header Info */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-bold text-lg shadow-md shadow-blue-500/20 shrink-0">
+        <div className="flex items-start sm:items-center space-x-3 min-w-0 flex-1">
+          <div className="w-10 h-10 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-bold text-lg shadow-md shadow-blue-500/20 shrink-0 mt-0.5 sm:mt-0">
             📊
           </div>
-          <div>
-            <div className="flex items-center space-x-2">
-              <h3 className="font-black text-sm sm:text-base text-slate-900">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="font-black text-sm sm:text-base text-slate-900 leading-snug">
                 Tiến Độ Hồ Sơ Đánh Giá Định Kỳ (Thông tư 27)
               </h3>
               <span
-                className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
+                className={`text-[10px] font-black px-2 py-0.5 rounded-full shrink-0 ${
                   progress.overallPercentage === 100
                     ? 'bg-emerald-100 text-emerald-800'
                     : 'bg-blue-100 text-blue-800'
@@ -147,7 +147,7 @@ export function ProgressMeterWidget({
                 Tổng thể: {progress.overallPercentage}%
               </span>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
               Theo dõi tình trạng nhập điểm, nhận xét phẩm chất, năng lực và lời nhận xét học bạ của lớp.
             </p>
           </div>
