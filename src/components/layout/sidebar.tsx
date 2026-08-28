@@ -366,7 +366,7 @@ const SidebarContent: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
 // Desktop Sidebar
 export const Sidebar: React.FC = () => {
   return (
-    <aside className="hidden lg:flex w-64 min-h-screen flex-col border-r border-slate-800 shrink-0 sticky top-0 h-screen print:hidden">
+    <aside className="hidden lg:flex w-64 min-h-screen self-stretch flex-col border-r border-slate-800 shrink-0 bg-slate-900 print:hidden">
       <SidebarContent />
     </aside>
   );
