@@ -5,19 +5,15 @@ import { toast } from 'sonner';
 
 interface VoiceInputOptions {
   lang?: string;
-  onTranscript?: (transcript: string) => void;
-  appendMode?: boolean;
 }
 
-export function useVoiceInput({
-  lang = 'vi-VN',
-  onTranscript,
-  appendMode = true,
-}: VoiceInputOptions = {}) {
+export function useVoiceInput({ lang = 'vi-VN' }: VoiceInputOptions = {}) {
   const [isListening, setIsListening] = useState(false);
-  const [transcript, setTranscript] = useState('');
+  const [liveTranscript, setLiveTranscript] = useState('');
   const [isSupported, setIsSupported] = useState(false);
   const recognitionRef = useRef<any>(null);
+  const callbackRef = useRef<((text: string) => void) | null>(null);
+  const finalTranscriptRef = useRef<string>('');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -28,79 +24,119 @@ export function useVoiceInput({
   }, []);
 
   const stopListening = useCallback(() => {
-    if (recognitionRef.current && isListening) {
+    if (recognitionRef.current) {
       try {
         recognitionRef.current.stop();
       } catch (e) {
         // Ignore
       }
-      setIsListening(false);
     }
-  }, [isListening]);
+    setIsListening(false);
+
+    const finalText = finalTranscriptRef.current.trim();
+    if (finalText && callbackRef.current) {
+      callbackRef.current(finalText);
+      toast.success(`Đã thêm: "${finalText}"`);
+    }
+    setLiveTranscript('');
+    finalTranscriptRef.current = '';
+    callbackRef.current = null;
+  }, []);
 
   const startListening = useCallback(
-    (customCallback?: (text: string) => void) => {
+    async (onResultCallback: (text: string) => void) => {
       if (typeof window === 'undefined') return;
 
       const SpeechRecognition =
         (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
       if (!SpeechRecognition) {
-        toast.error('Trình duyệt của bạn chưa hỗ trợ nhận diện giọng nói (Web Speech API). Vui lòng thử trên Chrome, Edge hoặc Safari!');
+        toast.error('Trình duyệt của bạn chưa hỗ trợ nhận diện giọng nói. Vui lòng dùng Google Chrome, Microsoft Edge hoặc Safari!');
         return;
       }
 
-      // If already listening, toggle off
+      // If already listening, stop first
       if (isListening) {
         stopListening();
         return;
       }
 
+      // Request mic permission explicitly first to prevent immediate silent rejection
+      try {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          // Stop tracks immediately after permission check
+          stream.getTracks().forEach((track) => track.stop());
+        }
+      } catch (err: any) {
+        console.warn('Mic permission error:', err);
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+          toast.error('Bạn đã chặn quyền truy cập Microphone. Vui lòng bấm vào biểu tượng ổ khóa 🔒 trên thanh địa chỉ duyệt web để Cho phép Microphone!');
+          return;
+        }
+      }
+
       try {
         const recognition = new SpeechRecognition();
         recognition.lang = lang;
-        recognition.continuous = false;
-        recognition.interimResults = false;
+        recognition.continuous = true; // Stay alive continuously while speaking
+        recognition.interimResults = true; // Show interim words in real-time
         recognition.maxAlternatives = 1;
+
+        callbackRef.current = onResultCallback;
+        finalTranscriptRef.current = '';
+        setLiveTranscript('');
 
         recognition.onstart = () => {
           setIsListening(true);
-          toast.info('🎤 Đang lắng nghe... Hãy đọc lời nhận xét của bạn.');
+          toast.info('🎤 Đang lắng nghe... Hãy đọc nhận xét, bấm nút đỏ khi hoàn thành.');
         };
 
         recognition.onresult = (event: any) => {
-          const results = event.results;
-          if (results && results[0] && results[0][0]) {
-            const spokenText = results[0][0].transcript.trim();
-            if (spokenText) {
-              // Capitalize first letter
-              const formattedText = spokenText.charAt(0).toUpperCase() + spokenText.slice(1);
-              setTranscript(formattedText);
+          let interim = '';
+          let finalAccumulated = finalTranscriptRef.current;
 
-              if (customCallback) {
-                customCallback(formattedText);
-              } else if (onTranscript) {
-                onTranscript(formattedText);
-              }
-
-              toast.success(`Đã nhận diện: "${formattedText}"`);
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            const result = event.results[i];
+            const text = result[0].transcript;
+            if (result.isFinal) {
+              finalAccumulated += (finalAccumulated ? ' ' : '') + text.trim();
+            } else {
+              interim += text;
             }
+          }
+
+          finalTranscriptRef.current = finalAccumulated;
+          const currentDisplay = (finalAccumulated + (interim ? ' ' + interim : '')).trim();
+          
+          if (currentDisplay) {
+            // Capitalize first letter
+            const formatted = currentDisplay.charAt(0).toUpperCase() + currentDisplay.slice(1);
+            setLiveTranscript(formatted);
           }
         };
 
         recognition.onerror = (event: any) => {
-          setIsListening(false);
+          console.warn('Speech recognition error event:', event.error);
           if (event.error === 'not-allowed') {
-            toast.error('Vui lòng cấp quyền truy cập Microphone trong trình duyệt để sử dụng tính năng này!');
-          } else if (event.error === 'no-speech') {
-            toast.warning('Không nghe thấy giọng nói, vui lòng thử lại gần micro hơn!');
-          } else {
-            console.warn('Voice recognition error:', event.error);
+            setIsListening(false);
+            toast.error('Microphone bị chặn. Vui lòng cấp quyền truy cập trong cài đặt trình duyệt!');
+          } else if (event.error === 'network') {
+            // Network issue with speech service
+            setIsListening(false);
+            toast.error('Không thể kết nối đến máy chủ nhận dạng giọng nói. Vui lòng kiểm tra kết nối mạng!');
           }
         };
 
         recognition.onend = () => {
+          // If still marked as listening and no error, finalize
           setIsListening(false);
+          const finalText = finalTranscriptRef.current.trim();
+          if (finalText && callbackRef.current) {
+            callbackRef.current(finalText);
+            toast.success(`Đã nhận diện: "${finalText}"`);
+            callbackRef.current = null;
+          }
         };
 
         recognitionRef.current = recognition;
@@ -108,15 +144,15 @@ export function useVoiceInput({
       } catch (err: any) {
         console.error('Failed to start speech recognition:', err);
         setIsListening(false);
-        toast.error('Không thể kích hoạt micro. Vui lòng thử lại!');
+        toast.error('Không thể khởi động micro. Vui lòng thử lại!');
       }
     },
-    [isListening, lang, onTranscript, stopListening]
+    [isListening, lang, stopListening]
   );
 
   return {
     isListening,
-    transcript,
+    liveTranscript,
     isSupported,
     startListening,
     stopListening,
