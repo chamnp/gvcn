@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import React, { useState } from 'react';
 import {
@@ -16,6 +16,10 @@ import {
   ExternalLink,
   BookOpen,
   LogOut,
+  Smartphone,
+  Layers,
+  Settings,
+  HelpCircle,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useAuth } from '@/lib/auth-context';
@@ -27,7 +31,16 @@ import { NetworkStatusIndicator } from '@/components/ui/network-status-indicator
 import { NotificationCenter } from '@/components/layout/notification-center';
 
 export const Header: React.FC = () => {
-  const { schoolClasses, activeClassId, classInfo, switchClass, currentTerm, setCurrentTerm, autoCalendarTerm, schoolInfo } = useAppStore();
+  const {
+    schoolClasses,
+    activeClassId,
+    classInfo,
+    switchClass,
+    currentTerm,
+    setCurrentTerm,
+    autoCalendarTerm,
+    schoolInfo,
+  } = useAppStore();
   const { user, profile, isAdmin, signOut } = useAuth();
   const { toggleMobileNav } = useMobileNav();
 
@@ -36,216 +49,261 @@ export const Header: React.FC = () => {
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   const activeTermObj = TERMS.find((t) => t.id === currentTerm);
+  const classShareLink = `/hw/${(classInfo.shareToken || classInfo.name).toLowerCase().replace(/\s+/g, '')}`;
 
   return (
-    <header className="h-16 bg-white border-b border-slate-200 px-3 sm:px-6 flex items-center justify-between sticky top-0 z-30 shadow-xs">
-      {/* LEFT: Mobile Menu Button + Class Switcher + Term Selector Pill */}
-      <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 overflow-hidden">
+    <header className="h-16 bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-3 sm:px-6 flex items-center justify-between sticky top-0 z-30 shadow-2xs transition-all">
+      {/* ========================================================================= */}
+      {/* LEFT: Mobile Toggle + Unified Context Bar (Class & Term Selector) */}
+      {/* ========================================================================= */}
+      <div className="flex items-center space-x-2 sm:space-x-3 min-w-0">
         {/* Mobile Hamburger Button */}
         <button
+          type="button"
           onClick={toggleMobileNav}
-          className="p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 lg:hidden transition-colors shrink-0"
+          className="p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 lg:hidden transition-colors shrink-0 cursor-pointer"
           aria-label="Mở danh mục"
         >
           <Menu className="w-5 h-5" />
         </button>
 
-        {/* Class Badge / Switcher */}
-        {isAdmin ? (
-          <div className="relative shrink-0">
+        {/* Unified Elegant Context Bar */}
+        <div className="inline-flex items-center bg-slate-100/90 hover:bg-slate-100 p-0.5 sm:p-1 rounded-2xl border border-slate-200/70 text-xs shadow-2xs">
+          {/* 1. Class Switcher Pill */}
+          {isAdmin ? (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowClassDropdown(!showClassDropdown);
+                  setShowTermDropdown(false);
+                }}
+                className="flex items-center space-x-1.5 bg-white hover:bg-slate-50 text-slate-800 px-2.5 py-1.5 rounded-xl border border-slate-200/60 font-black transition-all cursor-pointer shadow-2xs"
+                title="Đổi lớp học phụ trách"
+              >
+                <div className="w-5 h-5 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 text-xs">
+                  🏫
+                </div>
+                <span className="truncate max-w-[85px] sm:max-w-[120px]">
+                  Lớp {classInfo.name}
+                </span>
+                <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
+              </button>
+
+              {showClassDropdown && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setShowClassDropdown(false)}
+                  />
+                  <div className="absolute left-0 mt-2 w-64 bg-white rounded-3xl shadow-2xl border border-slate-200 p-2.5 z-50 animate-in fade-in zoom-in-95 space-y-1.5">
+                    <div className="px-2 py-1 border-b border-slate-100">
+                      <p className="text-[10px] font-black text-slate-400 uppercase">
+                        Chọn Lớp Quản Lý ({schoolClasses.length} lớp):
+                      </p>
+                    </div>
+                    <div className="space-y-1 max-h-64 overflow-y-auto no-scrollbar">
+                      {schoolClasses.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => {
+                            switchClass(c.id);
+                            setShowClassDropdown(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 rounded-2xl text-xs transition-all flex items-center justify-between cursor-pointer ${
+                            activeClassId === c.id
+                              ? 'bg-blue-600 text-white font-black shadow-xs'
+                              : 'text-slate-700 hover:bg-slate-50'
+                          }`}
+                        >
+                          <div>
+                            <p className="font-bold">Lớp {c.name} (Khối {c.grade})</p>
+                            <p
+                              className={`text-[10px] ${
+                                activeClassId === c.id ? 'text-blue-100' : 'text-slate-400'
+                              }`}
+                            >
+                              GVCN: {c.teacherName || 'Chưa phân công'}
+                            </p>
+                          </div>
+                          {activeClassId === c.id && <Check className="w-4 h-4 text-white" />}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="pt-1.5 border-t border-slate-100">
+                      <Link
+                        href="/admin"
+                        onClick={() => setShowClassDropdown(false)}
+                        className="block text-center text-purple-700 hover:text-purple-900 bg-purple-50 hover:bg-purple-100 py-2 px-3 rounded-2xl text-[11px] font-black transition-colors"
+                      >
+                        👑 Cổng Quản Trị Ban Giám Hiệu →
+                      </Link>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center space-x-1.5 bg-white text-slate-800 px-2.5 py-1.5 rounded-xl border border-slate-200/60 font-black shadow-2xs shrink-0">
+              <div className="w-5 h-5 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 text-xs">
+                🏫
+              </div>
+              <span className="truncate max-w-[90px] sm:max-w-[140px]">
+                Lớp {classInfo.name}
+              </span>
+            </div>
+          )}
+
+          {/* Elegant Subtle Divider */}
+          <div className="h-4 w-px bg-slate-300/80 mx-1 shrink-0" />
+
+          {/* 2. Term Selector Pill */}
+          <div className="relative">
             <button
-              onClick={() => setShowClassDropdown(!showClassDropdown)}
-              className="flex items-center space-x-1.5 bg-blue-50 hover:bg-blue-100 text-blue-900 px-2.5 py-1.5 rounded-xl border border-blue-200 text-xs font-bold transition-colors cursor-pointer"
+              type="button"
+              onClick={() => {
+                setShowTermDropdown(!showTermDropdown);
+                setShowClassDropdown(false);
+              }}
+              className="flex items-center space-x-1.5 hover:bg-white/80 text-slate-700 px-2 py-1.5 rounded-xl font-bold transition-all cursor-pointer"
+              title="Nhấn để đổi kỳ đánh giá Thông tư 27"
             >
-              <School className="w-3.5 h-3.5 text-blue-600" />
-              <span>Lớp {classInfo.name}</span>
-              <ChevronDown className="w-3 h-3 text-blue-500" />
+              <Calendar className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+              <span className="truncate max-w-[85px] sm:max-w-[150px] font-semibold text-slate-800">
+                {activeTermObj?.name}
+              </span>
+              {activeTermObj?.id === autoCalendarTerm && (
+                <span
+                  className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"
+                  title="Kỳ học theo thời gian thực hiện tại"
+                />
+              )}
+              <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
             </button>
 
-            {showClassDropdown && (
+            {showTermDropdown && (
               <>
                 <div
                   className="fixed inset-0 z-40"
-                  onClick={() => setShowClassDropdown(false)}
+                  onClick={() => setShowTermDropdown(false)}
                 />
-                <div className="absolute left-0 mt-1.5 w-56 bg-white rounded-2xl shadow-xl border border-slate-200 p-2 z-50 animate-in fade-in zoom-in-95">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase px-2 py-1">
-                    Chọn lớp học quản lý:
-                  </p>
-                  <div className="space-y-1 max-h-64 overflow-y-auto">
-                    {schoolClasses.map((c) => (
-                      <button
-                        key={c.id}
-                        onClick={() => {
-                          switchClass(c.id);
-                          setShowClassDropdown(false);
-                        }}
-                        className={`w-full text-left px-2.5 py-2 rounded-xl text-xs transition-colors flex items-center justify-between ${
-                          activeClassId === c.id
-                            ? 'bg-blue-600 text-white font-bold shadow-xs'
-                            : 'text-slate-700 hover:bg-slate-100'
-                        }`}
-                      >
-                        <div>
-                          <p className="font-bold">Lớp {c.name} (Khối {c.grade})</p>
-                          <p className={`text-[10px] ${activeClassId === c.id ? 'text-blue-100' : 'text-slate-400'}`}>
-                            {c.teacherName}
-                          </p>
-                        </div>
-                        {activeClassId === c.id && <span>✓</span>}
-                      </button>
-                    ))}
+                <div className="absolute left-0 mt-2 w-64 bg-white rounded-3xl shadow-2xl border border-slate-200 p-2.5 z-50 animate-in fade-in zoom-in-95 space-y-1.5">
+                  <div className="px-2 py-1 border-b border-slate-100">
+                    <p className="text-[10px] font-black text-slate-400 uppercase">
+                      Kỳ Đánh Giá TT27 ({schoolInfo.schoolYear}):
+                    </p>
+                    <p className="text-[10px] text-slate-500">
+                      Áp dụng cho Đánh giá TT27, Báo cáo & AI
+                    </p>
                   </div>
-                  <div className="pt-1.5 mt-1.5 border-t border-slate-100">
-                    <Link
-                      href="/admin"
-                      onClick={() => setShowClassDropdown(false)}
-                      className="block text-center text-purple-700 hover:text-purple-900 bg-purple-50 hover:bg-purple-100 py-1.5 px-2 rounded-xl text-[11px] font-bold transition-colors"
-                    >
-                      👑 Quản trị tất cả các lớp →
-                    </Link>
+
+                  <div className="space-y-1">
+                    {TERMS.map((t) => {
+                      const isSelected = currentTerm === t.id;
+                      const isCalendarNow = t.id === autoCalendarTerm;
+
+                      return (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => {
+                            setCurrentTerm(t.id);
+                            setShowTermDropdown(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 rounded-2xl text-xs transition-all flex items-center justify-between cursor-pointer ${
+                            isSelected
+                              ? 'bg-blue-50 text-blue-900 font-black border border-blue-200/80 shadow-2xs'
+                              : 'text-slate-700 hover:bg-slate-50'
+                          }`}
+                        >
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs">{t.name}</span>
+                              {isCalendarNow && (
+                                <span className="bg-emerald-100 text-emerald-800 text-[9px] font-black px-1.5 py-0.2 rounded-full">
+                                  Hiện tại
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[10px] text-slate-400 font-normal mt-0.5">
+                              📅 {t.monthsDescription}
+                            </p>
+                          </div>
+                          {isSelected && <Check className="w-4 h-4 text-blue-600 stroke-[2.5]" />}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </>
             )}
           </div>
-        ) : (
-          <div className="flex items-center space-x-1.5 bg-blue-50 text-blue-900 px-2.5 py-1.5 rounded-xl border border-blue-200 text-xs font-bold shrink-0">
-            <School className="w-3.5 h-3.5 text-blue-600" />
-            <span>Lớp {classInfo.name}</span>
-          </div>
-        )}
-
-        {/* Unified Elegant Term Selector Dropdown Pill */}
-        <div className="relative">
-          <button
-            onClick={() => setShowTermDropdown(!showTermDropdown)}
-            className="flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 px-2.5 py-1.5 rounded-xl border border-slate-200/80 text-xs font-bold transition-all cursor-pointer"
-            title="Nhấn để đổi kỳ đánh giá Thông tư 27"
-          >
-            <Calendar className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-            <span className="truncate max-w-[90px] sm:max-w-[170px]">
-              {activeTermObj?.name}
-            </span>
-            {activeTermObj?.id === autoCalendarTerm && (
-              <span
-                className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"
-                title="Kỳ học thực tế hiện tại"
-              />
-            )}
-            <ChevronDown className="w-3 h-3 text-slate-500 shrink-0" />
-          </button>
-
-          {showTermDropdown && (
-            <>
-              <div
-                className="fixed inset-0 z-40"
-                onClick={() => setShowTermDropdown(false)}
-              />
-              <div className="absolute left-0 mt-1.5 w-64 bg-white rounded-2xl shadow-xl border border-slate-200 p-2 z-50 animate-in fade-in zoom-in-95 space-y-1">
-                <div className="px-2.5 py-1.5 border-b border-slate-100">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase">
-                    Kỳ Đánh Giá TT27 ({schoolInfo.schoolYear}):
-                  </p>
-                  <p className="text-[10px] text-slate-500">
-                    Áp dụng cho Đánh giá TT27, Báo cáo & AI
-                  </p>
-                </div>
-
-                {TERMS.map((t) => {
-                  const isSelected = currentTerm === t.id;
-                  const isCalendarNow = t.id === autoCalendarTerm;
-
-                  return (
-                    <button
-                      key={t.id}
-                      onClick={() => {
-                        setCurrentTerm(t.id);
-                        setShowTermDropdown(false);
-                      }}
-                      className={`w-full text-left px-3 py-2 rounded-xl text-xs transition-colors flex items-center justify-between ${
-                        isSelected
-                          ? 'bg-blue-50 text-blue-900 font-bold border border-blue-200/80 shadow-2xs'
-                          : 'text-slate-700 hover:bg-slate-50'
-                      }`}
-                    >
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs">{t.name}</span>
-                          {isCalendarNow && (
-                            <span className="bg-emerald-100 text-emerald-800 text-[9px] font-bold px-1.5 py-0.2 rounded-full">
-                              Hiện tại
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-[10px] text-slate-400 font-normal mt-0.5">
-                          📅 {t.monthsDescription}
-                        </p>
-                      </div>
-                      {isSelected && <Check className="w-4 h-4 text-blue-600 stroke-[2.5]" />}
-                    </button>
-                  );
-                })}
-              </div>
-            </>
-          )}
         </div>
       </div>
 
-      {/* RIGHT: Quick Admin Gateway & User Profile Dropdown Pill */}
-      <div className="flex items-center space-x-2 shrink-0">
+      {/* ========================================================================= */}
+      {/* RIGHT: Quick Action Icons + User Profile Popover */}
+      {/* ========================================================================= */}
+      <div className="flex items-center space-x-1.5 sm:space-x-2.5 shrink-0">
         {/* Network & PWA Status Indicator */}
         <NetworkStatusIndicator />
 
         {/* Live Notification Center */}
         <NotificationCenter />
 
-        {isAdmin && (
-          <Link
-            href="/admin"
-            className="hidden sm:inline-flex items-center space-x-1.5 bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors"
-          >
-            <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
-            <span>Quản Trị BGH</span>
-          </Link>
-        )}
-
-        {/* Homework Portal Quick Link */}
+        {/* Public Class Homework Portal Link */}
         <Link
-          href={`/hw/${classInfo.name.toLowerCase().replace(/\s+/g, '')}`}
+          href={classShareLink}
           target="_blank"
-          className="hidden md:inline-flex items-center space-x-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-1.5 rounded-xl text-xs font-medium transition-colors"
-          title="Mở cổng xem bài tập dành cho phụ huynh"
+          className="hidden md:inline-flex items-center space-x-1.5 bg-slate-50 hover:bg-blue-50 text-slate-700 hover:text-blue-700 border border-slate-200/80 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-2xs cursor-pointer"
+          title="Mở cổng xem bài tập & thời khóa biểu công khai cho phụ huynh"
         >
-          <BookOpen className="w-3.5 h-3.5 text-slate-500" />
-          <span>Xem Cổng Phụ Huynh</span>
+          <Smartphone className="w-3.5 h-3.5 text-blue-600" />
+          <span>Cổng Lớp</span>
           <ExternalLink className="w-3 h-3 text-slate-400" />
         </Link>
 
-        {/* User Profile Popover */}
+        {/* Admin Gateway Pill */}
+        {isAdmin && (
+          <Link
+            href="/admin"
+            className="hidden sm:inline-flex items-center space-x-1.5 bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 px-2.5 py-1.5 rounded-xl text-xs font-black transition-all shadow-2xs"
+            title="Cổng quản trị dành cho Ban Giám Hiệu"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
+            <span>BGH</span>
+          </Link>
+        )}
+
+        {/* Subtle Vertical Divider */}
+        <div className="h-5 w-px bg-slate-200 hidden sm:block" />
+
+        {/* User Profile Pill & Dropdown Popover */}
         {profile ? (
           <div className="relative">
             <button
+              type="button"
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items-center space-x-2 pl-1.5 pr-2.5 py-1 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-all cursor-pointer"
+              className="flex items-center space-x-2 pl-1 pr-2.5 py-1 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200/80 transition-all cursor-pointer shadow-2xs"
             >
               {profile.avatarUrl ? (
                 <img
                   src={profile.avatarUrl}
                   alt={profile.fullName}
-                  className="w-7 h-7 rounded-lg object-cover shadow-2xs shrink-0"
+                  className="w-7 h-7 rounded-xl object-cover shadow-2xs shrink-0"
                 />
               ) : (
-                <div className="w-7 h-7 rounded-lg bg-blue-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
+                <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-black text-xs flex items-center justify-center shrink-0 shadow-xs">
                   {profile.fullName.split(' ').pop()?.substring(0, 1) || 'G'}
                 </div>
               )}
               <div className="text-left hidden sm:block">
-                <p className="text-xs font-bold text-slate-900 truncate max-w-[120px]">
+                <p className="text-xs font-black text-slate-900 truncate max-w-[110px] leading-tight">
                   {profile.fullName}
                 </p>
-                <p className="text-[10px] text-slate-400 truncate max-w-[120px]">
-                  {profile.title || 'Giáo viên'}
+                <p className="text-[10px] text-slate-400 font-bold truncate max-w-[110px] leading-tight">
+                  {profile.role === 'ADMIN' ? '👑 Admin BGH' : profile.title || 'GVCN'}
                 </p>
               </div>
               <ChevronDown className="w-3 h-3 text-slate-400 hidden sm:block" />
@@ -257,44 +315,77 @@ export const Header: React.FC = () => {
                   className="fixed inset-0 z-40"
                   onClick={() => setShowUserMenu(false)}
                 />
-                <div className="absolute right-0 mt-1.5 w-56 bg-white rounded-2xl shadow-xl border border-slate-200 p-2 z-50 animate-in fade-in zoom-in-95 space-y-1">
-                  <div className="p-2 border-b border-slate-100 text-xs">
-                    <p className="font-bold text-slate-900">{profile.fullName}</p>
-                    <p className="text-[11px] text-slate-500 font-mono truncate">{user?.email}</p>
-                    <span className="inline-block mt-1 bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded text-[10px]">
-                      {profile.department || 'Tổ Chuyên môn'}
-                    </span>
+                <div className="absolute right-0 mt-2 w-64 bg-white rounded-3xl shadow-2xl border border-slate-200 p-2.5 z-50 animate-in fade-in zoom-in-95 space-y-1.5">
+                  {/* Account Header */}
+                  <div className="p-2.5 rounded-2xl bg-gradient-to-r from-slate-50 to-blue-50/40 border border-slate-100 text-xs space-y-1">
+                    <div className="flex items-center justify-between">
+                      <p className="font-black text-slate-900 truncate">{profile.fullName}</p>
+                      <span className="bg-blue-100 text-blue-800 font-black text-[9px] px-2 py-0.5 rounded-full">
+                        {profile.role === 'ADMIN' ? 'BGH' : 'GVCN'}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 font-mono truncate">{user?.email}</p>
+                    <p className="text-[10px] text-slate-600 font-bold flex items-center gap-1 pt-0.5">
+                      <span>🏫 {schoolInfo?.name || 'Trường Tiểu học'}</span>
+                    </p>
                   </div>
 
-                  <Link
-                    href="/settings"
-                    onClick={() => setShowUserMenu(false)}
-                    className="flex items-center space-x-2 px-2.5 py-2 rounded-xl text-xs text-slate-700 hover:bg-slate-50 font-medium transition-colors"
-                  >
-                    <UserCircle className="w-4 h-4 text-blue-600" />
-                    <span>Hồ sơ cá nhân & Cài đặt</span>
-                  </Link>
-
-                  {isAdmin && (
+                  {/* Quick Action Links */}
+                  <div className="space-y-0.5 text-xs">
                     <Link
-                      href="/admin"
+                      href="/settings"
                       onClick={() => setShowUserMenu(false)}
-                      className="flex items-center space-x-2 px-2.5 py-2 rounded-xl text-xs text-purple-700 hover:bg-purple-50 font-medium transition-colors"
+                      className="flex items-center space-x-2 px-3 py-2 rounded-2xl text-slate-700 hover:bg-slate-50 font-bold transition-colors"
                     >
-                      <ShieldCheck className="w-4 h-4 text-purple-600" />
-                      <span>Cổng quản trị toàn trường</span>
+                      <Settings className="w-4 h-4 text-blue-600" />
+                      <span>Hồ sơ & Cài đặt lớp học</span>
                     </Link>
-                  )}
 
+                    {isAdmin && (
+                      <Link
+                        href="/admin"
+                        onClick={() => setShowUserMenu(false)}
+                        className="flex items-center space-x-2 px-3 py-2 rounded-2xl text-purple-700 hover:bg-purple-50 font-bold transition-colors"
+                      >
+                        <ShieldCheck className="w-4 h-4 text-purple-600" />
+                        <span>Cổng quản trị Ban Giám Hiệu</span>
+                      </Link>
+                    )}
+
+                    <Link
+                      href="/matrix-exam"
+                      onClick={() => setShowUserMenu(false)}
+                      className="flex items-center space-x-2 px-3 py-2 rounded-2xl text-slate-700 hover:bg-slate-50 font-bold transition-colors"
+                    >
+                      <BookOpen className="w-4 h-4 text-indigo-600" />
+                      <span>Kho đề thi & Ngân hàng câu hỏi</span>
+                    </Link>
+
+                    <Link
+                      href={classShareLink}
+                      target="_blank"
+                      onClick={() => setShowUserMenu(false)}
+                      className="flex items-center justify-between px-3 py-2 rounded-2xl text-slate-700 hover:bg-slate-50 font-bold transition-colors"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <Smartphone className="w-4 h-4 text-emerald-600" />
+                        <span>Cổng học sinh & Phụ huynh</span>
+                      </div>
+                      <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                    </Link>
+                  </div>
+
+                  {/* Sign Out */}
                   <div className="pt-1 border-t border-slate-100">
                     <button
+                      type="button"
                       onClick={() => {
                         setShowUserMenu(false);
                         signOut();
                       }}
-                      className="w-full flex items-center space-x-2 px-2.5 py-2 rounded-xl text-xs text-rose-600 hover:bg-rose-50 font-semibold transition-colors"
+                      className="w-full flex items-center space-x-2 px-3 py-2 rounded-2xl text-xs text-rose-600 hover:bg-rose-50 font-bold transition-colors cursor-pointer"
                     >
-                      <LogOut className="w-4 h-4" />
+                      <LogOut className="w-4 h-4 text-rose-600" />
                       <span>Đăng xuất</span>
                     </button>
                   </div>
@@ -305,7 +396,7 @@ export const Header: React.FC = () => {
         ) : (
           <Link
             href="/login"
-            className="flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs transition-colors"
+            className="flex items-center space-x-1.5 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs px-4 py-2 rounded-2xl shadow-md transition-all"
           >
             <span>Đăng Nhập</span>
           </Link>
