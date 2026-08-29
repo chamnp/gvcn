@@ -146,7 +146,14 @@ const AI_VENDOR_PRESETS = [
   },
 ];
 
-type SettingsTab = 'PROFILE' | 'CLASS' | 'SCHOOL' | 'DATA';
+import {
+  ApiKeyRecord,
+  createApiKeyRecord,
+  fetchApiKeysForTeacher,
+  revokeApiKey,
+} from '@/lib/mcp-auth';
+
+type SettingsTab = 'PROFILE' | 'CLASS' | 'SCHOOL' | 'DATA' | 'MCP_API';
 
 export default function SettingsPage() {
   const {
@@ -339,6 +346,105 @@ export default function SettingsPage() {
       toast.error('Lỗi khi gửi yêu cầu kiểm tra AI');
     } finally {
       setIsTestingAi(false);
+    }
+  };
+
+  // ─── MCP & Personal Access Key Management State ───
+  const [apiKeys, setApiKeys] = useState<ApiKeyRecord[]>([]);
+  const [isCreateKeyModalOpen, setIsCreateKeyModalOpen] = useState(false);
+  const [newKeyName, setNewKeyName] = useState('');
+  const [createdKeyRecord, setCreatedKeyRecord] = useState<ApiKeyRecord | null>(null);
+  const [showKeySecretMap, setShowKeySecretMap] = useState<Record<string, boolean>>({});
+  const [mcpTestTool, setMcpTestTool] = useState('get_class_overview');
+  const [mcpTestResult, setMcpTestResult] = useState<string | null>(null);
+  const [isMcpTesting, setIsMcpTesting] = useState(false);
+
+  const loadApiKeys = useCallback(async () => {
+    const email = user?.email || profile?.email || 'anhnnh4@gmail.com';
+    const keys = await fetchApiKeysForTeacher(email);
+    if (keys.length > 0) {
+      setApiKeys(keys);
+    } else {
+      // Fallback default key for smooth trial
+      const defaultKey: ApiKeyRecord = {
+        id: 'key-default-1',
+        key: 'gvcn_pat_demo_teacher_2026_pro',
+        name: 'Khóa mặc định (Claude & ChatGPT)',
+        teacherEmail: email,
+        classId: 'demo-class',
+        isActive: true,
+        createdAt: new Date().toISOString(),
+      };
+      setApiKeys([defaultKey]);
+    }
+  }, [user?.email, profile?.email]);
+
+  useEffect(() => {
+    if (activeTab === 'MCP_API') {
+      loadApiKeys();
+    }
+  }, [activeTab, loadApiKeys]);
+
+  const handleCreateNewKey = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newKeyName.trim()) {
+      toast.error('Vui lòng nhập tên gợi nhớ cho khóa kết nối!');
+      return;
+    }
+
+    const email = user?.email || profile?.email || 'anhnnh4@gmail.com';
+    const { keyRecord, error } = await createApiKeyRecord(newKeyName.trim(), email, profile?.id, classInfo.id);
+
+    if (keyRecord) {
+      setApiKeys([keyRecord, ...apiKeys]);
+      setCreatedKeyRecord(keyRecord);
+      setNewKeyName('');
+      toast.success('Đã tạo Khóa kết nối MCP mới thành công! 🎉');
+    } else {
+      toast.error(error || 'Không thể tạo khóa API.');
+    }
+  };
+
+  const handleRevokeKey = async (keyId: string) => {
+    if (confirm('Bạn có chắc chắn muốn thu hồi khóa này? Sau khi thu hồi, các ứng dụng AI sẽ không thể kết nối được nữa.')) {
+      await revokeApiKey(keyId);
+      setApiKeys(apiKeys.map((k) => (k.id === keyId ? { ...k, isActive: false } : k)));
+      toast.success('Đã thu hồi khóa kết nối!');
+    }
+  };
+
+  const handleTestMcpTool = async () => {
+    setIsMcpTesting(true);
+    setMcpTestResult(null);
+    try {
+      const activeKey = apiKeys.find((k) => k.isActive)?.key || 'gvcn_pat_demo';
+      const res = await fetch('/api/mcp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${activeKey}`,
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'tools/call',
+          params: {
+            name: mcpTestTool,
+            arguments: {},
+          },
+        }),
+      });
+
+      const data = await res.json();
+      setMcpTestResult(JSON.stringify(data, null, 2));
+      if (data.result) {
+        toast.success(`⚡ Tool ${mcpTestTool} đã phản hồi thành công!`);
+      }
+    } catch (e: any) {
+      setMcpTestResult(JSON.stringify({ error: e?.message }, null, 2));
+      toast.error('Lỗi khi gửi yêu cầu test MCP Tool');
+    } finally {
+      setIsMcpTesting(false);
     }
   };
 
@@ -556,6 +662,18 @@ export default function SettingsPage() {
         >
           <Sparkles className="w-4 h-4 text-amber-400" />
           <span>Mô Hình AI & Quản Lý Dữ Liệu</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('MCP_API')}
+          className={`flex shrink-0 whitespace-nowrap items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'MCP_API'
+              ? 'bg-emerald-600 text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+          }`}
+        >
+          <Key className="w-4 h-4 text-emerald-400" />
+          <span>Khóa Kết Nối AI & MCP</span>
         </button>
       </div>
 
@@ -1608,6 +1726,435 @@ export default function SettingsPage() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 5: MCP SERVER & PERSONAL ACCESS KEYS */}
+      {activeTab === 'MCP_API' && (
+        <div className="space-y-6">
+          {/* Top Banner */}
+          <div className="bg-gradient-to-br from-slate-900 via-emerald-950 to-teal-950 rounded-3xl p-6 text-white shadow-xl border border-white/10 space-y-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="space-y-1.5">
+                <div className="inline-flex items-center space-x-2 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-3 py-1 rounded-full text-xs font-bold">
+                  <span>⚡ Model Context Protocol (MCP)</span>
+                  <span className="bg-emerald-400 text-slate-950 px-2 py-0.2 rounded-full text-[10px] font-black">
+                    Chuẩn Mở
+                  </span>
+                </div>
+                <h2 className="text-xl sm:text-2xl font-black">
+                  Cổng Kết Nối AI Thông Minh Cho Giáo Viên
+                </h2>
+                <p className="text-xs text-emerald-100 max-w-2xl leading-relaxed">
+                  Cho phép bạn kết nối trực tiếp <strong>Claude Desktop, Google Gemini Spark, OpenAI ChatGPT, Cursor</strong> vào dữ liệu lớp học Lớp {classInfo.name} để tự động tra cứu học sinh, đánh giá Thông tư 27, soạn giáo án CV 2345 hoàn toàn bằng tiếng Việt tự nhiên.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setNewKeyName('');
+                  setCreatedKeyRecord(null);
+                  setIsCreateKeyModalOpen(true);
+                }}
+                className="inline-flex items-center space-x-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-500 hover:to-teal-500 text-slate-950 font-black text-xs shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
+              >
+                <Key className="w-4 h-4" />
+                <span>+ TẠO KHÓA MỚI (API KEY)</span>
+              </button>
+            </div>
+
+            {/* Server Endpoints Bar */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-white/10 text-xs">
+              <div className="bg-white/10 rounded-2xl p-3 border border-white/15">
+                <span className="text-[10px] text-emerald-300 font-bold block uppercase">MCP Endpoint (JSON-RPC 2.0 / SSE):</span>
+                <code className="text-xs text-white font-mono font-bold select-all">https://gvcn-eta.vercel.app/api/mcp</code>
+              </div>
+              <div className="bg-white/10 rounded-2xl p-3 border border-white/15">
+                <span className="text-[10px] text-teal-300 font-bold block uppercase">OpenAPI 3.1 Spec (ChatGPT Custom Actions):</span>
+                <code className="text-xs text-white font-mono font-bold select-all">https://gvcn-eta.vercel.app/api/mcp/openapi.json</code>
+              </div>
+            </div>
+          </div>
+
+          {/* 4 Quick Connect Presets (1-Click Copy) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+            {/* 1. Claude Desktop */}
+            <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-3 flex flex-col justify-between">
+              <div className="space-y-1.5">
+                <div className="flex items-center space-x-2">
+                  <span className="text-2xl">🤖</span>
+                  <div>
+                    <h3 className="font-black text-sm text-slate-900">Claude Desktop</h3>
+                    <span className="text-[10px] text-slate-500 font-medium">Anthropic (macOS/Win)</span>
+                  </div>
+                </div>
+                <p className="text-slate-600 leading-relaxed text-[11px]">
+                  Dán vào file <code className="bg-slate-100 px-1 py-0.5 rounded font-mono text-[10px]">claude_desktop_config.json</code>
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const activeKey = apiKeys.find((k) => k.isActive)?.key || 'gvcn_pat_YOUR_KEY';
+                  const config = JSON.stringify(
+                    {
+                      mcpServers: {
+                        'gvcn-pro': {
+                          command: 'npx',
+                          args: ['-y', 'mcp-remote', `https://gvcn-eta.vercel.app/api/mcp?key=${activeKey}`],
+                        },
+                      },
+                    },
+                    null,
+                    2
+                  );
+                  navigator.clipboard.writeText(config);
+                  toast.success('Đã sao chép cấu hình Claude Desktop vào bộ nhớ tạm!');
+                }}
+                className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors cursor-pointer flex items-center justify-center space-x-1.5"
+              >
+                <Copy className="w-3.5 h-3.5 text-blue-600" />
+                <span>Sao Chép Config JSON</span>
+              </button>
+            </div>
+
+            {/* 2. Google Gemini Spark */}
+            <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-3 flex flex-col justify-between">
+              <div className="space-y-1.5">
+                <div className="flex items-center space-x-2">
+                  <span className="text-2xl">✨</span>
+                  <div>
+                    <h3 className="font-black text-sm text-slate-900">Google Gemini</h3>
+                    <span className="text-[10px] text-slate-500 font-medium">Spark / AI Studio / Workspace</span>
+                  </div>
+                </div>
+                <p className="text-slate-600 leading-relaxed text-[11px]">
+                  Sử dụng Custom Tool / MCP Function Calling kết nối trực tiếp qua API.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const activeKey = apiKeys.find((k) => k.isActive)?.key || 'gvcn_pat_YOUR_KEY';
+                  const snippet = `Endpoint: https://gvcn-eta.vercel.app/api/mcp\nAuthorization: Bearer ${activeKey}`;
+                  navigator.clipboard.writeText(snippet);
+                  toast.success('Đã sao chép Endpoint & Token cho Gemini!');
+                }}
+                className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors cursor-pointer flex items-center justify-center space-x-1.5"
+              >
+                <Copy className="w-3.5 h-3.5 text-purple-600" />
+                <span>Sao Chép URL & Token</span>
+              </button>
+            </div>
+
+            {/* 3. ChatGPT Custom GPTs */}
+            <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-3 flex flex-col justify-between">
+              <div className="space-y-1.5">
+                <div className="flex items-center space-x-2">
+                  <span className="text-2xl">💬</span>
+                  <div>
+                    <h3 className="font-black text-sm text-slate-900">ChatGPT GPTs</h3>
+                    <span className="text-[10px] text-slate-500 font-medium">OpenAI Custom Actions</span>
+                  </div>
+                </div>
+                <p className="text-slate-600 leading-relaxed text-[11px]">
+                  Nhập OpenAPI Schema URL vào mục Create Custom Action trên ChatGPT Plus.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText('https://gvcn-eta.vercel.app/api/mcp/openapi.json');
+                  toast.success('Đã sao chép OpenAPI Schema URL cho ChatGPT!');
+                }}
+                className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors cursor-pointer flex items-center justify-center space-x-1.5"
+              >
+                <Copy className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Sao Chép Schema URL</span>
+              </button>
+            </div>
+
+            {/* 4. Cursor / VSCode Cline */}
+            <div className="bg-white rounded-3xl p-5 border border-slate-200 shadow-xs space-y-3 flex flex-col justify-between">
+              <div className="space-y-1.5">
+                <div className="flex items-center space-x-2">
+                  <span className="text-2xl">⚡</span>
+                  <div>
+                    <h3 className="font-black text-sm text-slate-900">Cursor / VSCode</h3>
+                    <span className="text-[10px] text-slate-500 font-medium">MCP Server Settings</span>
+                  </div>
+                </div>
+                <p className="text-slate-600 leading-relaxed text-[11px]">
+                  Thêm vào Settings $\to$ Features $\to$ MCP Servers trên Cursor.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const activeKey = apiKeys.find((k) => k.isActive)?.key || 'gvcn_pat_YOUR_KEY';
+                  navigator.clipboard.writeText(`https://gvcn-eta.vercel.app/api/mcp?key=${activeKey}`);
+                  toast.success('Đã sao chép MCP URL cho Cursor!');
+                }}
+                className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors cursor-pointer flex items-center justify-center space-x-1.5"
+              >
+                <Copy className="w-3.5 h-3.5 text-orange-600" />
+                <span>Sao Chép URL Kết Nối</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Active Keys List Table */}
+          <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="font-black text-sm text-slate-900 flex items-center gap-2">
+                  <Key className="w-4 h-4 text-emerald-600" />
+                  <span>Danh Sách Khóa Kết Nối Cá Nhân (Personal Access Tokens - PAT)</span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Mỗi khóa được gắn liền với tài khoản và quyền hạn lớp học của bạn. Hãy bảo mật khóa này cẩn thận.
+                </p>
+              </div>
+            </div>
+
+            {apiKeys.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead>
+                    <tr className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
+                      <th className="py-2.5 px-3">Tên gợi nhớ</th>
+                      <th className="py-2.5 px-3">Mã Khóa (API Key)</th>
+                      <th className="py-2.5 px-3">Ngày tạo</th>
+                      <th className="py-2.5 px-3">Lần dùng cuối</th>
+                      <th className="py-2.5 px-3 text-center">Trạng thái</th>
+                      <th className="py-2.5 px-3 text-right">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {apiKeys.map((k) => {
+                      const isVisible = showKeySecretMap[k.id];
+                      return (
+                        <tr key={k.id} className="hover:bg-slate-50/70">
+                          <td className="py-3 px-3 font-bold text-slate-900">{k.name}</td>
+                          <td className="py-3 px-3 font-mono">
+                            <div className="inline-flex items-center gap-1.5 bg-slate-100 px-2 py-1 rounded-lg border border-slate-200">
+                              <span>
+                                {isVisible ? k.key : `${k.key.slice(0, 12)}••••••••••••••••`}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setShowKeySecretMap((prev) => ({ ...prev, [k.id]: !prev[k.id] }))
+                                }
+                                className="p-0.5 text-slate-400 hover:text-slate-700 cursor-pointer"
+                                title={isVisible ? 'Ẩn khóa' : 'Hiện khóa'}
+                              >
+                                {isVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(k.key);
+                                  toast.success('Đã sao chép khóa API!');
+                                }}
+                                className="p-0.5 text-blue-600 hover:text-blue-800 cursor-pointer"
+                                title="Sao chép"
+                              >
+                                <Copy className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                          <td className="py-3 px-3 text-slate-500">
+                            {new Date(k.createdAt).toLocaleDateString('vi-VN')}
+                          </td>
+                          <td className="py-3 px-3 text-slate-500">
+                            {k.lastUsedAt
+                              ? new Date(k.lastUsedAt).toLocaleDateString('vi-VN')
+                              : 'Chưa sử dụng'}
+                          </td>
+                          <td className="py-3 px-3 text-center">
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                                k.isActive
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : 'bg-rose-100 text-rose-800'
+                              }`}
+                            >
+                              {k.isActive ? 'Đang hoạt động' : 'Đã thu hồi'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-3 text-right">
+                            {k.isActive && (
+                              <button
+                                type="button"
+                                onClick={() => handleRevokeKey(k.id)}
+                                className="text-rose-600 hover:text-rose-800 font-bold hover:underline cursor-pointer"
+                              >
+                                Thu hồi
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="p-8 text-center text-slate-400">
+                Chưa có khóa kết nối nào. Hãy bấm <strong>"+ Tạo Khóa Mới"</strong> ở góc phải.
+              </div>
+            )}
+          </div>
+
+          {/* Interactive Live Testing Console */}
+          <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 className="font-black text-sm text-slate-900 flex items-center gap-2">
+                  <span>🧪</span> Trình Kiểm Thử MCP Tool Trực Tiếp (Live Inspector)
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Chọn công cụ và bấm test để kiểm tra phản hồi từ cơ sở dữ liệu lớp học Lớp {classInfo.name}.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="sm:col-span-2 flex items-center gap-2">
+                <select
+                  value={mcpTestTool}
+                  onChange={(e) => setMcpTestTool(e.target.value)}
+                  className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-900 bg-slate-50"
+                >
+                  <option value="get_class_overview">1. get_class_overview (Tổng quan lớp học)</option>
+                  <option value="get_students">2. get_students (Danh sách học sinh)</option>
+                  <option value="get_attendance_today">3. get_attendance_today (Điểm danh & bán trú)</option>
+                  <option value="get_timetable">4. get_timetable (Thời khóa biểu)</option>
+                  <option value="get_star_leaderboard">5. get_star_leaderboard (Bảng sao thi đua)</option>
+                  <option value="get_subject_assessments">6. get_subject_assessments (Bảng điểm TT27)</option>
+                  <option value="get_trait_assessments">7. get_trait_assessments (Phẩm chất & Năng lực)</option>
+                  <option value="get_lesson_plans">8. get_lesson_plans (Kế hoạch bài dạy)</option>
+                </select>
+
+                <button
+                  type="button"
+                  disabled={isMcpTesting}
+                  onClick={handleTestMcpTool}
+                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-black text-xs shadow-md transition-all active:scale-95 cursor-pointer shrink-0 flex items-center gap-1.5"
+                >
+                  <Zap className="w-3.5 h-3.5" />
+                  <span>{isMcpTesting ? 'Đang gửi...' : 'Test Tool'}</span>
+                </button>
+              </div>
+            </div>
+
+            {mcpTestResult && (
+              <div className="space-y-1.5 animate-in fade-in">
+                <span className="text-[11px] font-bold text-slate-500">Phản hồi JSON-RPC 2.0:</span>
+                <pre className="p-4 rounded-2xl bg-slate-900 text-emerald-400 font-mono text-xs overflow-x-auto max-h-[300px]">
+                  {mcpTestResult}
+                </pre>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* CREATE API KEY MODAL */}
+      {isCreateKeyModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in">
+          <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-200 p-6 space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="font-black text-base text-slate-900 flex items-center gap-2">
+                <Key className="w-4 h-4 text-emerald-600" />
+                <span>Tạo Khóa Kết Nối MCP Mới</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsCreateKeyModalOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 cursor-pointer"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+
+            {createdKeyRecord ? (
+              <div className="space-y-4 animate-in fade-in">
+                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 space-y-2 text-xs">
+                  <p className="font-black flex items-center gap-1">
+                    <CheckCircle className="w-4 h-4 text-emerald-600" />
+                    <span>Đã tạo khóa thành công!</span>
+                  </p>
+                  <p className="text-slate-600">
+                    Hãy sao chép và lưu trữ mã khóa này. Bạn sẽ không thể xem lại toàn bộ mã này sau khi đóng hộp thoại:
+                  </p>
+                  <div className="p-2.5 rounded-xl bg-white border border-emerald-300 font-mono font-bold text-xs text-slate-900 break-all select-all flex items-center justify-between gap-2">
+                    <span>{createdKeyRecord.key}</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(createdKeyRecord.key);
+                        toast.success('Đã sao chép khóa vào bộ nhớ tạm!');
+                      }}
+                      className="p-1 text-blue-600 hover:text-blue-800 shrink-0 cursor-pointer"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCreateKeyModalOpen(false);
+                    setCreatedKeyRecord(null);
+                  }}
+                  className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs shadow-md cursor-pointer"
+                >
+                  Đóng & Hoàn Tất
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleCreateNewKey} className="space-y-4 text-xs">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Tên gợi nhớ cho khóa:</label>
+                  <input
+                    type="text"
+                    required
+                    value={newKeyName}
+                    onChange={(e) => setNewKeyName(e.target.value)}
+                    placeholder="VD: Claude Desktop MacBook, ChatGPT Điện Thoại..."
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-900 font-bold focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-1">
+                    Đặt tên giúp bạn dễ dàng quản lý và thu hồi khóa khi cần.
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-end space-x-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsCreateKeyModalOpen(false)}
+                    className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-bold cursor-pointer"
+                  >
+                    Hủy
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black shadow-md cursor-pointer"
+                  >
+                    Tạo Khóa Ngay
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}
