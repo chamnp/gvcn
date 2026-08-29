@@ -75,6 +75,7 @@ export const NAV_GROUPS: NavGroup[] = [
     title: 'CHUYÊN MÔN & ĐÁNH GIÁ',
     icon: '🎓',
     items: [
+      { href: '/lesson-plans', label: 'Giáo án điện tử', icon: Presentation, badge: 'CV 2345' },
       { href: '/assessment', label: 'Đánh giá TT 27', icon: FileSpreadsheet, badge: 'Cốt lõi' },
       { href: '/iep', label: 'Kế hoạch IEP TT27', icon: Target, badge: 'Phụ đạo' },
       { href: '/matrix-exam', label: 'Ma trận Đề TT27', icon: BookOpen, badge: 'Đề 10đ' },

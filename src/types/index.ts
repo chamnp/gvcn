@@ -621,3 +621,90 @@ export interface MysteryChestPack {
   isCustom?: boolean;
 }
 
+// Phase 11: E-Lesson Plan & Classroom Presentation Suite (CV 2345/BGDĐT-GDTH)
+export type TextbookSeries = 'KET_NOI_TRI_THUC' | 'CANH_DIEU' | 'CHAN_TROI_SANG_TAO';
+
+export type LessonPhase = 'KHOI_DONG' | 'KHAM_PHA' | 'LUYEN_TAP' | 'VAN_DUNG';
+
+export interface LessonActivity {
+  id: string;
+  phase: LessonPhase;
+  title: string; // VD: 'Hoạt động 1: Khởi động - Trò chơi Vòng quay may mắn'
+  durationMinutes: number;
+  goal: string; // Mục tiêu hoạt động
+  teacherActivity: string; // Hoạt động của giáo viên (tổ chức, hướng dẫn, nêu câu hỏi)
+  studentActivity: string; // Hoạt động của học sinh (lắng nghe, thảo luận, thực hiện)
+  expectedProduct: string; // Dự kiến sản phẩm / câu trả lời của học sinh
+  assessmentNote?: string; // Đánh giá quá trình (Formative assessment)
+}
+
+export type LessonSlideLayout =
+  | 'TITLE'
+  | 'BULLETS'
+  | 'TWO_COLUMNS'
+  | 'INTERACTIVE_QUIZ'
+  | 'GAME_WHEEL'
+  | 'COUNTDOWN_TASK'
+  | 'IMAGE_FULL'
+  | 'SUMMARY';
+
+export interface LessonSlide {
+  id: string;
+  title: string;
+  subtitle?: string;
+  phase: LessonPhase | 'TONG_KET';
+  layout: LessonSlideLayout;
+  content: string[]; // Bullet points or text blocks
+  question?: string; // Câu hỏi tương tác trên TV
+  options?: string[]; // 4 lựa chọn A, B, C, D
+  correctOption?: number; // 0-indexed correct option
+  explanation?: string; // Lời giải thích khi click reveal
+  timerSeconds?: number; // Đồng hồ đếm ngược (VD: 300s = 5p)
+  imageUrl?: string; // Hình ảnh minh họa
+  speakerNotes?: string; // Gợi ý lời giảng của giáo viên
+}
+
+export interface LessonPlanObjectives {
+  specificCompetencies: string[]; // Năng lực đặc thù môn học
+  generalCompetencies: string[]; // Năng lực chung (Tự chủ - Tự học, Giao tiếp - Hợp tác, Giải quyết vấn đề)
+  qualities: string[]; // Phẩm chất chủ yếu (Yêu nước, Nhân ái, Chăm chỉ, Trung thực, Trách nhiệm)
+}
+
+export interface LessonPlanEquipment {
+  teacher: string[]; // Đồ dùng của giáo viên (Slide TV, video, phiếu học tập, thiết bị số)
+  students: string[]; // Đồ dùng của học sinh (SGK, VBT, bảng con, đồ dùng học tập)
+}
+
+export interface LessonPlan {
+  id: string;
+  classId: string;
+  grade: GradeLevel;
+  subjectCode: string; // 'TOAN', 'TIENG_VIET', 'KHOA_HOC', 'LS_DL', 'TIN_HOC_CN', 'DAO_DUC', 'HD_TRAI_NGHIEM', 'NGOAI_NGU'
+  subjectName: string;
+  textbook: TextbookSeries;
+  week: number; // Tuần 1 - 35
+  periodNumber: number; // Tiết theo PPCT
+  title: string; // Tên bài dạy (VD: 'Bài 12: Các số có sáu chữ số (Tiết 1)')
+  durationMinutes: number; // Mặc định 35 phút
+  objectives: LessonPlanObjectives;
+  equipment: LessonPlanEquipment;
+  activities: LessonActivity[];
+  postLessonNotes?: string; // Điều chỉnh sau bài dạy
+  slides?: LessonSlide[]; // Slide bài giảng TV tương ứng
+  embeddedSlideUrl?: string; // Link nhúng Canva / Google Slides / PPTX online nếu có
+  isCompleted?: boolean; // Đã dạy xong
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CurriculumTopicItem {
+  id: string;
+  week: number;
+  periodNumber: number;
+  subjectCode: string;
+  title: string;
+  textbook: TextbookSeries;
+  suggestedObjectives: string[];
+}
+
+
