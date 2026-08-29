@@ -37,9 +37,19 @@ import {
   Crown,
   ChevronRight,
   Share2,
+  AlertTriangle,
+  HeartPulse,
 } from 'lucide-react';
 import { useAppStore, getDefaultPinForStudent } from '@/lib/store';
-import { ParentMeetingDoc, MeetingAgendaTopic, IndividualStudentMeetingNote, Student, ParentMeetingType, ParentCommitteeMember } from '@/types';
+import {
+  ParentMeetingDoc,
+  MeetingAgendaTopic,
+  IndividualStudentMeetingNote,
+  Student,
+  ParentMeetingType,
+  ParentCommitteeMember,
+  TermType,
+} from '@/types';
 import { DynamicPresentationModal } from '@/components/meetings/meeting-presentation-modal';
 import { MeetingMinutesPrintView } from '@/components/meetings/meeting-minutes-print-view';
 import { BatchHandoutsPrintView } from '@/components/meetings/batch-handouts-print-view';
@@ -50,7 +60,9 @@ import {
   generateAISpeechScript,
   generateDefaultAgendaTopics,
   autoGenerateIndividualNotes,
+  generateClassStatistics,
 } from '@/lib/parent-meeting-engine';
+import { getCurrentTermByDate, PRIMARY_SUBJECTS } from '@/lib/tt27-engine';
 import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
 
@@ -64,9 +76,13 @@ export default function ParentMeetingsPage() {
     students,
     getStudentStars,
     healthRecords,
+    subjectAssessments,
+    traitAssessments,
   } = useAppStore();
 
-  const [activeTab, setActiveTab] = useState<'AGENDA' | 'STUDENTS' | 'ATTENDANCE_COMMITTEE' | 'SPEECH' | 'MINUTES'>('AGENDA');
+  const [activeTab, setActiveTab] = useState<
+    'AGENDA' | 'STUDENTS' | 'ATTENDANCE_COMMITTEE' | 'SPEECH' | 'MINUTES'
+  >('AGENDA');
   const [activeMeetingType, setActiveMeetingType] = useState<ParentMeetingType>('DAU_NAM');
 
   // Presentation & Print Views
@@ -80,11 +96,37 @@ export default function ParentMeetingsPage() {
   const [selectedStudentForNote, setSelectedStudentForNote] = useState<Student | null>(null);
   const [studentNoteModalOpen, setStudentNoteModalOpen] = useState(false);
 
-  // Filters
+  // Filters & Attendance State
   const [studentSearchTerm, setStudentSearchTerm] = useState('');
   const [selectedTeamFilter, setSelectedTeamFilter] = useState<'ALL' | number>('ALL');
+  const [attendanceSearchTerm, setAttendanceSearchTerm] = useState('');
+  const [attendanceMap, setAttendanceMap] = useState<
+    Record<string, 'PRESENT' | 'EXCUSED' | 'UNEXCUSED'>
+  >({});
 
   const numTeams = classInfo.numberOfTeams && classInfo.numberOfTeams >= 2 ? classInfo.numberOfTeams : 4;
+  const currentTerm: TermType = getCurrentTermByDate();
+
+  // Auto-collected class statistics from real store data
+  const classStats = useMemo(() => {
+    return generateClassStatistics(
+      students,
+      subjectAssessments,
+      traitAssessments,
+      healthRecords,
+      getStudentStars,
+      classInfo.grade,
+      currentTerm
+    );
+  }, [
+    students,
+    subjectAssessments,
+    traitAssessments,
+    healthRecords,
+    getStudentStars,
+    classInfo.grade,
+    currentTerm,
+  ]);
 
   // Active meeting doc or auto-create first meeting
   const currentMeeting = useMemo(() => {
@@ -106,8 +148,15 @@ export default function ParentMeetingsPage() {
   // 1-Click Auto Setup / Reset Meeting Plan with Actual Class Data
   const handleAutoGenerateMeeting = (type: ParentMeetingType) => {
     const defaultTopics = generateDefaultAgendaTopics(type, classInfo, students.length);
-    const speech = generateAISpeechScript(type, classInfo, schoolInfo, students.length);
-    const autoNotes = autoGenerateIndividualNotes(students, getStudentStars, healthRecords);
+    const speech = generateAISpeechScript(type, classInfo, schoolInfo, students.length, classStats);
+    const autoNotes = autoGenerateIndividualNotes(
+      students,
+      getStudentStars,
+      healthRecords,
+      subjectAssessments,
+      traitAssessments,
+      currentTerm
+    );
 
     const typeTitle =
       type === 'DAU_NAM'
@@ -121,27 +170,42 @@ export default function ParentMeetingsPage() {
         ? [
             `Báo cáo đặc điểm tình hình lớp ${classInfo.name}: Sĩ số ${students.length} học sinh (${students.filter((s) => s.gender === 'Nam').length} Nam, ${students.filter((s) => s.gender === 'Nữ').length} Nữ, ${students.filter((s) => s.isBoarding).length} bán trú).`,
             'Triển khai kế hoạch dạy học 2 buổi/ngày, Thời khóa biểu và quy định sách vở, đồ dùng học tập.',
-            'Thông qua nội quy lớp học, quy chế bán trú và chế độ chăm sóc dinh dưỡng.',
+            'Thông qua nội quy lớp học, quy chế bán trú và chế độ chăm sóc dinh dưỡng, y tế học đường.',
             'Bầu Ban Đại Diện Cha Mẹ Học Sinh lớp nhiệm kỳ năm học mới.',
           ]
         : type === 'SO_KET_HK1'
         ? [
-            'Báo cáo kết quả rèn luyện và học tập Học kỳ 1 theo Thông tư 27.',
-            'Tuyên dương các học sinh có thành tích xuất sắc và tích lũy nhiều sao thi đua.',
-            'Phương hướng, nhiệm vụ trọng tâm và các chỉ tiêu thi đua trong Học kỳ 2.',
-            'Phát phiếu đánh giá cá nhân và lắng nghe ý kiến thảo luận của phụ huynh.',
+            'Báo cáo kết quả rèn luyện và học tập Học kỳ 1 theo Thông tư 27/2020/TT-BGDĐT.',
+            'Tuyên dương các học sinh có thành tích xuất sắc, tiến bộ vượt bậc và nhiều sao thi đua.',
+            'Phương hướng, nhiệm vụ trọng tâm và các chỉ tiêu thi đua rèn luyện trong Học kỳ 2.',
+            'Phát phiếu đánh giá cá nhân và lắng nghe ý kiến thảo luận, đóng góp của phụ huynh.',
           ]
         : [
-            'Báo cáo tổng kết toàn diện thành tích năm học của lớp.',
+            'Báo cáo tổng kết toàn diện thành tích học tập và rèn luyện năm học của lớp.',
             'Công bố danh hiệu Khen thưởng Học sinh Xuất sắc và Học sinh Tiêu biểu theo Điều 13 TT27.',
-            'Kế hoạch bàn giao học sinh về sinh hoạt hè tại địa phương.',
+            'Kế hoạch bàn giao học sinh về sinh hoạt hè an toàn tại địa phương.',
             'Tri ân Ban Đại Diện CMHS và quyết toán công khai quỹ hoạt động lớp.',
           ];
 
     const defaultCommittee: ParentCommitteeMember[] = [
-      { role: 'TRUONG_BAN', fullName: students[0]?.parentName || 'Nguyễn Văn Hùng', phone: students[0]?.parentPhone || '0988123456', studentName: students[0]?.fullName || 'Học sinh lớp' },
-      { role: 'PHO_BAN', fullName: students[1]?.parentName || 'Trần Thị Lan', phone: students[1]?.parentPhone || '0977234567', studentName: students[1]?.fullName || 'Học sinh lớp' },
-      { role: 'UY_VIEN', fullName: students[2]?.parentName || 'Lê Hoàng Nam', phone: students[2]?.parentPhone || '0912345678', studentName: students[2]?.fullName || 'Học sinh lớp' },
+      {
+        role: 'TRUONG_BAN',
+        fullName: students[0]?.parentName || 'Nguyễn Văn Hùng',
+        phone: students[0]?.parentPhone || '0988123456',
+        studentName: students[0]?.fullName || 'Học sinh lớp',
+      },
+      {
+        role: 'PHO_BAN',
+        fullName: students[1]?.parentName || 'Trần Thị Lan',
+        phone: students[1]?.parentPhone || '0977234567',
+        studentName: students[1]?.fullName || 'Học sinh lớp',
+      },
+      {
+        role: 'UY_VIEN',
+        fullName: students[2]?.parentName || 'Lê Hoàng Nam',
+        phone: students[2]?.parentPhone || '0912345678',
+        studentName: students[2]?.fullName || 'Học sinh lớp',
+      },
     ];
 
     const newOrUpdatedDoc: ParentMeetingDoc = {
@@ -155,17 +219,20 @@ export default function ParentMeetingsPage() {
       secretary: 'Ban Thư ký Lớp',
       attendeesCount: students.length,
       totalParents: students.length,
-      committeeMembers: currentMeeting?.committeeMembers?.length ? currentMeeting.committeeMembers : defaultCommittee,
+      committeeMembers: currentMeeting?.committeeMembers?.length
+        ? currentMeeting.committeeMembers
+        : defaultCommittee,
       agendaTopics: defaultTopics,
       individualNotes: autoNotes,
       aiSpeechScript: speech,
       faqList: SAMPLE_MEETING_FAQS,
       mainReports: mainReports,
-      discussionNotes: '100% phụ huynh nhất trí với kế hoạch hoạt động của lớp và không có ý kiến phản đối.',
+      discussionNotes:
+        '100% phụ huynh nhất trí cao với kế hoạch hoạt động của lớp, thống nhất phương hướng giáo dục và không có ý kiến phản đối.',
       agreedResolutions: [
         'Nhất trí 100% với báo cáo và kế hoạch phối hợp giáo dục của Giáo viên chủ nhiệm.',
         'Nhất trí danh sách Ban Đại Diện Cha Mẹ Học Sinh lớp.',
-        'Gia đình cam kết đồng hành, kiểm tra sách vở của con mỗi tối.',
+        'Gia đình cam kết đồng hành, cùng con đọc sách và kiểm tra sách vở mỗi tối.',
       ],
       createdAt: new Date().toISOString(),
     };
@@ -237,6 +304,31 @@ export default function ParentMeetingsPage() {
     toast.success(`Đã lưu ghi chú trao đổi riêng em ${note.studentName}!`);
   };
 
+  // Attendance Toggle Handler
+  const handleToggleAttendance = (studentId: string, status: 'PRESENT' | 'EXCUSED' | 'UNEXCUSED') => {
+    const updated = { ...attendanceMap, [studentId]: status };
+    setAttendanceMap(updated);
+    const presentCount = students.filter((s) => (updated[s.id] || 'PRESENT') === 'PRESENT').length;
+    if (currentMeeting) {
+      updateParentMeetingDoc({ ...currentMeeting, attendeesCount: presentCount });
+    }
+  };
+
+  const handleSetAllAttendance = (status: 'PRESENT' | 'EXCUSED' | 'UNEXCUSED') => {
+    const updated: Record<string, 'PRESENT' | 'EXCUSED' | 'UNEXCUSED'> = {};
+    students.forEach((s) => {
+      updated[s.id] = status;
+    });
+    setAttendanceMap(updated);
+    const presentCount = status === 'PRESENT' ? students.length : 0;
+    if (currentMeeting) {
+      updateParentMeetingDoc({ ...currentMeeting, attendeesCount: presentCount });
+    }
+    toast.success(
+      status === 'PRESENT' ? 'Đã đánh dấu 100% phụ huynh có mặt!' : 'Đã cập nhật danh sách điểm danh!'
+    );
+  };
+
   // 1-Click Send Zalo to Parent
   const handleSendZaloSingle = (student: Student) => {
     const origin = typeof window !== 'undefined' ? window.location.origin : 'https://gvcn-eta.vercel.app';
@@ -245,13 +337,14 @@ export default function ParentMeetingsPage() {
     const defPin = getDefaultPinForStudent(student);
     const note = (currentMeeting?.individualNotes || []).find((n) => n.studentId === student.id);
 
-    const message = `Kính gửi Quý Phụ huynh em ${student.fullName} (Lớp ${classInfo.name}),\n` +
+    const message =
+      `Kính gửi Quý Phụ huynh em ${student.fullName} (Lớp ${classInfo.name}),\n` +
       `Cô giáo gửi gia đình thông tin rèn luyện và lời nhận xét trong buổi Họp Phụ Huynh:\n` +
       `📖 Học tập: ${note?.academicSummary || 'Nắm vững kiến thức bài học'}\n` +
       `⭐ Nề nếp: ${note?.behaviorSummary || 'Ngoan ngoãn, lễ phép'}\n` +
       `💡 Dặn dò: ${note?.actionItemForParents || 'Gia đình cùng con đọc sách mỗi tối'}\n\n` +
       `🔗 Tra cứu chi tiết hồ sơ học sinh trực tuyến: ${studentUrl}\n` +
-      `🔑 Mật khẩu mặc định: ${defPin} (Ngày sinh con)\n\n` +
+      `🔑 Mật khẩu mặc định: ${defPin} (Ngày sinh con dạng ddmmyyyy)\n\n` +
       `Trân trọng cảm ơn bố mẹ! ❤️`;
 
     navigator.clipboard.writeText(message);
@@ -280,6 +373,25 @@ export default function ParentMeetingsPage() {
         return matchesSearch && matchesTeam;
       });
   }, [students, studentSearchTerm, selectedTeamFilter, numTeams]);
+
+  // Filtered Students for Attendance
+  const filteredAttendanceStudents = useMemo(() => {
+    return students
+      .map((st, idx) => ({ ...st, teamId: getStudentTeam(st, idx) }))
+      .filter((s) => {
+        return (
+          s.fullName.toLowerCase().includes(attendanceSearchTerm.toLowerCase()) ||
+          s.studentCode.toLowerCase().includes(attendanceSearchTerm.toLowerCase()) ||
+          (s.parentName && s.parentName.toLowerCase().includes(attendanceSearchTerm.toLowerCase())) ||
+          (s.parentPhone && s.parentPhone.includes(attendanceSearchTerm))
+        );
+      });
+  }, [students, attendanceSearchTerm, numTeams]);
+
+  // Attendance stats
+  const presentCount = students.filter((s) => (attendanceMap[s.id] || 'PRESENT') === 'PRESENT').length;
+  const excusedCount = students.filter((s) => attendanceMap[s.id] === 'EXCUSED').length;
+  const unexcusedCount = students.filter((s) => attendanceMap[s.id] === 'UNEXCUSED').length;
 
   // Total Estimated Time
   const totalEstimatedTime = (currentMeeting?.agendaTopics || [])
@@ -312,53 +424,109 @@ export default function ParentMeetingsPage() {
 
   return (
     <div className="space-y-4 pb-16 animate-in fade-in duration-300">
-      {/* 1. TOP HEADER & INSTANT MEETING PRESET LAUNCHER */}
-      <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-800 rounded-3xl p-5 sm:p-7 text-white shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
-        <div className="space-y-1.5 max-w-2xl">
-          <div className="inline-flex items-center space-x-2 bg-white/15 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold border border-white/20">
-            <span>✨ Trợ Lý Họp Phụ Huynh Thông Minh</span>
-            <span className="bg-amber-400 text-slate-950 px-2 py-0.2 rounded-full text-[10px] font-black">
-              Giảm 95% Thời Gian Chuẩn Bị
-            </span>
+      {/* 1. TOP HEADER — Real Class Stats + Action Buttons */}
+      <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 rounded-3xl p-5 sm:p-6 text-white shadow-lg space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="inline-flex items-center space-x-2 bg-white/10 px-3 py-1 rounded-full text-xs font-bold border border-white/15">
+              <span>🏫 Họp Phụ Huynh Lớp {classInfo.name}</span>
+              <span className="bg-blue-500 text-white px-2 py-0.2 rounded-full text-[10px] font-black">
+                Thông tư 27
+              </span>
+            </div>
+            <h1 className="text-lg sm:text-2xl font-black tracking-tight">
+              {currentMeeting?.title || `Hội Nghị Cha Mẹ Học Sinh Lớp ${classInfo.name}`}
+            </h1>
+            <p className="text-xs text-slate-300 font-medium">
+              {schoolInfo.name || 'Trường Tiểu học'} • Năm học {schoolInfo.schoolYear || '2026-2027'} • GVCN:{' '}
+              {classInfo.teacherName}
+            </p>
           </div>
 
-          <h1 className="text-xl sm:text-3xl font-black tracking-tight leading-tight">
-            Kế Hoạch Họp Phụ Huynh & Trình Chiếu TV Lớp Học
-          </h1>
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsPresentationOpen(true)}
+              className="inline-flex items-center space-x-1.5 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-slate-950 font-black text-xs shadow-md transition-all active:scale-95 cursor-pointer"
+            >
+              <Tv className="w-4 h-4" />
+              <span>Chiếu Slide TV 📺</span>
+            </button>
 
-          <p className="text-xs sm:text-sm text-blue-100 font-medium leading-relaxed">
-            1-Click tự động tạo toàn bộ Slide TV, kịch bản phát biểu, sổ tay trao đổi 1-1 và in hàng loạt phiếu kết quả A4/A5 từ số liệu thật của lớp.
-          </p>
+            <button
+              type="button"
+              onClick={() => setIsPrintingHandouts(true)}
+              className="inline-flex items-center space-x-1.5 px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/15 transition-all cursor-pointer"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>In Phiếu Handout A4/A5</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsPrintingMinutes(true)}
+              className="inline-flex items-center space-x-1.5 px-3.5 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/15 transition-all cursor-pointer"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span>In Biên Bản A4</span>
+            </button>
+          </div>
         </div>
 
-        {/* Big Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-          <button
-            type="button"
-            onClick={() => setIsPresentationOpen(true)}
-            className="inline-flex items-center space-x-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-slate-950 font-black text-xs shadow-md transition-all transform active:scale-95 cursor-pointer"
-          >
-            <Tv className="w-4 h-4" />
-            <span>CHIẾU SLIDE TV TRỰC TIẾP 📺</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setIsPrintingHandouts(true)}
-            className="inline-flex items-center space-x-2 px-4 py-3 rounded-2xl bg-white text-slate-900 hover:bg-slate-100 font-bold text-xs shadow-md transition-all cursor-pointer"
-          >
-            <Printer className="w-4 h-4 text-blue-600" />
-            <span>In Loạt Phiếu Handout A4/A5</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setIsPrintingMinutes(true)}
-            className="inline-flex items-center space-x-2 px-3.5 py-3 rounded-2xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs border border-white/20 transition-all cursor-pointer"
-          >
-            <FileText className="w-4 h-4" />
-            <span>In Biên Bản A4</span>
-          </button>
+        {/* Auto-collected Stats Bar */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 pt-1 border-t border-white/10">
+          {[
+            {
+              label: 'Sĩ số',
+              value: `${classStats.totalStudents}`,
+              sub: `${classStats.totalMale} Nam • ${classStats.totalFemale} Nữ`,
+              color: 'bg-blue-500/15 text-blue-300 border border-blue-500/20',
+            },
+            {
+              label: 'Bán trú',
+              value: `${classStats.totalBoarding}`,
+              sub: `${Math.round((classStats.totalBoarding / (classStats.totalStudents || 1)) * 100)}% sĩ số`,
+              color: 'bg-amber-500/15 text-amber-300 border border-amber-500/20',
+            },
+            {
+              label: 'Sao TB',
+              value: `${classStats.avgStars}`,
+              sub: '⭐/học sinh',
+              color: 'bg-yellow-500/15 text-yellow-300 border border-yellow-500/20',
+            },
+            {
+              label: 'Cận thị',
+              value: `${classStats.nearsightedCount}`,
+              sub: 'ưu tiên 2 hàng đầu',
+              color: 'bg-rose-500/15 text-rose-300 border border-rose-500/20',
+            },
+            {
+              label: 'Đánh giá T',
+              value: `${
+                classStats.subjectStats.filter((s) => s.totalAssessed > 0).length > 0
+                  ? Math.round(
+                      (classStats.subjectStats.reduce((a, s) => a + s.countT, 0) /
+                        Math.max(classStats.subjectStats.reduce((a, s) => a + s.totalAssessed, 0), 1)) *
+                        100
+                    )
+                  : '—'
+              }%`,
+              sub: 'Hoàn thành tốt TT27',
+              color: 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/20',
+            },
+            {
+              label: 'Tham dự',
+              value: `${presentCount}/${students.length}`,
+              sub: `${Math.round((presentCount / (students.length || 1)) * 100)}% có mặt`,
+              color: 'bg-purple-500/15 text-purple-300 border border-purple-500/20',
+            },
+          ].map((stat) => (
+            <div key={stat.label} className={`${stat.color} rounded-2xl px-3 py-2 text-center`}>
+              <p className="text-[10px] font-bold opacity-75 uppercase tracking-wider">{stat.label}</p>
+              <p className="text-sm sm:text-base font-black">{stat.value}</p>
+              <p className="text-[10px] opacity-70 truncate">{stat.sub}</p>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -371,9 +539,21 @@ export default function ParentMeetingsPage() {
           </span>
 
           {[
-            { id: 'DAU_NAM' as ParentMeetingType, label: '🥇 1. Đầu Năm Học', desc: 'Bầu BĐD, Nội quy & TKB' },
-            { id: 'SO_KET_HK1' as ParentMeetingType, label: '🥈 2. Sơ Kết Học Kỳ 1', desc: 'Báo cáo TT27 & Tuyên dương' },
-            { id: 'TONG_KET_NAM' as ParentMeetingType, label: '🥉 3. Tổng Kết Cuối Năm', desc: 'Thành tích cả năm & Bàn giao hè' },
+            {
+              id: 'DAU_NAM' as ParentMeetingType,
+              label: '🥇 1. Đầu Năm Học',
+              desc: 'Bầu BĐD, Nội quy & TKB',
+            },
+            {
+              id: 'SO_KET_HK1' as ParentMeetingType,
+              label: '🥈 2. Sơ Kết Học Kỳ 1',
+              desc: 'Báo cáo TT27 & Tuyên dương',
+            },
+            {
+              id: 'TONG_KET_CUOI_NAM' as ParentMeetingType,
+              label: '🥉 3. Tổng Kết Cuối Năm',
+              desc: 'Thành tích cả năm & Bàn giao hè',
+            },
           ].map((type) => (
             <button
               key={type.id}
@@ -391,7 +571,11 @@ export default function ParentMeetingsPage() {
               }`}
             >
               <span>{type.label}</span>
-              <span className={`text-[10px] font-normal ${activeMeetingType === type.id ? 'text-blue-100' : 'text-slate-500'}`}>
+              <span
+                className={`text-[10px] font-normal ${
+                  activeMeetingType === type.id ? 'text-blue-100' : 'text-slate-500'
+                }`}
+              >
                 {type.desc}
               </span>
             </button>
@@ -405,7 +589,7 @@ export default function ParentMeetingsPage() {
           className="inline-flex items-center justify-center space-x-1.5 px-4 py-2 rounded-2xl bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 text-xs font-bold transition-colors cursor-pointer shadow-2xs shrink-0"
         >
           <Zap className="w-3.5 h-3.5 text-purple-600" />
-          <span>Tạo Lại Toàn Bộ Từ Số Liệu Lớp</span>
+          <span>Tự Động Sinh Nội Dung Từ Dữ Liệu Lớp</span>
         </button>
       </div>
 
@@ -414,7 +598,10 @@ export default function ParentMeetingsPage() {
         {[
           { id: 'AGENDA', label: `📌 Kế Hoạch & Slide TV (${currentMeeting?.agendaTopics?.length || 0})` },
           { id: 'STUDENTS', label: `🎯 Sổ Trao Đổi 1-1 & Handouts (${students.length})` },
-          { id: 'ATTENDANCE_COMMITTEE', label: `👥 Điểm Danh & Ban Đại Diện` },
+          {
+            id: 'ATTENDANCE_COMMITTEE',
+            label: `👥 Điểm Danh (${presentCount}/${students.length}) & Ban Đại Diện`,
+          },
           { id: 'SPEECH', label: '🎙️ Kịch Bản Phát Biểu & FAQ' },
           { id: 'MINUTES', label: '📄 Biên Bản Cuộc Họp Chuẩn' },
         ].map((tab) => (
@@ -444,7 +631,8 @@ export default function ParentMeetingsPage() {
                   Thời lượng dự kiến: <span className="text-blue-600 font-black">{totalEstimatedTime} phút</span>
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Gồm {(currentMeeting?.agendaTopics || []).filter((t) => t.isEnabled).length} phần nội dung sẽ được trình chiếu lên màn hình TV lớp học.
+                  Gồm {(currentMeeting?.agendaTopics || []).filter((t) => t.isEnabled).length} phần nội dung sẽ
+                  được trình chiếu lên màn hình TV lớp học.
                 </p>
               </div>
             </div>
@@ -576,7 +764,7 @@ export default function ParentMeetingsPage() {
                 <span>Sổ Chuẩn Bị Trao Đổi Riêng 1-1 Với Từng Phụ Huynh ({students.length} Em)</span>
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Nhận xét cá nhân hóa về học lực, nề nếp, điểm cần phụ huynh đồng hành và nút 1-Click gửi tin nhắn Zalo riêng tư.
+                Nhận xét cá nhân hóa tích hợp chuẩn Thông tư 27, nề nếp, điểm cần phụ huynh đồng hành và 1-Click gửi Zalo.
               </p>
             </div>
 
@@ -641,27 +829,51 @@ export default function ParentMeetingsPage() {
             {filteredStudents.map((st) => {
               const note = (currentMeeting?.individualNotes || []).find((n) => n.studentId === st.id);
               const stars = getStudentStars(st.id);
+              const isNearsighted =
+                healthRecords.find((h) => h.studentId === st.id)?.hasVisionDefect ||
+                (st.healthNotes || '').toLowerCase().includes('cận');
+
+              // Mini TT27 subject badges (Toán, Tiếng Việt, Ngoại ngữ)
+              const mathAss = subjectAssessments.find(
+                (a) => a.studentId === st.id && a.subjectCode === 'TOAN' && a.term === currentTerm
+              );
+              const tvAss = subjectAssessments.find(
+                (a) => a.studentId === st.id && a.subjectCode === 'TIENG_VIET' && a.term === currentTerm
+              );
+              const engAss = subjectAssessments.find(
+                (a) => a.studentId === st.id && a.subjectCode === 'NGOAI_NGU' && a.term === currentTerm
+              );
 
               return (
                 <div
                   key={st.id}
                   className={`p-5 rounded-3xl border transition-all space-y-3 ${
                     note?.isPriorityDiscussion
-                      ? 'bg-amber-50/70 border-amber-300 shadow-xs'
+                      ? 'bg-amber-50/80 border-amber-300 shadow-xs'
                       : 'bg-white border-slate-200 shadow-2xs'
                   }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2.5">
-                      <div className="w-10 h-10 rounded-2xl bg-blue-100 text-blue-800 font-black text-xs flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-2xl bg-blue-100 text-blue-800 font-black text-xs flex items-center justify-center shrink-0">
                         {st.fullName.split(' ').pop()?.slice(0, 2).toUpperCase()}
                       </div>
                       <div>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <h4 className="font-black text-sm text-slate-900">{st.fullName}</h4>
                           <span className="text-[9px] font-mono bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded font-bold">
                             Tổ {st.teamId}
                           </span>
+                          {note?.isPriorityDiscussion && (
+                            <span className="text-[9px] font-bold bg-amber-200 text-amber-950 px-1.5 py-0.2 rounded flex items-center gap-0.5">
+                              ⚠️ Cần trao đổi
+                            </span>
+                          )}
+                          {isNearsighted && (
+                            <span className="text-[9px] font-bold bg-rose-100 text-rose-700 px-1.5 py-0.2 rounded flex items-center gap-0.5">
+                              🤓 Cận thị
+                            </span>
+                          )}
                         </div>
                         <p className="text-[10px] text-slate-400 font-bold">
                           Mã: {st.studentCode} • PH: {st.parentName || 'Chưa cập nhật'} ({st.parentPhone || 'Chưa có SĐT'})
@@ -669,7 +881,7 @@ export default function ParentMeetingsPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-1">
+                    <div className="flex items-center space-x-1 shrink-0">
                       {stars > 0 && (
                         <span className="bg-amber-100 text-amber-900 text-[10px] font-black px-2 py-0.5 rounded-md">
                           ⭐{stars}
@@ -697,6 +909,30 @@ export default function ParentMeetingsPage() {
                     </div>
                   </div>
 
+                  {/* TT27 Mini Summary Badges */}
+                  {(mathAss || tvAss || engAss) && (
+                    <div className="flex items-center gap-1.5 flex-wrap pt-1 text-[10px]">
+                      {tvAss && (
+                        <span className="bg-slate-100 text-slate-800 px-2 py-0.5 rounded-md font-medium border border-slate-200">
+                          TV: <strong className={tvAss.level === 'T' ? 'text-emerald-700' : 'text-slate-900'}>{tvAss.level}</strong>
+                          {tvAss.score != null ? ` (${tvAss.score}đ)` : ''}
+                        </span>
+                      )}
+                      {mathAss && (
+                        <span className="bg-slate-100 text-slate-800 px-2 py-0.5 rounded-md font-medium border border-slate-200">
+                          Toán: <strong className={mathAss.level === 'T' ? 'text-emerald-700' : 'text-slate-900'}>{mathAss.level}</strong>
+                          {mathAss.score != null ? ` (${mathAss.score}đ)` : ''}
+                        </span>
+                      )}
+                      {engAss && (
+                        <span className="bg-slate-100 text-slate-800 px-2 py-0.5 rounded-md font-medium border border-slate-200">
+                          NN: <strong className={engAss.level === 'T' ? 'text-emerald-700' : 'text-slate-900'}>{engAss.level}</strong>
+                          {engAss.score != null ? ` (${engAss.score}đ)` : ''}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
                   <div className="space-y-1.5 text-xs">
                     <p className="text-slate-700">
                       <strong>📖 Học tập:</strong> {note?.academicSummary || 'Nắm vững chuẩn kiến thức kỹ năng môn học.'}
@@ -717,7 +953,7 @@ export default function ParentMeetingsPage() {
 
       {/* TAB 3: ATTENDANCE & COMMITTEE MANAGER */}
       {activeTab === 'ATTENDANCE_COMMITTEE' && (
-        <div className="space-y-6 max-w-4xl">
+        <div className="space-y-6">
           {/* Committee Members Hub */}
           <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-xs space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -787,31 +1023,109 @@ export default function ParentMeetingsPage() {
             </div>
           </div>
 
-          {/* Quick Attendance Check */}
+          {/* Interactive Attendance Check List */}
           <div className="bg-white rounded-3xl p-5 sm:p-6 border border-slate-200 shadow-xs space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
               <div>
-                <h3 className="font-black text-sm text-slate-900 flex items-center gap-2">
+                <h3 className="font-black text-sm sm:text-base text-slate-900 flex items-center gap-2">
                   <UserCheck className="w-4 h-4 text-blue-600" />
                   <span>Điểm Danh Phụ Huynh Tham Dự Hội Nghị</span>
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Tỷ lệ tham dự: <strong className="text-blue-600">{currentMeeting?.attendeesCount || students.length}/{students.length} Phụ huynh</strong> ({Math.round(((currentMeeting?.attendeesCount || students.length) / (students.length || 1)) * 100)}%)
+                  Tỷ lệ tham dự: <strong className="text-blue-600">{presentCount}/{students.length} Phụ huynh</strong> ({Math.round((presentCount / (students.length || 1)) * 100)}%) • Vắng có phép: {excusedCount} • Vắng không phép: {unexcusedCount}
                 </p>
               </div>
 
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => {
-                    updateParentMeetingDoc({ ...currentMeeting!, attendeesCount: students.length });
-                    toast.success('Đã điểm danh 100% phụ huynh có mặt!');
-                  }}
+                  onClick={() => handleSetAllAttendance('PRESENT')}
                   className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold cursor-pointer"
                 >
                   Có Mặt Đủ 100%
                 </button>
               </div>
+            </div>
+
+            {/* Attendance Search Bar */}
+            <div className="relative max-w-sm">
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="Tìm tên phụ huynh, học sinh..."
+                value={attendanceSearchTerm}
+                onChange={(e) => setAttendanceSearchTerm(e.target.value)}
+                className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
+              />
+            </div>
+
+            {/* Attendance Student List Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
+                    <th className="py-2.5 px-3">STT</th>
+                    <th className="py-2.5 px-3">Học sinh</th>
+                    <th className="py-2.5 px-3">Phụ huynh / SĐT</th>
+                    <th className="py-2.5 px-3 text-center">Trạng thái tham dự</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredAttendanceStudents.map((st, idx) => {
+                    const status = attendanceMap[st.id] || 'PRESENT';
+                    return (
+                      <tr key={st.id} className="hover:bg-slate-50/70">
+                        <td className="py-2.5 px-3 text-slate-400 font-mono">{idx + 1}</td>
+                        <td className="py-2.5 px-3">
+                          <strong className="text-slate-900">{st.fullName}</strong>
+                          <span className="text-[10px] text-slate-400 block font-mono">Tổ {st.teamId} • {st.studentCode}</span>
+                        </td>
+                        <td className="py-2.5 px-3">
+                          <span className="text-slate-800 font-medium">{st.parentName || 'Chưa có họ tên'}</span>
+                          <span className="text-[10px] text-slate-500 block font-mono">{st.parentPhone || 'Chưa có SĐT'}</span>
+                        </td>
+                        <td className="py-2.5 px-3 text-center">
+                          <div className="inline-flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleAttendance(st.id, 'PRESENT')}
+                              className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                                status === 'PRESENT'
+                                  ? 'bg-emerald-600 text-white shadow-2xs'
+                                  : 'text-slate-600 hover:bg-slate-200'
+                              }`}
+                            >
+                              ✓ Có mặt
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleAttendance(st.id, 'EXCUSED')}
+                              className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                                status === 'EXCUSED'
+                                  ? 'bg-amber-500 text-white shadow-2xs'
+                                  : 'text-slate-600 hover:bg-slate-200'
+                              }`}
+                            >
+                              Vắng có phép
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleAttendance(st.id, 'UNEXCUSED')}
+                              className={`px-2.5 py-1 rounded-lg text-[10px] font-black transition-all cursor-pointer ${
+                                status === 'UNEXCUSED'
+                                  ? 'bg-rose-600 text-white shadow-2xs'
+                                  : 'text-slate-600 hover:bg-slate-200'
+                              }`}
+                            >
+                              Vắng không phép
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -881,40 +1195,172 @@ export default function ParentMeetingsPage() {
         </div>
       )}
 
-      {/* TAB 5: OFFICIAL MINUTES PREVIEW */}
+      {/* TAB 5: OFFICIAL MINUTES INTERACTIVE PREVIEW & EDIT */}
       {activeTab === 'MINUTES' && (
-        <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-5 max-w-4xl">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-6 max-w-4xl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-4">
             <div>
               <h3 className="font-black text-sm sm:text-base text-slate-900">
-                Biên Bản Hội Nghị Cha Mẹ Học Sinh Chuẩn Bộ GD&ĐT
+                Biên Bản Hội Nghị Cha Mẹ Học Sinh (Mẫu Chuẩn Bộ GD&ĐT)
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Xem trước biên bản đầy đủ thành phần, nội dung, thảo luận và chữ ký GVCN + Ban Đại Diện CMHS
+                Chỉnh sửa trực tiếp các thông tin biên bản trước khi xuất in A4 chính thức
               </p>
             </div>
 
             <button
               type="button"
               onClick={() => setIsPrintingMinutes(true)}
-              className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-md transition-all cursor-pointer"
+              className="inline-flex items-center space-x-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-md transition-all cursor-pointer shrink-0"
             >
               <Printer className="w-4 h-4" />
               <span>In Biên Bản A4 (Ctrl + P)</span>
             </button>
           </div>
 
-          {/* Quick Edit Discussion Notes & Resolutions */}
-          <div className="space-y-3">
-            <label className="block text-xs font-bold text-slate-700">Ý kiến thảo luận và đóng góp của phụ huynh:</label>
-            <textarea
-              rows={3}
-              value={currentMeeting?.discussionNotes || ''}
-              onChange={(e) => {
-                updateParentMeetingDoc({ ...currentMeeting!, discussionNotes: e.target.value });
-              }}
-              className="w-full p-3 rounded-2xl border border-slate-200 text-xs text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
-            />
+          {/* Inline Editable Minutes Sheet */}
+          <div className="space-y-4 text-xs font-serif text-slate-900 border border-slate-200 p-6 rounded-2xl bg-slate-50/50">
+            <div className="grid grid-cols-2 text-center pb-3 border-b border-slate-300">
+              <div>
+                <p className="uppercase font-bold text-[10px]">
+                  {schoolInfo.departmentName || 'PHÒNG GD&ĐT QUẬN NAM TỪ LIÊM'}
+                </p>
+                <p className="uppercase font-black text-xs underline underline-offset-4">
+                  {schoolInfo.name || 'TRƯỜNG TIỂU HỌC ĐẠI MỖ'}
+                </p>
+              </div>
+              <div>
+                <p className="uppercase font-black text-xs">CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</p>
+                <p className="font-bold text-[10px] underline underline-offset-4">Độc lập - Tự do - Hạnh phúc</p>
+              </div>
+            </div>
+
+            <div className="text-center space-y-0.5 pt-2">
+              <h4 className="text-sm font-black uppercase tracking-wide">
+                BIÊN BẢN HỘI NGHỊ CHA MẸ HỌC SINH
+              </h4>
+              <p className="font-bold uppercase text-blue-900">
+                LỚP {classInfo.name} — NĂM HỌC {schoolInfo.schoolYear || '2026 - 2027'}
+              </p>
+            </div>
+
+            {/* Basic Info Fields */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 font-sans mb-0.5">Thời gian họp:</label>
+                <input
+                  type="date"
+                  value={currentMeeting?.meetingDate || ''}
+                  onChange={(e) => updateParentMeetingDoc({ ...currentMeeting!, meetingDate: e.target.value })}
+                  className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-sans"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 font-sans mb-0.5">Địa điểm:</label>
+                <input
+                  type="text"
+                  value={currentMeeting?.location || ''}
+                  onChange={(e) => updateParentMeetingDoc({ ...currentMeeting!, location: e.target.value })}
+                  className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-sans"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 font-sans mb-0.5">Chủ tọa (GVCN):</label>
+                <input
+                  type="text"
+                  value={currentMeeting?.presidedBy || ''}
+                  onChange={(e) => updateParentMeetingDoc({ ...currentMeeting!, presidedBy: e.target.value })}
+                  className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-sans"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold text-slate-500 font-sans mb-0.5">Thư ký cuộc họp:</label>
+                <input
+                  type="text"
+                  value={currentMeeting?.secretary || ''}
+                  onChange={(e) => updateParentMeetingDoc({ ...currentMeeting!, secretary: e.target.value })}
+                  className="w-full px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white text-xs font-sans"
+                />
+              </div>
+            </div>
+
+            {/* Section I: Main Reports */}
+            <div className="space-y-1 pt-2">
+              <h5 className="font-bold uppercase text-[11px] font-sans">I. Báo Cáo Của Giáo Viên Chủ Nhiệm</h5>
+              <div className="space-y-1">
+                {(currentMeeting?.mainReports || []).map((rep, rIdx) => (
+                  <div key={rIdx} className="flex items-center gap-2">
+                    <span className="font-sans text-slate-400 font-bold shrink-0">{rIdx + 1}.</span>
+                    <input
+                      type="text"
+                      value={rep}
+                      onChange={(e) => {
+                        const updated = [...(currentMeeting?.mainReports || [])];
+                        updated[rIdx] = e.target.value;
+                        updateParentMeetingDoc({ ...currentMeeting!, mainReports: updated });
+                      }}
+                      className="w-full px-2 py-1 rounded-lg border border-slate-200 bg-white text-xs font-sans"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Section II: Discussion Notes */}
+            <div className="space-y-1 pt-2">
+              <h5 className="font-bold uppercase text-[11px] font-sans">II. Ý Kiến Thảo Luận Của Phụ Huynh</h5>
+              <textarea
+                rows={3}
+                value={currentMeeting?.discussionNotes || ''}
+                onChange={(e) => {
+                  updateParentMeetingDoc({ ...currentMeeting!, discussionNotes: e.target.value });
+                }}
+                className="w-full p-3 rounded-xl border border-slate-200 bg-white text-xs font-sans text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
+              />
+            </div>
+
+            {/* Section III: Resolutions */}
+            <div className="space-y-1 pt-2">
+              <h5 className="font-bold uppercase text-[11px] font-sans">III. Nghị Quyết Hội Nghị</h5>
+              <div className="space-y-1">
+                {(currentMeeting?.agreedResolutions || []).map((res, resIdx) => (
+                  <div key={resIdx} className="flex items-center gap-2">
+                    <span className="text-blue-600 font-bold shrink-0">•</span>
+                    <input
+                      type="text"
+                      value={res}
+                      onChange={(e) => {
+                        const updated = [...(currentMeeting?.agreedResolutions || [])];
+                        updated[resIdx] = e.target.value;
+                        updateParentMeetingDoc({ ...currentMeeting!, agreedResolutions: updated });
+                      }}
+                      className="w-full px-2 py-1 rounded-lg border border-slate-200 bg-white text-xs font-sans"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 3 Signatures Preview */}
+            <div className="grid grid-cols-3 text-center pt-4 border-t border-slate-200 font-sans text-xs">
+              <div>
+                <p className="font-bold uppercase text-[10px]">THƯ KÝ CUỘC HỌP</p>
+                <p className="italic text-[9px] text-slate-400">(Ký, ghi rõ họ tên)</p>
+                <p className="mt-6 font-bold text-slate-800">{currentMeeting?.secretary || 'Ban Thư ký'}</p>
+              </div>
+              <div>
+                <p className="font-bold uppercase text-[10px]">TRƯỞNG BAN ĐD CMHS</p>
+                <p className="italic text-[9px] text-slate-400">(Ký, ghi rõ họ tên)</p>
+                <p className="mt-6 font-bold text-slate-800">
+                  {currentMeeting?.committeeMembers?.find((m) => m.role === 'TRUONG_BAN')?.fullName || 'Trưởng ban'}
+                </p>
+              </div>
+              <div>
+                <p className="font-bold uppercase text-[10px]">GIÁO VIÊN CHỦ NHIỆM</p>
+                <p className="italic text-[9px] text-slate-400">(Ký, ghi rõ họ tên)</p>
+                <p className="mt-6 font-bold text-slate-800">{classInfo.teacherName || 'GVCN'}</p>
+              </div>
+            </div>
           </div>
         </div>
       )}
