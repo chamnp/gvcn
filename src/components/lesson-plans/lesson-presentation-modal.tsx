@@ -150,6 +150,15 @@ export function LessonPresentationModal({
     });
   }, [currentSlideIndex, currentSlide, slides.length, showQuizAnswer, isTimerRunning, timerSeconds, selectedStudent, students, classInfo, sessionCode]);
 
+  const onAwardStarRef = useRef(onAwardStar);
+  const slidesRef = useRef(slides);
+  const currentSlideRef = useRef(currentSlide);
+  useEffect(() => {
+    onAwardStarRef.current = onAwardStar;
+    slidesRef.current = slides;
+    currentSlideRef.current = currentSlide;
+  }, [onAwardStar, slides, currentSlide]);
+
   // Initialize Remote Session
   useEffect(() => {
     if (!isOpen) {
@@ -171,7 +180,7 @@ export function LessonPresentationModal({
             setIsRemoteConnected(false);
             break;
           case 'SLIDE_NEXT':
-            setCurrentSlideIndex((prev) => Math.min(slides.length - 1, prev + 1));
+            setCurrentSlideIndex((prev) => Math.min(slidesRef.current.length - 1, prev + 1));
             break;
           case 'SLIDE_PREV':
             setCurrentSlideIndex((prev) => Math.max(0, prev - 1));
@@ -186,6 +195,9 @@ export function LessonPresentationModal({
             break;
           case 'SPIN_WHEEL':
             setIsWheelOpen(true);
+            setTimeout(() => {
+              handleSpinStudent();
+            }, 100);
             break;
           case 'TIMER_START':
             setIsTimerRunning(true);
@@ -195,15 +207,15 @@ export function LessonPresentationModal({
             break;
           case 'TIMER_RESET':
             setIsTimerRunning(false);
-            setTimerSeconds(currentSlide?.timerSeconds || 300);
+            setTimerSeconds(currentSlideRef.current?.timerSeconds || 300);
             break;
           case 'REVEAL_ANSWER':
             setShowQuizAnswer(true);
             confetti({ particleCount: 70, spread: 60 });
             break;
           case 'AWARD_STAR':
-            if (msg.payload?.studentId && onAwardStar) {
-              onAwardStar(msg.payload.studentId);
+            if (msg.payload?.studentId && onAwardStarRef.current) {
+              onAwardStarRef.current(msg.payload.studentId);
             }
             confetti({ particleCount: 60, spread: 70 });
             toast.success(`⭐ Đã cộng sao cho ${msg.payload?.studentName || 'Học sinh'}!`);
@@ -218,14 +230,14 @@ export function LessonPresentationModal({
     return () => {
       remoteSessionRef.current?.close();
     };
-  }, [isOpen, sessionCode, slides.length, currentSlide, onAwardStar, syncStateToRemote]);
+  }, [isOpen, sessionCode]);
 
   // Sync state whenever slide or quiz or timer changes
   useEffect(() => {
     if (isOpen && isRemoteConnected) {
       syncStateToRemote();
     }
-  }, [isOpen, isRemoteConnected, currentSlideIndex, showQuizAnswer, isTimerRunning, timerSeconds, syncStateToRemote]);
+  }, [isOpen, isRemoteConnected, currentSlideIndex, showQuizAnswer, isTimerRunning, timerSeconds]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -338,6 +350,7 @@ export function LessonPresentationModal({
         setIsSpinning(false);
         confetti({ particleCount: 120, spread: 80 });
         toast.success(`🎉 Xin chúc mừng bạn: ${winner.fullName}!`);
+        remoteSessionRef.current?.sendAction('STATE_SYNC', { luckyWheelWinner: winner.fullName });
       }
     }, 100);
   };

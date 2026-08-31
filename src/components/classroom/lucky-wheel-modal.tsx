@@ -20,6 +20,9 @@ interface LuckyWheelModalProps {
   isOpen: boolean;
   onClose: () => void;
   students: Student[];
+  className?: string;
+  spinTrigger?: number;
+  onWinnerSelected?: (winner: Student) => void;
 }
 
 const COLORS = [
@@ -36,7 +39,13 @@ function getShortName(fullName: string): string {
   return fullName;
 }
 
-export function LuckyWheelModal({ isOpen, onClose, students }: LuckyWheelModalProps) {
+export function LuckyWheelModal({
+  isOpen,
+  onClose,
+  students,
+  spinTrigger,
+  onWinnerSelected,
+}: LuckyWheelModalProps) {
   const { addStarLog } = useAppStore();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -52,6 +61,13 @@ export function LuckyWheelModal({ isOpen, onClose, students }: LuckyWheelModalPr
 
   const rotationRef = useRef<number>(0);
   const animationFrameRef = useRef<number | null>(null);
+
+  // Trigger spin when remote command is received
+  useEffect(() => {
+    if (spinTrigger && spinTrigger > 0 && !isSpinning && availableStudents.length > 0) {
+      spin();
+    }
+  }, [spinTrigger]);
 
   const handleAwardStar = (st: Student) => {
     if (awardedWinnerIds.includes(st.id)) return;
@@ -240,6 +256,9 @@ export function LuckyWheelModal({ isOpen, onClose, students }: LuckyWheelModalPr
         } else {
           setIsSpinning(false);
           setMultiWinners(selected);
+          if (selected.length > 0) {
+            onWinnerSelected?.(selected[0]);
+          }
           playFanfareSound();
           confetti({ particleCount: 100, spread: 80, origin: { y: 0.6 } });
 
@@ -324,6 +343,7 @@ export function LuckyWheelModal({ isOpen, onClose, students }: LuckyWheelModalPr
       } else {
         setIsSpinning(false);
         setWinner(winningStudent);
+        onWinnerSelected?.(winningStudent);
         playFanfareSound();
         confetti({ particleCount: 90, spread: 75, origin: { y: 0.6 } });
 

@@ -14,18 +14,18 @@ export interface RemoteStatePayload {
   className: string;
   teacherName: string;
   activeContext: 'LESSON_PLAN' | 'CLASSROOM_TOOLS' | 'PARENT_MEETING' | 'IDLE';
-  currentSlide: number;
-  totalSlides: number;
-  slideTitle: string;
+  currentSlide?: number;
+  totalSlides?: number;
+  slideTitle?: string;
   phase?: string; // 'KHỞI ĐỘNG' | 'KHÁM PHÁ' | 'LUYỆN TẬP' | 'VẬN DỤNG'
-  presenterNotes: string[];
+  presenterNotes?: string[];
   quizQuestion?: string;
   quizOptions?: string[];
   correctAnswerIndex?: number;
   isAnswerRevealed?: boolean;
-  isTimerRunning: boolean;
-  timeRemaining: number;
-  timerDuration: number;
+  isTimerRunning?: boolean;
+  timeRemaining?: number;
+  timerDuration?: number;
   luckyWheelWinner?: string;
   trafficLightStatus?: 'GREEN' | 'YELLOW' | 'RED';
   studentsList?: Array<{
@@ -39,6 +39,8 @@ export interface RemoteStatePayload {
 export type RemoteActionType =
   | 'CONNECT'
   | 'DISCONNECT'
+  | 'PING'
+  | 'PONG'
   | 'SLIDE_NEXT'
   | 'SLIDE_PREV'
   | 'SLIDE_GOTO'
@@ -87,7 +89,7 @@ export function triggerHaptic(durationMs: number = 40) {
   }
 }
 
-// Unified Realtime Channel Controller
+// Robust Realtime Channel Controller with Persistent Callbacks & Heartbeat
 export class RemoteSyncSession {
   private channel: RealtimeChannel | null = null;
   private localBroadcast: BroadcastChannel | null = null;
@@ -95,6 +97,8 @@ export class RemoteSyncSession {
   private role: 'HOST_TV' | 'PHONE_REMOTE';
   private onMessageCallback?: (msg: RemoteMessage) => void;
   private onConnectionChangeCallback?: (connected: boolean) => void;
+  private heartbeatInterval: NodeJS.Timeout | null = null;
+  private isSubscribed: boolean = false;
 
   constructor(
     sessionCode: string,
@@ -109,8 +113,27 @@ export class RemoteSyncSession {
     this.init();
   }
 
+  public setMessageHandler(fn: (msg: RemoteMessage) => void) {
+    this.onMessageCallback = fn;
+  }
+
+  public setConnectionChangeHandler(fn: (connected: boolean) => void) {
+    this.onConnectionChangeCallback = fn;
+  }
+
   private init() {
-    const channelName = `gvcn_remote_${this.sessionCode}`;
+    if (!this.sessionCode) return;
+    const channelName = `gvcn_remote_room_${this.sessionCode}`;
+
+    // Clean up existing channel if any
+    try {
+      const existingChannel = supabase.getChannels().find((c) => c.topic === channelName);
+      if (existingChannel) {
+        supabase.removeChannel(existingChannel);
+      }
+    } catch {
+      // Ignore
+    }
 
     // 1. Supabase Realtime Broadcast Channel
     this.channel = supabase.channel(channelName, {
@@ -125,11 +148,13 @@ export class RemoteSyncSession {
       })
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {
+          this.isSubscribed = true;
           this.onConnectionChangeCallback?.(true);
           if (this.role === 'PHONE_REMOTE') {
             this.sendAction('CONNECT', { clientDevice: 'PHONE' });
           }
         } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR') {
+          this.isSubscribed = false;
           this.onConnectionChangeCallback?.(false);
         }
       });
@@ -147,15 +172,32 @@ export class RemoteSyncSession {
         // Ignore BroadcastChannel errors
       }
     }
+
+    // 3. Heartbeat Ping / Pong every 10 seconds
+    this.heartbeatInterval = setInterval(() => {
+      if (this.isSubscribed) {
+        this.sendAction('PING');
+      }
+    }, 10000);
   }
 
   private handleIncoming(msg: RemoteMessage) {
     // Only accept messages sent by the opposite role
     if (msg.sender !== this.role) {
+      if (msg.type === 'PING') {
+        this.sendAction('PONG');
+        return;
+      }
+      if (msg.type === 'PONG') {
+        this.onConnectionChangeCallback?.(true);
+        return;
+      }
+
       // If TV receives sound effect action, play it on TV speakers immediately
       if (this.role === 'HOST_TV' && msg.type === 'PLAY_SFX' && msg.payload?.type) {
         playSoundEffect(msg.payload.type as SoundEffectType);
       }
+
       this.onMessageCallback?.(msg);
     }
   }
@@ -184,6 +226,10 @@ export class RemoteSyncSession {
   }
 
   public close() {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
     if (this.role === 'PHONE_REMOTE') {
       this.sendAction('DISCONNECT');
     }
@@ -195,6 +241,7 @@ export class RemoteSyncSession {
       this.localBroadcast.close();
       this.localBroadcast = null;
     }
+    this.isSubscribed = false;
     this.onConnectionChangeCallback?.(false);
   }
 }

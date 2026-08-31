@@ -132,7 +132,6 @@ function RemoteControlPageContent() {
       }
     );
 
-    setIsConnected(true);
     triggerHaptic(50);
   }, []);
 
@@ -253,9 +252,9 @@ function RemoteControlPageContent() {
 
               <div className="text-right">
                 <span className="text-2xl font-black text-amber-400 font-mono">
-                  {tvState.currentSlide + 1}
+                  {(tvState.currentSlide ?? 0) + 1}
                 </span>
-                <span className="text-xs text-slate-500 font-mono"> / {tvState.totalSlides}</span>
+                <span className="text-xs text-slate-500 font-mono"> / {tvState.totalSlides ?? 1}</span>
               </div>
             </div>
 
@@ -285,7 +284,10 @@ function RemoteControlPageContent() {
                 <span>GHI CHÚ SƯ PHẠM (CHỈ GIÁO VIÊN THẤY)</span>
               </div>
               <ul className="space-y-1.5 text-xs text-amber-100/90 leading-relaxed list-disc list-inside">
-                {tvState.presenterNotes.map((note, idx) => (
+                {(tvState.presenterNotes && tvState.presenterNotes.length > 0
+                  ? tvState.presenterNotes
+                  : ['Lắng nghe và hướng dẫn học sinh trả lời.']
+                ).map((note, idx) => (
                   <li key={idx} className="text-[12px]">
                     {note}
                   </li>
@@ -318,8 +320,8 @@ function RemoteControlPageContent() {
                 <Clock className="w-4 h-4 text-cyan-400" />
                 <span className="font-bold text-slate-300">Đếm giờ:</span>
                 <span className="font-mono font-black text-cyan-400 text-sm">
-                  {Math.floor(tvState.timeRemaining / 60)}:
-                  {(tvState.timeRemaining % 60).toString().padStart(2, '0')}
+                  {Math.floor((tvState.timeRemaining ?? 300) / 60)}:
+                  {((tvState.timeRemaining ?? 300) % 60).toString().padStart(2, '0')}
                 </span>
               </div>
 

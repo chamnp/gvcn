@@ -103,7 +103,15 @@ export default function ClassroomToolsPage() {
   const [isRemoteModalOpen, setIsRemoteModalOpen] = useState(false);
   const [isRemoteConnected, setIsRemoteConnected] = useState(false);
   const [remoteLaser, setRemoteLaser] = useState<RemoteLaserPayload | null>(null);
+  const [remoteSpinTrigger, setRemoteSpinTrigger] = useState(0);
   const remoteSessionRef = useRef<RemoteSyncSession | null>(null);
+
+  const classInfoRef = useRef(classInfo);
+  const studentsRef = useRef(students);
+  useEffect(() => {
+    classInfoRef.current = classInfo;
+    studentsRef.current = students;
+  }, [classInfo, students]);
 
   useEffect(() => {
     remoteSessionRef.current = new RemoteSyncSession(
@@ -116,15 +124,15 @@ export default function ClassroomToolsPage() {
             toast.success('📱 Đã kết nối với Remote điện thoại của giáo viên!');
             remoteSessionRef.current?.sendAction('STATE_SYNC', {
               sessionCode,
-              className: classInfo.name,
-              teacherName: classInfo.teacherName,
+              className: classInfoRef.current.name,
+              teacherName: classInfoRef.current.teacherName,
               activeContext: 'CLASSROOM_TOOLS',
               slideTitle: 'Công Cụ & Trò Chơi Lớp Học',
               presenterNotes: ['Bấm các nút âm thanh hoặc kích hoạt trò chơi từ điện thoại.'],
               isTimerRunning: false,
               timeRemaining: 300,
               timerDuration: 300,
-              studentsList: students.map((s) => ({ id: s.id, fullName: s.fullName, studentCode: s.studentCode })),
+              studentsList: studentsRef.current.map((s) => ({ id: s.id, fullName: s.fullName, studentCode: s.studentCode })),
             });
             break;
           case 'DISCONNECT':
@@ -132,6 +140,7 @@ export default function ClassroomToolsPage() {
             break;
           case 'SPIN_WHEEL':
             setIsWheelOpen(true);
+            setRemoteSpinTrigger((prev) => prev + 1);
             break;
           case 'TIMER_START':
             setIsTimerOpen(true);
@@ -156,7 +165,7 @@ export default function ClassroomToolsPage() {
     return () => {
       remoteSessionRef.current?.close();
     };
-  }, [sessionCode, classInfo, students]);
+  }, [sessionCode]);
 
   // Digital Clock
   useEffect(() => {
@@ -893,7 +902,16 @@ export default function ClassroomToolsPage() {
       </div>
 
       {/* 4. Full Suite of Modals */}
-      <LuckyWheelModal isOpen={isWheelOpen} onClose={() => setIsWheelOpen(false)} students={students} />
+      <LuckyWheelModal
+        isOpen={isWheelOpen}
+        onClose={() => setIsWheelOpen(false)}
+        students={students}
+        className={classInfo.name}
+        spinTrigger={remoteSpinTrigger}
+        onWinnerSelected={(winner) => {
+          remoteSessionRef.current?.sendAction('STATE_SYNC', { luckyWheelWinner: winner.fullName });
+        }}
+      />
 
       <ClassroomTimerModal isOpen={isTimerOpen} onClose={() => setIsTimerOpen(false)} className={classInfo.name} />
 
