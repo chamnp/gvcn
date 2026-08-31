@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Sparkles,
   Users,
@@ -42,6 +42,17 @@ import { DailyMoodModal } from '@/components/classroom/daily-mood-modal';
 import { BrainBreakModal } from '@/components/classroom/brain-break-modal';
 import { TaskCanvasModal } from '@/components/classroom/task-canvas-modal';
 import { TeamQuizBattleModal } from '@/components/classroom/team-quiz-battle-modal';
+import { Smartphone } from 'lucide-react';
+import {
+  RemoteSyncSession,
+  RemoteMessage,
+  RemoteLaserPayload,
+  generateSessionCode,
+} from '@/lib/remote-sync';
+import { RemoteLaserOverlay } from '@/components/classroom/remote-laser-overlay';
+import { RemotePairingModal } from '@/components/classroom/remote-pairing-modal';
+import confetti from 'canvas-confetti';
+import { toast } from 'sonner';
 
 type ToolCategory = 'ALL' | 'GAMES' | 'INTERACTION' | 'MANAGEMENT' | 'ENERGY';
 
@@ -86,6 +97,66 @@ export default function ClassroomToolsPage() {
   const [isBrainBreakOpen, setIsBrainBreakOpen] = useState(false);
   const [isTaskCanvasOpen, setIsTaskCanvasOpen] = useState(false);
   const [isTeamQuizOpen, setIsTeamQuizOpen] = useState(false);
+
+  // ─── Remote Control Integration ───
+  const [sessionCode] = useState(() => generateSessionCode(classInfo.name || '4A1'));
+  const [isRemoteModalOpen, setIsRemoteModalOpen] = useState(false);
+  const [isRemoteConnected, setIsRemoteConnected] = useState(false);
+  const [remoteLaser, setRemoteLaser] = useState<RemoteLaserPayload | null>(null);
+  const remoteSessionRef = useRef<RemoteSyncSession | null>(null);
+
+  useEffect(() => {
+    remoteSessionRef.current = new RemoteSyncSession(
+      sessionCode,
+      'HOST_TV',
+      (msg: RemoteMessage) => {
+        switch (msg.type) {
+          case 'CONNECT':
+            setIsRemoteConnected(true);
+            toast.success('📱 Đã kết nối với Remote điện thoại của giáo viên!');
+            remoteSessionRef.current?.sendAction('STATE_SYNC', {
+              sessionCode,
+              className: classInfo.name,
+              teacherName: classInfo.teacherName,
+              activeContext: 'CLASSROOM_TOOLS',
+              slideTitle: 'Công Cụ & Trò Chơi Lớp Học',
+              presenterNotes: ['Bấm các nút âm thanh hoặc kích hoạt trò chơi từ điện thoại.'],
+              isTimerRunning: false,
+              timeRemaining: 300,
+              timerDuration: 300,
+              studentsList: students.map((s) => ({ id: s.id, fullName: s.fullName, studentCode: s.studentCode })),
+            });
+            break;
+          case 'DISCONNECT':
+            setIsRemoteConnected(false);
+            break;
+          case 'SPIN_WHEEL':
+            setIsWheelOpen(true);
+            break;
+          case 'TIMER_START':
+            setIsTimerOpen(true);
+            break;
+          case 'TRAFFIC_LIGHT':
+            setIsTrafficOpen(true);
+            break;
+          case 'LASER_MOVE':
+            setRemoteLaser(msg.payload);
+            break;
+          case 'AWARD_STAR':
+            confetti({ particleCount: 70, spread: 60 });
+            toast.success(`⭐ Đã cộng sao cho ${msg.payload?.studentName || 'Học sinh'}!`);
+            break;
+        }
+      },
+      (connected: boolean) => {
+        setIsRemoteConnected(connected);
+      }
+    );
+
+    return () => {
+      remoteSessionRef.current?.close();
+    };
+  }, [sessionCode, classInfo, students]);
 
   // Digital Clock
   useEffect(() => {
@@ -478,33 +549,20 @@ export default function ClassroomToolsPage() {
             />
           </div>
 
-          {/* View Mode Toggle */}
-          <div className="flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200 text-xs font-bold shadow-2xs">
-            <button
-              onClick={() => setViewMode('LAUNCHPAD')}
-              className={`px-2.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center space-x-1 ${
-                viewMode === 'LAUNCHPAD'
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-              title="Xem tất cả dạng lưới (Grid Mode)"
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline text-[11px]">Lưới</span>
-            </button>
-            <button
-              onClick={() => setViewMode('DESKTOP')}
-              className={`px-2.5 py-1.5 rounded-xl transition-all cursor-pointer flex items-center space-x-1 ${
-                viewMode === 'DESKTOP'
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-              title="Bàn làm việc thu gọn (Desktop Mode)"
-            >
-              <Monitor className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline text-[11px]">Bàn làm việc</span>
-            </button>
-          </div>
+          {/* Remote Control Button */}
+          <button
+            type="button"
+            onClick={() => setIsRemoteModalOpen(true)}
+            className={`px-3.5 py-1.5 rounded-2xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 border shadow-2xs active:scale-95 ${
+              isRemoteConnected
+                ? 'bg-emerald-500 text-white border-emerald-400 animate-pulse'
+                : 'bg-slate-900 text-white hover:bg-slate-800 border-slate-700'
+            }`}
+            title="Điều khiển trò chơi và âm thanh từ xa bằng điện thoại"
+          >
+            <Smartphone className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">{isRemoteConnected ? '🟢 Remote Phone' : '📱 Ghép Đôi Remote'}</span>
+          </button>
         </div>
       </div>
 
@@ -873,6 +931,18 @@ export default function ClassroomToolsPage() {
         isOpen={isTeamQuizOpen}
         onClose={() => setIsTeamQuizOpen(false)}
         students={students}
+        className={classInfo.name}
+      />
+
+      {/* Virtual Laser Pointer & Spotlight Overlay */}
+      <RemoteLaserOverlay laserState={remoteLaser} />
+
+      {/* Remote Phone Pairing QR Modal */}
+      <RemotePairingModal
+        isOpen={isRemoteModalOpen}
+        onClose={() => setIsRemoteModalOpen(false)}
+        sessionCode={sessionCode}
+        isRemoteConnected={isRemoteConnected}
         className={classInfo.name}
       />
     </div>

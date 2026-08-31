@@ -29,6 +29,7 @@ import {
   BookMarked,
   ChevronDown,
   ChevronRight,
+  Smartphone,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useAuth } from '@/lib/auth-context';
@@ -88,6 +89,7 @@ export const NAV_GROUPS: NavGroup[] = [
     icon: '🤝',
     items: [
       { href: '/classroom-tools', label: 'Công cụ Lớp học', icon: Tv, badge: 'Smart TV' },
+      { href: '/remote', label: 'Remote Giảng Dạy', icon: Smartphone, badge: 'Không dây' },
       { href: '/parent-meetings', label: 'Họp Phụ Huynh', icon: Presentation, badge: 'Chiếu TV' },
       { href: '/reading-corner', label: 'Tủ Sách Lớp Học', icon: BookMarked, badge: 'Đọc sách' },
       { href: '/moments', label: 'Khoảnh khắc Lớp', icon: Camera, badge: 'Feed' },

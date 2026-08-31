@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   ChevronLeft,
   ChevronRight,
@@ -27,6 +27,15 @@ import {
 import { LessonPlan, LessonSlide, ClassInfo, SchoolInfo, Student } from '@/types';
 import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
+import {
+  RemoteSyncSession,
+  RemoteMessage,
+  RemoteLaserPayload,
+  generateSessionCode,
+} from '@/lib/remote-sync';
+import { RemoteLaserOverlay } from '@/components/classroom/remote-laser-overlay';
+import { RemotePairingModal } from '@/components/classroom/remote-pairing-modal';
+import { Smartphone } from 'lucide-react';
 
 interface LessonPresentationModalProps {
   isOpen: boolean;
@@ -106,6 +115,117 @@ export function LessonPresentationModal({
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   const currentSlide = slides[currentSlideIndex] || null;
+
+  // ─── Remote Control Integration ───
+  const [sessionCode] = useState(() => generateSessionCode(classInfo.name || '4A1'));
+  const [isRemoteModalOpen, setIsRemoteModalOpen] = useState(false);
+  const [isRemoteConnected, setIsRemoteConnected] = useState(false);
+  const [remoteLaser, setRemoteLaser] = useState<RemoteLaserPayload | null>(null);
+  const remoteSessionRef = useRef<RemoteSyncSession | null>(null);
+
+  // Sync state to remote controller phone
+  const syncStateToRemote = useCallback(() => {
+    if (!remoteSessionRef.current || !currentSlide) return;
+    remoteSessionRef.current.sendAction('STATE_SYNC', {
+      sessionCode,
+      className: classInfo.name,
+      teacherName: classInfo.teacherName,
+      activeContext: 'LESSON_PLAN',
+      currentSlide: currentSlideIndex,
+      totalSlides: slides.length,
+      slideTitle: currentSlide.title,
+      phase: currentSlide.phase,
+      presenterNotes: currentSlide.speakerNotes
+        ? currentSlide.speakerNotes.split('\n').filter(Boolean)
+        : [currentSlide.content.join('. ')],
+      quizQuestion: currentSlide.question,
+      quizOptions: currentSlide.options,
+      correctAnswerIndex: currentSlide.correctOption,
+      isAnswerRevealed: showQuizAnswer,
+      isTimerRunning,
+      timeRemaining: timerSeconds ?? 300,
+      timerDuration: currentSlide.timerSeconds || 300,
+      luckyWheelWinner: selectedStudent?.fullName,
+      studentsList: students.map((s) => ({ id: s.id, fullName: s.fullName, studentCode: s.studentCode })),
+    });
+  }, [currentSlideIndex, currentSlide, slides.length, showQuizAnswer, isTimerRunning, timerSeconds, selectedStudent, students, classInfo, sessionCode]);
+
+  // Initialize Remote Session
+  useEffect(() => {
+    if (!isOpen) {
+      remoteSessionRef.current?.close();
+      return;
+    }
+
+    remoteSessionRef.current = new RemoteSyncSession(
+      sessionCode,
+      'HOST_TV',
+      (msg: RemoteMessage) => {
+        switch (msg.type) {
+          case 'CONNECT':
+            setIsRemoteConnected(true);
+            toast.success('📱 Đã kết nối với Remote điện thoại của giáo viên!');
+            syncStateToRemote();
+            break;
+          case 'DISCONNECT':
+            setIsRemoteConnected(false);
+            break;
+          case 'SLIDE_NEXT':
+            setCurrentSlideIndex((prev) => Math.min(slides.length - 1, prev + 1));
+            break;
+          case 'SLIDE_PREV':
+            setCurrentSlideIndex((prev) => Math.max(0, prev - 1));
+            break;
+          case 'SLIDE_GOTO':
+            if (typeof msg.payload?.index === 'number') {
+              setCurrentSlideIndex(msg.payload.index);
+            }
+            break;
+          case 'LASER_MOVE':
+            setRemoteLaser(msg.payload);
+            break;
+          case 'SPIN_WHEEL':
+            setIsWheelOpen(true);
+            break;
+          case 'TIMER_START':
+            setIsTimerRunning(true);
+            break;
+          case 'TIMER_PAUSE':
+            setIsTimerRunning(false);
+            break;
+          case 'TIMER_RESET':
+            setIsTimerRunning(false);
+            setTimerSeconds(currentSlide?.timerSeconds || 300);
+            break;
+          case 'REVEAL_ANSWER':
+            setShowQuizAnswer(true);
+            confetti({ particleCount: 70, spread: 60 });
+            break;
+          case 'AWARD_STAR':
+            if (msg.payload?.studentId && onAwardStar) {
+              onAwardStar(msg.payload.studentId);
+            }
+            confetti({ particleCount: 60, spread: 70 });
+            toast.success(`⭐ Đã cộng sao cho ${msg.payload?.studentName || 'Học sinh'}!`);
+            break;
+        }
+      },
+      (connected: boolean) => {
+        setIsRemoteConnected(connected);
+      }
+    );
+
+    return () => {
+      remoteSessionRef.current?.close();
+    };
+  }, [isOpen, sessionCode, slides.length, currentSlide, onAwardStar, syncStateToRemote]);
+
+  // Sync state whenever slide or quiz or timer changes
+  useEffect(() => {
+    if (isOpen && isRemoteConnected) {
+      syncStateToRemote();
+    }
+  }, [isOpen, isRemoteConnected, currentSlideIndex, showQuizAnswer, isTimerRunning, timerSeconds, syncStateToRemote]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -259,8 +379,23 @@ export function LessonPresentationModal({
           </div>
         </div>
 
-        {/* Right Tools: Laser, Wheel, Timer, Theme, Fullscreen, Close */}
+        {/* Right Tools: Remote, Laser, Wheel, Timer, Theme, Fullscreen, Close */}
         <div className="flex items-center space-x-2">
+          {/* Remote Control Pairing Button */}
+          <button
+            type="button"
+            onClick={() => setIsRemoteModalOpen(true)}
+            className={`px-3 py-2 rounded-2xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5 border ${
+              isRemoteConnected
+                ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md animate-pulse'
+                : 'bg-white/10 hover:bg-white/20 text-white border-white/15'
+            }`}
+            title="Điều khiển từ xa bằng điện thoại"
+          >
+            <Smartphone className="w-4 h-4" />
+            <span className="hidden sm:inline">{isRemoteConnected ? '🟢 Remote Phone' : '📱 Kết Nối Remote'}</span>
+          </button>
+
           {/* Spin Wheel Caller Button */}
           <button
             type="button"
@@ -628,6 +763,18 @@ export function LessonPresentationModal({
           </div>
         </div>
       )}
+
+      {/* Virtual Laser Pointer & Spotlight Overlay */}
+      <RemoteLaserOverlay laserState={remoteLaser} />
+
+      {/* Remote Phone Pairing QR Modal */}
+      <RemotePairingModal
+        isOpen={isRemoteModalOpen}
+        onClose={() => setIsRemoteModalOpen(false)}
+        sessionCode={sessionCode}
+        isRemoteConnected={isRemoteConnected}
+        className={classInfo.name}
+      />
     </div>
   );
 }

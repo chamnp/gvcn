@@ -80,6 +80,7 @@ export interface Student {
   parentName?: string;
   parentPhone?: string;
   isBoarding: boolean; // Ăn bán trú
+  teamId?: number; // Tổ 1, 2, 3, 4
   seatRow?: number; // 0-indexed row in seating grid (undefined if unassigned)
   seatCol?: number; // 0-indexed col in seating grid (undefined if unassigned)
   healthNotes?: string; // Ví dụ: Cận thị 2 độ, Dị ứng hải sản
