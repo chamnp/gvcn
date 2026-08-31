@@ -1,10 +1,10 @@
 'use client';
 
 import React from 'react';
-import { BookOpen, Sparkles, ChevronRight, Volume2 } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
 import { RemoteModuleProps } from '../types';
 
-export const StandardSlideControls: React.FC<RemoteModuleProps> = ({ tvState, sendAction }) => {
+export const StandardSlideControls: React.FC<RemoteModuleProps> = ({ tvState }) => {
   const notes = tvState.presenterNotes ?? [];
 
   return (

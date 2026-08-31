@@ -3,19 +3,11 @@
 import React from 'react';
 import {
   Sparkles,
-  Clock,
   Play,
   Pause,
   RotateCcw,
-  Plus,
   Award,
   Users,
-  Volume2,
-  X,
-  Radio,
-  Flame,
-  CheckCircle2,
-  Tv,
 } from 'lucide-react';
 import { RemoteGameModule, RemoteModuleProps } from '../types';
 
@@ -37,16 +29,12 @@ export const LuckyWheelModule: RemoteGameModule = {
           <button
             onClick={() => {
               const matched = tvState.studentsList?.find((s) => s.fullName === tvState.luckyWheelWinner);
-              if (matched) {
-                sendAction('AWARD_STAR', {
-                  studentId: matched.id,
-                  studentName: matched.fullName,
-                  points: 1,
-                  reason: 'Phát biểu đúng qua Vòng quay',
-                });
-              } else {
-                sendAction('PLAY_SFX', { type: 'victory' });
-              }
+              sendAction('AWARD_STAR', {
+                studentId: matched?.id || '',
+                studentName: tvState.luckyWheelWinner,
+                points: 1,
+                reason: 'Phát biểu đúng qua Vòng quay',
+              });
             }}
             className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-400 text-slate-950 font-black text-xs shadow-md flex items-center space-x-1 active:scale-95 cursor-pointer"
           >
@@ -76,7 +64,7 @@ export const ClassroomTimerModule: RemoteGameModule = {
   category: 'MANAGEMENT',
   renderControls: ({ tvState, sendAction }: RemoteModuleProps) => {
     const isRunning = tvState.isTimerRunning ?? false;
-    const timeRemaining = tvState.timeRemaining ?? 300;
+    const timeRemaining = Math.max(0, tvState.timeRemaining ?? 0);
     const minutes = Math.floor(timeRemaining / 60);
     const seconds = (timeRemaining % 60).toString().padStart(2, '0');
 
@@ -148,33 +136,48 @@ export const TrafficLightModule: RemoteGameModule = {
   iconEmoji: '🚦',
   shortDesc: 'Điều phối âm lượng và trật tự lớp học',
   category: 'MANAGEMENT',
-  renderControls: ({ sendAction }: RemoteModuleProps) => (
-    <div className="grid grid-cols-3 gap-2 text-xs font-black animate-in fade-in">
-      <button
-        onClick={() => sendAction('TRAFFIC_LIGHT', { status: 'GREEN' })}
-        className="py-4 rounded-2xl bg-emerald-950/90 text-emerald-300 border-2 border-emerald-600 active:scale-95 flex flex-col items-center justify-center gap-1 cursor-pointer shadow-lg"
-      >
-        <span className="text-xl">🟢</span>
-        <span className="text-[11px]">Thảo Luận</span>
-      </button>
+  renderControls: ({ tvState, sendAction }: RemoteModuleProps) => {
+    const currentStatus = tvState.trafficLightStatus;
+    return (
+      <div className="grid grid-cols-3 gap-2 text-xs font-black animate-in fade-in">
+        <button
+          onClick={() => sendAction('TRAFFIC_LIGHT', { status: 'GREEN' })}
+          className={`py-4 rounded-2xl border-2 active:scale-95 flex flex-col items-center justify-center gap-1 cursor-pointer shadow-lg transition-all ${
+            currentStatus === 'GREEN'
+              ? 'bg-emerald-600 text-white border-emerald-400 ring-2 ring-emerald-400/50 scale-105'
+              : 'bg-emerald-950/90 text-emerald-300 border-emerald-600'
+          }`}
+        >
+          <span className="text-xl">🟢</span>
+          <span className="text-[11px]">Thảo Luận</span>
+        </button>
 
-      <button
-        onClick={() => sendAction('TRAFFIC_LIGHT', { status: 'YELLOW' })}
-        className="py-4 rounded-2xl bg-amber-950/90 text-amber-300 border-2 border-amber-600 active:scale-95 flex flex-col items-center justify-center gap-1 cursor-pointer shadow-lg"
-      >
-        <span className="text-xl">🟡</span>
-        <span className="text-[11px]">Nói Nhỏ</span>
-      </button>
+        <button
+          onClick={() => sendAction('TRAFFIC_LIGHT', { status: 'YELLOW' })}
+          className={`py-4 rounded-2xl border-2 active:scale-95 flex flex-col items-center justify-center gap-1 cursor-pointer shadow-lg transition-all ${
+            currentStatus === 'YELLOW'
+              ? 'bg-amber-500 text-slate-950 border-amber-400 ring-2 ring-amber-400/50 scale-105'
+              : 'bg-amber-950/90 text-amber-300 border-amber-600'
+          }`}
+        >
+          <span className="text-xl">🟡</span>
+          <span className="text-[11px]">Nói Nhỏ</span>
+        </button>
 
-      <button
-        onClick={() => sendAction('TRAFFIC_LIGHT', { status: 'RED' })}
-        className="py-4 rounded-2xl bg-rose-950/90 text-rose-300 border-2 border-rose-600 active:scale-95 flex flex-col items-center justify-center gap-1 cursor-pointer shadow-lg"
-      >
-        <span className="text-xl">🔴</span>
-        <span className="text-[11px]">Trật Tự</span>
-      </button>
-    </div>
-  ),
+        <button
+          onClick={() => sendAction('TRAFFIC_LIGHT', { status: 'RED' })}
+          className={`py-4 rounded-2xl border-2 active:scale-95 flex flex-col items-center justify-center gap-1 cursor-pointer shadow-lg transition-all ${
+            currentStatus === 'RED'
+              ? 'bg-rose-600 text-white border-rose-400 ring-2 ring-rose-400/50 scale-105'
+              : 'bg-rose-950/90 text-rose-300 border-rose-600'
+          }`}
+        >
+          <span className="text-xl">🔴</span>
+          <span className="text-[11px]">Trật Tự</span>
+        </button>
+      </div>
+    );
+  },
 };
 
 // ─── 4. ĐUA XE TRẮC NGHIỆM (TEAM QUIZ BATTLE) ─────────────────────

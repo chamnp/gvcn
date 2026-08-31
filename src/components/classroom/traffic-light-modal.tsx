@@ -96,7 +96,7 @@ export function TrafficLightModal({
     else if (signal === 'GREEN') playChime(659.25); // E5
   };
 
-  // Keyboard Shortcuts (1 = Red, 2 = Yellow, 3 = Green)
+  // Remote Signal Event Listener & Keyboard Shortcuts (1 = Red, 2 = Yellow, 3 = Green)
   useEffect(() => {
     if (!isOpen) return;
 
@@ -106,8 +106,19 @@ export function TrafficLightModal({
       else if (e.key === '3') setSignalWithSound('GREEN');
     };
 
+    const handleRemoteSignal = (e: CustomEvent) => {
+      const signal = e.detail;
+      if (signal === 'RED' || signal === 'YELLOW' || signal === 'GREEN') {
+        setSignalWithSound(signal);
+      }
+    };
+
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('remote-traffic-light' as any, handleRemoteSignal as EventListener);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('remote-traffic-light' as any, handleRemoteSignal as EventListener);
+    };
   }, [isOpen, soundEnabled]);
 
   if (!isOpen) return null;

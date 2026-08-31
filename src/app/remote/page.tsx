@@ -6,25 +6,12 @@ import {
   Smartphone,
   ChevronLeft,
   ChevronRight,
-  Play,
-  Pause,
-  RotateCcw,
   Sparkles,
-  Zap,
   Volume2,
   Award,
-  Radio,
-  Eye,
-  EyeOff,
-  Flame,
-  CheckCircle2,
   Crosshair,
   Sun,
   Search,
-  Users,
-  Clock,
-  HelpCircle,
-  Tv,
   X,
 } from 'lucide-react';
 import {
@@ -34,7 +21,6 @@ import {
   subscribeToClassPresentationBeacon,
   triggerHaptic,
 } from '@/lib/remote-sync';
-import { SoundEffectType } from '@/lib/sound-effects';
 import { useAppStore } from '@/lib/store';
 import { useAuth } from '@/lib/auth-context';
 import { toast } from 'sonner';
@@ -52,34 +38,15 @@ function RemoteControlPageContent() {
 
   // Session & Connection State
   const [sessionCode, setSessionCode] = useState(initialSession);
-  const [inputCode, setInputCode] = useState(initialSession || '4A1-101');
   const [isConnected, setIsConnected] = useState(false);
   const [activeTab, setActiveTab] = useState<RemoteTab>('SLIDES');
 
-  // TV State Synced from Host
+  // TV State Synced from Host (no mock data — real values come via STATE_SYNC)
   const [tvState, setTvState] = useState<RemoteStatePayload>({
     sessionCode: '',
-    className: classInfo.name || '4A1',
-    teacherName: profile?.fullName || 'Cô Nguyễn Ngọc Ánh',
-    activeContext: 'LESSON_PLAN',
-    currentSlide: 0,
-    totalSlides: 6,
-    slideTitle: 'Bài 1: Ôn tập các số đến 100 000 (Tiết 1)',
-    phase: 'KHÁM PHÁ',
-    presenterNotes: [
-      'Gợi ý HS nhận xét các hàng và lớp của số có 6 chữ số.',
-      'Yêu cầu 1 HS đọc to và phân tích cấu tạo số mẫu.',
-      'Dành 2 phút cho thảo luận nhóm đôi.',
-    ],
-    quizQuestion: 'Chữ số 5 trong số 354 820 thuộc hàng nào?',
-    quizOptions: ['A. Hàng chục', 'B. Hàng nghìn', 'C. Hàng chục nghìn', 'D. Hàng trăm nghìn'],
-    correctAnswerIndex: 2,
-    isAnswerRevealed: false,
-    isTimerRunning: false,
-    timeRemaining: 300,
-    timerDuration: 300,
-    luckyWheelWinner: 'Trần Bảo Châu',
-    trafficLightStatus: 'GREEN',
+    className: classInfo.name || '',
+    teacherName: profile?.fullName || '',
+    activeContext: 'IDLE',
   });
 
   // Laser Pointer State
@@ -503,6 +470,14 @@ function RemoteControlPageContent() {
                 Hộp Âm Thanh Lớp Học (Phát Trên Loa TV)
               </span>
               {getRemoteGameModule('SOUNDBOARD')?.renderControls({ tvState, sendAction })}
+            </div>
+
+            {/* Traffic Light Quick Access (1-tap, no TV modal needed) */}
+            <div className="bg-slate-900 rounded-2xl p-3.5 border border-slate-800 space-y-2">
+              <span className="text-xs font-black text-slate-400 uppercase tracking-wider block">
+                Đèn Tín Hiệu Nề Nếp Lớp Học
+              </span>
+              {getRemoteGameModule('TRAFFIC')?.renderControls({ tvState, sendAction })}
             </div>
           </div>
         )}

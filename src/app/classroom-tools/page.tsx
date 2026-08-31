@@ -211,6 +211,18 @@ export default function ClassroomToolsPage() {
             break;
           case 'TRAFFIC_LIGHT':
             setIsTrafficOpen(true);
+            // Apply the specific light color from remote payload
+            if (msg.payload?.status) {
+              // Dispatch a custom event so the traffic light component can react
+              window.dispatchEvent(new CustomEvent('remote-traffic-light', { detail: msg.payload.status }));
+            }
+            break;
+          case 'GAME_ACTION':
+            // Handle generic game actions from modular remote adapters
+            if (msg.payload?.tool && msg.payload?.action) {
+              window.dispatchEvent(new CustomEvent('remote-game-action', { detail: msg.payload }));
+              toast(`🎮 ${msg.payload.tool}: ${msg.payload.action}`, { duration: 2000 });
+            }
             break;
           case 'LASER_MOVE':
             setRemoteLaser(msg.payload);

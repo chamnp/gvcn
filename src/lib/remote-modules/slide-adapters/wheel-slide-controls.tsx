@@ -1,13 +1,12 @@
 'use client';
 
 import React from 'react';
-import { Sparkles, Award, RotateCcw } from 'lucide-react';
+import { Sparkles, Award } from 'lucide-react';
 import { RemoteModuleProps } from '../types';
 
 export const WheelSlideControls: React.FC<RemoteModuleProps> = ({
   tvState,
   sendAction,
-  onAwardStar,
 }) => {
   const winner = tvState.luckyWheelWinner;
 
@@ -43,16 +42,12 @@ export const WheelSlideControls: React.FC<RemoteModuleProps> = ({
           <button
             onClick={() => {
               const matchedStudent = tvState.studentsList?.find((s) => s.fullName === winner);
-              if (matchedStudent) {
-                sendAction('AWARD_STAR', {
-                  studentId: matchedStudent.id,
-                  studentName: matchedStudent.fullName,
-                  points: 1,
-                  reason: 'Phát biểu đúng qua Vòng quay',
-                });
-              } else {
-                sendAction('PLAY_SFX', { type: 'victory' });
-              }
+              sendAction('AWARD_STAR', {
+                studentId: matchedStudent?.id || '',
+                studentName: winner,
+                points: 1,
+                reason: 'Phát biểu đúng qua Vòng quay',
+              });
             }}
             className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 text-slate-950 font-black text-xs shadow-md flex items-center space-x-1 active:scale-95 cursor-pointer"
           >

@@ -11,21 +11,26 @@ export const AdaptiveSlideView: React.FC<RemoteModuleProps> = (props) => {
   const { tvState } = props;
   const layout = tvState.slideLayout;
 
-  // 1. If slide is Countdown Task OR has a dedicated timer attached
-  if (layout === 'COUNTDOWN_TASK' || (tvState.hasTimer && (tvState.timerDuration ?? 0) > 0)) {
-    return <CountdownSlideControls {...props} />;
-  }
-
-  // 2. If slide is Interactive Quiz
-  if (layout === 'INTERACTIVE_QUIZ' || tvState.quizQuestion) {
+  // 1. Explicit layout: Interactive Quiz (even if it also has a timer)
+  if (layout === 'INTERACTIVE_QUIZ') {
     return <QuizSlideControls {...props} />;
   }
 
-  // 3. If slide is Game Wheel
+  // 2. Explicit layout: Game Wheel
   if (layout === 'GAME_WHEEL') {
     return <WheelSlideControls {...props} />;
   }
 
-  // 4. Default: Standard Slide View with Presenter Notes
+  // 3. Countdown Task OR any slide with a dedicated timer
+  if (layout === 'COUNTDOWN_TASK' || (tvState.hasTimer && (tvState.timerDuration ?? 0) > 0)) {
+    return <CountdownSlideControls {...props} />;
+  }
+
+  // 4. Fallback: quiz data present without explicit layout (legacy slides)
+  if (tvState.quizQuestion) {
+    return <QuizSlideControls {...props} />;
+  }
+
+  // 5. Default: Standard Slide View with Presenter Notes
   return <StandardSlideControls {...props} />;
 };

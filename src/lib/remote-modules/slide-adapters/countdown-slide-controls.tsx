@@ -1,11 +1,11 @@
 'use client';
 
 import React from 'react';
-import { Clock, Play, Pause, RotateCcw, Plus, Sparkles } from 'lucide-react';
+import { Clock, Play, Pause, RotateCcw, Plus } from 'lucide-react';
 import { RemoteModuleProps } from '../types';
 
 export const CountdownSlideControls: React.FC<RemoteModuleProps> = ({ tvState, sendAction }) => {
-  const timeRemaining = tvState.timeRemaining ?? 300;
+  const timeRemaining = Math.max(0, tvState.timeRemaining ?? 0);
   const isRunning = tvState.isTimerRunning ?? false;
   const minutes = Math.floor(timeRemaining / 60);
   const seconds = (timeRemaining % 60).toString().padStart(2, '0');

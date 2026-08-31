@@ -1,13 +1,13 @@
 'use client';
 
 import React from 'react';
-import { Eye, EyeOff, CheckCircle2, Award, Sparkles, HelpCircle } from 'lucide-react';
+import { Eye, EyeOff, CheckCircle2, Sparkles, HelpCircle } from 'lucide-react';
 import { RemoteModuleProps } from '../types';
 
 export const QuizSlideControls: React.FC<RemoteModuleProps> = ({ tvState, sendAction }) => {
   const isRevealed = tvState.isAnswerRevealed ?? false;
   const options = tvState.quizOptions ?? ['A. Lựa chọn 1', 'B. Lựa chọn 2', 'C. Lựa chọn 3', 'D. Lựa chọn 4'];
-  const correctIdx = tvState.correctAnswerIndex ?? 0;
+  const correctIdx = tvState.correctAnswerIndex; // undefined means no correct answer set
 
   return (
     <div className="bg-gradient-to-br from-indigo-950/80 via-slate-900 to-slate-950 border-2 border-indigo-500/60 rounded-3xl p-4.5 space-y-4 shadow-xl animate-in fade-in">
@@ -45,7 +45,7 @@ export const QuizSlideControls: React.FC<RemoteModuleProps> = ({ tvState, sendAc
         </span>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {options.map((opt, idx) => {
-            const isCorrect = idx === correctIdx;
+            const isCorrect = correctIdx !== undefined && idx === correctIdx;
             return (
               <div
                 key={idx}
