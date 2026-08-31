@@ -38,6 +38,8 @@ import { SoundEffectType } from '@/lib/sound-effects';
 import { useAppStore } from '@/lib/store';
 import { useAuth } from '@/lib/auth-context';
 import { toast } from 'sonner';
+import { AdaptiveSlideView } from '@/lib/remote-modules/slide-adapters/adaptive-slide-view';
+import { getRemoteGameModule, ALL_REMOTE_GAMES } from '@/lib/remote-modules/registry';
 
 type RemoteTab = 'SLIDES' | 'LASER' | 'GAMES' | 'REWARDS';
 
@@ -264,91 +266,44 @@ function RemoteControlPageContent() {
 
       {/* ─── 2. MAIN ACTIVE CONTROLLER TAB BODY ───────────────────────────── */}
       <main className="flex-1 overflow-y-auto p-4 space-y-4">
-        {/* ACTIVE TV MODAL BANNER CONTROLLER */}
-        {tvState.activeModal && tvState.activeModal !== 'NONE' && (
-          <div className="bg-gradient-to-r from-amber-950/90 via-orange-950/90 to-rose-950/90 border-2 border-amber-400/60 rounded-3xl p-3.5 space-y-2.5 shadow-2xl animate-in slide-in-from-top duration-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2.5">
-                <div className="w-9 h-9 rounded-2xl bg-amber-500/30 border border-amber-400/50 flex items-center justify-center text-xl shadow-inner">
-                  {tvState.activeModal === 'WHEEL' && '🎡'}
-                  {tvState.activeModal === 'TIMER' && '⏱️'}
-                  {tvState.activeModal === 'TRAFFIC' && '🚦'}
-                  {tvState.activeModal === 'SOUNDBOARD' && '🔊'}
-                  {tvState.activeModal === 'TEAM_QUIZ' && '🏎️'}
-                  {tvState.activeModal === 'LEADERBOARD' && '🏆'}
-                  {tvState.activeModal === 'CHEST' && '🎁'}
-                  {tvState.activeModal === 'PAIR' && '👥'}
-                  {tvState.activeModal === 'MOOD' && '☀️'}
-                  {tvState.activeModal === 'BRAIN_BREAK' && '🧘'}
-                  {tvState.activeModal === 'TASK_CANVAS' && '📋'}
-                  {tvState.activeModal === 'NOISE' && '🎤'}
+        {/* ACTIVE TV MODAL BANNER CONTROLLER (MODULAR ADAPTER) */}
+        {tvState.activeModal && tvState.activeModal !== 'NONE' && (() => {
+          const activeModule = getRemoteGameModule(tvState.activeModal);
+          return (
+            <div className="bg-gradient-to-r from-amber-950/90 via-orange-950/90 to-rose-950/90 border-2 border-amber-400/60 rounded-3xl p-3.5 space-y-3 shadow-2xl animate-in slide-in-from-top duration-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2.5">
+                  <div className="w-9 h-9 rounded-2xl bg-amber-500/30 border border-amber-400/50 flex items-center justify-center text-xl shadow-inner">
+                    {activeModule?.iconEmoji || '📺'}
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-black uppercase text-amber-400 tracking-wider flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" />
+                      Đang chiếu trên Smart TV
+                    </span>
+                    <h4 className="font-black text-sm text-white leading-tight">
+                      {activeModule?.title || tvState.activeModal}
+                    </h4>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-[10px] font-black uppercase text-amber-400 tracking-wider flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" />
-                    Đang chiếu trên Smart TV
-                  </span>
-                  <h4 className="font-black text-sm text-white leading-tight">
-                    {tvState.activeModal === 'WHEEL' && 'Vòng Quay May Mắn'}
-                    {tvState.activeModal === 'TIMER' && 'Đồng Hồ Đếm Ngược'}
-                    {tvState.activeModal === 'TRAFFIC' && 'Đèn Tín Hiệu Nề Nếp'}
-                    {tvState.activeModal === 'SOUNDBOARD' && 'Hộp Âm Thanh Lớp Học'}
-                    {tvState.activeModal === 'TEAM_QUIZ' && 'Đua Xe Trắc Nghiệm'}
-                    {tvState.activeModal === 'LEADERBOARD' && 'Bảng Vinh Danh Sao'}
-                    {tvState.activeModal === 'CHEST' && 'Hộp Quà Bí Mật'}
-                    {tvState.activeModal === 'PAIR' && 'Ghép Đôi Học Tập'}
-                    {tvState.activeModal === 'MOOD' && 'Điểm Danh Cảm Xúc'}
-                    {tvState.activeModal === 'BRAIN_BREAK' && 'Nạp Năng Lượng 2 Phút'}
-                    {tvState.activeModal === 'TASK_CANVAS' && 'Bảng Lệnh Nhiệm Vụ'}
-                    {tvState.activeModal === 'NOISE' && 'Đo Độ Ồn Lớp Học'}
-                  </h4>
-                </div>
+
+                {/* 1-Tap Close Button */}
+                <button
+                  onClick={() => sendAction('CLOSE_MODAL')}
+                  className="px-3.5 py-2 rounded-2xl bg-rose-600 hover:bg-rose-500 active:scale-95 text-white font-black text-xs shadow-lg flex items-center space-x-1.5 cursor-pointer border border-rose-400"
+                >
+                  <X className="w-4 h-4" />
+                  <span>ĐÓNG TV</span>
+                </button>
               </div>
 
-              {/* 1-Tap Close Button */}
-              <button
-                onClick={() => sendAction('CLOSE_MODAL')}
-                className="px-3.5 py-2 rounded-2xl bg-rose-600 hover:bg-rose-500 active:scale-95 text-white font-black text-xs shadow-lg flex items-center space-x-1.5 cursor-pointer border border-rose-400"
-              >
-                <X className="w-4 h-4" />
-                <span>ĐÓNG TV</span>
-              </button>
+              {/* Render Modular Controls */}
+              {activeModule && activeModule.renderControls({ tvState, sendAction })}
             </div>
+          );
+        })()}
 
-            {/* Contextual Quick Actions */}
-            {tvState.activeModal === 'WHEEL' && (
-              <div className="flex items-center space-x-2 pt-1 border-t border-amber-500/20">
-                <button
-                  onClick={() => sendAction('SPIN_WHEEL')}
-                  className="flex-1 py-2.5 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-300 hover:to-orange-300 active:scale-95 text-slate-950 font-black text-xs shadow-md flex items-center justify-center space-x-1.5 cursor-pointer"
-                >
-                  <Sparkles className="w-4 h-4 text-slate-950" />
-                  <span>🎡 QUAY TIẾP NGAY TRÊN TV</span>
-                </button>
-              </div>
-            )}
-
-            {tvState.activeModal === 'TIMER' && (
-              <div className="grid grid-cols-2 gap-2 pt-1 border-t border-amber-500/20">
-                <button
-                  onClick={() => sendAction('TIMER_START')}
-                  className="py-2.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-black text-xs shadow-md flex items-center justify-center space-x-1 cursor-pointer"
-                >
-                  <Play className="w-3.5 h-3.5" />
-                  <span>Chạy giờ</span>
-                </button>
-                <button
-                  onClick={() => sendAction('TIMER_PAUSE')}
-                  className="py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-white font-black text-xs flex items-center justify-center space-x-1 cursor-pointer"
-                >
-                  <Pause className="w-3.5 h-3.5" />
-                  <span>Tạm dừng</span>
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-        {/* TAB 1: SLIDES & LESSON PLAN PRESENTATION */}
+        {/* TAB 1: SLIDES & LESSON PLAN PRESENTATION (ADAPTIVE CONTEXTUAL) */}
         {activeTab === 'SLIDES' && (
           <div className="space-y-4 animate-in fade-in">
             {/* Slide Index & Phase Info */}
@@ -389,71 +344,8 @@ function RemoteControlPageContent() {
               </button>
             </div>
 
-            {/* Private Teacher Presenter Notes (Chỉ cô giáo thấy trên điện thoại) */}
-            <div className="bg-amber-950/30 border border-amber-500/30 rounded-2xl p-3.5 space-y-2">
-              <div className="flex items-center space-x-1.5 text-amber-400 text-xs font-black">
-                <HelpCircle className="w-4 h-4" />
-                <span>GHI CHÚ SƯ PHẠM (CHỈ GIÁO VIÊN THẤY)</span>
-              </div>
-              <ul className="space-y-1.5 text-xs text-amber-100/90 leading-relaxed list-disc list-inside">
-                {(tvState.presenterNotes && tvState.presenterNotes.length > 0
-                  ? tvState.presenterNotes
-                  : ['Lắng nghe và hướng dẫn học sinh trả lời.']
-                ).map((note, idx) => (
-                  <li key={idx} className="text-[12px]">
-                    {note}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Quick Interactive Slide Controls */}
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <button
-                onClick={() => sendAction('REVEAL_ANSWER')}
-                className="py-3 px-3 rounded-2xl bg-slate-900 hover:bg-slate-800 active:scale-95 border border-slate-800 font-bold flex items-center justify-center space-x-2 text-emerald-400 cursor-pointer"
-              >
-                <Eye className="w-4 h-4" />
-                <span>Hiện Đáp Án</span>
-              </button>
-
-              <button
-                onClick={() => sendAction('SPIN_WHEEL')}
-                className="py-3 px-3 rounded-2xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 active:scale-95 font-bold flex items-center justify-center space-x-2 text-white shadow-md cursor-pointer"
-              >
-                <Sparkles className="w-4 h-4" />
-                <span>🎡 Quay Gọi Tên</span>
-              </button>
-            </div>
-
-            {/* Quick Timer Row */}
-            <div className="bg-slate-900 rounded-2xl p-3 border border-slate-800 flex items-center justify-between text-xs">
-              <div className="flex items-center space-x-2">
-                <Clock className="w-4 h-4 text-cyan-400" />
-                <span className="font-bold text-slate-300">Đếm giờ:</span>
-                <span className="font-mono font-black text-cyan-400 text-sm">
-                  {Math.floor((tvState.timeRemaining ?? 300) / 60)}:
-                  {((tvState.timeRemaining ?? 300) % 60).toString().padStart(2, '0')}
-                </span>
-              </div>
-
-              <div className="flex items-center space-x-1.5">
-                <button
-                  onClick={() =>
-                    sendAction(tvState.isTimerRunning ? 'TIMER_PAUSE' : 'TIMER_START')
-                  }
-                  className="px-3 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold cursor-pointer"
-                >
-                  {tvState.isTimerRunning ? 'Tạm dừng' : 'Bắt đầu'}
-                </button>
-                <button
-                  onClick={() => sendAction('TIMER_RESET')}
-                  className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
+            {/* ADAPTIVE CONTEXTUAL SLIDE VIEW */}
+            <AdaptiveSlideView tvState={tvState} sendAction={sendAction} />
           </div>
         )}
 
@@ -564,11 +456,11 @@ function RemoteControlPageContent() {
               </button>
             </div>
 
-            {/* Quick TV Tools Launcher & Controller */}
+            {/* Modular Interactive Game Grid */}
             <div className="bg-slate-900 rounded-2xl p-3.5 border border-slate-800 space-y-2.5">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-black text-slate-400 uppercase tracking-wider block">
-                  Bật / Đóng Công Cụ Trên Smart TV
+                  Bật Công Cụ Trò Chơi Lên TV
                 </span>
                 <button
                   onClick={() => sendAction('CLOSE_MODAL')}
@@ -579,183 +471,38 @@ function RemoteControlPageContent() {
               </div>
 
               <div className="grid grid-cols-3 gap-2 text-xs font-bold">
-                <button
-                  onClick={() => sendAction('OPEN_MODAL', { modal: 'WHEEL' })}
-                  className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 active:scale-95 border border-slate-800 text-amber-300 flex flex-col items-center justify-center gap-1 cursor-pointer text-center"
-                >
-                  <span className="text-lg">🎡</span>
-                  <span className="text-[10px]">Vòng Quay</span>
-                </button>
-
-                <button
-                  onClick={() => sendAction('OPEN_MODAL', { modal: 'TIMER' })}
-                  className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 active:scale-95 border border-slate-800 text-cyan-300 flex flex-col items-center justify-center gap-1 cursor-pointer text-center"
-                >
-                  <span className="text-lg">⏱️</span>
-                  <span className="text-[10px]">Đồng Hồ</span>
-                </button>
-
-                <button
-                  onClick={() => sendAction('OPEN_MODAL', { modal: 'TRAFFIC' })}
-                  className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 active:scale-95 border border-slate-800 text-emerald-300 flex flex-col items-center justify-center gap-1 cursor-pointer text-center"
-                >
-                  <span className="text-lg">🚦</span>
-                  <span className="text-[10px]">Đèn Nề Nếp</span>
-                </button>
-
-                <button
-                  onClick={() => sendAction('OPEN_MODAL', { modal: 'TEAM_QUIZ' })}
-                  className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 active:scale-95 border border-slate-800 text-orange-300 flex flex-col items-center justify-center gap-1 cursor-pointer text-center"
-                >
-                  <span className="text-lg">🏎️</span>
-                  <span className="text-[10px]">Đua Xe Đố</span>
-                </button>
-
-                <button
-                  onClick={() => sendAction('OPEN_MODAL', { modal: 'CHEST' })}
-                  className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 active:scale-95 border border-slate-800 text-yellow-300 flex flex-col items-center justify-center gap-1 cursor-pointer text-center"
-                >
-                  <span className="text-lg">🎁</span>
-                  <span className="text-[10px]">Hộp Bí Mật</span>
-                </button>
-
-                <button
-                  onClick={() => sendAction('OPEN_MODAL', { modal: 'PAIR' })}
-                  className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 active:scale-95 border border-slate-800 text-indigo-300 flex flex-col items-center justify-center gap-1 cursor-pointer text-center"
-                >
-                  <span className="text-lg">👥</span>
-                  <span className="text-[10px]">Ghép Cặp</span>
-                </button>
-
-                <button
-                  onClick={() => sendAction('OPEN_MODAL', { modal: 'TASK_CANVAS' })}
-                  className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 active:scale-95 border border-slate-800 text-sky-300 flex flex-col items-center justify-center gap-1 cursor-pointer text-center"
-                >
-                  <span className="text-lg">📋</span>
-                  <span className="text-[10px]">Bảng Lệnh</span>
-                </button>
-
-                <button
-                  onClick={() => sendAction('OPEN_MODAL', { modal: 'BRAIN_BREAK' })}
-                  className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 active:scale-95 border border-slate-800 text-rose-300 flex flex-col items-center justify-center gap-1 cursor-pointer text-center"
-                >
-                  <span className="text-lg">🧘</span>
-                  <span className="text-[10px]">Thể Dục 2P</span>
-                </button>
-
-                <button
-                  onClick={() => sendAction('OPEN_MODAL', { modal: 'LEADERBOARD' })}
-                  className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 active:scale-95 border border-slate-800 text-amber-300 flex flex-col items-center justify-center gap-1 cursor-pointer text-center"
-                >
-                  <span className="text-lg">🏆</span>
-                  <span className="text-[10px]">Bảng Sao</span>
-                </button>
+                {ALL_REMOTE_GAMES.map((mod) => {
+                  const isActive = tvState.activeModal === mod.id;
+                  return (
+                    <button
+                      key={mod.id}
+                      onClick={() => {
+                        if (isActive) {
+                          sendAction('CLOSE_MODAL');
+                        } else {
+                          sendAction('OPEN_MODAL', { modal: mod.id });
+                        }
+                      }}
+                      className={`p-2.5 rounded-xl active:scale-95 border flex flex-col items-center justify-center gap-1 cursor-pointer text-center transition-all ${
+                        isActive
+                          ? 'bg-amber-500/20 border-amber-400 text-amber-300 shadow-md ring-2 ring-amber-500/30'
+                          : 'bg-slate-950 hover:bg-slate-800 border-slate-800 text-slate-300'
+                      }`}
+                    >
+                      <span className="text-xl">{mod.iconEmoji}</span>
+                      <span className="text-[10px] font-black truncate max-w-full">{mod.title}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Soundboard Grid (6 Sound FX) */}
-            <div className="space-y-2">
+            {/* Soundboard Quick Access */}
+            <div className="bg-slate-900 rounded-2xl p-3.5 border border-slate-800 space-y-2">
               <span className="text-xs font-black text-slate-400 uppercase tracking-wider block">
                 Hộp Âm Thanh Lớp Học (Phát Trên Loa TV)
               </span>
-
-              <div className="grid grid-cols-2 gap-2.5 text-xs">
-                <button
-                  onClick={() => sendAction('PLAY_SFX', { type: 'applause' })}
-                  className="p-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 active:scale-95 border border-slate-800 font-bold flex items-center space-x-2 text-amber-300 cursor-pointer"
-                >
-                  <span className="text-xl">👏</span>
-                  <div className="text-left">
-                    <p className="font-bold">Vỗ Tay Khen</p>
-                    <span className="text-[10px] text-slate-500">Applause</span>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => sendAction('PLAY_SFX', { type: 'victory' })}
-                  className="p-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 active:scale-95 border border-slate-800 font-bold flex items-center space-x-2 text-emerald-300 cursor-pointer"
-                >
-                  <span className="text-xl">🎺</span>
-                  <div className="text-left">
-                    <p className="font-bold">Chiến Thắng</p>
-                    <span className="text-[10px] text-slate-500">Fanfare</span>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => sendAction('PLAY_SFX', { type: 'drumroll' })}
-                  className="p-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 active:scale-95 border border-slate-800 font-bold flex items-center space-x-2 text-cyan-300 cursor-pointer"
-                >
-                  <span className="text-xl">🥁</span>
-                  <div className="text-left">
-                    <p className="font-bold">Trống Hồi Hộp</p>
-                    <span className="text-[10px] text-slate-500">Drumroll</span>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => sendAction('PLAY_SFX', { type: 'confetti' })}
-                  className="p-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 active:scale-95 border border-slate-800 font-bold flex items-center space-x-2 text-pink-300 cursor-pointer"
-                >
-                  <span className="text-xl">🎉</span>
-                  <div className="text-left">
-                    <p className="font-bold">Pháo Hoa</p>
-                    <span className="text-[10px] text-slate-500">Confetti Pop</span>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => sendAction('PLAY_SFX', { type: 'bell' })}
-                  className="p-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 active:scale-95 border border-slate-800 font-bold flex items-center space-x-2 text-yellow-300 cursor-pointer"
-                >
-                  <span className="text-xl">🔔</span>
-                  <div className="text-left">
-                    <p className="font-bold">Chuông Báo</p>
-                    <span className="text-[10px] text-slate-500">Bell Chime</span>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => sendAction('PLAY_SFX', { type: 'buzzer' })}
-                  className="p-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 active:scale-95 border border-slate-800 font-bold flex items-center space-x-2 text-rose-300 cursor-pointer"
-                >
-                  <span className="text-xl">🚨</span>
-                  <div className="text-left">
-                    <p className="font-bold">Tiếc Quá</p>
-                    <span className="text-[10px] text-slate-500">Buzzer</span>
-                  </div>
-                </button>
-              </div>
-            </div>
-
-            {/* Traffic Light Management */}
-            <div className="bg-slate-900 rounded-2xl p-3.5 border border-slate-800 space-y-2.5">
-              <span className="text-xs font-black text-slate-400 uppercase tracking-wider block">
-                Đèn Tín Hiệu Nề Nếp Lớp Học
-              </span>
-
-              <div className="grid grid-cols-3 gap-2 text-xs font-bold">
-                <button
-                  onClick={() => sendAction('TRAFFIC_LIGHT', { status: 'GREEN' })}
-                  className="py-2.5 rounded-xl bg-emerald-950/80 text-emerald-300 border border-emerald-700/60 active:scale-95 cursor-pointer"
-                >
-                  🟢 Thảo Luận
-                </button>
-
-                <button
-                  onClick={() => sendAction('TRAFFIC_LIGHT', { status: 'YELLOW' })}
-                  className="py-2.5 rounded-xl bg-amber-950/80 text-amber-300 border border-amber-700/60 active:scale-95 cursor-pointer"
-                >
-                  🟡 Nói Nhỏ
-                </button>
-
-                <button
-                  onClick={() => sendAction('TRAFFIC_LIGHT', { status: 'RED' })}
-                  className="py-2.5 rounded-xl bg-rose-950/80 text-rose-300 border border-rose-700/60 active:scale-95 cursor-pointer"
-                >
-                  🔴 Trật Tự
-                </button>
-              </div>
+              {getRemoteGameModule('SOUNDBOARD')?.renderControls({ tvState, sendAction })}
             </div>
           </div>
         )}

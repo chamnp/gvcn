@@ -9,6 +9,8 @@ export interface RemoteLaserPayload {
   mode: 'LASER' | 'SPOTLIGHT';
 }
 
+import { LessonSlideLayout } from '@/types';
+
 export type TVModalType =
   | 'WHEEL'
   | 'TIMER'
@@ -33,12 +35,15 @@ export interface RemoteStatePayload {
   currentSlide?: number;
   totalSlides?: number;
   slideTitle?: string;
+  slideLayout?: LessonSlideLayout;
+  hasTimer?: boolean;
   phase?: string; // 'KHỞI ĐỘNG' | 'KHÁM PHÁ' | 'LUYỆN TẬP' | 'VẬN DỤNG'
   presenterNotes?: string[];
   quizQuestion?: string;
   quizOptions?: string[];
   correctAnswerIndex?: number;
   isAnswerRevealed?: boolean;
+  explanation?: string;
   isTimerRunning?: boolean;
   timeRemaining?: number;
   timerDuration?: number;
@@ -69,11 +74,13 @@ export type RemoteActionType =
   | 'TIMER_PAUSE'
   | 'TIMER_RESET'
   | 'TIMER_SET'
+  | 'TIMER_ADD_SECONDS'
   | 'REVEAL_ANSWER'
   | 'SELECT_OPTION'
   | 'PLAY_SFX'
   | 'TRAFFIC_LIGHT'
   | 'AWARD_STAR'
+  | 'GAME_ACTION'
   | 'STATE_SYNC';
 
 export interface RemoteMessage {

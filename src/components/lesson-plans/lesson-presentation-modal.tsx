@@ -137,6 +137,8 @@ export function LessonPresentationModal({
       currentSlide: currentSlideIndex,
       totalSlides: slides.length,
       slideTitle: currentSlide.title,
+      slideLayout: currentSlide.layout,
+      hasTimer: (currentSlide.timerSeconds || 0) > 0,
       phase: currentSlide.phase,
       presenterNotes: currentSlide.speakerNotes
         ? currentSlide.speakerNotes.split('\n').filter(Boolean)
@@ -145,6 +147,7 @@ export function LessonPresentationModal({
       quizOptions: currentSlide.options,
       correctAnswerIndex: currentSlide.correctOption,
       isAnswerRevealed: showQuizAnswer,
+      explanation: currentSlide.explanation,
       isTimerRunning,
       timeRemaining: timerSeconds ?? 300,
       timerDuration: currentSlide.timerSeconds || 300,
@@ -236,6 +239,14 @@ export function LessonPresentationModal({
           case 'TIMER_RESET':
             setIsTimerRunning(false);
             setTimerSeconds(currentSlideRef.current?.timerSeconds || 300);
+            break;
+          case 'TIMER_ADD_SECONDS':
+            setTimerSeconds((prev) => Math.max(0, prev + (msg.payload?.seconds || 30)));
+            break;
+          case 'TIMER_SET':
+            if (typeof msg.payload?.seconds === 'number') {
+              setTimerSeconds(msg.payload.seconds);
+            }
             break;
           case 'REVEAL_ANSWER':
             setShowQuizAnswer(true);
