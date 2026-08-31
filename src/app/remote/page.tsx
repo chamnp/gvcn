@@ -31,6 +31,7 @@ import {
   RemoteSyncSession,
   RemoteMessage,
   RemoteStatePayload,
+  subscribeToClassPresentationBeacon,
   triggerHaptic,
 } from '@/lib/remote-sync';
 import { SoundEffectType } from '@/lib/sound-effects';
@@ -139,11 +140,26 @@ function RemoteControlPageContent() {
   useEffect(() => {
     if (initialSession) {
       connectSession(initialSession);
+      return () => {
+        sessionRef.current?.close();
+      };
     }
-    return () => {
-      sessionRef.current?.close();
-    };
-  }, [initialSession, connectSession]);
+
+    // Auto-discover live presentation of current class if no session param
+    if (classInfo.name) {
+      const unsubscribe = subscribeToClassPresentationBeacon(classInfo.name, (beacon) => {
+        if (beacon && beacon.sessionCode && Date.now() - beacon.timestamp < 15000) {
+          toast.success(`📱 Đã tự động kết nối với TV: "${beacon.slideTitle}"!`);
+          connectSession(beacon.sessionCode);
+        }
+      });
+
+      return () => {
+        unsubscribe();
+        sessionRef.current?.close();
+      };
+    }
+  }, [initialSession, classInfo.name, connectSession]);
 
   // Dispatch Action to TV
   const sendAction = (type: any, payload?: any) => {

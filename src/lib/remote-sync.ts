@@ -264,3 +264,130 @@ export class RemoteSyncSession {
     this.onConnectionChangeCallback?.(false);
   }
 }
+
+export interface LivePresentationBeacon {
+  sessionCode: string;
+  className: string;
+  teacherName: string;
+  activeContext: 'LESSON_PLAN' | 'CLASSROOM_TOOLS' | 'PARENT_MEETING';
+  slideTitle: string;
+  timestamp: number;
+}
+
+// Broadcasts periodic beacon for smart cross-device discovery on same account
+export class PresentationBeaconBroadcaster {
+  private channel: RealtimeChannel | null = null;
+  private localBroadcast: BroadcastChannel | null = null;
+  private interval: NodeJS.Timeout | null = null;
+  private beacon: LivePresentationBeacon;
+
+  constructor(beacon: LivePresentationBeacon) {
+    this.beacon = beacon;
+    this.init();
+  }
+
+  public updateBeacon(beacon: Partial<LivePresentationBeacon>) {
+    this.beacon = { ...this.beacon, ...beacon, timestamp: Date.now() };
+    this.send();
+  }
+
+  private init() {
+    const cleanClass = this.beacon.className.replace(/[^a-zA-Z0-9]/g, '').toUpperCase() || '4A1';
+    const channelName = `gvcn_class_live_${cleanClass}`;
+
+    this.channel = supabase.channel(channelName, {
+      config: { broadcast: { self: false } },
+    });
+    this.channel.subscribe();
+
+    if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+      try {
+        this.localBroadcast = new BroadcastChannel(channelName);
+      } catch {}
+    }
+
+    this.send();
+    this.interval = setInterval(() => {
+      this.send();
+    }, 4000);
+  }
+
+  private send() {
+    const payload = { ...this.beacon, timestamp: Date.now() };
+    this.channel?.send({
+      type: 'broadcast',
+      event: 'live_beacon',
+      payload,
+    });
+    try {
+      this.localBroadcast?.postMessage(payload);
+    } catch {}
+  }
+
+  public stop() {
+    if (this.interval) {
+      clearInterval(this.interval);
+      this.interval = null;
+    }
+    const endPayload = { ...this.beacon, timestamp: 0 };
+    this.channel?.send({
+      type: 'broadcast',
+      event: 'live_beacon',
+      payload: endPayload,
+    });
+    if (this.channel) {
+      supabase.removeChannel(this.channel);
+      this.channel = null;
+    }
+    if (this.localBroadcast) {
+      this.localBroadcast.close();
+      this.localBroadcast = null;
+    }
+  }
+}
+
+// Listener for mobile devices on the same class
+export function subscribeToClassPresentationBeacon(
+  className: string,
+  onBeacon: (beacon: LivePresentationBeacon | null) => void
+) {
+  const cleanClass = className.replace(/[^a-zA-Z0-9]/g, '').toUpperCase() || '4A1';
+  const channelName = `gvcn_class_live_${cleanClass}`;
+
+  const channel = supabase.channel(channelName, {
+    config: { broadcast: { self: false } },
+  });
+
+  channel
+    .on('broadcast', { event: 'live_beacon' }, ({ payload }) => {
+      if (payload) {
+        if (!payload.timestamp || payload.timestamp === 0) {
+          onBeacon(null);
+        } else {
+          onBeacon(payload as LivePresentationBeacon);
+        }
+      }
+    })
+    .subscribe();
+
+  let localBroadcast: BroadcastChannel | null = null;
+  if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+    try {
+      localBroadcast = new BroadcastChannel(channelName);
+      localBroadcast.onmessage = (event) => {
+        if (event.data) {
+          if (!event.data.timestamp || event.data.timestamp === 0) {
+            onBeacon(null);
+          } else {
+            onBeacon(event.data as LivePresentationBeacon);
+          }
+        }
+      };
+    } catch {}
+  }
+
+  return () => {
+    supabase.removeChannel(channel);
+    localBroadcast?.close();
+  };
+}

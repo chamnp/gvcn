@@ -48,6 +48,7 @@ import {
   RemoteMessage,
   RemoteLaserPayload,
   TVModalType,
+  PresentationBeaconBroadcaster,
   generateSessionCode,
 } from '@/lib/remote-sync';
 import { RemoteLaserOverlay } from '@/components/classroom/remote-laser-overlay';
@@ -106,6 +107,7 @@ export default function ClassroomToolsPage() {
   const [remoteLaser, setRemoteLaser] = useState<RemoteLaserPayload | null>(null);
   const [remoteSpinTrigger, setRemoteSpinTrigger] = useState(0);
   const remoteSessionRef = useRef<RemoteSyncSession | null>(null);
+  const beaconRef = useRef<PresentationBeaconBroadcaster | null>(null);
 
   const getActiveModal = (): TVModalType => {
     if (isWheelOpen) return 'WHEEL';
@@ -147,6 +149,15 @@ export default function ClassroomToolsPage() {
   }, [classInfo, students]);
 
   useEffect(() => {
+    beaconRef.current = new PresentationBeaconBroadcaster({
+      sessionCode,
+      className: classInfoRef.current.name,
+      teacherName: classInfoRef.current.teacherName,
+      activeContext: 'CLASSROOM_TOOLS',
+      slideTitle: 'Công Cụ & Trò Chơi Lớp Học',
+      timestamp: Date.now(),
+    });
+
     remoteSessionRef.current = new RemoteSyncSession(
       sessionCode,
       'HOST_TV',
@@ -216,6 +227,7 @@ export default function ClassroomToolsPage() {
     );
 
     return () => {
+      beaconRef.current?.stop();
       remoteSessionRef.current?.close();
     };
   }, [sessionCode]);

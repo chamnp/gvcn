@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Smartphone,
   QrCode,
@@ -31,6 +31,17 @@ export const RemotePairingModal: React.FC<RemotePairingModalProps> = ({
   className,
 }) => {
   const [copied, setCopied] = useState(false);
+
+  // Auto-close modal 1.2 seconds after connection is established
+  useEffect(() => {
+    if (isRemoteConnected && isOpen) {
+      const timer = setTimeout(() => {
+        onClose();
+        toast.success('📱 Đã kết nối Remote thành công!');
+      }, 1200);
+      return () => clearTimeout(timer);
+    }
+  }, [isRemoteConnected, isOpen, onClose]);
 
   if (!isOpen) return null;
 

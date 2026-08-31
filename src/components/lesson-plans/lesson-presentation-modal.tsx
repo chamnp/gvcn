@@ -31,6 +31,7 @@ import {
   RemoteSyncSession,
   RemoteMessage,
   RemoteLaserPayload,
+  PresentationBeaconBroadcaster,
   generateSessionCode,
 } from '@/lib/remote-sync';
 import { RemoteLaserOverlay } from '@/components/classroom/remote-laser-overlay';
@@ -122,6 +123,7 @@ export function LessonPresentationModal({
   const [isRemoteConnected, setIsRemoteConnected] = useState(false);
   const [remoteLaser, setRemoteLaser] = useState<RemoteLaserPayload | null>(null);
   const remoteSessionRef = useRef<RemoteSyncSession | null>(null);
+  const beaconRef = useRef<PresentationBeaconBroadcaster | null>(null);
 
   // Sync state to remote controller phone
   const syncStateToRemote = useCallback(() => {
@@ -158,14 +160,29 @@ export function LessonPresentationModal({
     onAwardStarRef.current = onAwardStar;
     slidesRef.current = slides;
     currentSlideRef.current = currentSlide;
-  }, [onAwardStar, slides, currentSlide]);
+    if (isOpen && currentSlide) {
+      beaconRef.current?.updateBeacon({
+        slideTitle: currentSlide.title,
+      });
+    }
+  }, [onAwardStar, slides, currentSlide, isOpen]);
 
-  // Initialize Remote Session
+  // Initialize Remote Session & Auto-Discovery Beacon
   useEffect(() => {
     if (!isOpen) {
+      beaconRef.current?.stop();
       remoteSessionRef.current?.close();
       return;
     }
+
+    beaconRef.current = new PresentationBeaconBroadcaster({
+      sessionCode,
+      className: classInfo.name,
+      teacherName: classInfo.teacherName,
+      activeContext: 'LESSON_PLAN',
+      slideTitle: currentSlideRef.current?.title || 'Kế hoạch bài dạy',
+      timestamp: Date.now(),
+    });
 
     remoteSessionRef.current = new RemoteSyncSession(
       sessionCode,
@@ -239,6 +256,7 @@ export function LessonPresentationModal({
     );
 
     return () => {
+      beaconRef.current?.stop();
       remoteSessionRef.current?.close();
     };
   }, [isOpen, sessionCode]);

@@ -7,6 +7,7 @@ import { Sidebar, MobileSidebar } from '@/components/layout/sidebar';
 import { Header } from '@/components/layout/header';
 import { BottomNav } from '@/components/layout/bottom-nav';
 import { AuthGuard } from '@/components/layout/auth-guard';
+import { ActivePresentationDetector } from '@/components/classroom/active-presentation-detector';
 
 const STANDALONE_PREFIXES = ['/login', '/unauthorized', '/demo', '/hw', '/lookup', '/student', '/rewards', '/remote', '/reports/so-chu-nhiem', '/reports/hoc-ba', '/reports/certificates'];
 
@@ -43,6 +44,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
           <AuthGuard>{children}</AuthGuard>
         </main>
         <BottomNav />
+        <ActivePresentationDetector />
       </div>
     </div>
   );
