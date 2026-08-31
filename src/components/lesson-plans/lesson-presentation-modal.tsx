@@ -131,6 +131,7 @@ export function LessonPresentationModal({
       className: classInfo.name,
       teacherName: classInfo.teacherName,
       activeContext: 'LESSON_PLAN',
+      activeModal: isWheelOpen ? 'WHEEL' : 'NONE',
       currentSlide: currentSlideIndex,
       totalSlides: slides.length,
       slideTitle: currentSlide.title,
@@ -148,7 +149,7 @@ export function LessonPresentationModal({
       luckyWheelWinner: selectedStudent?.fullName,
       studentsList: students.map((s) => ({ id: s.id, fullName: s.fullName, studentCode: s.studentCode })),
     });
-  }, [currentSlideIndex, currentSlide, slides.length, showQuizAnswer, isTimerRunning, timerSeconds, selectedStudent, students, classInfo, sessionCode]);
+  }, [currentSlideIndex, currentSlide, slides.length, showQuizAnswer, isTimerRunning, timerSeconds, selectedStudent, students, classInfo, sessionCode, isWheelOpen]);
 
   const onAwardStarRef = useRef(onAwardStar);
   const slidesRef = useRef(slides);
@@ -178,6 +179,16 @@ export function LessonPresentationModal({
             break;
           case 'DISCONNECT':
             setIsRemoteConnected(false);
+            break;
+          case 'CLOSE_MODAL':
+          case 'CLOSE_WHEEL':
+            setIsWheelOpen(false);
+            toast.success('📱 Đã đóng pop-up trên TV bằng Remote điện thoại!');
+            break;
+          case 'OPEN_MODAL':
+            if (msg.payload?.modal === 'WHEEL') {
+              setIsWheelOpen(true);
+            }
             break;
           case 'SLIDE_NEXT':
             setCurrentSlideIndex((prev) => Math.min(slidesRef.current.length - 1, prev + 1));
@@ -232,12 +243,12 @@ export function LessonPresentationModal({
     };
   }, [isOpen, sessionCode]);
 
-  // Sync state whenever slide or quiz or timer changes
+  // Sync state whenever slide, quiz, timer, or wheel popup changes
   useEffect(() => {
     if (isOpen && isRemoteConnected) {
       syncStateToRemote();
     }
-  }, [isOpen, isRemoteConnected, currentSlideIndex, showQuizAnswer, isTimerRunning, timerSeconds]);
+  }, [isOpen, isRemoteConnected, currentSlideIndex, showQuizAnswer, isTimerRunning, timerSeconds, isWheelOpen]);
 
   // Keyboard navigation
   useEffect(() => {

@@ -9,11 +9,27 @@ export interface RemoteLaserPayload {
   mode: 'LASER' | 'SPOTLIGHT';
 }
 
+export type TVModalType =
+  | 'WHEEL'
+  | 'TIMER'
+  | 'TRAFFIC'
+  | 'TEAM_QUIZ'
+  | 'SOUNDBOARD'
+  | 'CHEST'
+  | 'PAIR'
+  | 'MOOD'
+  | 'BRAIN_BREAK'
+  | 'TASK_CANVAS'
+  | 'LEADERBOARD'
+  | 'NOISE'
+  | 'NONE';
+
 export interface RemoteStatePayload {
   sessionCode: string;
   className: string;
   teacherName: string;
   activeContext: 'LESSON_PLAN' | 'CLASSROOM_TOOLS' | 'PARENT_MEETING' | 'IDLE';
+  activeModal?: TVModalType;
   currentSlide?: number;
   totalSlides?: number;
   slideTitle?: string;
@@ -45,7 +61,10 @@ export type RemoteActionType =
   | 'SLIDE_PREV'
   | 'SLIDE_GOTO'
   | 'LASER_MOVE'
+  | 'OPEN_MODAL'
+  | 'CLOSE_MODAL'
   | 'SPIN_WHEEL'
+  | 'CLOSE_WHEEL'
   | 'TIMER_START'
   | 'TIMER_PAUSE'
   | 'TIMER_RESET'

@@ -25,6 +25,7 @@ import {
   Clock,
   HelpCircle,
   Tv,
+  X,
 } from 'lucide-react';
 import {
   RemoteSyncSession,
@@ -222,6 +223,17 @@ function RemoteControlPageContent() {
         </div>
 
         <div className="flex items-center space-x-1.5">
+          {tvState.activeModal && tvState.activeModal !== 'NONE' && (
+            <button
+              onClick={() => sendAction('CLOSE_MODAL')}
+              className="px-2.5 py-1 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-black shadow-md flex items-center space-x-1 animate-pulse cursor-pointer border border-rose-400"
+              title="Đóng cửa sổ đang mở trên TV"
+            >
+              <X className="w-3.5 h-3.5" />
+              <span>Đóng TV</span>
+            </button>
+          )}
+
           <button
             onClick={() => {
               const code = prompt('Nhập mã PIN hiển thị trên màn hình TV:', sessionCode || '4A1-101');
@@ -236,6 +248,90 @@ function RemoteControlPageContent() {
 
       {/* ─── 2. MAIN ACTIVE CONTROLLER TAB BODY ───────────────────────────── */}
       <main className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* ACTIVE TV MODAL BANNER CONTROLLER */}
+        {tvState.activeModal && tvState.activeModal !== 'NONE' && (
+          <div className="bg-gradient-to-r from-amber-950/90 via-orange-950/90 to-rose-950/90 border-2 border-amber-400/60 rounded-3xl p-3.5 space-y-2.5 shadow-2xl animate-in slide-in-from-top duration-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-amber-500/30 border border-amber-400/50 flex items-center justify-center text-xl shadow-inner">
+                  {tvState.activeModal === 'WHEEL' && '🎡'}
+                  {tvState.activeModal === 'TIMER' && '⏱️'}
+                  {tvState.activeModal === 'TRAFFIC' && '🚦'}
+                  {tvState.activeModal === 'SOUNDBOARD' && '🔊'}
+                  {tvState.activeModal === 'TEAM_QUIZ' && '🏎️'}
+                  {tvState.activeModal === 'LEADERBOARD' && '🏆'}
+                  {tvState.activeModal === 'CHEST' && '🎁'}
+                  {tvState.activeModal === 'PAIR' && '👥'}
+                  {tvState.activeModal === 'MOOD' && '☀️'}
+                  {tvState.activeModal === 'BRAIN_BREAK' && '🧘'}
+                  {tvState.activeModal === 'TASK_CANVAS' && '📋'}
+                  {tvState.activeModal === 'NOISE' && '🎤'}
+                </div>
+                <div>
+                  <span className="text-[10px] font-black uppercase text-amber-400 tracking-wider flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" />
+                    Đang chiếu trên Smart TV
+                  </span>
+                  <h4 className="font-black text-sm text-white leading-tight">
+                    {tvState.activeModal === 'WHEEL' && 'Vòng Quay May Mắn'}
+                    {tvState.activeModal === 'TIMER' && 'Đồng Hồ Đếm Ngược'}
+                    {tvState.activeModal === 'TRAFFIC' && 'Đèn Tín Hiệu Nề Nếp'}
+                    {tvState.activeModal === 'SOUNDBOARD' && 'Hộp Âm Thanh Lớp Học'}
+                    {tvState.activeModal === 'TEAM_QUIZ' && 'Đua Xe Trắc Nghiệm'}
+                    {tvState.activeModal === 'LEADERBOARD' && 'Bảng Vinh Danh Sao'}
+                    {tvState.activeModal === 'CHEST' && 'Hộp Quà Bí Mật'}
+                    {tvState.activeModal === 'PAIR' && 'Ghép Đôi Học Tập'}
+                    {tvState.activeModal === 'MOOD' && 'Điểm Danh Cảm Xúc'}
+                    {tvState.activeModal === 'BRAIN_BREAK' && 'Nạp Năng Lượng 2 Phút'}
+                    {tvState.activeModal === 'TASK_CANVAS' && 'Bảng Lệnh Nhiệm Vụ'}
+                    {tvState.activeModal === 'NOISE' && 'Đo Độ Ồn Lớp Học'}
+                  </h4>
+                </div>
+              </div>
+
+              {/* 1-Tap Close Button */}
+              <button
+                onClick={() => sendAction('CLOSE_MODAL')}
+                className="px-3.5 py-2 rounded-2xl bg-rose-600 hover:bg-rose-500 active:scale-95 text-white font-black text-xs shadow-lg flex items-center space-x-1.5 cursor-pointer border border-rose-400"
+              >
+                <X className="w-4 h-4" />
+                <span>ĐÓNG TV</span>
+              </button>
+            </div>
+
+            {/* Contextual Quick Actions */}
+            {tvState.activeModal === 'WHEEL' && (
+              <div className="flex items-center space-x-2 pt-1 border-t border-amber-500/20">
+                <button
+                  onClick={() => sendAction('SPIN_WHEEL')}
+                  className="flex-1 py-2.5 rounded-2xl bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-300 hover:to-orange-300 active:scale-95 text-slate-950 font-black text-xs shadow-md flex items-center justify-center space-x-1.5 cursor-pointer"
+                >
+                  <Sparkles className="w-4 h-4 text-slate-950" />
+                  <span>🎡 QUAY TIẾP NGAY TRÊN TV</span>
+                </button>
+              </div>
+            )}
+
+            {tvState.activeModal === 'TIMER' && (
+              <div className="grid grid-cols-2 gap-2 pt-1 border-t border-amber-500/20">
+                <button
+                  onClick={() => sendAction('TIMER_START')}
+                  className="py-2.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 active:scale-95 text-slate-950 font-black text-xs shadow-md flex items-center justify-center space-x-1 cursor-pointer"
+                >
+                  <Play className="w-3.5 h-3.5" />
+                  <span>Chạy giờ</span>
+                </button>
+                <button
+                  onClick={() => sendAction('TIMER_PAUSE')}
+                  className="py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-white font-black text-xs flex items-center justify-center space-x-1 cursor-pointer"
+                >
+                  <Pause className="w-3.5 h-3.5" />
+                  <span>Tạm dừng</span>
+                </button>
+              </div>
+            )}
+          </div>
+        )}
         {/* TAB 1: SLIDES & LESSON PLAN PRESENTATION */}
         {activeTab === 'SLIDES' && (
           <div className="space-y-4 animate-in fade-in">
@@ -433,14 +529,113 @@ function RemoteControlPageContent() {
         {/* TAB 3: GAMES & INSTANT SOUNDBOARD */}
         {activeTab === 'GAMES' && (
           <div className="space-y-4 animate-in fade-in">
-            {/* Big Lucky Wheel Spin Trigger */}
-            <button
-              onClick={() => sendAction('SPIN_WHEEL')}
-              className="w-full py-4 rounded-3xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 active:scale-95 text-white font-black text-base shadow-xl flex items-center justify-center space-x-2 border border-amber-300/40 cursor-pointer"
-            >
-              <Sparkles className="w-6 h-6 animate-bounce" />
-              <span>🎡 QUAY VÒNG QUAY MAY MẮN TRÊN TV</span>
-            </button>
+            {/* Quick Action & Dismiss Bar */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <button
+                onClick={() => sendAction('SPIN_WHEEL')}
+                className="py-3.5 px-3 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 hover:from-amber-400 active:scale-95 text-white font-black text-xs shadow-lg flex items-center justify-center space-x-1.5 cursor-pointer border border-amber-300/40"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>🎡 Quay Vòng Quay TV</span>
+              </button>
+
+              <button
+                onClick={() => sendAction('CLOSE_MODAL')}
+                className="py-3.5 px-3 rounded-2xl bg-rose-950/80 hover:bg-rose-900/80 active:scale-95 border border-rose-600/70 text-rose-200 font-black text-xs flex items-center justify-center space-x-1.5 transition-all cursor-pointer shadow-md"
+              >
+                <X className="w-4 h-4 text-rose-400" />
+                <span>✕ Đóng Pop-up TV</span>
+              </button>
+            </div>
+
+            {/* Quick TV Tools Launcher & Controller */}
+            <div className="bg-slate-900 rounded-2xl p-3.5 border border-slate-800 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black text-slate-400 uppercase tracking-wider block">
+                  Bật / Đóng Công Cụ Trên Smart TV
+                </span>
+                <button
+                  onClick={() => sendAction('CLOSE_MODAL')}
+                  className="text-[10px] text-rose-400 hover:text-rose-300 font-bold flex items-center gap-1 cursor-pointer"
+                >
+                  <X className="w-3 h-3" /> Đóng tất cả
+                </button>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 text-xs font-bold">
+                <button
+                  onClick={() => sendAction('OPEN_MODAL', { modal: 'WHEEL' })}
+                  className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 active:scale-95 border border-slate-800 text-amber-300 flex flex-col items-center justify-center gap-1 cursor-pointer text-center"
+                >
+                  <span className="text-lg">🎡</span>
+                  <span className="text-[10px]">Vòng Quay</span>
+                </button>
+
+                <button
+                  onClick={() => sendAction('OPEN_MODAL', { modal: 'TIMER' })}
+                  className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 active:scale-95 border border-slate-800 text-cyan-300 flex flex-col items-center justify-center gap-1 cursor-pointer text-center"
+                >
+                  <span className="text-lg">⏱️</span>
+                  <span className="text-[10px]">Đồng Hồ</span>
+                </button>
+
+                <button
+                  onClick={() => sendAction('OPEN_MODAL', { modal: 'TRAFFIC' })}
+                  className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 active:scale-95 border border-slate-800 text-emerald-300 flex flex-col items-center justify-center gap-1 cursor-pointer text-center"
+                >
+                  <span className="text-lg">🚦</span>
+                  <span className="text-[10px]">Đèn Nề Nếp</span>
+                </button>
+
+                <button
+                  onClick={() => sendAction('OPEN_MODAL', { modal: 'TEAM_QUIZ' })}
+                  className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 active:scale-95 border border-slate-800 text-orange-300 flex flex-col items-center justify-center gap-1 cursor-pointer text-center"
+                >
+                  <span className="text-lg">🏎️</span>
+                  <span className="text-[10px]">Đua Xe Đố</span>
+                </button>
+
+                <button
+                  onClick={() => sendAction('OPEN_MODAL', { modal: 'CHEST' })}
+                  className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 active:scale-95 border border-slate-800 text-yellow-300 flex flex-col items-center justify-center gap-1 cursor-pointer text-center"
+                >
+                  <span className="text-lg">🎁</span>
+                  <span className="text-[10px]">Hộp Bí Mật</span>
+                </button>
+
+                <button
+                  onClick={() => sendAction('OPEN_MODAL', { modal: 'PAIR' })}
+                  className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 active:scale-95 border border-slate-800 text-indigo-300 flex flex-col items-center justify-center gap-1 cursor-pointer text-center"
+                >
+                  <span className="text-lg">👥</span>
+                  <span className="text-[10px]">Ghép Cặp</span>
+                </button>
+
+                <button
+                  onClick={() => sendAction('OPEN_MODAL', { modal: 'TASK_CANVAS' })}
+                  className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 active:scale-95 border border-slate-800 text-sky-300 flex flex-col items-center justify-center gap-1 cursor-pointer text-center"
+                >
+                  <span className="text-lg">📋</span>
+                  <span className="text-[10px]">Bảng Lệnh</span>
+                </button>
+
+                <button
+                  onClick={() => sendAction('OPEN_MODAL', { modal: 'BRAIN_BREAK' })}
+                  className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 active:scale-95 border border-slate-800 text-rose-300 flex flex-col items-center justify-center gap-1 cursor-pointer text-center"
+                >
+                  <span className="text-lg">🧘</span>
+                  <span className="text-[10px]">Thể Dục 2P</span>
+                </button>
+
+                <button
+                  onClick={() => sendAction('OPEN_MODAL', { modal: 'LEADERBOARD' })}
+                  className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 active:scale-95 border border-slate-800 text-amber-300 flex flex-col items-center justify-center gap-1 cursor-pointer text-center"
+                >
+                  <span className="text-lg">🏆</span>
+                  <span className="text-[10px]">Bảng Sao</span>
+                </button>
+              </div>
+            </div>
 
             {/* Soundboard Grid (6 Sound FX) */}
             <div className="space-y-2">

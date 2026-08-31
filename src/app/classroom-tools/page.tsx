@@ -47,6 +47,7 @@ import {
   RemoteSyncSession,
   RemoteMessage,
   RemoteLaserPayload,
+  TVModalType,
   generateSessionCode,
 } from '@/lib/remote-sync';
 import { RemoteLaserOverlay } from '@/components/classroom/remote-laser-overlay';
@@ -106,6 +107,38 @@ export default function ClassroomToolsPage() {
   const [remoteSpinTrigger, setRemoteSpinTrigger] = useState(0);
   const remoteSessionRef = useRef<RemoteSyncSession | null>(null);
 
+  const getActiveModal = (): TVModalType => {
+    if (isWheelOpen) return 'WHEEL';
+    if (isTimerOpen) return 'TIMER';
+    if (isTrafficOpen) return 'TRAFFIC';
+    if (isSoundboardOpen) return 'SOUNDBOARD';
+    if (isTeamQuizOpen) return 'TEAM_QUIZ';
+    if (isLeaderboardOpen) return 'LEADERBOARD';
+    if (isChestOpen) return 'CHEST';
+    if (isPairOpen) return 'PAIR';
+    if (isMoodOpen) return 'MOOD';
+    if (isBrainBreakOpen) return 'BRAIN_BREAK';
+    if (isTaskCanvasOpen) return 'TASK_CANVAS';
+    if (isNoiseOpen) return 'NOISE';
+    return 'NONE';
+  };
+
+  const closeAllModals = () => {
+    setIsWheelOpen(false);
+    setIsTimerOpen(false);
+    setIsTrafficOpen(false);
+    setIsSoundboardOpen(false);
+    setIsTeamQuizOpen(false);
+    setIsLeaderboardOpen(false);
+    setIsChestOpen(false);
+    setIsPairOpen(false);
+    setIsMoodOpen(false);
+    setIsBrainBreakOpen(false);
+    setIsTaskCanvasOpen(false);
+    setIsNoiseOpen(false);
+    setIsTeamGenOpen(false);
+  };
+
   const classInfoRef = useRef(classInfo);
   const studentsRef = useRef(students);
   useEffect(() => {
@@ -127,6 +160,7 @@ export default function ClassroomToolsPage() {
               className: classInfoRef.current.name,
               teacherName: classInfoRef.current.teacherName,
               activeContext: 'CLASSROOM_TOOLS',
+              activeModal: getActiveModal(),
               slideTitle: 'Công Cụ & Trò Chơi Lớp Học',
               presenterNotes: ['Bấm các nút âm thanh hoặc kích hoạt trò chơi từ điện thoại.'],
               isTimerRunning: false,
@@ -137,6 +171,25 @@ export default function ClassroomToolsPage() {
             break;
           case 'DISCONNECT':
             setIsRemoteConnected(false);
+            break;
+          case 'CLOSE_MODAL':
+          case 'CLOSE_WHEEL':
+            closeAllModals();
+            toast.success('📱 Đã đóng pop-up trên TV bằng Remote điện thoại!');
+            break;
+          case 'OPEN_MODAL':
+            if (msg.payload?.modal === 'WHEEL') setIsWheelOpen(true);
+            else if (msg.payload?.modal === 'TIMER') setIsTimerOpen(true);
+            else if (msg.payload?.modal === 'TRAFFIC') setIsTrafficOpen(true);
+            else if (msg.payload?.modal === 'SOUNDBOARD') setIsSoundboardOpen(true);
+            else if (msg.payload?.modal === 'TEAM_QUIZ') setIsTeamQuizOpen(true);
+            else if (msg.payload?.modal === 'LEADERBOARD') setIsLeaderboardOpen(true);
+            else if (msg.payload?.modal === 'CHEST') setIsChestOpen(true);
+            else if (msg.payload?.modal === 'PAIR') setIsPairOpen(true);
+            else if (msg.payload?.modal === 'MOOD') setIsMoodOpen(true);
+            else if (msg.payload?.modal === 'BRAIN_BREAK') setIsBrainBreakOpen(true);
+            else if (msg.payload?.modal === 'TASK_CANVAS') setIsTaskCanvasOpen(true);
+            else if (msg.payload?.modal === 'NOISE') setIsNoiseOpen(true);
             break;
           case 'SPIN_WHEEL':
             setIsWheelOpen(true);
@@ -166,6 +219,30 @@ export default function ClassroomToolsPage() {
       remoteSessionRef.current?.close();
     };
   }, [sessionCode]);
+
+  // Sync active modal change to remote phone
+  useEffect(() => {
+    if (isRemoteConnected && remoteSessionRef.current) {
+      const activeModal = getActiveModal();
+      remoteSessionRef.current.sendAction('STATE_SYNC', {
+        activeModal,
+      });
+    }
+  }, [
+    isWheelOpen,
+    isTimerOpen,
+    isTrafficOpen,
+    isSoundboardOpen,
+    isTeamQuizOpen,
+    isLeaderboardOpen,
+    isChestOpen,
+    isPairOpen,
+    isMoodOpen,
+    isBrainBreakOpen,
+    isTaskCanvasOpen,
+    isNoiseOpen,
+    isRemoteConnected,
+  ]);
 
   // Digital Clock
   useEffect(() => {
