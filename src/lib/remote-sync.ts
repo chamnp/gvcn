@@ -139,6 +139,14 @@ export class RemoteSyncSession {
     this.init();
   }
 
+  public getSessionCode(): string {
+    return this.sessionCode;
+  }
+
+  public isChannelConnected(): boolean {
+    return this.isSubscribed;
+  }
+
   public setMessageHandler(fn: (msg: RemoteMessage) => void) {
     this.onMessageCallback = fn;
   }

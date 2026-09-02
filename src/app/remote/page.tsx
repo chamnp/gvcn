@@ -60,6 +60,7 @@ function RemoteControlPageContent() {
 
   // Remote Sync Session Ref
   const sessionRef = useRef<RemoteSyncSession | null>(null);
+  const activeSessionCodeRef = useRef<string>('');
 
   // Wake Lock Ref to keep screen on while teaching
   useEffect(() => {
@@ -69,13 +70,13 @@ function RemoteControlPageContent() {
         if ('wakeLock' in navigator) {
           wakeLock = await (navigator as any).wakeLock.request('screen');
         }
-      } catch {
+      } catch (err) {
         // Ignore wake lock errors
       }
     };
     requestWakeLock();
     return () => {
-      if (wakeLock) wakeLock.release();
+      if (wakeLock) wakeLock.release().catch(() => {});
     };
   }, []);
 
@@ -83,6 +84,10 @@ function RemoteControlPageContent() {
   const connectSession = useCallback((code: string) => {
     if (!code) return;
     const cleanCode = code.trim().toUpperCase();
+    if (activeSessionCodeRef.current === cleanCode && sessionRef.current) {
+      return; // Already connected to this exact session
+    }
+    activeSessionCodeRef.current = cleanCode;
     setSessionCode(cleanCode);
 
     if (sessionRef.current) {
@@ -110,6 +115,7 @@ function RemoteControlPageContent() {
     if (initialSession) {
       connectSession(initialSession);
       return () => {
+        activeSessionCodeRef.current = '';
         sessionRef.current?.close();
       };
     }
@@ -118,6 +124,9 @@ function RemoteControlPageContent() {
     if (classInfo.name) {
       const unsubscribe = subscribeToClassPresentationBeacon(classInfo.name, (beacon) => {
         if (beacon && beacon.sessionCode && Date.now() - beacon.timestamp < 15000) {
+          if (activeSessionCodeRef.current === beacon.sessionCode) {
+            return; // Already connected to this live TV session, avoid reconnect & toast spam
+          }
           toast.success(`📱 Đã tự động kết nối với TV: "${beacon.slideTitle}"!`);
           connectSession(beacon.sessionCode);
         }
@@ -125,14 +134,48 @@ function RemoteControlPageContent() {
 
       return () => {
         unsubscribe();
+        activeSessionCodeRef.current = '';
         sessionRef.current?.close();
       };
     }
   }, [initialSession, classInfo.name, connectSession]);
 
-  // Dispatch Action to TV
+  // Dispatch Action to TV with Instant Optimistic UI Update
   const sendAction = (type: any, payload?: any) => {
     triggerHaptic(30);
+
+    // Optimistic UI updates for immediate responsiveness
+    if (type === 'SLIDE_NEXT') {
+      setTvState((prev) => ({
+        ...prev,
+        currentSlide: Math.min((prev.totalSlides ?? 1) - 1, (prev.currentSlide ?? 0) + 1),
+      }));
+    } else if (type === 'SLIDE_PREV') {
+      setTvState((prev) => ({
+        ...prev,
+        currentSlide: Math.max(0, (prev.currentSlide ?? 0) - 1),
+      }));
+    } else if (type === 'OPEN_MODAL') {
+      setTvState((prev) => ({ ...prev, activeModal: payload?.modal }));
+    } else if (type === 'CLOSE_MODAL') {
+      setTvState((prev) => ({ ...prev, activeModal: 'NONE' }));
+    } else if (type === 'TRAFFIC_LIGHT') {
+      setTvState((prev) => ({ ...prev, trafficLightStatus: payload?.status }));
+    } else if (type === 'REVEAL_ANSWER') {
+      setTvState((prev) => ({ ...prev, isAnswerRevealed: true }));
+    } else if (type === 'TIMER_START') {
+      setTvState((prev) => ({ ...prev, isTimerRunning: true }));
+    } else if (type === 'TIMER_PAUSE') {
+      setTvState((prev) => ({ ...prev, isTimerRunning: false }));
+    } else if (type === 'TIMER_RESET') {
+      setTvState((prev) => ({ ...prev, isTimerRunning: false, timeRemaining: prev.timerDuration || 300 }));
+    } else if (type === 'TIMER_ADD_SECONDS') {
+      setTvState((prev) => ({
+        ...prev,
+        timeRemaining: Math.max(0, (prev.timeRemaining ?? 0) + (payload?.seconds || 30)),
+      }));
+    }
+
     sessionRef.current?.sendAction(type, payload);
   };
 

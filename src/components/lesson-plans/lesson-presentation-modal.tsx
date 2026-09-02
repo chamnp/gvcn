@@ -37,6 +37,7 @@ import {
 import { RemoteLaserOverlay } from '@/components/classroom/remote-laser-overlay';
 import { RemotePairingModal } from '@/components/classroom/remote-pairing-modal';
 import { Smartphone } from 'lucide-react';
+import { playSoundEffect } from '@/lib/sound-effects';
 
 interface LessonPresentationModalProps {
   isOpen: boolean;
@@ -252,12 +253,22 @@ export function LessonPresentationModal({
             setShowQuizAnswer(true);
             confetti({ particleCount: 70, spread: 60 });
             break;
+          case 'PLAY_SFX':
+            if (msg.payload?.type) {
+              playSoundEffect(msg.payload.type);
+            }
+            break;
           case 'AWARD_STAR':
-            if (msg.payload?.studentId && onAwardStarRef.current) {
-              onAwardStarRef.current(msg.payload.studentId);
+            const targetStudent = students.find(
+              (s) =>
+                (msg.payload?.studentId && s.id === msg.payload.studentId) ||
+                (msg.payload?.studentName && s.fullName === msg.payload.studentName)
+            );
+            if (targetStudent && onAwardStarRef.current) {
+              onAwardStarRef.current(targetStudent.id);
             }
             confetti({ particleCount: 60, spread: 70 });
-            toast.success(`⭐ Đã cộng sao cho ${msg.payload?.studentName || 'Học sinh'}!`);
+            toast.success(`⭐ Đã cộng sao cho ${msg.payload?.studentName || targetStudent?.fullName || 'Học sinh'}!`);
             break;
         }
       },

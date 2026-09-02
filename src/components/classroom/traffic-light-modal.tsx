@@ -19,6 +19,7 @@ interface TrafficLightModalProps {
   isOpen: boolean;
   onClose: () => void;
   className?: string;
+  onSignalChange?: (signal: SignalState) => void;
 }
 
 type SignalState = 'RED' | 'YELLOW' | 'GREEN';
@@ -68,6 +69,7 @@ export function TrafficLightModal({
   isOpen,
   onClose,
   className = '4A1',
+  onSignalChange,
 }: TrafficLightModalProps) {
   const [activeSignal, setActiveSignal] = useState<SignalState>('GREEN');
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -91,6 +93,7 @@ export function TrafficLightModal({
 
   const setSignalWithSound = (signal: SignalState) => {
     setActiveSignal(signal);
+    onSignalChange?.(signal);
     if (signal === 'RED') playChime(440); // A4
     else if (signal === 'YELLOW') playChime(554.37); // C#5
     else if (signal === 'GREEN') playChime(659.25); // E5

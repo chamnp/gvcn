@@ -55,6 +55,7 @@ import { RemoteLaserOverlay } from '@/components/classroom/remote-laser-overlay'
 import { RemotePairingModal } from '@/components/classroom/remote-pairing-modal';
 import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
+import { playSoundEffect } from '@/lib/sound-effects';
 
 type ToolCategory = 'ALL' | 'GAMES' | 'INTERACTION' | 'MANAGEMENT' | 'ENERGY';
 
@@ -77,7 +78,7 @@ interface ClassroomToolItem {
 }
 
 export default function ClassroomToolsPage() {
-  const { students, classInfo } = useAppStore();
+  const { students, classInfo, addStarLog } = useAppStore();
 
   const [category, setCategory] = useState<ToolCategory>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -92,6 +93,7 @@ export default function ClassroomToolsPage() {
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
   const [isNoiseOpen, setIsNoiseOpen] = useState(false);
   const [isTrafficOpen, setIsTrafficOpen] = useState(false);
+  const [trafficLightStatus, setTrafficLightStatus] = useState<'GREEN' | 'YELLOW' | 'RED'>('GREEN');
   const [isSoundboardOpen, setIsSoundboardOpen] = useState(false);
   const [isChestOpen, setIsChestOpen] = useState(false);
   const [isPairOpen, setIsPairOpen] = useState(false);
@@ -206,14 +208,31 @@ export default function ClassroomToolsPage() {
             setIsWheelOpen(true);
             setRemoteSpinTrigger((prev) => prev + 1);
             break;
+          case 'PLAY_SFX':
+            if (msg.payload?.type) {
+              playSoundEffect(msg.payload.type);
+            }
+            break;
           case 'TIMER_START':
             setIsTimerOpen(true);
+            window.dispatchEvent(new CustomEvent('remote-timer-action', { detail: { action: 'START' } }));
+            break;
+          case 'TIMER_PAUSE':
+            window.dispatchEvent(new CustomEvent('remote-timer-action', { detail: { action: 'PAUSE' } }));
+            break;
+          case 'TIMER_RESET':
+            window.dispatchEvent(new CustomEvent('remote-timer-action', { detail: { action: 'RESET' } }));
+            break;
+          case 'TIMER_SET':
+            window.dispatchEvent(
+              new CustomEvent('remote-timer-action', { detail: { action: 'SET', seconds: msg.payload?.seconds } })
+            );
             break;
           case 'TRAFFIC_LIGHT':
             setIsTrafficOpen(true);
             // Apply the specific light color from remote payload
             if (msg.payload?.status) {
-              // Dispatch a custom event so the traffic light component can react
+              setTrafficLightStatus(msg.payload.status);
               window.dispatchEvent(new CustomEvent('remote-traffic-light', { detail: msg.payload.status }));
             }
             break;
@@ -228,8 +247,21 @@ export default function ClassroomToolsPage() {
             setRemoteLaser(msg.payload);
             break;
           case 'AWARD_STAR':
+            const targetStudent = studentsRef.current.find(
+              (s) =>
+                (msg.payload?.studentId && s.id === msg.payload.studentId) ||
+                (msg.payload?.studentName && s.fullName === msg.payload.studentName)
+            );
+            if (targetStudent) {
+              addStarLog(
+                targetStudent.id,
+                msg.payload?.points || 1,
+                'Học tập',
+                msg.payload?.reason || 'Khen thưởng qua Remote TV'
+              );
+            }
             confetti({ particleCount: 70, spread: 60 });
-            toast.success(`⭐ Đã cộng sao cho ${msg.payload?.studentName || 'Học sinh'}!`);
+            toast.success(`⭐ Đã cộng sao cho ${msg.payload?.studentName || targetStudent?.fullName || 'Học sinh'}!`);
             break;
         }
       },
@@ -244,12 +276,13 @@ export default function ClassroomToolsPage() {
     };
   }, [sessionCode]);
 
-  // Sync active modal change to remote phone
+  // Sync active modal and traffic light change to remote phone
   useEffect(() => {
     if (isRemoteConnected && remoteSessionRef.current) {
       const activeModal = getActiveModal();
       remoteSessionRef.current.sendAction('STATE_SYNC', {
         activeModal,
+        trafficLightStatus,
       });
     }
   }, [
@@ -265,6 +298,7 @@ export default function ClassroomToolsPage() {
     isBrainBreakOpen,
     isTaskCanvasOpen,
     isNoiseOpen,
+    trafficLightStatus,
     isRemoteConnected,
   ]);
 
@@ -1032,7 +1066,12 @@ export default function ClassroomToolsPage() {
 
       <NoiseMeterModal isOpen={isNoiseOpen} onClose={() => setIsNoiseOpen(false)} students={students} className={classInfo.name} />
 
-      <TrafficLightModal isOpen={isTrafficOpen} onClose={() => setIsTrafficOpen(false)} className={classInfo.name} />
+      <TrafficLightModal
+        isOpen={isTrafficOpen}
+        onClose={() => setIsTrafficOpen(false)}
+        className={classInfo.name}
+        onSignalChange={(sig) => setTrafficLightStatus(sig)}
+      />
 
       <SoundboardModal isOpen={isSoundboardOpen} onClose={() => setIsSoundboardOpen(false)} className={classInfo.name} />
 

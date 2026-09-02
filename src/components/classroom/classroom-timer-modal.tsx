@@ -143,6 +143,35 @@ export function ClassroomTimerModal({ isOpen, onClose, className = '4A1' }: Clas
     return () => clearInterval(interval);
   }, [isRunning, soundEnabled]);
 
+  // Listen for remote timer commands from phone
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleRemoteTimer = (e: CustomEvent) => {
+      const { action, seconds } = e.detail || {};
+      if (action === 'START') {
+        setIsRunning(true);
+        setIsFinished(false);
+      } else if (action === 'PAUSE') {
+        setIsRunning(false);
+      } else if (action === 'RESET') {
+        setSecondsRemaining(totalSeconds);
+        setIsRunning(false);
+        setIsFinished(false);
+      } else if (action === 'SET' && typeof seconds === 'number') {
+        setTotalSeconds(seconds);
+        setSecondsRemaining(seconds);
+        setIsRunning(false);
+        setIsFinished(false);
+      }
+    };
+
+    window.addEventListener('remote-timer-action' as any, handleRemoteTimer as EventListener);
+    return () => {
+      window.removeEventListener('remote-timer-action' as any, handleRemoteTimer as EventListener);
+    };
+  }, [isOpen, totalSeconds]);
+
   if (!isOpen) return null;
 
   const handleSelectPreset = (mins: number) => {
