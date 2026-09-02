@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback, Suspense } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   Smartphone,
@@ -162,7 +162,10 @@ function RemoteControlPageContent() {
     } else if (type === 'TRAFFIC_LIGHT') {
       setTvState((prev) => ({ ...prev, trafficLightStatus: payload?.status }));
     } else if (type === 'REVEAL_ANSWER') {
-      setTvState((prev) => ({ ...prev, isAnswerRevealed: true }));
+      setTvState((prev) => ({
+        ...prev,
+        isAnswerRevealed: payload?.revealed !== undefined ? Boolean(payload.revealed) : !prev.isAnswerRevealed,
+      }));
     } else if (type === 'TIMER_START') {
       setTvState((prev) => ({ ...prev, isTimerRunning: true }));
     } else if (type === 'TIMER_PAUSE') {
@@ -179,9 +182,14 @@ function RemoteControlPageContent() {
     sessionRef.current?.sendAction(type, payload);
   };
 
-  // Touchpad Event Handlers for Virtual Laser
+  // Touchpad Event Handlers for Virtual Laser (throttled to ~40fps to avoid channel congestion)
+  const lastLaserSendRef = useRef<number>(0);
   const handleTouchpadMove = (e: React.TouchEvent | React.MouseEvent) => {
     if (!touchpadRef.current) return;
+    const now = performance.now();
+    if (now - lastLaserSendRef.current < 25) return; // limit to max 40 events/sec
+    lastLaserSendRef.current = now;
+
     const rect = touchpadRef.current.getBoundingClientRect();
 
     let clientX = 0;
@@ -216,14 +224,33 @@ function RemoteControlPageContent() {
     });
   };
 
-  // Filtered Students for Rewards
-  const filteredStudents = students.filter((s) => {
-    const matchSearch =
-      s.fullName.toLowerCase().includes(studentSearch.toLowerCase()) ||
-      s.studentCode.toLowerCase().includes(studentSearch.toLowerCase());
-    const matchTeam = selectedTeam === 'ALL' || (s.teamId ?? 1) === selectedTeam;
-    return matchSearch && matchTeam;
-  });
+  // Effective Students: Use local store if present, or fallback to synced studentsList from TV (for guest/QR-scan remote)
+  const effectiveStudents = useMemo(() => {
+    if (students && students.length > 0) return students;
+    if (tvState.studentsList && tvState.studentsList.length > 0) {
+      return tvState.studentsList.map((st, idx) => ({
+        id: st.id || `st-${idx}`,
+        fullName: st.fullName,
+        studentCode: st.studentCode || '',
+        teamId: (((idx % 4) + 1) as 1 | 2 | 3 | 4) || 1,
+        classId: '',
+        gender: 'OTHER' as const,
+        birthDate: '',
+      }));
+    }
+    return [];
+  }, [students, tvState.studentsList]);
+
+  // Filtered Students for Rewards with safe optional chaining
+  const filteredStudents = useMemo(() => {
+    return effectiveStudents.filter((s) => {
+      const matchSearch =
+        s.fullName.toLowerCase().includes(studentSearch.toLowerCase()) ||
+        (s.studentCode || '').toLowerCase().includes(studentSearch.toLowerCase());
+      const matchTeam = selectedTeam === 'ALL' || (s.teamId ?? 1) === selectedTeam;
+      return matchSearch && matchTeam;
+    });
+  }, [effectiveStudents, studentSearch, selectedTeam]);
 
   return (
     <div className="min-h-screen bg-slate-950 text-white flex flex-col justify-between font-sans select-none overflow-hidden max-w-lg mx-auto border-x border-slate-800 shadow-2xl">

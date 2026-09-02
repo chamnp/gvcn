@@ -250,8 +250,13 @@ export function LessonPresentationModal({
             }
             break;
           case 'REVEAL_ANSWER':
-            setShowQuizAnswer(true);
-            confetti({ particleCount: 70, spread: 60 });
+            setShowQuizAnswer((prev) => {
+              const nextVal = msg.payload?.revealed !== undefined ? Boolean(msg.payload.revealed) : !prev;
+              if (nextVal) {
+                confetti({ particleCount: 70, spread: 60 });
+              }
+              return nextVal;
+            });
             break;
           case 'PLAY_SFX':
             if (msg.payload?.type) {

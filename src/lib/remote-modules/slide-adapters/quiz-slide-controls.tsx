@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Eye, EyeOff, CheckCircle2, Sparkles, HelpCircle } from 'lucide-react';
+import { Eye, EyeOff, CheckCircle2, Sparkles, HelpCircle, Clock, Play, Pause, RotateCcw } from 'lucide-react';
 import { RemoteModuleProps } from '../types';
 
 export const QuizSlideControls: React.FC<RemoteModuleProps> = ({ tvState, sendAction }) => {
@@ -38,6 +38,45 @@ export const QuizSlideControls: React.FC<RemoteModuleProps> = ({ tvState, sendAc
         </span>
       </div>
 
+      {/* Compact Quiz Countdown Timer if slide has timer attached */}
+      {tvState.hasTimer && (tvState.timerDuration ?? 0) > 0 && (() => {
+        const timeRemaining = Math.max(0, tvState.timeRemaining ?? 0);
+        const isTimerRunning = tvState.isTimerRunning ?? false;
+        const mins = Math.floor(timeRemaining / 60);
+        const secs = (timeRemaining % 60).toString().padStart(2, '0');
+        return (
+          <div className="p-3 bg-slate-950/90 rounded-2xl border border-cyan-500/40 flex items-center justify-between shadow-inner">
+            <div className="flex items-center space-x-2">
+              <Clock className="w-4 h-4 text-cyan-400" />
+              <div>
+                <span className="text-[10px] uppercase font-black text-cyan-400 block">Thời Gian Trả Lời</span>
+                <span className="font-mono text-base font-black text-white">{mins}:{secs}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-1.5">
+              <button
+                onClick={() => sendAction(isTimerRunning ? 'TIMER_PAUSE' : 'TIMER_START')}
+                className={`px-3 py-1.5 rounded-xl font-black text-xs flex items-center space-x-1 active:scale-95 cursor-pointer ${
+                  isTimerRunning ? 'bg-amber-500 text-slate-950' : 'bg-emerald-500 text-slate-950'
+                }`}
+              >
+                {isTimerRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 fill-slate-950" />}
+                <span>{isTimerRunning ? 'Dừng' : 'Chạy Giờ'}</span>
+              </button>
+
+              <button
+                onClick={() => sendAction('TIMER_RESET')}
+                className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-700 active:scale-95 cursor-pointer"
+                title="Đặt lại giờ"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* 4 Interactive Options (Shows correct answer highlight for teacher) */}
       <div className="space-y-2">
         <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">
@@ -68,18 +107,30 @@ export const QuizSlideControls: React.FC<RemoteModuleProps> = ({ tvState, sendAc
         </div>
       </div>
 
-      {/* Main Toggle Reveal Answer Button */}
-      <button
-        onClick={() => sendAction('REVEAL_ANSWER')}
-        className={`w-full py-4 rounded-2xl font-black text-xs shadow-xl flex items-center justify-center space-x-2 active:scale-95 cursor-pointer transition-all ${
-          isRevealed
-            ? 'bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/40'
-            : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 shadow-emerald-500/25 border border-emerald-300/40'
-        }`}
-      >
-        {isRevealed ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-        <span>{isRevealed ? '🔄 BẤM ĐỂ HIỆN LẠI PHÁO HOA' : '👁️ BẬT ĐÁP ÁN & NỔ PHÁO HOA TRÊN TV'}</span>
-      </button>
+      {/* Main Toggle Reveal / Hide Answer Buttons */}
+      <div className="grid grid-cols-1 gap-2">
+        <button
+          onClick={() => sendAction('REVEAL_ANSWER', { revealed: !isRevealed })}
+          className={`w-full py-4 rounded-2xl font-black text-xs shadow-xl flex items-center justify-center space-x-2 active:scale-95 cursor-pointer transition-all ${
+            isRevealed
+              ? 'bg-rose-950/80 hover:bg-rose-900 border border-rose-600/60 text-rose-200'
+              : 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 text-slate-950 shadow-emerald-500/25 border border-emerald-300/40'
+          }`}
+        >
+          {isRevealed ? <EyeOff className="w-4 h-4 text-rose-400" /> : <Eye className="w-4 h-4" />}
+          <span>{isRevealed ? '🙈 ẨN ĐÁP ÁN ĐỂ ĐỐ LẠI' : '👁️ BẬT ĐÁP ÁN & NỔ PHÁO HOA TRÊN TV'}</span>
+        </button>
+
+        {isRevealed && (
+          <button
+            onClick={() => sendAction('REVEAL_ANSWER', { revealed: true })}
+            className="w-full py-2.5 rounded-xl bg-indigo-950/60 hover:bg-indigo-900/80 border border-indigo-700/50 text-indigo-300 font-bold text-xs flex items-center justify-center space-x-1.5 active:scale-95 cursor-pointer"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+            <span>🎉 BẮN LẠI PHÁO HOA ĂN MỪNG TRÊN TV</span>
+          </button>
+        )}
+      </div>
 
       {/* Explanation Note for Teacher */}
       {tvState.explanation && (
