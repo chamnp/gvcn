@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import {
   BookOpen,
@@ -27,6 +27,11 @@ import {
   Play,
   RotateCcw,
   Presentation,
+  Share2,
+  Package,
+  Link as LinkIcon,
+  Copy,
+  FileUp,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import {
@@ -45,6 +50,12 @@ import {
   downloadLessonPlanDoc,
   parseImportedTextToLessonPlan,
 } from '@/lib/lesson-plan-engine';
+import {
+  downloadLessonPackageFile,
+  parseLessonPackageFile,
+  encodeLessonPlanToShareUrl,
+  decodeLessonPlanFromShareString,
+} from '@/lib/lesson-package-engine';
 import { LessonPresentationModal } from '@/components/lesson-plans/lesson-presentation-modal';
 import { LessonEditorModal } from '@/components/lesson-plans/lesson-editor-modal';
 import { LessonPlanPrintView } from '@/components/lesson-plans/lesson-plan-print-view';
@@ -101,6 +112,65 @@ export default function LessonPlansPage() {
   // Import State
   const [importText, setImportText] = useState('');
   const [importSubject, setImportSubject] = useState('TOAN');
+
+  // Cross-Server Share State
+  const [importedSharedPlan, setImportedSharedPlan] = useState<LessonPlan | null>(null);
+  const [shareLinkInput, setShareLinkInput] = useState('');
+
+  // Check URL parameter ?pkg=... on mount
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const pkgParam = params.get('pkg');
+    if (pkgParam) {
+      const decoded = decodeLessonPlanFromShareString(pkgParam);
+      if (decoded) {
+        setImportedSharedPlan(decoded);
+        toast.info(`Nhận được bài dạy chia sẻ: "${decoded.title}".`);
+      }
+    }
+  }, []);
+
+  // Handle import .gvcnlp file
+  const handleImportPackageFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const imported = await parseLessonPackageFile(file);
+      savePlans([imported, ...plans]);
+      toast.success(`Đã nhập thành công bài dạy "${imported.title}" vào thư viện!`);
+      confetti({ particleCount: 80, spread: 70 });
+    } catch (err: any) {
+      toast.error(err.message || 'Lỗi khi nhập gói giáo án');
+    } finally {
+      e.target.value = '';
+    }
+  };
+
+  // Handle import from shared string or URL
+  const handleImportShareLink = () => {
+    if (!shareLinkInput.trim()) return;
+    let pkgString = shareLinkInput.trim();
+    if (pkgString.includes('pkg=')) {
+      pkgString = pkgString.split('pkg=')[1].split('&')[0];
+    }
+    const plan = decodeLessonPlanFromShareString(pkgString);
+    if (plan) {
+      savePlans([plan, ...plans]);
+      toast.success(`Đã bung và lưu thành công bài dạy "${plan.title}"!`);
+      setShareLinkInput('');
+      confetti({ particleCount: 80, spread: 70 });
+    } else {
+      toast.error('Đường link hoặc chuỗi chia sẻ không hợp lệ hoặc đã bị chỉnh sửa.');
+    }
+  };
+
+  // Handle copy share link
+  const handleCopyShareLink = (plan: LessonPlan) => {
+    const url = encodeLessonPlanToShareUrl(plan);
+    navigator.clipboard.writeText(url);
+    toast.success(`Đã copy link chia sẻ "${plan.title}"! Bạn có thể gửi link này qua Zalo cho đồng nghiệp.`);
+  };
 
   // Award Star handler in TV mode
   const handleAwardStar = (studentId: string) => {
@@ -291,6 +361,70 @@ export default function LessonPlansPage() {
         </div>
       </div>
 
+      {/* Shared Lesson Plan Banner from URL parameter */}
+      {importedSharedPlan && (
+        <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-950 text-white border-2 border-amber-400 shadow-xl animate-in zoom-in-95 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <span className="text-3xl">🎁</span>
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-amber-300">
+                  Bạn nhận được 1 Kế hoạch bài dạy chia sẻ từ Đồng nghiệp:
+                </span>
+                <h3 className="text-base sm:text-lg font-black text-white">{importedSharedPlan.title}</h3>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setImportedSharedPlan(null)}
+              className="p-1.5 rounded-full hover:bg-white/20 text-white/70 hover:text-white cursor-pointer"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 text-xs font-bold text-blue-200">
+            <span className="px-2.5 py-1 rounded-xl bg-white/10">Môn: {importedSharedPlan.subjectName || importedSharedPlan.subjectCode}</span>
+            <span className="px-2.5 py-1 rounded-xl bg-white/10">Khối Lớp {importedSharedPlan.grade}</span>
+            <span className="px-2.5 py-1 rounded-xl bg-white/10">Tuần {importedSharedPlan.week} • Tiết {importedSharedPlan.periodNumber}</span>
+            <span className="px-2.5 py-1 rounded-xl bg-white/10">Số Slide: {importedSharedPlan.slides?.length || 0} slide TV</span>
+            {importedSharedPlan.embeddedSlideUrl && (
+              <span className="px-2.5 py-1 rounded-xl bg-amber-500/30 text-amber-300 border border-amber-400/40">
+                🌐 Có đính kèm file ngoài (Google/PPTX)
+              </span>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => {
+                savePlans([importedSharedPlan, ...plans]);
+                setImportedSharedPlan(null);
+                toast.success(`Đã lưu "${importedSharedPlan.title}" vào thư viện giáo án thành công!`);
+                confetti({ particleCount: 70, spread: 60 });
+              }}
+              className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              <span>LƯU VÀO THƯ VIỆN CỦA TÔI</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setActiveLessonPlan(importedSharedPlan);
+                setIsPresentationOpen(true);
+              }}
+              className="px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5"
+            >
+              <Tv className="w-4 h-4" />
+              <span>CHIẾU THỬ TRÊN TV</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 2. TABS NAVIGATION & WEEK / TEXTBOOK SELECTOR */}
       <div className="bg-white rounded-3xl p-4 border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="flex items-center space-x-1.5 overflow-x-auto no-scrollbar">
@@ -298,7 +432,7 @@ export default function LessonPlansPage() {
             { id: 'WEEK_SCHEDULE', label: `📅 Lịch Dạy Tuần ${selectedWeek} (${weekPlans.length})` },
             { id: 'LIBRARY', label: `📚 Thư Viện Bài Dạy Khối 4 (${plans.length})` },
             { id: 'AI_STUDIO', label: '✨ AI Soạn Bài Mới (CV 2345)' },
-            { id: 'IMPORT_EXPORT', label: '📥 Nhập / Xuất Word (.doc)' },
+            { id: 'IMPORT_EXPORT', label: '🌐 Chia Sẻ & Xuất / Nhập' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -401,6 +535,24 @@ export default function LessonPlansPage() {
                     </div>
 
                     <div className="flex items-center space-x-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleCopyShareLink(plan)}
+                        className="p-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-2xl transition-colors cursor-pointer"
+                        title="Copy link chia sẻ Zalo"
+                      >
+                        <Share2 className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => downloadLessonPackageFile(plan, classInfo.teacherName, schoolInfo.name)}
+                        className="p-2.5 bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-2xl transition-colors cursor-pointer"
+                        title="Xuất file gói .gvcnlp"
+                      >
+                        <Package className="w-4 h-4" />
+                      </button>
+
                       <button
                         type="button"
                         onClick={() => {
@@ -622,6 +774,24 @@ export default function LessonPlansPage() {
 
                     <button
                       type="button"
+                      onClick={() => handleCopyShareLink(plan)}
+                      className="p-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 cursor-pointer"
+                      title="Copy link chia sẻ Zalo"
+                    >
+                      <Share2 className="w-3.5 h-3.5" />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => downloadLessonPackageFile(plan, classInfo.teacherName, schoolInfo.name)}
+                      className="p-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 cursor-pointer"
+                      title="Xuất file gói .gvcnlp"
+                    >
+                      <Package className="w-3.5 h-3.5" />
+                    </button>
+
+                    <button
+                      type="button"
                       onClick={() => downloadLessonPlanDoc(plan, schoolInfo, classInfo)}
                       className="p-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 cursor-pointer"
                       title="Tải Word"
@@ -780,86 +950,210 @@ export default function LessonPlansPage() {
         </div>
       )}
 
-      {/* TAB 4: IMPORT / EXPORT HUB */}
+      {/* TAB 4: CROSS-SERVER SHARING & IMPORT / EXPORT HUB */}
       {activeTab === 'IMPORT_EXPORT' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Import Raw Text / Copied Word */}
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-4">
-            <div className="space-y-1">
-              <h3 className="font-black text-base text-slate-900 flex items-center gap-2">
-                <Upload className="w-4 h-4 text-blue-600" />
-                <span>Nhập Giáo Án (Copy - Paste Văn Bản / Word)</span>
-              </h3>
-              <p className="text-xs text-slate-500">
-                Dán toàn bộ nội dung file Word giáo án của bạn vào đây. Hệ thống sẽ tự động bóc tách thành giáo án điện tử có cấu trúc.
-              </p>
-            </div>
-
-            <div className="space-y-3 text-xs">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Môn học:</label>
-                  <select
-                    value={importSubject}
-                    onChange={(e) => setImportSubject(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 font-bold"
-                  >
-                    {GRADE_4_SUBJECTS.map((s) => (
-                      <option key={s.code} value={s.code}>
-                        {s.icon} {s.name}
-                      </option>
-                    ))}
-                  </select>
+        <div className="space-y-6 animate-in fade-in">
+          {/* Top Section: Cross-Server Federation Hub */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Card 1: Receive Lesson Plan (From .gvcnlp File or Link) */}
+            <div className="bg-gradient-to-br from-indigo-900/10 via-white to-blue-50/50 rounded-3xl p-6 sm:p-8 border-2 border-indigo-200 shadow-xs space-y-5">
+              <div className="space-y-1">
+                <div className="flex items-center space-x-2">
+                  <span className="text-xl">🌐</span>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-full">
+                    Xuyên Mọi Server / Máy Tính
+                  </span>
                 </div>
+                <h3 className="font-black text-base text-slate-900">
+                  Nhận Giáo Án Từ Đồng Nghiệp
+                </h3>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Nhập bài dạy chia sẻ từ giáo viên trường khác hoặc máy khác thông qua <strong>File gói (.gvcnlp)</strong> hoặc <strong>Link chia sẻ Zalo</strong>.
+                </p>
               </div>
 
-              <textarea
-                rows={10}
-                value={importText}
-                onChange={(e) => setImportText(e.target.value)}
-                placeholder="Dán nội dung giáo án Word tại đây (Tên bài, YCCĐ, Khởi động, Khám phá...)..."
-                className="w-full p-4 rounded-2xl border border-slate-200 font-mono text-xs focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
-              />
+              {/* Way 1: Upload .gvcnlp File */}
+              <div className="p-4 rounded-2xl bg-white border-2 border-dashed border-indigo-300 hover:border-indigo-500 transition-colors space-y-2.5 text-center shadow-xs">
+                <Package className="w-8 h-8 text-indigo-600 mx-auto" />
+                <div>
+                  <p className="font-bold text-xs text-slate-800">Tải lên File Gói Giáo Án (.gvcnlp)</p>
+                  <p className="text-[11px] text-slate-500">Hoạt động 100% khi không có mạng, chuyển qua Zalo/Drive/USB</p>
+                </div>
+                <label className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs cursor-pointer shadow-xs active:scale-95 transition-all">
+                  <FileUp className="w-3.5 h-3.5" />
+                  <span>Chọn file .gvcnlp từ máy tính</span>
+                  <input
+                    type="file"
+                    accept=".gvcnlp,.json"
+                    onChange={handleImportPackageFile}
+                    className="hidden"
+                  />
+                </label>
+              </div>
 
-              <button
-                type="button"
-                onClick={handleImportText}
-                className="w-full py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer flex items-center justify-center space-x-2"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>CHUYỂN ĐỔI & LƯU GIÁO ÁN</span>
-              </button>
+              {/* Way 2: Paste Share Link (Zero-Storage) */}
+              <div className="space-y-2">
+                <label className="block font-bold text-slate-700 text-xs flex items-center gap-1">
+                  <LinkIcon className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Hoặc dán Link chia sẻ Zalo (Zero-Storage Link):</span>
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Dán link https://.../lesson-plans?pkg=... hoặc chuỗi mã nén"
+                    value={shareLinkInput}
+                    onChange={(e) => setShareLinkInput(e.target.value)}
+                    className="flex-1 px-3 py-2 rounded-xl border border-slate-300 text-xs font-mono focus:ring-2 focus:ring-indigo-500 focus:outline-hidden bg-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleImportShareLink}
+                    disabled={!shareLinkInput.trim()}
+                    className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-black text-xs cursor-pointer shadow-xs transition-all active:scale-95"
+                  >
+                    Bung Giáo Án
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 2: Export & Share Package for Colleagues */}
+            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-4">
+              <div className="space-y-1">
+                <div className="flex items-center space-x-2">
+                  <span className="text-xl">📦</span>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full">
+                    Chia Sẻ Nhanh 1-Chạm
+                  </span>
+                </div>
+                <h3 className="font-black text-base text-slate-900">
+                  Xuất Gói Chia Sẻ (.gvcnlp) & Link Zalo
+                </h3>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Gửi file hoặc copy link để đồng nghiệp ở bất kỳ trường nào cũng có thể tải về và trình chiếu ngay.
+                </p>
+              </div>
+
+              <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                {plans.map((p) => (
+                  <div
+                    key={p.id}
+                    className="p-3 bg-slate-50 hover:bg-slate-100 rounded-2xl border border-slate-200 flex items-center justify-between gap-2 text-xs transition-colors"
+                  >
+                    <div className="truncate pr-2">
+                      <span className="font-bold text-slate-800 block truncate">{p.title}</span>
+                      <span className="text-[10px] text-slate-500">
+                        {p.subjectName} • Tuần {p.week} • {p.slides?.length || 0} slide TV
+                      </span>
+                    </div>
+
+                    <div className="flex items-center space-x-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleCopyShareLink(p)}
+                        className="px-2.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[11px] flex items-center gap-1 cursor-pointer transition-colors"
+                        title="Copy link gửi Zalo"
+                      >
+                        <Share2 className="w-3 h-3" />
+                        <span>Link Zalo</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => downloadLessonPackageFile(p, classInfo.teacherName, schoolInfo.name)}
+                        className="px-2.5 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-[11px] flex items-center gap-1 cursor-pointer shadow-xs transition-colors"
+                        title="Tải file gói .gvcnlp"
+                      >
+                        <Download className="w-3 h-3" />
+                        <span>Gói .gvcnlp</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
-          {/* Batch Export Word (.doc) */}
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-4">
-            <div className="space-y-1">
-              <h3 className="font-black text-base text-slate-900 flex items-center gap-2">
-                <Download className="w-4 h-4 text-emerald-600" />
-                <span>Xuất File Word (.doc) Chuẩn BGH Duyệt</span>
-              </h3>
-              <p className="text-xs text-slate-500">
-                Tất cả giáo án được xuất ra định dạng Microsoft Word đúng chuẩn thể thức văn bản hành chính Việt Nam (Times New Roman 13pt, lề 3-2-2-2cm, bảng tiến trình 2 cột).
-              </p>
+          {/* Bottom Section: Word Import & Export Hub */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Import Raw Text / Copied Word */}
+            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-4">
+              <div className="space-y-1">
+                <h3 className="font-black text-base text-slate-900 flex items-center gap-2">
+                  <Upload className="w-4 h-4 text-blue-600" />
+                  <span>Nhập Giáo Án (Copy - Paste Văn Bản / Word)</span>
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Dán toàn bộ nội dung file Word giáo án của bạn vào đây. Hệ thống sẽ tự động bóc tách thành giáo án điện tử có cấu trúc.
+                </p>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Môn học:</label>
+                    <select
+                      value={importSubject}
+                      onChange={(e) => setImportSubject(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 font-bold"
+                    >
+                      {GRADE_4_SUBJECTS.map((s) => (
+                        <option key={s.code} value={s.code}>
+                          {s.icon} {s.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <textarea
+                  rows={8}
+                  value={importText}
+                  onChange={(e) => setImportText(e.target.value)}
+                  placeholder="Dán nội dung giáo án Word tại đây (Tên bài, YCCĐ, Khởi động, Khám phá...)..."
+                  className="w-full p-4 rounded-2xl border border-slate-200 font-mono text-xs focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
+                />
+
+                <button
+                  type="button"
+                  onClick={handleImportText}
+                  className="w-full py-3 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer flex items-center justify-center space-x-2"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>CHUYỂN ĐỔI & LƯU GIÁO ÁN</span>
+                </button>
+              </div>
             </div>
 
-            <div className="space-y-3 text-xs">
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-                <p className="font-bold text-slate-900">Danh sách bài dạy sẵn sàng xuất:</p>
-                <div className="space-y-1.5 max-h-[220px] overflow-y-auto">
-                  {plans.map((p) => (
-                    <div key={p.id} className="flex items-center justify-between bg-white p-2.5 rounded-xl border border-slate-200">
-                      <span className="font-bold text-slate-800 truncate max-w-[240px]">{p.title}</span>
-                      <button
-                        type="button"
-                        onClick={() => downloadLessonPlanDoc(p, schoolInfo, classInfo)}
-                        className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold text-[10px] flex items-center gap-1 cursor-pointer"
-                      >
-                        <Download className="w-3 h-3" /> Tải .doc
-                      </button>
-                    </div>
-                  ))}
+            {/* Batch Export Word (.doc) */}
+            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xs space-y-4">
+              <div className="space-y-1">
+                <h3 className="font-black text-base text-slate-900 flex items-center gap-2">
+                  <Download className="w-4 h-4 text-emerald-600" />
+                  <span>Xuất File Word (.doc) Chuẩn BGH Duyệt</span>
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Tất cả giáo án được xuất ra định dạng Microsoft Word đúng chuẩn thể thức văn bản hành chính Việt Nam (Times New Roman 13pt, lề 3-2-2-2cm, bảng tiến trình 2 cột).
+                </p>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                  <p className="font-bold text-slate-900">Danh sách bài dạy sẵn sàng xuất:</p>
+                  <div className="space-y-1.5 max-h-[220px] overflow-y-auto">
+                    {plans.map((p) => (
+                      <div key={p.id} className="flex items-center justify-between bg-white p-2.5 rounded-xl border border-slate-200">
+                        <span className="font-bold text-slate-800 truncate max-w-[240px]">{p.title}</span>
+                        <button
+                          type="button"
+                          onClick={() => downloadLessonPlanDoc(p, schoolInfo, classInfo)}
+                          className="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold text-[10px] flex items-center gap-1 cursor-pointer"
+                        >
+                          <Download className="w-3 h-3" /> Tải .doc
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>

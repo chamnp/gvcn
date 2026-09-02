@@ -24,6 +24,7 @@ import {
 } from '@/types';
 import { TEXTBOOK_OPTIONS, GRADE_4_SUBJECTS } from '@/lib/lesson-plan-data';
 import { generateAILessonPlan } from '@/lib/lesson-plan-engine';
+import { transformToEmbedUrl } from '@/lib/lesson-package-engine';
 import { toast } from 'sonner';
 
 interface LessonEditorModalProps {
@@ -326,17 +327,42 @@ export function LessonEditorModal({
                 </div>
               </div>
 
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">
-                  Link nhúng Slide bài giảng online (Canva / Google Slides / Office 365 nếu có):
-                </label>
+              <div className="p-4 rounded-2xl bg-blue-50/60 border border-blue-100 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="block font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                    <span>🌐</span>
+                    <span>Link nhúng Học Liệu Trình Chiếu (Google Slides, PowerPoint, Docs, Canva, PDF):</span>
+                  </label>
+                  {embeddedSlideUrl.trim() && (
+                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-blue-600 text-white uppercase tracking-wider">
+                      {transformToEmbedUrl(embeddedSlideUrl).type}
+                    </span>
+                  )}
+                </div>
+
                 <input
                   type="url"
                   value={embeddedSlideUrl}
                   onChange={(e) => setEmbeddedSlideUrl(e.target.value)}
-                  placeholder="https://www.canva.com/design/... hoặc link Google Slides nhúng"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono text-blue-700"
+                  placeholder="Dán link Google Slides, Google Docs, link Canva hoặc file .pptx / .pdf..."
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white text-xs font-mono text-blue-700 placeholder-slate-400 focus:ring-2 focus:ring-blue-500 focus:outline-hidden"
                 />
+
+                <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-slate-500">
+                  <span className="font-bold text-slate-700">Hỗ trợ tự động:</span>
+                  <span className="px-2 py-0.5 rounded-md bg-white border border-slate-200">📊 Google Slides</span>
+                  <span className="px-2 py-0.5 rounded-md bg-white border border-slate-200">📄 Google Docs</span>
+                  <span className="px-2 py-0.5 rounded-md bg-white border border-slate-200">📽️ PowerPoint (.pptx)</span>
+                  <span className="px-2 py-0.5 rounded-md bg-white border border-slate-200">🎨 Canva Embed</span>
+                  <span className="px-2 py-0.5 rounded-md bg-white border border-slate-200">📕 PDF</span>
+                </div>
+
+                {embeddedSlideUrl.trim() && (
+                  <p className="text-[11px] text-emerald-700 font-medium flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                    <span>Hệ thống sẽ tự động chuyển sang chế độ chiếu sạch không menu và bật Bút Laser khi chiếu trên Smart TV.</span>
+                  </p>
+                )}
               </div>
 
               <div>

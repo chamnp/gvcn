@@ -38,6 +38,7 @@ import { RemoteLaserOverlay } from '@/components/classroom/remote-laser-overlay'
 import { RemotePairingModal } from '@/components/classroom/remote-pairing-modal';
 import { Smartphone } from 'lucide-react';
 import { playSoundEffect } from '@/lib/sound-effects';
+import { ExternalPresentationViewer } from './external-presentation-viewer';
 
 interface LessonPresentationModalProps {
   isOpen: boolean;
@@ -96,6 +97,11 @@ export function LessonPresentationModal({
 }: LessonPresentationModalProps) {
   const slides: LessonSlide[] = lessonPlan.slides || [];
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+  const [viewMode, setViewMode] = useState<'NATIVE' | 'EMBEDDED'>(() =>
+    lessonPlan.embeddedSlideUrl && (!lessonPlan.slides || lessonPlan.slides.length === 0)
+      ? 'EMBEDDED'
+      : 'NATIVE'
+  );
   const [theme, setTheme] = useState<PresentationTheme>('MIDNIGHT');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [laserActive, setLaserActive] = useState(false);
@@ -475,6 +481,32 @@ export function LessonPresentationModal({
             <span className="hidden sm:inline">Gọi Học Sinh</span>
           </button>
 
+          {/* External Presentation Toggle if embeddedSlideUrl exists */}
+          {lessonPlan.embeddedSlideUrl && (
+            <div className="flex items-center bg-white/10 rounded-2xl p-0.5 border border-white/15">
+              <button
+                type="button"
+                onClick={() => setViewMode('NATIVE')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                  viewMode === 'NATIVE' ? 'bg-white text-slate-900 shadow-xs' : 'text-white/80 hover:text-white'
+                }`}
+              >
+                <span>📺 Slide GVCN</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('EMBEDDED')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                  viewMode === 'EMBEDDED'
+                    ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 shadow-xs font-black'
+                    : 'text-white/80 hover:text-white'
+                }`}
+              >
+                <span>🌐 File Ngoài</span>
+              </button>
+            </div>
+          )}
+
           {/* Laser Pointer Toggle */}
           <button
             type="button"
@@ -529,8 +561,12 @@ export function LessonPresentationModal({
       </div>
 
       {/* 2. MAIN STAGE: SLIDE DISPLAY */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-12 overflow-y-auto z-10">
-        {currentSlide ? (
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-8 overflow-y-auto z-10">
+        {viewMode === 'EMBEDDED' && lessonPlan.embeddedSlideUrl ? (
+          <div className="w-full max-w-6xl animate-in zoom-in-95 duration-200">
+            <ExternalPresentationViewer url={lessonPlan.embeddedSlideUrl} title={lessonPlan.title} />
+          </div>
+        ) : currentSlide ? (
           <div className="w-full max-w-5xl space-y-8 animate-in fade-in zoom-in-95 duration-200 text-center sm:text-left">
             {/* Phase Tag */}
             <div className="flex items-center justify-center sm:justify-start space-x-2">
