@@ -174,6 +174,30 @@ export function transformToEmbedUrl(rawUrl: string): TransformedResource {
     }
   }
 
+  // 3. Google Drive Shared File (PDF, PPTX, Word uploaded to Drive)
+  if (url.includes('drive.google.com/file/d/')) {
+    const match = url.match(/\/file\/d\/([a-zA-Z0-9-_]+)/);
+    if (match && match[1]) {
+      const id = match[1];
+      return {
+        embedUrl: `https://drive.google.com/file/d/${id}/preview`,
+        originalUrl: url,
+        type: 'PDF',
+        title: 'Tài Liệu Google Drive (PPTX / PDF / Word)',
+      };
+    }
+  }
+
+  // 4. OneDrive Live
+  if (url.includes('onedrive.live.com') && url.includes('view.aspx')) {
+    return {
+      embedUrl: url.replace('view.aspx', 'embed.aspx'),
+      originalUrl: url,
+      type: 'POWERPOINT',
+      title: 'OneDrive Bài Giảng Trực Tuyến',
+    };
+  }
+
   // 3. Canva Presentation
   if (url.includes('canva.com/design/')) {
     let embedUrl = url;

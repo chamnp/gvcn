@@ -17,6 +17,7 @@ import { transformToEmbedUrl, ExternalResourceType } from '@/lib/lesson-package-
 interface ExternalPresentationViewerProps {
   url: string;
   title?: string;
+  isLaserActive?: boolean;
   className?: string;
 }
 
@@ -33,6 +34,7 @@ const TYPE_BADGES: Record<ExternalResourceType, { label: string; color: string; 
 export const ExternalPresentationViewer: React.FC<ExternalPresentationViewerProps> = ({
   url,
   title,
+  isLaserActive = false,
   className = '',
 }) => {
   const resource = transformToEmbedUrl(url);
@@ -78,6 +80,11 @@ export const ExternalPresentationViewer: React.FC<ExternalPresentationViewerProp
 
       {/* Main Embed Frame (16:9 aspect ratio standard for Classroom TVs) */}
       <div className="relative w-full aspect-video bg-black flex items-center justify-center overflow-hidden">
+        {/* Transparent overlay to capture mousemove when laser is active */}
+        {isLaserActive && (
+          <div className="absolute inset-0 z-20 cursor-crosshair bg-transparent pointer-events-auto" />
+        )}
+
         {!hasLoaded && (
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950 space-y-3 z-0">
             <div className="w-10 h-10 border-3 border-blue-500 border-t-transparent rounded-full animate-spin" />

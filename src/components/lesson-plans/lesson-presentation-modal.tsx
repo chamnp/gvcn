@@ -134,7 +134,9 @@ export function LessonPresentationModal({
 
   // Sync state to remote controller phone
   const syncStateToRemote = useCallback(() => {
-    if (!remoteSessionRef.current || !currentSlide) return;
+    if (!remoteSessionRef.current) return;
+    const isEmbedded = viewMode === 'EMBEDDED' && Boolean(lessonPlan.embeddedSlideUrl);
+
     remoteSessionRef.current.sendAction('STATE_SYNC', {
       sessionCode,
       className: classInfo.name,
@@ -142,26 +144,47 @@ export function LessonPresentationModal({
       activeContext: 'LESSON_PLAN',
       activeModal: isWheelOpen ? 'WHEEL' : 'NONE',
       currentSlide: currentSlideIndex,
-      totalSlides: slides.length,
-      slideTitle: currentSlide.title,
-      slideLayout: currentSlide.layout,
-      hasTimer: (currentSlide.timerSeconds || 0) > 0,
-      phase: currentSlide.phase,
-      presenterNotes: currentSlide.speakerNotes
+      totalSlides: slides.length || 1,
+      slideTitle: isEmbedded
+        ? `[File Ngoài] ${lessonPlan.title}`
+        : (currentSlide?.title || lessonPlan.title),
+      slideLayout: isEmbedded ? 'TITLE' : (currentSlide?.layout || 'TITLE'),
+      hasTimer: Boolean(currentSlide?.timerSeconds && currentSlide.timerSeconds > 0),
+      phase: currentSlide?.phase || 'KHOI_DONG',
+      presenterNotes: isEmbedded
+        ? [
+            'Đang chiếu học liệu trực tuyến (Google Slides / PowerPoint / Canva).',
+            'Dùng Bút Laser ở Tab 2 và Soundboard ở Tab 3 để tương tác trên Smart TV.',
+          ]
+        : currentSlide?.speakerNotes
         ? currentSlide.speakerNotes.split('\n').filter(Boolean)
-        : [currentSlide.content.join('. ')],
-      quizQuestion: currentSlide.question,
-      quizOptions: currentSlide.options,
-      correctAnswerIndex: currentSlide.correctOption,
+        : currentSlide?.content || [lessonPlan.title],
+      quizQuestion: currentSlide?.question,
+      quizOptions: currentSlide?.options,
+      correctAnswerIndex: currentSlide?.correctOption,
       isAnswerRevealed: showQuizAnswer,
-      explanation: currentSlide.explanation,
+      explanation: currentSlide?.explanation,
       isTimerRunning,
       timeRemaining: timerSeconds ?? 300,
-      timerDuration: currentSlide.timerSeconds || 300,
+      timerDuration: currentSlide?.timerSeconds || 300,
       luckyWheelWinner: selectedStudent?.fullName,
       studentsList: students.map((s) => ({ id: s.id, fullName: s.fullName, studentCode: s.studentCode })),
     });
-  }, [currentSlideIndex, currentSlide, slides.length, showQuizAnswer, isTimerRunning, timerSeconds, selectedStudent, students, classInfo, sessionCode, isWheelOpen]);
+  }, [
+    currentSlideIndex,
+    currentSlide,
+    slides.length,
+    showQuizAnswer,
+    isTimerRunning,
+    timerSeconds,
+    selectedStudent,
+    students,
+    classInfo,
+    sessionCode,
+    isWheelOpen,
+    viewMode,
+    lessonPlan,
+  ]);
 
   const onAwardStarRef = useRef(onAwardStar);
   const slidesRef = useRef(slides);
@@ -564,7 +587,11 @@ export function LessonPresentationModal({
       <div className="flex-1 flex items-center justify-center p-4 sm:p-8 overflow-y-auto z-10">
         {viewMode === 'EMBEDDED' && lessonPlan.embeddedSlideUrl ? (
           <div className="w-full max-w-6xl animate-in zoom-in-95 duration-200">
-            <ExternalPresentationViewer url={lessonPlan.embeddedSlideUrl} title={lessonPlan.title} />
+            <ExternalPresentationViewer
+              url={lessonPlan.embeddedSlideUrl}
+              title={lessonPlan.title}
+              isLaserActive={laserActive}
+            />
           </div>
         ) : currentSlide ? (
           <div className="w-full max-w-5xl space-y-8 animate-in fade-in zoom-in-95 duration-200 text-center sm:text-left">
