@@ -25,6 +25,7 @@ import {
 import { TEXTBOOK_OPTIONS, GRADE_4_SUBJECTS } from '@/lib/lesson-plan-data';
 import { generateAILessonPlan } from '@/lib/lesson-plan-engine';
 import { transformToEmbedUrl } from '@/lib/lesson-package-engine';
+import { GoogleDrivePickerModal } from './google-drive-picker-modal';
 import { toast } from 'sonner';
 
 interface LessonEditorModalProps {
@@ -69,6 +70,9 @@ export function LessonEditorModal({
 
   // Post lesson
   const [postLessonNotes, setPostLessonNotes] = useState('');
+
+  // Google Drive Picker
+  const [isDrivePickerOpen, setIsDrivePickerOpen] = useState(false);
 
   // Populate initial plan or generate fresh
   useEffect(() => {
@@ -328,16 +332,27 @@ export function LessonEditorModal({
               </div>
 
               <div className="p-4 rounded-2xl bg-blue-50/60 border border-blue-100 space-y-2.5">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <label className="block font-bold text-slate-800 text-xs flex items-center gap-1.5">
                     <span>🌐</span>
                     <span>Link nhúng Học Liệu Trình Chiếu (Google Slides, PowerPoint, Docs, Canva, PDF):</span>
                   </label>
-                  {embeddedSlideUrl.trim() && (
-                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-blue-600 text-white uppercase tracking-wider">
-                      {transformToEmbedUrl(embeddedSlideUrl).type}
-                    </span>
-                  )}
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsDrivePickerOpen(true)}
+                      className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-black text-xs shadow-xs flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all"
+                    >
+                      <span>📁 Mở Google Drive</span>
+                    </button>
+
+                    {embeddedSlideUrl.trim() && (
+                      <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-blue-600 text-white uppercase tracking-wider">
+                        {transformToEmbedUrl(embeddedSlideUrl).type}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <input
@@ -680,6 +695,17 @@ export function LessonEditorModal({
           </button>
         </div>
       </div>
+
+      <GoogleDrivePickerModal
+        isOpen={isDrivePickerOpen}
+        onClose={() => setIsDrivePickerOpen(false)}
+        onSelectFile={(file) => {
+          setEmbeddedSlideUrl(file.webViewLink || file.embedUrl);
+          if (!title.trim() || title === 'Bài học mới') {
+            setTitle(file.name);
+          }
+        }}
+      />
     </div>
   );
 }

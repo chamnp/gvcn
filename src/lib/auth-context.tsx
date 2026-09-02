@@ -19,6 +19,11 @@ interface AuthContextType {
   signUpWithEmail: (email: string, password: string, fullName?: string) => Promise<{ error: any }>;
   signInWithOtp: (email: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
+
+  // Google Drive & Keep Login
+  googleAccessToken: string | null;
+  hasGoogleDriveConnected: boolean;
+  connectGoogleDrive: () => Promise<{ error: any }>;
   
   // Profile Management for Current User
   updateProfile: (partial: Partial<TeacherProfile>) => Promise<void>;
@@ -230,6 +235,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return DEFAULT_TEACHERS;
   });
   const [loading, setLoading] = useState(true);
+  const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('gvcn_google_access_token');
+    }
+    return null;
+  });
 
   // Synchronously compute current profile from (user, teachers)
   const profile = useMemo(() => {
@@ -286,6 +297,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (isMounted) {
           setSession(session);
+          if (session?.provider_token) {
+            setGoogleAccessToken(session.provider_token);
+            try {
+              localStorage.setItem('gvcn_google_access_token', session.provider_token);
+              localStorage.setItem('gvcn_google_token_time', Date.now().toString());
+              if (session.provider_refresh_token) {
+                localStorage.setItem('gvcn_google_refresh_token', session.provider_refresh_token);
+              }
+            } catch (e) {}
+          }
           let currentUser = session?.user ?? null;
           if (!currentUser && typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
             const mockEmail = localStorage.getItem('gvcn_mock_email');
@@ -316,6 +337,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (isMounted) {
         setSession(session);
+        if (session?.provider_token) {
+          setGoogleAccessToken(session.provider_token);
+          try {
+            localStorage.setItem('gvcn_google_access_token', session.provider_token);
+            localStorage.setItem('gvcn_google_token_time', Date.now().toString());
+            if (session.provider_refresh_token) {
+              localStorage.setItem('gvcn_google_refresh_token', session.provider_refresh_token);
+            }
+          } catch (e) {}
+        }
         let currentUser = session?.user ?? null;
         if (!currentUser && typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
           const mockEmail = localStorage.getItem('gvcn_mock_email');
@@ -354,7 +385,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [refreshTeachers]);
 
-  // Google OAuth
+  // Google OAuth with Google Drive Scopes
   const signInWithGoogle = async () => {
     try {
       localStorage.removeItem('gvcn_signed_out');
@@ -368,6 +399,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       provider: 'google',
       options: {
         redirectTo,
+        scopes: 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.file',
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',
@@ -377,6 +409,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (res.error) {
       toast.error('Lỗi đăng nhập Google: ' + res.error.message);
+    }
+    return { error: res.error };
+  };
+
+  // Dedicated 1-click connect to Google Drive without leaving current screen
+  const connectGoogleDrive = async () => {
+    try {
+      localStorage.removeItem('gvcn_signed_out');
+    } catch (e) {}
+    const origin = typeof window !== 'undefined' && window.location.origin
+      ? window.location.origin
+      : 'https://gvcn-eta.vercel.app';
+    const redirectTo = `${origin}/lesson-plans?gdrive=connected`;
+
+    const res = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo,
+        scopes: 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.file',
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+      },
+    });
+
+    if (res.error) {
+      toast.error('Lỗi kết nối Google Drive: ' + res.error.message);
     }
     return { error: res.error };
   };
@@ -440,10 +500,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       localStorage.setItem('gvcn_signed_out', 'true');
       localStorage.removeItem('gvcn_mock_email');
+      localStorage.removeItem('gvcn_google_access_token');
+      localStorage.removeItem('gvcn_google_token_time');
+      localStorage.removeItem('gvcn_google_refresh_token');
     } catch (e) {}
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
+    setGoogleAccessToken(null);
     toast.info('Đã đăng xuất');
   };
 
@@ -679,6 +743,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signUpWithEmail,
         signInWithOtp,
         signOut,
+        googleAccessToken,
+        hasGoogleDriveConnected: Boolean(googleAccessToken),
+        connectGoogleDrive,
         updateProfile,
         teachers,
         refreshTeachers,

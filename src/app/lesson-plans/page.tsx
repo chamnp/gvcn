@@ -59,6 +59,8 @@ import {
 import { LessonPresentationModal } from '@/components/lesson-plans/lesson-presentation-modal';
 import { LessonEditorModal } from '@/components/lesson-plans/lesson-editor-modal';
 import { LessonPlanPrintView } from '@/components/lesson-plans/lesson-plan-print-view';
+import { GoogleDrivePickerModal } from '@/components/lesson-plans/google-drive-picker-modal';
+import { GoogleDriveFile } from '@/lib/google-drive-client';
 import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
 
@@ -101,7 +103,17 @@ export default function LessonPlansPage() {
   const [isPresentationOpen, setIsPresentationOpen] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [isPrintingA4, setIsPrintingA4] = useState(false);
+  const [isDrivePickerOpen, setIsDrivePickerOpen] = useState(false);
   const [activeLessonPlan, setActiveLessonPlan] = useState<LessonPlan | null>(null);
+
+  const handleSelectDriveFile = (file: GoogleDriveFile) => {
+    const newPlan = generateAILessonPlan(file.name, 'TOAN', 4, selectedTextbook, selectedWeek, 1);
+    newPlan.title = file.name;
+    newPlan.embeddedSlideUrl = file.webViewLink || file.embedUrl;
+    setActiveLessonPlan(newPlan);
+    setIsEditorOpen(true);
+    toast.success(`Đã nạp bài từ Google Drive: "${file.name}". Bạn có thể tinh chỉnh và lưu bài.`);
+  };
 
   // AI Generator Form State
   const [aiTitle, setAiTitle] = useState('');
@@ -316,6 +328,15 @@ export default function LessonPlansPage() {
             >
               <Tv className="w-4 h-4" />
               <span>CHIẾU SLIDE TV TRỰC TIẾP 📺</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsDrivePickerOpen(true)}
+              className="inline-flex items-center space-x-1.5 px-4 py-3 rounded-2xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs shadow-md cursor-pointer transition-all border border-white/20 backdrop-blur-md"
+            >
+              <span>📁</span>
+              <span>Google Drive Của Tôi</span>
             </button>
 
             <button
@@ -953,7 +974,37 @@ export default function LessonPlansPage() {
       {/* TAB 4: CROSS-SERVER SHARING & IMPORT / EXPORT HUB */}
       {activeTab === 'IMPORT_EXPORT' && (
         <div className="space-y-6 animate-in fade-in">
-          {/* Top Section: Cross-Server Federation Hub */}
+          {/* Top Feature: Direct Google Drive Cloud Import */}
+          <div className="p-6 sm:p-7 rounded-3xl bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-950 text-white shadow-lg border border-blue-400/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center text-2xl shadow-md shrink-0">
+                📁
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center space-x-2">
+                  <h3 className="font-black text-base text-white">
+                    Nhập Bài Giảng Từ Google Drive Của Tôi
+                  </h3>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">
+                    Keep-Login Active
+                  </span>
+                </div>
+                <p className="text-xs text-blue-200 leading-relaxed">
+                  Duyệt trực tiếp kho Google Slides, PowerPoint (.pptx), Google Docs, Word và PDF trong tài khoản Google đang đăng nhập. Không cần mở tab khác hay copy link.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsDrivePickerOpen(true)}
+              className="px-5 py-3 rounded-2xl bg-white hover:bg-slate-100 text-slate-950 font-black text-xs shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-2 shrink-0"
+            >
+              <span>📁 Mở Google Drive Của Tôi</span>
+            </button>
+          </div>
+
+          {/* Cross-Server Federation Hub */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Card 1: Receive Lesson Plan (From .gvcnlp File or Link) */}
             <div className="bg-gradient-to-br from-indigo-900/10 via-white to-blue-50/50 rounded-3xl p-6 sm:p-8 border-2 border-indigo-200 shadow-xs space-y-5">
@@ -1181,6 +1232,12 @@ export default function LessonPlansPage() {
         onClose={() => setIsEditorOpen(false)}
         initialPlan={activeLessonPlan}
         onSave={handleSavePlan}
+      />
+
+      <GoogleDrivePickerModal
+        isOpen={isDrivePickerOpen}
+        onClose={() => setIsDrivePickerOpen(false)}
+        onSelectFile={handleSelectDriveFile}
       />
     </div>
   );
