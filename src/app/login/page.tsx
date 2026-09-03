@@ -77,8 +77,8 @@ export default function LoginPage() {
     <div className="max-w-md mx-auto my-6 sm:my-8 space-y-6">
       {/* Brand Header */}
       <div className="text-center space-y-2">
-        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30 mx-auto">
-          <GraduationCap className="w-8 h-8 text-white" />
+        <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-xl shadow-blue-500/20 mx-auto border-2 border-slate-100">
+          <img src="/app-icon.jpg" alt="GVCN Pro Logo" className="w-full h-full object-cover" />
         </div>
         <h1 className="text-2xl font-black text-slate-900 tracking-tight">GVCN PRO</h1>
         <p className="text-xs text-slate-500">

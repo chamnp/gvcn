@@ -150,9 +150,11 @@ const SidebarContent: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
               className="w-10 h-10 rounded-xl object-cover border border-slate-700 shadow-md shadow-blue-500/10 shrink-0 bg-white"
             />
           ) : (
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30 shrink-0">
-              <GraduationCap className="w-6 h-6 text-white" />
-            </div>
+            <img
+              src="/app-icon.jpg"
+              alt="GVCN Pro Logo"
+              className="w-10 h-10 rounded-xl object-cover shadow-lg shadow-blue-500/30 shrink-0 border border-blue-400/30"
+            />
           )}
           <div className="min-w-0">
             <div className="flex items-center space-x-1.5">

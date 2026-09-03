@@ -39,8 +39,8 @@ export const AuthGuard: React.FC<{ children: React.ReactNode }> = ({ children })
   if (loading || (user && !profile)) {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center space-y-4">
-        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-blue-500/20 animate-pulse">
-          <GraduationCap className="w-8 h-8" />
+        <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-xl shadow-blue-500/20 border-2 border-slate-100 animate-pulse">
+          <img src="/app-icon.jpg" alt="GVCN Pro Logo" className="w-full h-full object-cover" />
         </div>
         <div className="flex items-center space-x-2 text-xs font-semibold text-slate-500">
           <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
