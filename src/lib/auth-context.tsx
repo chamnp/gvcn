@@ -385,7 +385,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [refreshTeachers]);
 
-  // Google OAuth - Standard clean login without sensitive scopes (works 100% without 403 access_denied)
+  // Google OAuth - Standard clean login without forcing consent prompt
   const signInWithGoogle = async () => {
     try {
       localStorage.removeItem('gvcn_signed_out');
@@ -399,10 +399,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       provider: 'google',
       options: {
         redirectTo,
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
-        },
       },
     });
 
