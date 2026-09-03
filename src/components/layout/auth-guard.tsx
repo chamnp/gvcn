@@ -5,7 +5,17 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { GraduationCap, Loader2 } from 'lucide-react';
 
-const PUBLIC_PREFIXES = ['/login', '/unauthorized', '/demo', '/hw', '/lookup', '/student', '/rewards'];
+const PUBLIC_PREFIXES = [
+  '/login',
+  '/unauthorized',
+  '/demo',
+  '/hw',
+  '/lookup',
+  '/student',
+  '/rewards',
+  '/privacy',
+  '/terms',
+];
 
 export const AuthGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const pathname = usePathname();

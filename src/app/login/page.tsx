@@ -266,6 +266,22 @@ export default function LoginPage() {
           <li>Quản trị viên có thể thêm, sửa, xóa và phân công lớp cho giáo viên tại mục <strong>Cài đặt &gt; Quản lý Giáo viên</strong>.</li>
         </ul>
       </div>
+
+      {/* Compliance & Policy Links for Google OAuth Verification */}
+      <div className="pt-2 text-center text-[11px] text-slate-400 space-y-2">
+        <div className="flex items-center justify-center space-x-3 text-slate-500 font-semibold">
+          <Link href="/privacy" className="hover:text-blue-600 hover:underline transition-colors">
+            Chính Sách Quyền Riêng Tư (Privacy Policy)
+          </Link>
+          <span>•</span>
+          <Link href="/terms" className="hover:text-blue-600 hover:underline transition-colors">
+            Điều Khoản Dịch Vụ (Terms)
+          </Link>
+        </div>
+        <p className="text-[10px] text-slate-400">
+          © 2026 GVCN Pro • Tuân thủ Thông tư 27/2020/TT-BGDĐT & Google API Services User Data Policy
+        </p>
+      </div>
     </div>
   );
 }
