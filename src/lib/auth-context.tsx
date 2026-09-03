@@ -385,7 +385,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [refreshTeachers]);
 
-  // Google OAuth with Google Drive Scopes
+  // Google OAuth - Standard clean login without sensitive scopes (works 100% without 403 access_denied)
   const signInWithGoogle = async () => {
     try {
       localStorage.removeItem('gvcn_signed_out');
@@ -399,7 +399,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       provider: 'google',
       options: {
         redirectTo,
-        scopes: 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.file',
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',
@@ -413,7 +412,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { error: res.error };
   };
 
-  // Dedicated 1-click connect to Google Drive without leaving current screen
+  // Optional on-demand Google Drive connection (using non-sensitive drive.file scope)
   const connectGoogleDrive = async () => {
     try {
       localStorage.removeItem('gvcn_signed_out');
@@ -427,7 +426,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       provider: 'google',
       options: {
         redirectTo,
-        scopes: 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/drive.file',
+        scopes: 'https://www.googleapis.com/auth/drive.file',
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',

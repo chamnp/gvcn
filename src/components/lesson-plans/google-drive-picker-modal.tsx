@@ -20,6 +20,7 @@ import {
   fetchTeacherDriveFiles,
   isGoogleTokenExpired,
 } from '@/lib/google-drive-client';
+import { transformToEmbedUrl } from '@/lib/lesson-package-engine';
 import { toast } from 'sonner';
 
 interface GoogleDrivePickerModalProps {
@@ -35,6 +36,7 @@ export const GoogleDrivePickerModal: React.FC<GoogleDrivePickerModalProps> = ({
 }) => {
   const { user, profile, googleAccessToken, connectGoogleDrive } = useAuth();
   const [keyword, setKeyword] = useState('');
+  const [pasteUrl, setPasteUrl] = useState('');
   const [filterType, setFilterType] = useState<'ALL' | 'SLIDES' | 'DOCS' | 'PDF'>('ALL');
   const [files, setFiles] = useState<GoogleDriveFile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -83,6 +85,22 @@ export const GoogleDrivePickerModal: React.FC<GoogleDrivePickerModalProps> = ({
     onClose();
   };
 
+  const handleImportFromPasteUrl = () => {
+    if (!pasteUrl.trim()) return;
+    const transformed = transformToEmbedUrl(pasteUrl.trim());
+    const file: GoogleDriveFile = {
+      id: `pasted-${Date.now()}`,
+      name: transformed.title || 'Bài giảng Google Slides / Drive',
+      mimeType: 'application/vnd.google-apps.presentation',
+      type: transformed.type,
+      webViewLink: transformed.originalUrl,
+      embedUrl: transformed.embedUrl,
+    };
+    onSelectFile(file);
+    toast.success(`Đã nạp bài dạy: ${file.name}`);
+    onClose();
+  };
+
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
       <div className="relative w-full max-w-5xl h-[90vh] max-h-[750px] bg-white dark:bg-slate-950 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-2xl flex flex-col overflow-hidden text-slate-900 dark:text-white">
@@ -111,12 +129,14 @@ export const GoogleDrivePickerModal: React.FC<GoogleDrivePickerModalProps> = ({
             {!isConnected && (
               <button
                 type="button"
-                onClick={() => connectGoogleDrive()}
+                onClick={() => {
+                  connectGoogleDrive();
+                }}
                 className="px-3 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs cursor-pointer flex items-center gap-1.5 active:scale-95 transition-all"
-                title="Cấp quyền truy cập Google Drive của bạn"
+                title="Cấp quyền truy cập Google Drive"
               >
                 <LogIn className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Kết Nối Drive</span>
+                <span className="hidden sm:inline">Kết Nối Ổ Đĩa</span>
               </button>
             )}
 
@@ -126,6 +146,31 @@ export const GoogleDrivePickerModal: React.FC<GoogleDrivePickerModalProps> = ({
               className="p-2 rounded-xl text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-900 cursor-pointer transition-colors"
             >
               <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* ZERO-AUTH QUICK LINK PASTE BAR */}
+        <div className="px-4 py-2.5 bg-blue-50/80 dark:bg-blue-950/40 border-b border-blue-200 dark:border-blue-900/60 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-blue-900 dark:text-blue-200 shrink-0">
+            <span>🔗</span>
+            <span>Dán Link Nhanh (Không cần xác minh Google):</span>
+          </div>
+          <div className="flex-1 flex gap-2">
+            <input
+              type="url"
+              placeholder="Dán link Google Slides, Google Drive, PowerPoint (.pptx) hoặc Docs..."
+              value={pasteUrl}
+              onChange={(e) => setPasteUrl(e.target.value)}
+              className="flex-1 px-3 py-1.5 rounded-xl border border-blue-300 dark:border-blue-700 bg-white dark:bg-slate-900 text-xs font-mono text-blue-700 dark:text-blue-300 focus:outline-hidden focus:ring-2 focus:ring-blue-500 shadow-inner"
+            />
+            <button
+              type="button"
+              onClick={handleImportFromPasteUrl}
+              disabled={!pasteUrl.trim()}
+              className="px-4 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-black text-xs cursor-pointer shadow-xs active:scale-95 transition-all shrink-0"
+            >
+              Nạp Ngay
             </button>
           </div>
         </div>
