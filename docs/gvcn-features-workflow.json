@@ -1,0 +1,107 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "Quy Trình Nghiệp Vụ & Tính Năng GVCN Pro",
+    "quality_profile": "showcase",
+    "animation": "trace",
+    "output": "docs/gvcn-features-workflow.html",
+    "views": [
+      {
+        "id": "full-teaching-flow",
+        "label": "Toàn bộ chu trình sư phạm",
+        "focus": ["login_auth", "lesson_editor", "tv_presentation", "interactive_tools", "rewards_star", "tt27_assessment", "report_export"],
+        "note": "Chu trình hoàn chỉnh từ soạn bài, giảng dạy Smart TV đến đánh giá TT27 và xuất sổ chủ nhiệm."
+      },
+      {
+        "id": "smart-tv-session",
+        "label": "Tiết dạy tương tác Smart TV",
+        "focus": ["lesson_editor", "tv_presentation", "mobile_remote", "interactive_tools", "rewards_star"],
+        "note": "Điều khiển Smart TV từ điện thoại giáo viên qua WebRTC với bút laser ảo và âm thanh hiệu ứng."
+      },
+      {
+        "id": "tt27-evaluation",
+        "label": "Đánh giá & Xuất hồ sơ TT27",
+        "focus": ["rewards_star", "tt27_assessment", "ai_assistant", "report_export"],
+        "note": "Tự động tính toán khen thưởng, ứng dụng AI gợi ý nhận xét và xuất file Word chuẩn nộp BGH."
+      }
+    ]
+  },
+  "lanes": [
+    { "id": "teacher", "label": "Giáo Viên Chủ Nhiệm" },
+    { "id": "prep", "label": "Soạn Bài & Học Liệu (CV 2345)" },
+    { "id": "live", "label": "Lớp Học Smart TV & Tương Tác" },
+    { "id": "eval", "label": "Đánh Giá & Báo Cáo (TT27)" }
+  ],
+  "phases": [
+    { "id": "phase_prep", "label": "Giai đoạn Chuẩn bị", "fromCol": 0, "toCol": 1 },
+    { "id": "phase_live", "label": "Tiết Dạy Lớp Học", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "phase_eval", "label": "Tổng Hợp & Phê Duyệt", "fromCol": 4, "toCol": 5, "variant": "dashed" }
+  ],
+  "groups": [
+    { "id": "prep_group", "label": "Kho học liệu đám mây", "lane": "prep", "fromCol": 0, "toCol": 1, "variant": "emphasis" },
+    { "id": "live_group", "label": "Điều khiển lớp học không dây", "lane": "live", "fromCol": 2, "toCol": 3, "variant": "emphasis" },
+    { "id": "eval_group", "label": "Hồ sơ điện tử chuẩn Bộ GD&ĐT", "lane": "eval", "fromCol": 4, "toCol": 5, "variant": "dashed" }
+  ],
+  "mainPath": [
+    "login_auth",
+    "lesson_editor",
+    "tv_presentation",
+    "interactive_tools",
+    "rewards_star",
+    "tt27_assessment",
+    "report_export"
+  ],
+  "nodes": [
+    { "id": "login_auth", "lane": "teacher", "col": 0, "type": "security", "label": "Đăng Nhập Phân Quyền", "sublabel": "Xác thực lớp phụ trách", "width": 140 },
+    { "id": "mobile_remote", "lane": "teacher", "col": 2, "type": "external", "label": "Kết Nối Remote", "sublabel": "Điện thoại P2P (/remote)", "width": 140 },
+    { "id": "gdrive_import", "lane": "prep", "col": 0, "type": "cloud", "label": "Kho Google Drive", "sublabel": "Google Slides & Docs", "tag": "Keep-Login", "width": 140 },
+    { "id": "lesson_editor", "lane": "prep", "col": 1, "type": "frontend", "label": "Soạn Kế Hoạch Bài Dạy", "sublabel": "Chuẩn Công văn 2345", "width": 140 },
+    { "id": "tv_presentation", "lane": "live", "col": 2, "type": "frontend", "label": "Chiếu Smart TV", "sublabel": "Toàn màn hình 16:9", "width": 140 },
+    { "id": "interactive_tools", "lane": "live", "col": 3, "type": "messagebus", "label": "Công Cụ Lớp Học", "sublabel": "Bút Laser, Soundboard, Hẹn Giờ", "width": 140 },
+    { "id": "rewards_star", "lane": "eval", "col": 3, "type": "frontend", "label": "Khen Thưởng Sao", "sublabel": "Điểm danh & Nề nếp hàng ngày", "width": 140 },
+    { "id": "tt27_assessment", "lane": "eval", "col": 4, "type": "backend", "label": "Đánh Giá Thông Tư 27", "sublabel": "Môn học T/H/C & Năng lực T/Đ/C", "tag": "Tự động hóa", "width": 140 },
+    { "id": "ai_assistant", "lane": "teacher", "col": 5, "type": "cloud", "label": "Trợ Lý AI Thông Minh", "sublabel": "Gợi ý nhận xét cá nhân hóa", "width": 140 },
+    { "id": "report_export", "lane": "eval", "col": 5, "type": "backend", "label": "Xuất Sổ & Học Bạ", "sublabel": "File Word / PDF nộp BGH", "width": 140 }
+  ],
+  "edges": [
+    { "id": "auth-to-editor", "from": "login_auth", "to": "lesson_editor", "variant": "default" },
+    { "id": "drive-to-editor", "from": "gdrive_import", "to": "lesson_editor", "label": "chọn slide", "variant": "dashed" },
+    { "id": "editor-to-tv", "from": "lesson_editor", "to": "tv_presentation", "label": "chiếu TV", "variant": "emphasis" },
+    { "id": "remote-to-tools", "from": "mobile_remote", "to": "interactive_tools", "label": "WebRTC", "variant": "emphasis" },
+    { "id": "tv-to-tools", "from": "tv_presentation", "to": "interactive_tools", "variant": "default" },
+    { "id": "tools-to-rewards", "from": "interactive_tools", "to": "rewards_star", "label": "tặng sao", "variant": "emphasis" },
+    { "id": "rewards-to-tt27", "from": "rewards_star", "to": "tt27_assessment", "label": "tổng kết", "variant": "emphasis" },
+    { "id": "tt27-to-ai", "from": "tt27_assessment", "to": "ai_assistant", "label": "gợi ý", "variant": "dashed" },
+    { "id": "tt27-to-export", "from": "tt27_assessment", "to": "report_export", "label": "kết xuất", "variant": "emphasis" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Soạn Kế Hoạch Bài Dạy",
+      "items": [
+        "Soạn bài theo đúng mẫu chuẩn Công văn 2345/BGDĐT",
+        "Nhập nhanh slide từ Google Drive, PowerPoint (.pptx) và Docs",
+        "Chia sẻ giáo án xuyên máy và xuyên trường học (.gvcnlp)"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Tiết Dạy Smart TV Tương Tác",
+      "items": [
+        "Điện thoại làm Remote điều khiển Laser ảo qua WebRTC",
+        "Phát âm thanh Soundboard cổ vũ (vỗ tay, pháo hoa, chuông)",
+        "Đồng hồ đếm ngược, vòng quay may mắn, bảng chia nhóm ngẫu nhiên"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Đánh Giá & Hồ Sơ Thông Tư 27",
+      "items": [
+        "Chấm điểm môn học (T/H/C) và năng lực phẩm chất (T/Đ/C)",
+        "Tự động xét danh hiệu Xuất sắc, Tiêu biểu đúng chuẩn TT27",
+        "Xuất trọn bộ Sổ Chủ Nhiệm và Học Bạ Điện Tử sang Word & PDF"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Kiến Trúc Hệ Thống GVCN Pro",
+    "quality_profile": "showcase",
+    "output": "docs/gvcn-architecture.html",
+    "views": [
+      {
+        "id": "main-flow",
+        "label": "Luồng quản lý & đồng bộ chính",
+        "focus": ["teacher_pc", "vercel_edge", "app_shell", "modules_hub", "supabase_db"],
+        "note": "Giáo viên truy cập Next.js qua Vercel Edge và lưu trữ dữ liệu vào Supabase PostgreSQL."
+      },
+      {
+        "id": "smart-tv-sync",
+        "label": "Trình chiếu Smart TV & Remote P2P",
+        "focus": ["teacher_remote", "smart_tv", "p2p_channel", "app_shell"],
+        "note": "Điều khiển Smart TV từ điện thoại bằng WebRTC và Supabase Realtime không cần dây cáp."
+      },
+      {
+        "id": "cloud-integrations",
+        "label": "Google Drive & Trợ lý AI",
+        "focus": ["gdrive_api", "ai_service", "modules_hub", "supabase_auth"],
+        "note": "Tích hợp Google Slides trực tiếp và AI nhận xét năng lực phẩm chất học sinh."
+      }
+    ]
+  },
+  "components": [
+    { "id": "teacher_pc", "type": "external", "label": "Giáo Viên (Web)", "sublabel": "Laptop / PC Browser", "pos": [40, 300], "size": [130, 60] },
+    { "id": "teacher_remote", "type": "external", "label": "Mobile Remote", "sublabel": "Điện thoại (/remote)", "pos": [40, 480], "size": [130, 60] },
+    { "id": "vercel_edge", "type": "cloud", "label": "Vercel Edge Network", "sublabel": "Turbopack CDN & SSL", "brand": "vercel", "pos": [250, 300], "size": [140, 60] },
+    { "id": "p2p_channel", "type": "messagebus", "label": "WebRTC & Realtime Bus", "sublabel": "Đồng Bộ Laser & Lệnh", "pos": [250, 480], "size": [140, 60] },
+    { "id": "app_shell", "type": "frontend", "label": "Next.js 16 App", "sublabel": "App Router & AuthGuard", "brand": "next-js", "pos": [460, 300], "size": [145, 60] },
+    { "id": "smart_tv", "type": "frontend", "label": "Smart TV Display", "sublabel": "Chiếu Slide Bài Dạy", "pos": [460, 480], "size": [145, 60] },
+    { "id": "supabase_auth", "type": "security", "label": "Supabase Auth & RBAC", "sublabel": "Bảng Teacher & Phân Quyền", "brand": "supabase", "pos": [460, 120], "size": [145, 64], "tag": "JWT Session" },
+    { "id": "modules_hub", "type": "backend", "label": "Nghiệp Vụ TT27 Engine", "sublabel": "Sổ Chủ Nhiệm & Đánh Giá", "pos": [680, 300], "size": [145, 60] },
+    { "id": "gdrive_api", "type": "cloud", "label": "Google Drive Cloud", "sublabel": "Slides, PPTX, Docs, PDF", "pos": [680, 120], "size": [145, 60], "tag": "Keep-Login" },
+    { "id": "supabase_db", "type": "database", "label": "Supabase PostgreSQL", "sublabel": "Học Sinh & Điểm Số", "brand": "postgresql", "pos": [900, 300], "size": [145, 60] },
+    { "id": "ai_service", "type": "cloud", "label": "Trợ Lý AI Tiểu Học", "sublabel": "Nhận Xét & Gợi Ý TT27", "pos": [900, 120], "size": [145, 60] }
+  ],
+  "boundaries": [
+    { "kind": "security-group", "label": "Frontend & Edge Layer", "wraps": ["vercel_edge", "app_shell"] },
+    { "kind": "region", "label": "Supabase BaaS Managed Infrastructure", "wraps": ["supabase_auth", "supabase_db"] }
+  ],
+  "connections": [
+    { "id": "pc-to-edge", "from": "teacher_pc", "to": "vercel_edge", "label": "HTTPS", "variant": "emphasis" },
+    { "id": "edge-to-app", "from": "vercel_edge", "to": "app_shell" },
+    { "id": "auth-verify", "from": "supabase_auth", "to": "app_shell", "label": "JWT & Role", "variant": "security", "fromSide": "bottom", "toSide": "top", "labelDy": 58 },
+    { "id": "app-to-modules", "from": "app_shell", "to": "modules_hub", "variant": "emphasis" },
+    { "id": "modules-to-db", "from": "modules_hub", "to": "supabase_db", "label": "SQL & RLS" },
+    { "id": "remote-to-p2p", "from": "teacher_remote", "to": "p2p_channel", "label": "P2P Signal", "variant": "emphasis" },
+    { "id": "p2p-to-tv", "from": "p2p_channel", "to": "smart_tv", "label": "State Sync" },
+    { "id": "app-to-tv", "from": "app_shell", "to": "smart_tv", "label": "Render Slide", "variant": "dashed", "fromSide": "bottom", "toSide": "top", "labelDy": 60 },
+    { "id": "modules-to-gdrive", "from": "modules_hub", "to": "gdrive_api", "label": "Drive v3", "variant": "dashed", "fromSide": "top", "toSide": "bottom", "labelDy": -60 },
+    { "id": "modules-to-ai", "from": "modules_hub", "to": "ai_service", "label": "Prompt API", "variant": "dashed", "fromSide": "top", "toSide": "left" }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Kiến Trúc Frontend & Edge",
+      "items": [
+        "Next.js 16 App Router tối ưu hóa bằng Turbopack",
+        "Triển khai toàn cầu qua mạng biên Vercel Edge",
+        "Bảo vệ phân quyền đồng bộ với AppShell & AuthGuard"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Đồng Bộ Smart TV & Remote",
+      "items": [
+        "Điện thoại làm Remote điều khiển Laser và âm thanh SFX",
+        "Kênh truyền WebRTC & Supabase Realtime độ trễ dưới 50ms",
+        "Chiếu slide Google Slides, PowerPoint, Docs trực tiếp"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Bảo Mật & Cơ Sở Dữ Liệu",
+      "items": [
+        "Supabase PostgreSQL lưu trữ an toàn theo trường và lớp",
+        "Cơ chế OAuth Google Drive bảo lưu phiên Keep-Login",
+        "Tuân thủ Nghị định 13/2023/NĐ-CP & Thông tư 27/2020/TT-BGDĐT"
+      ]
+    }
+  ]
+}
