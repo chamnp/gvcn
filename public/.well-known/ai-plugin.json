@@ -1,0 +1,18 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "GVCN Pro - Trợ Lý Giáo Viên Chủ Nhiệm",
+  "name_for_model": "gvcn_pro_assistant",
+  "description_for_human": "Trợ lý AI quản lý lớp học tiểu học, đánh giá học sinh Thông tư 27/2020/TT-BGDĐT, soạn kế hoạch bài dạy Công văn 2345 và tổ chức họp phụ huynh.",
+  "description_for_model": "Cổng kết nối dữ liệu sư phạm GVCN Pro cho giáo viên tiểu học. Cho phép tra cứu sĩ số, danh sách học sinh, mức đánh giá môn học (T/H/C), 5 phẩm chất và năng lực (T/Đ/C) theo Thông tư 27/2020/TT-BGDĐT, tặng sao khen thưởng nề nếp, thời khóa biểu, tự động tạo kế hoạch bài dạy chuẩn Công văn 2345/BGDĐT-GDTH và sinh lời nhận xét học bạ cá nhân hóa.",
+  "auth": {
+    "type": "user_http",
+    "authorization_type": "bearer"
+  },
+  "api": {
+    "type": "openapi",
+    "url": "https://gvcn-eta.vercel.app/api/v1/openapi.json"
+  },
+  "logo_url": "https://gvcn-eta.vercel.app/app-icon.jpg",
+  "contact_email": "anhnnh4@gmail.com",
+  "legal_info_url": "https://gvcn-eta.vercel.app/terms"
+}

@@ -1773,7 +1773,7 @@ export default function SettingsPage() {
               </div>
               <div className="bg-white/10 rounded-2xl p-3 border border-white/15">
                 <span className="text-[10px] text-teal-300 font-bold block uppercase">OpenAPI 3.1 Spec (ChatGPT Custom Actions):</span>
-                <code className="text-xs text-white font-mono font-bold select-all">https://gvcn-eta.vercel.app/api/mcp/openapi.json</code>
+                <code className="text-xs text-white font-mono font-bold select-all">https://gvcn-eta.vercel.app/api/v1/openapi.json</code>
               </div>
             </div>
           </div>
@@ -1866,17 +1866,36 @@ export default function SettingsPage() {
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  navigator.clipboard.writeText('https://gvcn-eta.vercel.app/api/mcp/openapi.json');
-                  toast.success('Đã sao chép OpenAPI Schema URL cho ChatGPT!');
-                }}
-                className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors cursor-pointer flex items-center justify-center space-x-1.5"
-              >
-                <Copy className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Sao Chép Schema URL</span>
-              </button>
+              <div className="space-y-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText('https://gvcn-eta.vercel.app/api/v1/openapi.json');
+                    toast.success('Đã sao chép OpenAPI Schema URL cho ChatGPT!');
+                  }}
+                  className="w-full py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors cursor-pointer flex items-center justify-center space-x-1.5"
+                >
+                  <Copy className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>1. Sao Chép Schema URL</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const prompt = `Bạn là Trợ Lý Giáo Viên Chủ Nhiệm Tiểu Học GVCN Pro.
+Bạn có quyền truy cập trực tiếp vào hệ thống quản lý lớp học thông qua các Actions được cung cấp.
+Quy tắc sư phạm:
+1. Đánh giá môn học theo Thông tư 27/2020/TT-BGDĐT: mức T (Hoàn thành tốt), H (Hoàn thành), C (Chưa hoàn thành).
+2. Đánh giá 5 phẩm chất và năng lực theo 3 mức: T (Tốt), Đ (Đạt), C (Cần cố gắng).
+3. Soạn kế hoạch bài dạy theo đúng cấu trúc 4 hoạt động của Công văn 2345/BGDĐT-GDTH: Khởi động, Khám phá, Luyện tập, Vận dụng.
+4. Lời nhận xét ấm áp, động viên, khen ngợi sự tiến bộ của học sinh.`;
+                    navigator.clipboard.writeText(prompt);
+                    toast.success('Đã sao chép System Prompt chuẩn sư phạm cho ChatGPT!');
+                  }}
+                  className="w-full py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-[11px] transition-colors cursor-pointer flex items-center justify-center space-x-1"
+                >
+                  <span>2. Copy Prompt Mẫu GPT</span>
+                </button>
+              </div>
             </div>
 
             {/* 4. Cursor / VSCode Cline */}
