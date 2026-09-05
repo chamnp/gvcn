@@ -1738,42 +1738,56 @@ export default function SettingsPage() {
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="space-y-1.5">
                 <div className="inline-flex items-center space-x-2 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-3 py-1 rounded-full text-xs font-bold">
-                  <span>⚡ Model Context Protocol (MCP)</span>
+                  <span>🧩 Gói Plugin Toàn Diện: Agent Skill + MCP Server</span>
                   <span className="bg-emerald-400 text-slate-950 px-2 py-0.2 rounded-full text-[10px] font-black">
-                    Chuẩn Mở
+                    Chuẩn Mới
                   </span>
                 </div>
                 <h2 className="text-xl sm:text-2xl font-black">
-                  Cổng Kết Nối AI Thông Minh Cho Giáo Viên
+                  Cổng Kết Nối AI & Plugin Sư Phạm Cho Giáo Viên
                 </h2>
                 <p className="text-xs text-emerald-100 max-w-2xl leading-relaxed">
-                  Cho phép bạn kết nối trực tiếp <strong>Claude Desktop, Google Gemini Spark, OpenAI ChatGPT, Cursor</strong> vào dữ liệu lớp học Lớp {classInfo.name} để tự động tra cứu học sinh, đánh giá Thông tư 27, soạn giáo án CV 2345 hoàn toàn bằng tiếng Việt tự nhiên.
+                  Kết hợp hoàn hảo giữa <strong>Agent Skill</strong> (Bộ tri thức Thông tư 27 & Công văn 2345) và <strong>MCP Server</strong> (16 công cụ kết nối dữ liệu thực tế) cho <strong>ChatGPT, Claude Desktop, Cursor, Gemini</strong>.
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setNewKeyName('');
-                  setCreatedKeyRecord(null);
-                  setIsCreateKeyModalOpen(true);
-                }}
-                className="inline-flex items-center space-x-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-500 hover:to-teal-500 text-slate-950 font-black text-xs shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
-              >
-                <Key className="w-4 h-4" />
-                <span>+ TẠO KHÓA MỚI (API KEY)</span>
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <a
+                  href="/api/plugin"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center space-x-2 px-4 py-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 transition-all cursor-pointer shrink-0"
+                >
+                  <span>📦 Xem Plugin Manifest</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewKeyName('');
+                    setCreatedKeyRecord(null);
+                    setIsCreateKeyModalOpen(true);
+                  }}
+                  className="inline-flex items-center space-x-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-500 hover:to-teal-500 text-slate-950 font-black text-xs shadow-md transition-all active:scale-95 cursor-pointer shrink-0"
+                >
+                  <Key className="w-4 h-4" />
+                  <span>+ TẠO KHÓA MỚI (API KEY)</span>
+                </button>
+              </div>
             </div>
 
             {/* Server Endpoints Bar */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-white/10 text-xs">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-white/10 text-xs">
               <div className="bg-white/10 rounded-2xl p-3 border border-white/15">
-                <span className="text-[10px] text-emerald-300 font-bold block uppercase">MCP Endpoint (JSON-RPC 2.0 / SSE):</span>
-                <code className="text-xs text-white font-mono font-bold select-all">https://gvcn-eta.vercel.app/api/mcp</code>
+                <span className="text-[10px] text-emerald-300 font-bold block uppercase">Plugin Package (Skill + MCP):</span>
+                <code className="text-xs text-white font-mono font-bold select-all">https://gvcn-eta.vercel.app/api/plugin</code>
               </div>
               <div className="bg-white/10 rounded-2xl p-3 border border-white/15">
-                <span className="text-[10px] text-teal-300 font-bold block uppercase">OpenAPI 3.1 Spec (ChatGPT Custom Actions):</span>
+                <span className="text-[10px] text-teal-300 font-bold block uppercase">OpenAPI 3.1 Spec (ChatGPT Actions):</span>
                 <code className="text-xs text-white font-mono font-bold select-all">https://gvcn-eta.vercel.app/api/v1/openapi.json</code>
+              </div>
+              <div className="bg-white/10 rounded-2xl p-3 border border-white/15">
+                <span className="text-[10px] text-blue-300 font-bold block uppercase">MCP Endpoint (JSON-RPC 2.0 / SSE):</span>
+                <code className="text-xs text-white font-mono font-bold select-all">https://gvcn-eta.vercel.app/api/mcp</code>
               </div>
             </div>
           </div>

@@ -1,0 +1,59 @@
+{
+  "schema_version": "1.0.0",
+  "id": "gvcn-pro-plugin",
+  "name": "GVCN Pro - Trợ Lý Giáo Viên Chủ Nhiệm Tiểu Học",
+  "version": "1.0.0",
+  "description": "Bộ Plugin toàn diện kết hợp Agent Skill (Kiến thức sư phạm Thông tư 27 & Công văn 2345) và MCP Server (16 công cụ tra cứu, đánh giá, soạn bài, họp phụ huynh).",
+  "author": {
+    "name": "GVCN Pro Team",
+    "email": "anhnnh4@gmail.com",
+    "url": "https://gvcn-eta.vercel.app"
+  },
+  "icon": "https://gvcn-eta.vercel.app/app-icon.jpg",
+  "homepage": "https://gvcn-eta.vercel.app",
+  "license": "MIT",
+  "components": {
+    "skill": {
+      "name": "gvcn-pro",
+      "entry": "skills/gvcn-pro/SKILL.md",
+      "references": [
+        "skills/gvcn-pro/references/thong-tu-27.md",
+        "skills/gvcn-pro/references/cong-van-2345.md"
+      ],
+      "templates": [
+        "skills/gvcn-pro/templates/giao-an-cv2345.md",
+        "skills/gvcn-pro/templates/nhan-xet-hoc-ba.md"
+      ]
+    },
+    "mcp": {
+      "name": "gvcn-pro-mcp",
+      "type": "hybrid",
+      "stdio": {
+        "command": "node",
+        "args": ["mcp/index.mjs"],
+        "env": {
+          "GVCN_API_URL": "https://gvcn-eta.vercel.app/api/mcp",
+          "GVCN_API_KEY": "${GVCN_API_KEY}"
+        }
+      },
+      "remote": {
+        "url": "https://gvcn-eta.vercel.app/api/mcp",
+        "transport": "http-post"
+      },
+      "toolsCount": 16
+    },
+    "chatgpt": {
+      "type": "custom-action",
+      "openapi": "https://gvcn-eta.vercel.app/api/v1/openapi.json",
+      "manifest": "https://gvcn-eta.vercel.app/.well-known/ai-plugin.json",
+      "instructions": "chatgpt/instructions.md"
+    }
+  },
+  "compatibility": {
+    "claude_desktop": ">=0.7.0",
+    "cursor": ">=0.40.0",
+    "chatgpt": "GPT-4o / Custom Actions",
+    "antigravity": ">=2.0.0",
+    "windsurf": ">=1.0.0"
+  }
+}
