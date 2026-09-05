@@ -28,6 +28,7 @@ import {
   Copy,
   Upload,
   FileDown,
+  Bot,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import {
@@ -45,6 +46,7 @@ import { SubjectLevel, TraitLevel, Student } from '@/types';
 import { exportTT27Form1, exportVnEduTemplate } from '@/lib/excel-export';
 import { ProgressMeterWidget } from '@/components/assessment/progress-meter-widget';
 import { GuardrailsAlertModal } from '@/components/assessment/guardrails-alert-modal';
+import { AIClassDiagnosticModal } from '@/components/assessment/ai-class-diagnostic-modal';
 import { SyncQuizScoresModal } from '@/components/assessment/sync-quiz-scores-modal';
 import { ImportSubjectScoresModal } from '@/components/assessment/import-subject-scores-modal';
 import { ExportSubjectTemplateModal } from '@/components/assessment/export-subject-template-modal';
@@ -109,6 +111,7 @@ export default function AssessmentPage() {
   const [isSyncQuizModalOpen, setIsSyncQuizModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isAIDiagnosticOpen, setIsAIDiagnosticOpen] = useState(false);
 
   const termName = TERMS.find((t) => t.id === currentTerm)?.name || currentTerm;
   const currentGrade = classInfo?.grade || 4;
@@ -368,6 +371,25 @@ export default function AssessmentPage() {
           >
             <FileDown className="w-3.5 h-3.5 text-slate-600" />
             <span className="hidden sm:inline">Xuất Mẫu Điểm Môn</span>
+          </button>
+
+          <Link
+            href="/ai-assistant"
+            className="px-3 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-xs flex items-center gap-1.5 cursor-pointer transition-all"
+            title="Trợ lý AI tự động tổng hợp điểm TT27, nề nếp và sinh nhận xét học bạ"
+          >
+            <Bot className="w-3.5 h-3.5" />
+            <span>Trợ Lý Đánh Giá AI</span>
+          </Link>
+
+          <button
+            type="button"
+            onClick={() => setIsAIDiagnosticOpen(true)}
+            className="px-3 py-1.5 rounded-xl text-xs font-bold bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            title="Chẩn đoán chất lượng học tập toàn lớp chuẩn TT27 bằng AI"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+            <span className="hidden xl:inline">Chẩn Đoán AI Lớp</span>
           </button>
 
           <button
@@ -1089,20 +1111,35 @@ export default function AssessmentPage() {
         <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden space-y-4 p-4 sm:p-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="font-black text-slate-900 text-sm sm:text-base">
-                Tổng Hợp Đánh Giá & Khen Thưởng Theo Điều 13 - Thông Tư 27
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="font-black text-slate-900 text-sm sm:text-base">
+                  Tổng Hợp Đánh Giá & Khen Thưởng Theo Điều 13 - Thông Tư 27
+                </h3>
+                <span className="bg-purple-100 text-purple-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-purple-200">
+                  Dữ liệu chuẩn cho AI
+                </span>
+              </div>
               <p className="text-xs text-slate-500 mt-0.5">
-                Tự động kiểm tra điều kiện Môn học (T/H/C), Điểm KTĐK (từ 9.0 hoặc từ 7.0 trở lên), Phẩm chất và Năng lực.
+                Tự động tổng hợp kết quả môn học (T/H/C, Điểm số), 5 phẩm chất và 10 năng lực chuẩn TT27 — Sẵn sàng cho Trợ lý AI sinh nhận xét học bạ.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={handleRecalculateAwards}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer shrink-0"
-            >
-              Tính Lại Danh Hiệu
-            </button>
+            <div className="flex items-center gap-2 shrink-0">
+              <Link
+                href="/ai-assistant"
+                className="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                title="Mở Trợ lý AI tự động sinh nhận xét học bạ theo chuẩn TT27"
+              >
+                <Bot className="w-3.5 h-3.5" />
+                <span>Sinh Nhận Xét Bằng AI</span>
+              </Link>
+              <button
+                type="button"
+                onClick={handleRecalculateAwards}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer"
+              >
+                Tính Lại Danh Hiệu
+              </button>
+            </div>
           </div>
 
           <div className="overflow-x-auto border border-slate-200 rounded-2xl">
@@ -1267,6 +1304,12 @@ export default function AssessmentPage() {
         currentSubjectCode={focusSubjectCode}
         subjectAssessments={subjectAssessments}
         currentTerm={currentTerm}
+      />
+
+      {/* AI CLASS DIAGNOSTIC MODAL */}
+      <AIClassDiagnosticModal
+        isOpen={isAIDiagnosticOpen}
+        onClose={() => setIsAIDiagnosticOpen(false)}
       />
     </div>
   );
