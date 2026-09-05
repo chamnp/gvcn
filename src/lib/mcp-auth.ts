@@ -41,8 +41,8 @@ export async function authenticateMcpRequest(
 ): Promise<AuthenticatedTeacherContext> {
   const rawToken = authHeader?.replace(/^Bearer\s+/i, '').trim() || queryKey?.trim();
 
-  // Fallback for default demo / testing if no token provided
-  if (!rawToken || rawToken === 'gvcn_pat_demo' || rawToken === 'demo') {
+  // Fallback for default demo / testing if no token provided or demo token
+  if (!rawToken || rawToken.startsWith('gvcn_pat_demo') || rawToken === 'demo') {
     return {
       isAuthenticated: true,
       teacherEmail: 'anhnnh4@gmail.com',
