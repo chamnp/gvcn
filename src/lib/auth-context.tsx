@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '@/lib/supabase';
 import { User, Session } from '@supabase/supabase-js';
 import { TeacherProfile, UserRole } from '@/types';
@@ -247,42 +247,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return resolveUserProfile(user, teachers);
   }, [user, teachers]);
 
-  // Fetch teachers from Supabase
+  const teachersRef = useRef<TeacherProfile[]>(teachers);
+  teachersRef.current = teachers;
+  const inFlightTeachersPromise = useRef<Promise<TeacherProfile[]> | null>(null);
+
+  // Fetch teachers from Supabase - stable callback with deduplication
   const refreshTeachers = useCallback(async (): Promise<TeacherProfile[]> => {
-    try {
-      const { data, error } = await supabase
-        .from('Teacher')
-        .select('*')
-        .order('createdAt', { ascending: true });
-
-      if (!error && data && data.length > 0) {
-        const mapped: TeacherProfile[] = data.map((row: any) => ({
-          id: row.id,
-          email: (row.email || '').toLowerCase().trim(),
-          fullName: row.fullName || 'Giáo viên',
-          role: (row.role || 'TEACHER') as UserRole,
-          title: row.title || (row.role === 'ADMIN' ? 'Ban Giám Hiệu' : row.role === 'ADMIN_TEACHER' ? 'BGH kiêm GVCN' : 'Giáo viên Chủ nhiệm'),
-          department: row.department || (row.role === 'ADMIN' ? 'Ban Giám Hiệu' : 'Tổ Chuyên môn'),
-          assignedClassId: row.assignedClassId || undefined,
-          assignedClassName: row.assignedClassName || (row.assignedClassId ? `Lớp ${row.assignedClassId.replace('class-', '').toUpperCase()}` : 'Lớp 4A1'),
-          phone: row.phone || undefined,
-          avatarUrl: row.avatarUrl || undefined,
-          isActive: row.isActive !== false,
-          createdAt: row.createdAt || new Date().toISOString(),
-        }));
-
-        setTeachers(mapped);
-        try {
-          localStorage.setItem('gvcn_teachers', JSON.stringify(mapped));
-        } catch (e) {}
-        return mapped;
-      }
-    } catch (err) {
-      console.warn('Error fetching teachers from Supabase:', err);
+    if (inFlightTeachersPromise.current) {
+      return inFlightTeachersPromise.current;
     }
 
-    return teachers;
-  }, [teachers]);
+    const fetchPromise = (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('Teacher')
+          .select('*')
+          .order('createdAt', { ascending: true });
+
+        if (!error && data && data.length > 0) {
+          const mapped: TeacherProfile[] = data.map((row: any) => ({
+            id: row.id,
+            email: (row.email || '').toLowerCase().trim(),
+            fullName: row.fullName || 'Giáo viên',
+            role: (row.role || 'TEACHER') as UserRole,
+            title: row.title || (row.role === 'ADMIN' ? 'Ban Giám Hiệu' : row.role === 'ADMIN_TEACHER' ? 'BGH kiêm GVCN' : 'Giáo viên Chủ nhiệm'),
+            department: row.department || (row.role === 'ADMIN' ? 'Ban Giám Hiệu' : 'Tổ Chuyên môn'),
+            assignedClassId: row.assignedClassId || undefined,
+            assignedClassName: row.assignedClassName || (row.assignedClassId ? `Lớp ${row.assignedClassId.replace('class-', '').toUpperCase()}` : 'Lớp 4A1'),
+            phone: row.phone || undefined,
+            avatarUrl: row.avatarUrl || undefined,
+            isActive: row.isActive !== false,
+            createdAt: row.createdAt || new Date().toISOString(),
+          }));
+
+          setTeachers(mapped);
+          teachersRef.current = mapped;
+          try {
+            localStorage.setItem('gvcn_teachers', JSON.stringify(mapped));
+          } catch (e) {}
+          return mapped;
+        }
+      } catch (err) {
+        console.warn('Error fetching teachers from Supabase:', err);
+      } finally {
+        inFlightTeachersPromise.current = null;
+      }
+
+      return teachersRef.current;
+    })();
+
+    inFlightTeachersPromise.current = fetchPromise;
+    return fetchPromise;
+  }, []);
 
   // Initial load
   useEffect(() => {
