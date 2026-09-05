@@ -1792,6 +1792,105 @@ export default function SettingsPage() {
             </div>
           </div>
 
+          {/* VIP BANNER: Chrome Extension (Thay thế myGPT) */}
+          <div className="bg-gradient-to-br from-indigo-950 via-slate-900 to-emerald-950 rounded-3xl p-6 text-white shadow-xl border border-indigo-500/20 space-y-6">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              <div className="space-y-2">
+                <div className="inline-flex items-center space-x-2 bg-indigo-500/30 text-indigo-300 border border-indigo-400/40 px-3 py-1 rounded-full text-xs font-bold">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Khuyên Dùng Thay Thế myGPT</span>
+                  <span className="bg-amber-400 text-slate-950 px-2 py-0.2 rounded-full text-[10px] font-black uppercase">
+                    1-Click Sư Phạm
+                  </span>
+                </div>
+                <h3 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2.5">
+                  <span>🧩 Chrome Extension: GVCN Pro Copilot</span>
+                </h3>
+                <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
+                  Thay vì tạo Custom GPT phức tạp và dễ bị lỗi mạng của OpenAI, hãy cài đặt Tiện ích mở rộng Chrome GVCN Pro. Tiện ích tự động gắn thanh công cụ <strong>🎓 GVCN Pro</strong> ngay vào khung chat <code className="text-emerald-300 font-mono">chatgpt.com</code> và cung cấp <strong>Side Panel (Thanh bên)</strong> tra cứu học sinh, soạn giáo án CV 2345, và tạo nhận xét TT 27 trực tiếp.
+                </p>
+              </div>
+
+              <div className="flex flex-col sm:flex-row lg:flex-col gap-2.5 shrink-0">
+                <a
+                  href="/downloads/gvcn-pro-extension.zip"
+                  download="gvcn-pro-extension.zip"
+                  className="inline-flex items-center justify-center space-x-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-300 hover:to-teal-300 text-slate-950 font-black text-xs shadow-lg transition-all active:scale-95 cursor-pointer"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>TẢI EXTENSION (.ZIP)</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const activeKey = apiKeys.find((k) => k.isActive)?.key || 'gvcn_pat_demo_teacher_2026_pro';
+                    navigator.clipboard.writeText(activeKey);
+                    toast.success('Đã sao chép API Key để kích hoạt Extension!');
+                  }}
+                  className="inline-flex items-center justify-center space-x-2 px-5 py-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs border border-white/20 transition-all cursor-pointer"
+                >
+                  <Key className="w-3.5 h-3.5 text-amber-300" />
+                  <span>Sao Chép API Key Kích Hoạt</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 3 Steps Guide */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-4 border-t border-white/10 text-xs">
+              <div className="bg-white/5 rounded-2xl p-3.5 border border-white/10 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-emerald-500 text-slate-950 font-black text-[11px] flex items-center justify-center">1</span>
+                  <span className="font-bold text-emerald-300">Tải & Giải nén</span>
+                </div>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  Bấm nút <strong>TẢI EXTENSION (.ZIP)</strong> ở trên, sau đó giải nén file <code className="text-emerald-300 font-mono">gvcn-pro-extension.zip</code> vào một thư mục trên máy tính.
+                </p>
+              </div>
+
+              <div className="bg-white/5 rounded-2xl p-3.5 border border-white/10 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-emerald-500 text-slate-950 font-black text-[11px] flex items-center justify-center">2</span>
+                  <span className="font-bold text-emerald-300">Mở chrome://extensions</span>
+                </div>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  Trên trình duyệt Chrome/Cốc Cốc/Edge, truy cập <code className="text-teal-300 font-mono">chrome://extensions</code> và bật nút gạt <strong>Developer mode (Chế độ dành cho nhà phát triển)</strong> ở góc trên bên phải.
+                </p>
+              </div>
+
+              <div className="bg-white/5 rounded-2xl p-3.5 border border-white/10 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-emerald-500 text-slate-950 font-black text-[11px] flex items-center justify-center">3</span>
+                  <span className="font-bold text-emerald-300">Load Unpacked & Sử Dụng</span>
+                </div>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  Bấm nút <strong>Load unpacked (Tải tiện ích đã giải nén)</strong> và chọn thư mục vừa giải nén. Mở <code className="text-amber-300 font-mono">chatgpt.com</code> để thấy nút <strong>🎓 GVCN Pro</strong>!
+                </p>
+              </div>
+            </div>
+
+            {/* Feature Highlights */}
+            <div className="flex flex-wrap items-center gap-4 pt-1 text-[11px] text-slate-300">
+              <span className="flex items-center gap-1 text-emerald-400 font-semibold">
+                <CheckCircle2 className="w-3.5 h-3.5" /> Không cần ChatGPT Plus
+              </span>
+              <span className="flex items-center gap-1 text-teal-400 font-semibold">
+                <CheckCircle2 className="w-3.5 h-3.5" /> Tích hợp thanh công cụ 1-click trên ChatGPT
+              </span>
+              <span className="flex items-center gap-1 text-cyan-400 font-semibold">
+                <CheckCircle2 className="w-3.5 h-3.5" /> Thanh bên Side Panel song song với vnEdu / SMAS
+              </span>
+              <span className="flex items-center gap-1 text-indigo-400 font-semibold">
+                <CheckCircle2 className="w-3.5 h-3.5" /> Chuẩn Thông tư 27 & Công văn 2345
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between pt-2">
+            <h4 className="text-xs font-black uppercase tracking-wider text-slate-500">
+              Hoặc Kết Nối Qua MCP Server / OpenAPI Truyền Thống
+            </h4>
+          </div>
+
           {/* 4 Quick Connect Presets (1-Click Copy) */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
             {/* 1. Claude Desktop */}

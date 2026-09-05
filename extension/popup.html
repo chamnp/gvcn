@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>GVCN Pro Copilot</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { width: 360px; background: #f8fafc; color: #0f172a; padding: 14px; }
+    .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 12px; }
+    .title-row { display: flex; align-items: center; gap: 8px; }
+    .logo { width: 28px; height: 28px; border-radius: 8px; }
+    .app-name { font-size: 14px; font-weight: 800; color: #0f172a; }
+    .badge { font-size: 10px; background: #ecfdf5; color: #059669; font-weight: 700; padding: 2px 6px; border-radius: 6px; border: 1px solid #a7f3d0; }
+    
+    .card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .card-title { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 6px; }
+    
+    .stats-row { display: grid; grid-cols: 3; display: flex; gap: 8px; justify-content: space-between; }
+    .stat-box { text-align: center; flex: 1; background: #f1f5f9; padding: 6px 4px; border-radius: 8px; }
+    .stat-num { font-size: 14px; font-weight: 800; color: #0f172a; }
+    .stat-label { font-size: 10px; color: #64748b; }
+
+    .btn { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 8px 12px; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; border: none; transition: all 0.15s; margin-top: 6px; text-decoration: none; }
+    .btn-primary { background: #10b981; color: white; }
+    .btn-primary:hover { background: #059669; }
+    .btn-secondary { background: #f1f5f9; color: #1e293b; border: 1px solid #cbd5e1; }
+    .btn-secondary:hover { background: #e2e8f0; }
+
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #10b981; display: inline-block; }
+    .status-text { font-size: 11px; color: #059669; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="title-row">
+      <img src="icons/icon-48.png" class="logo" alt="GVCN Pro">
+      <div>
+        <div class="app-name">GVCN Pro Copilot</div>
+        <div style="display:flex; align-items:center; gap:4px;">
+          <span class="status-dot"></span>
+          <span class="status-text" id="statusText">Đã kết nối Lớp 4A1</span>
+        </div>
+      </div>
+    </div>
+    <span class="badge">TT27 & CV2345</span>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Tổng quan lớp học</div>
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="stat-num" id="statTotal">55</div>
+        <div class="stat-label">Sĩ số</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num" id="statMale">31</div>
+        <div class="stat-label">Nam</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num" id="statFemale">24</div>
+        <div class="stat-label">Nữ</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num" id="statBoarding">55</div>
+        <div class="stat-label">Bán trú</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Tác vụ nhanh cho Giáo viên</div>
+    <button class="btn btn-primary" id="btnOpenSidePanel">
+      <span>📖 Mở Thanh Công Cụ (Side Panel)</span>
+    </button>
+    <a href="https://chatgpt.com" target="_blank" class="btn btn-secondary">
+      <span>💬 Mở ChatGPT Trực Tiếp</span>
+    </a>
+    <a href="https://gvcn-eta.vercel.app" target="_blank" class="btn btn-secondary">
+      <span>🏫 Mở Hệ Thống GVCN Pro Web</span>
+    </a>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

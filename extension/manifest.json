@@ -1,0 +1,37 @@
+{
+  "manifest_version": 3,
+  "name": "GVCN Pro Copilot - Trợ Lý Giáo Viên Tiểu Học",
+  "version": "1.0.0",
+  "description": "Plugin trợ lý sư phạm Thông tư 27 & Công văn 2345, tích hợp trực tiếp vào ChatGPT và cổng thông tin giáo dục.",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "GVCN Pro Copilot"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://chatgpt.com/*", "https://*.chatgpt.com/*", "https://chat.openai.com/*"],
+      "js": ["content-chatgpt.js"],
+      "css": ["content-chatgpt.css"]
+    }
+  ],
+  "permissions": [
+    "storage",
+    "sidePanel",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://gvcn-eta.vercel.app/*",
+    "http://localhost:3000/*"
+  ]
+}
