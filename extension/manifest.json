@@ -22,8 +22,11 @@
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
+      "exclude_matches": [
+        "https://gvcn-eta.vercel.app/*",
+        "http://localhost:3000/*"
+      ],
       "js": ["classroom-dock.js"],
-      "css": ["classroom-dock.css"],
       "run_at": "document_end"
     },
     {
@@ -31,6 +34,12 @@
       "js": ["content-chatgpt.js"],
       "css": ["content-chatgpt.css"],
       "run_at": "document_end"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["classroom-dock.css", "icons/*"],
+      "matches": ["<all_urls>"]
     }
   ],
   "permissions": [

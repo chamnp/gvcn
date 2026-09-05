@@ -5,8 +5,15 @@
  */
 
 (function () {
-  // Prevent duplicate injection
+  // Prevent duplicate injection or running on GVCN Pro main web app
   if (document.getElementById('gvcn-classroom-dock-host')) return;
+  if (
+    window.location.hostname.includes('gvcn-eta.vercel.app') ||
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1'
+  ) {
+    return;
+  }
 
   console.log('[GVCN Pro] Initializing Classroom Dock on page...');
 
@@ -123,10 +130,19 @@
     }
   };
 
-  // Create Host Element & Shadow Root
+  // Create Host Element & Shadow Root (Zero dimensions to prevent any layout shifts)
   const host = document.createElement('div');
   host.id = 'gvcn-classroom-dock-host';
-  document.documentElement.appendChild(host);
+  host.style.position = 'fixed';
+  host.style.top = '0';
+  host.style.left = '0';
+  host.style.width = '0';
+  host.style.height = '0';
+  host.style.overflow = 'visible';
+  host.style.zIndex = '2147483647';
+  host.style.pointerEvents = 'none';
+
+  (document.body || document.documentElement).appendChild(host);
 
   const shadow = host.attachShadow({ mode: 'open' });
 
