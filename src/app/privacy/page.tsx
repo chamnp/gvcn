@@ -117,6 +117,31 @@ export default function PrivacyPolicyPage() {
             </div>
           </section>
 
+          {/* Section 3.1: OpenAI Plugin & MCP Privacy Compliance */}
+          <section className="space-y-3 p-5 rounded-2xl bg-emerald-50/70 border-2 border-emerald-200">
+            <h2 className="text-base font-black text-emerald-950 flex items-center gap-2">
+              <ShieldCheck className="w-5 h-5 text-emerald-600" />
+              <span>3.1. Tuân thủ Nguyên tắc Quyền riêng tư của OpenAI (OpenAI App Guidelines)</span>
+            </h2>
+            <p className="text-xs sm:text-sm text-emerald-900 leading-relaxed font-medium">
+              Đối với các kết nối qua OpenAI ChatGPT Plugins, Custom Actions và giao thức Model Context Protocol (MCP), GVCN Pro tuân thủ nghiêm ngặt{' '}
+              <a
+                href="https://developers.openai.com/plugins/app-guidelines"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-emerald-700 underline font-bold"
+              >
+                Quy chuẩn nhà phát triển OpenAI (OpenAI Developer Guidelines)
+              </a>:
+            </p>
+            <div className="text-xs text-emerald-800 space-y-1 pl-3 border-l-2 border-emerald-400">
+              <p>• <strong>Thu thập tối thiểu (Input Minimization):</strong> Hệ thống không bao giờ thu thập hay lưu trữ toàn bộ lịch sử hội thoại (chat transcripts) của người dùng trên ChatGPT.</p>
+              <p>• <strong>Phản hồi tối thiểu (Response Minimization):</strong> Chỉ trả về các trường dữ liệu cần thiết để mô hình trả lời câu hỏi nghiệp vụ, tự động lọc bỏ các mã chẩn đoán, trace ID, token nội bộ.</p>
+              <p>• <strong>Không thu thập dữ liệu bị cấm:</strong> Không xử lý dữ liệu thanh toán (PCI DSS), không đòi hỏi định danh quốc gia, không xử lý bệnh án y tế chuyên sâu.</p>
+              <p>• <strong>Xác thực có kiểm soát:</strong> Mọi thao tác truy xuất qua API / MCP đều bắt buộc xác thực bằng Personal Access Token (PAT) gắn liền với phân quyền của giáo viên.</p>
+            </div>
+          </section>
+
           {/* Section 4 */}
           <section className="space-y-3">
             <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">

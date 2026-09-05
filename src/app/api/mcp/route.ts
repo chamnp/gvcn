@@ -20,6 +20,11 @@ const MCP_TOOLS_CATALOG = [
       type: 'object',
       properties: {},
     },
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: false,
+      destructiveHint: false,
+    },
   },
   {
     name: 'get_students',
@@ -33,6 +38,11 @@ const MCP_TOOLS_CATALOG = [
         search: { type: 'string', description: 'Tìm kiếm theo họ tên hoặc mã học sinh' },
       },
     },
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: false,
+      destructiveHint: false,
+    },
   },
   {
     name: 'get_student_detail',
@@ -44,6 +54,11 @@ const MCP_TOOLS_CATALOG = [
         studentName: { type: 'string', description: 'Hoặc họ và tên học sinh (VD: Nguyễn Minh An)' },
       },
     },
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: false,
+      destructiveHint: false,
+    },
   },
   {
     name: 'get_subject_assessments',
@@ -54,6 +69,11 @@ const MCP_TOOLS_CATALOG = [
         subjectCode: { type: 'string', description: 'Mã môn học (TOAN, TIENG_VIET, NGOAI_NGU, KHOA_HOC, LS_DL...)' },
         term: { type: 'string', enum: ['GIUA_HK1', 'CUOI_HK1', 'GIUA_HK2', 'CUOI_NAM'], description: 'Học kỳ đánh giá' },
       },
+    },
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: false,
+      destructiveHint: false,
     },
   },
   {
@@ -71,6 +91,11 @@ const MCP_TOOLS_CATALOG = [
       },
       required: ['studentId', 'subjectCode', 'term', 'level'],
     },
+    annotations: {
+      readOnlyHint: false,
+      openWorldHint: false,
+      destructiveHint: false,
+    },
   },
   {
     name: 'get_trait_assessments',
@@ -81,6 +106,11 @@ const MCP_TOOLS_CATALOG = [
         term: { type: 'string', enum: ['GIUA_HK1', 'CUOI_HK1', 'GIUA_HK2', 'CUOI_NAM'], description: 'Học kỳ' },
         traitCode: { type: 'string', description: 'Mã phẩm chất hoặc năng lực (VD: PC_CHAM_CHI, NL_TU_CHU...)' },
       },
+    },
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: false,
+      destructiveHint: false,
     },
   },
   {
@@ -97,6 +127,11 @@ const MCP_TOOLS_CATALOG = [
       },
       required: ['studentId', 'traitCode', 'term', 'level'],
     },
+    annotations: {
+      readOnlyHint: false,
+      openWorldHint: false,
+      destructiveHint: false,
+    },
   },
   {
     name: 'get_attendance_today',
@@ -106,6 +141,11 @@ const MCP_TOOLS_CATALOG = [
       properties: {
         date: { type: 'string', description: 'Ngày cần tra cứu (định dạng YYYY-MM-DD, mặc định là hôm nay)' },
       },
+    },
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: false,
+      destructiveHint: false,
     },
   },
   {
@@ -121,6 +161,11 @@ const MCP_TOOLS_CATALOG = [
       },
       required: ['studentId', 'status'],
     },
+    annotations: {
+      readOnlyHint: false,
+      openWorldHint: false,
+      destructiveHint: false,
+    },
   },
   {
     name: 'get_star_leaderboard',
@@ -130,6 +175,11 @@ const MCP_TOOLS_CATALOG = [
       properties: {
         limit: { type: 'number', description: 'Số lượng học sinh hiển thị (mặc định 10)' },
       },
+    },
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: false,
+      destructiveHint: false,
     },
   },
   {
@@ -145,6 +195,11 @@ const MCP_TOOLS_CATALOG = [
       },
       required: ['studentId', 'points', 'reason'],
     },
+    annotations: {
+      readOnlyHint: false,
+      openWorldHint: false,
+      destructiveHint: false,
+    },
   },
   {
     name: 'get_timetable',
@@ -154,6 +209,11 @@ const MCP_TOOLS_CATALOG = [
       properties: {
         day: { type: 'string', enum: ['T2', 'T3', 'T4', 'T5', 'T6'], description: 'Thứ trong tuần (mặc định lấy cả tuần)' },
       },
+    },
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: false,
+      destructiveHint: false,
     },
   },
   {
@@ -165,6 +225,11 @@ const MCP_TOOLS_CATALOG = [
         week: { type: 'number', description: 'Tuần học (1 - 35)' },
         subjectCode: { type: 'string', description: 'Mã môn học (TOAN, TIENG_VIET...)' },
       },
+    },
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: false,
+      destructiveHint: false,
     },
   },
   {
@@ -181,6 +246,11 @@ const MCP_TOOLS_CATALOG = [
       },
       required: ['title', 'subjectCode'],
     },
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: false,
+      destructiveHint: false,
+    },
   },
   {
     name: 'generate_parent_meeting',
@@ -191,6 +261,11 @@ const MCP_TOOLS_CATALOG = [
         meetingType: { type: 'string', enum: ['DAU_NAM', 'SO_KET_HK1', 'TONG_KET_CUOI_NAM'], description: 'Kỳ họp phụ huynh' },
       },
       required: ['meetingType'],
+    },
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: false,
+      destructiveHint: false,
     },
   },
   {
@@ -204,6 +279,11 @@ const MCP_TOOLS_CATALOG = [
       },
       required: ['studentId'],
     },
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: false,
+      destructiveHint: false,
+    },
   },
   {
     name: 'get_homeworks',
@@ -213,6 +293,11 @@ const MCP_TOOLS_CATALOG = [
       properties: {
         subjectCode: { type: 'string', description: 'Lọc theo môn học' },
       },
+    },
+    annotations: {
+      readOnlyHint: true,
+      openWorldHint: false,
+      destructiveHint: false,
     },
   },
   {
@@ -227,6 +312,11 @@ const MCP_TOOLS_CATALOG = [
         dueDate: { type: 'string', description: 'Hạn hoàn thành (YYYY-MM-DD)' },
       },
       required: ['subjectCode', 'title', 'description'],
+    },
+    annotations: {
+      readOnlyHint: false,
+      openWorldHint: false,
+      destructiveHint: false,
     },
   },
 ];
