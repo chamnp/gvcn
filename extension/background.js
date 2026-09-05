@@ -1,12 +1,12 @@
 /**
  * Background Service Worker for GVCN Pro Extension (Manifest V3)
- * Manages Authentication, Data Synchronization, and Cross-Context Messaging
+ * Manages Authentication, Data Synchronization, Cross-Context Messaging & Automatic Updates
  */
 
 const DEFAULT_API_URL = 'https://gvcn-eta.vercel.app';
 const DEMO_API_KEY = 'gvcn_pat_demo_teacher_2026_pro';
 
-// On install, set defaults
+// 1. Install & Initialize
 chrome.runtime.onInstalled.addListener(async () => {
   console.log('[GVCN Pro Background] Extension installed/updated.');
 
@@ -29,11 +29,110 @@ chrome.runtime.onInstalled.addListener(async () => {
     });
   }
 
-  // Pre-fetch initial data
+  // Setup periodic update check alarm (every 3 hours)
+  chrome.alarms.create('gvcn_auto_update_check', {
+    periodInMinutes: 180,
+  });
+
+  // Check for updates immediately on install/reload
+  await checkForExtensionUpdates();
+
+  // Pre-fetch initial class data
   await syncClassData('4A1');
 });
 
-// Keyboard shortcut listener (Alt+G)
+// 2. Alarm Listener for Periodic Auto-Update Checks
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+  if (alarm.name === 'gvcn_auto_update_check') {
+    console.log('[GVCN Pro Background] Running scheduled update check...');
+    await checkForExtensionUpdates();
+  }
+});
+
+// 3. Native Chrome Update Event
+if (chrome.runtime.onUpdateAvailable) {
+  chrome.runtime.onUpdateAvailable.addListener((details) => {
+    console.log('[GVCN Pro] Native update available:', details.version);
+    // Reload extension to apply update immediately
+    chrome.runtime.reload();
+  });
+}
+
+// 4. Version Comparison Utility
+function compareVersions(v1, v2) {
+  const p1 = (v1 || '1.0.0').split('.').map(Number);
+  const p2 = (v2 || '1.0.0').split('.').map(Number);
+  for (let i = 0; i < Math.max(p1.length, p2.length); i++) {
+    const num1 = p1[i] || 0;
+    const num2 = p2[i] || 0;
+    if (num1 > num2) return 1;
+    if (num1 < num2) return -1;
+  }
+  return 0;
+}
+
+// 5. Check for Extension Updates against Remote API
+async function checkForExtensionUpdates() {
+  try {
+    const manifest = chrome.runtime.getManifest();
+    const currentVersion = manifest.version || '2.0.0';
+    const { apiUrl = DEFAULT_API_URL } = await chrome.storage.local.get('apiUrl');
+
+    // Also trigger Chrome's native update check if supported
+    if (chrome.runtime.requestUpdateCheck) {
+      chrome.runtime.requestUpdateCheck((status, details) => {
+        if (status === 'update_available') {
+          console.log('[GVCN Pro] Chrome native update available:', details?.version);
+        }
+      });
+    }
+
+    const res = await fetch(`${apiUrl}/api/extension/version`, { cache: 'no-store' });
+    if (res.ok) {
+      const info = await res.json();
+      const hasNewer = compareVersions(info.version, currentVersion) > 0;
+
+      const updateState = {
+        hasUpdate: hasNewer,
+        currentVersion,
+        latestVersion: info.version,
+        releaseDate: info.releaseDate,
+        changelog: info.changelog || [],
+        downloadUrl: info.downloadUrl || `${apiUrl}/downloads/gvcn-pro-extension.zip`,
+        lastCheckedAt: new Date().toISOString(),
+      };
+
+      await chrome.storage.local.set({ extensionUpdateInfo: updateState });
+
+      if (hasNewer) {
+        // Set visual notification badge on action icon
+        await chrome.action.setBadgeText({ text: 'MỚI' });
+        await chrome.action.setBadgeBackgroundColor({ color: '#10b981' });
+
+        // Notify open tabs
+        chrome.tabs.query({}, (tabs) => {
+          tabs.forEach((tab) => {
+            if (tab.id) {
+              chrome.tabs.sendMessage(tab.id, {
+                action: 'extensionUpdateAvailable',
+                updateInfo: updateState,
+              }).catch(() => {});
+            }
+          });
+        });
+      } else {
+        await chrome.action.setBadgeText({ text: '' });
+      }
+
+      return updateState;
+    }
+  } catch (err) {
+    console.warn('[GVCN Pro Background] Update check error:', err);
+  }
+  return { hasUpdate: false };
+}
+
+// 6. Keyboard shortcut listener (Alt+G)
 chrome.commands.onCommand.addListener(async (command) => {
   if (command === 'toggle-classroom-dock') {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -43,12 +142,11 @@ chrome.commands.onCommand.addListener(async (command) => {
   }
 });
 
-// Sync data helper function
+// 7. Sync data helper function
 async function syncClassData(targetClass = '4A1') {
   try {
     const { apiUrl = DEFAULT_API_URL, apiKey = DEMO_API_KEY } = await chrome.storage.local.get(['apiUrl', 'apiKey']);
     
-    // Call Next.js API sync endpoint
     const url = `${apiUrl}/api/extension/sync?class=${encodeURIComponent(targetClass)}`;
     const res = await fetch(url, {
       headers: {
@@ -79,9 +177,18 @@ async function syncClassData(targetClass = '4A1') {
   }
 }
 
-// Runtime message dispatcher
+// 8. Runtime message dispatcher
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  // 1. Open Side Panel
+  // Check for Updates Manual Trigger
+  if (request.action === 'checkUpdateNow') {
+    (async () => {
+      const updateResult = await checkForExtensionUpdates();
+      sendResponse({ success: true, updateInfo: updateResult });
+    })();
+    return true;
+  }
+
+  // Open Side Panel
   if (request.action === 'openSidePanel') {
     (async () => {
       let windowId = sender.tab?.windowId;
@@ -99,13 +206,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 
-  // 2. Sync / Fetch Class Data
+  // Sync / Fetch Class Data
   if (request.action === 'syncClassData' || request.action === 'fetchClassData') {
     (async () => {
       const targetClass = request.className || (await chrome.storage.local.get('currentClass')).currentClass || '4A1';
       const result = await syncClassData(targetClass);
       if (!result.success) {
-        // Return local cache if fetch failed
         const cached = await chrome.storage.local.get(['cachedClassData', 'students', 'teacherProfile']);
         sendResponse({ success: true, data: cached.cachedClassData, fromCache: true });
       } else {
@@ -115,7 +221,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 
-  // 3. Get Student List
+  // Get Student List
   if (request.action === 'fetchStudents') {
     (async () => {
       const { students = [] } = await chrome.storage.local.get('students');
@@ -129,13 +235,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 
-  // 4. Add Star Points to a Student
+  // Add Star Points to a Student
   if (request.action === 'addStar') {
     (async () => {
       const { studentId, points = 1, reason = 'Phát biểu tốt trên lớp' } = request;
       const { apiUrl = DEFAULT_API_URL, apiKey = DEMO_API_KEY, students = [] } = await chrome.storage.local.get(['apiUrl', 'apiKey', 'students']);
 
-      // 1. Update local cache immediately for zero latency
       let updatedStudent = null;
       const updatedStudents = students.map((s) => {
         if (s.id === studentId) {
@@ -147,7 +252,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       });
       await chrome.storage.local.set({ students: updatedStudents });
 
-      // 2. Broadcast to all active tabs and side panel
       chrome.tabs.query({}, (tabs) => {
         tabs.forEach((tab) => {
           if (tab.id) {
@@ -161,7 +265,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         });
       });
 
-      // 3. Send to backend asynchronously
       try {
         fetch(`${apiUrl}/api/extension/sync`, {
           method: 'POST',
@@ -183,7 +286,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 
-  // 5. Toggle Dock State Globally or per Tab
+  // Toggle Dock State
   if (request.action === 'toggleDockGlobal') {
     (async () => {
       const { enabled } = request;
@@ -200,16 +303,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 
-  // 6. Login via Web Sync
+  // Login via Web Sync
   if (request.action === 'loginWebSync') {
     (async () => {
-      // Find tabs running GVCN Pro web
       const tabs = await chrome.tabs.query({
         url: ['https://gvcn-eta.vercel.app/*', 'http://localhost:3000/*']
       });
 
       if (tabs.length > 0) {
-        // Successfully connected to web
         await chrome.storage.local.set({
           authStatus: 'logged_in',
           apiKey: DEMO_API_KEY,
@@ -217,7 +318,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         const syncRes = await syncClassData('4A1');
         sendResponse({ success: true, message: 'Đã đồng bộ thành công từ phiên GVCN Pro Web!', data: syncRes.data });
       } else {
-        // Open web app for login
         const newTab = await chrome.tabs.create({ url: 'https://gvcn-eta.vercel.app/login?source=chrome_extension' });
         sendResponse({ success: true, pendingTabId: newTab.id, message: 'Đang mở trang đăng nhập GVCN Pro...' });
       }
@@ -225,7 +325,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 
-  // 7. Login Demo Mode
+  // Login Demo Mode
   if (request.action === 'loginDemo') {
     (async () => {
       await chrome.storage.local.set({
@@ -247,7 +347,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
 
-  // 8. Logout
+  // Logout
   if (request.action === 'logout') {
     (async () => {
       await chrome.storage.local.set({

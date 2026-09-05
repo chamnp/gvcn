@@ -3,6 +3,7 @@
   "name": "GVCN Pro Copilot - Trợ Lý Lớp Học & Trình Chiếu",
   "version": "2.0.0",
   "description": "Trợ lý sư phạm trực tiếp trên Google Slides, Canva và mọi website: Bốc thăm học sinh, bấm giờ thảo luận nhóm, cộng sao thi đua, chuông hiệu lệnh.",
+  "update_url": "https://gvcn-eta.vercel.app/api/extension/updates.xml",
   "icons": {
     "16": "icons/icon-16.png",
     "48": "icons/icon-48.png",
@@ -37,7 +38,8 @@
     "sidePanel",
     "tabs",
     "activeTab",
-    "scripting"
+    "scripting",
+    "alarms"
   ],
   "host_permissions": [
     "<all_urls>"

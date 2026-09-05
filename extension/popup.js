@@ -25,6 +25,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   const btnOpenSidePanel = document.getElementById('btnOpenSidePanel');
   const btnSyncNow = document.getElementById('btnSyncNow');
 
+  const updateBanner = document.getElementById('updateBanner');
+  const latestVersionBadge = document.getElementById('latestVersionBadge');
+  const updateChangelog = document.getElementById('updateChangelog');
+  const btnUpdateExtension = document.getElementById('btnUpdateExtension');
+  const extensionVersion = document.getElementById('extensionVersion');
+  const btnCheckUpdate = document.getElementById('btnCheckUpdate');
+
+  const currentVer = chrome.runtime.getManifest().version || '2.0.0';
+  if (extensionVersion) {
+    extensionVersion.textContent = `Phiên bản: v${currentVer}`;
+  }
+
   // 1. Initial State Load
   async function refreshUI() {
     const data = await chrome.storage.local.get([
@@ -33,7 +45,20 @@ document.addEventListener('DOMContentLoaded', async () => {
       'currentClass',
       'dockEnabled',
       'cachedClassData',
+      'extensionUpdateInfo',
     ]);
+
+    // Check update status
+    const updateInfo = data.extensionUpdateInfo;
+    if (updateInfo && updateInfo.hasUpdate) {
+      updateBanner.classList.remove('hidden');
+      latestVersionBadge.textContent = `v${updateInfo.latestVersion}`;
+      if (updateInfo.changelog && updateInfo.changelog.length > 0) {
+        updateChangelog.innerHTML = updateInfo.changelog.slice(0, 3).map((item) => `• ${item}`).join('<br>');
+      }
+    } else {
+      updateBanner.classList.add('hidden');
+    }
 
     const isLoggedIn = data.authStatus === 'logged_in';
 
@@ -138,6 +163,25 @@ document.addEventListener('DOMContentLoaded', async () => {
       }, 1500);
       refreshUI();
     });
+  });
+
+  // 7. Auto-Update Checkers
+  btnCheckUpdate.addEventListener('click', () => {
+    btnCheckUpdate.textContent = 'Đang kiểm tra...';
+    chrome.runtime.sendMessage({ action: 'checkUpdateNow' }, (res) => {
+      btnCheckUpdate.textContent = '🔍 Kiểm tra cập nhật';
+      if (res && res.updateInfo && res.updateInfo.hasUpdate) {
+        refreshUI();
+      } else {
+        alert(`Bạn đang sử dụng phiên bản mới nhất (v${currentVer})!`);
+      }
+    });
+  });
+
+  btnUpdateExtension.addEventListener('click', async () => {
+    const { extensionUpdateInfo } = await chrome.storage.local.get('extensionUpdateInfo');
+    const downloadUrl = extensionUpdateInfo?.downloadUrl || 'https://gvcn-eta.vercel.app/downloads/gvcn-pro-extension.zip';
+    chrome.tabs.create({ url: downloadUrl });
   });
 
   // Init
