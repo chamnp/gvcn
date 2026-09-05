@@ -207,6 +207,16 @@ interface AppContextType {
     score?: number,
     comment?: string
   ) => void;
+  batchUpdateSubjectAssessments: (
+    updates: {
+      studentId: string;
+      subjectCode: string;
+      term: TermType;
+      level: SubjectLevel;
+      score?: number;
+      comment?: string;
+    }[]
+  ) => void;
   batchSetSubjectLevel: (subjectCode: string, level: SubjectLevel) => void;
   updateTraitAssessment: (
     studentId: string,
@@ -2831,6 +2841,64 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  const batchUpdateSubjectAssessments = (
+    updates: {
+      studentId: string;
+      subjectCode: string;
+      term: TermType;
+      level: SubjectLevel;
+      score?: number;
+      comment?: string;
+    }[]
+  ) => {
+    if (!updates || updates.length === 0) return;
+
+    const nowIso = new Date().toISOString();
+    const dbRows: any[] = [];
+
+    setSubjectAssessments((prev) => {
+      const copy = [...prev];
+      updates.forEach((u) => {
+        const recordId = `sa-${u.studentId}-${u.subjectCode}-${u.term}`;
+        const idx = copy.findIndex(
+          (a) => a.studentId === u.studentId && a.subjectCode === u.subjectCode && a.term === u.term
+        );
+        const updatedRow: SubjectAssessment = {
+          id: recordId,
+          studentId: u.studentId,
+          subjectCode: u.subjectCode,
+          term: u.term,
+          level: u.level,
+          score: u.score !== undefined ? u.score : (idx >= 0 ? copy[idx].score : undefined),
+          comment: u.comment !== undefined ? u.comment : (idx >= 0 ? copy[idx].comment : ''),
+          updatedAt: nowIso,
+        };
+
+        if (idx >= 0) {
+          copy[idx] = updatedRow;
+        } else {
+          copy.push(updatedRow);
+        }
+
+        dbRows.push({
+          id: recordId,
+          studentId: u.studentId,
+          subjectCode: u.subjectCode,
+          term: u.term,
+          level: u.level,
+          score: updatedRow.score !== undefined ? updatedRow.score : null,
+          comment: updatedRow.comment || '',
+          updatedAt: nowIso,
+        });
+      });
+      return copy;
+    });
+
+    if (dbRows.length > 0) {
+      supabase.from('SubjectAssessment').upsert(dbRows).then();
+    }
+  };
+
   const updateTraitAssessment = (
     studentId: string,
     traitCode: string,
@@ -4171,6 +4239,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         cancelConferenceBooking,
         deleteConferenceSlot,
         updateSubjectAssessment,
+        batchUpdateSubjectAssessments,
         batchSetSubjectLevel,
         updateTraitAssessment,
         batchSetTraitLevel,

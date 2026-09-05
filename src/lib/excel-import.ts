@@ -1,5 +1,5 @@
 import * as XLSX from 'xlsx';
-import { Student, TeacherProfile, UserRole } from '@/types';
+import { Student, TeacherProfile, UserRole, SubjectLevel } from '@/types';
 
 /**
  * Chuẩn hóa chuỗi tiếng Việt (bỏ dấu, chuyển thường, xử lý đ/Đ, giữ chữ cái và số)
@@ -379,5 +379,228 @@ export async function parseTeacherExcelFile(file: File): Promise<TeacherProfile[
   }
 
   return results;
+}
+
+export interface ParsedSubjectScoreItem {
+  studentId: string;
+  studentCode: string;
+  studentName: string;
+  score?: number;
+  level: SubjectLevel;
+  comment: string;
+  isMatched: boolean;
+  statusText?: string;
+}
+
+export interface ParseSubjectScoreResult {
+  detectedSubjectCode?: string;
+  items: ParsedSubjectScoreItem[];
+  unmatchedRows: { rowNumber: number; rawName: string; rawCode: string; reason: string }[];
+}
+
+/**
+ * Đọc file Excel điểm môn học và đối soát với danh sách học sinh của lớp
+ */
+export async function parseSubjectScoreExcelFile(
+  file: File,
+  students: Student[]
+): Promise<ParseSubjectScoreResult> {
+  const data = await file.arrayBuffer();
+  const workbook = XLSX.read(data, { type: 'array' });
+  if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+    throw new Error('File Excel không có trang tính (sheet) nào.');
+  }
+
+  const sheet = workbook.Sheets[workbook.SheetNames[0]];
+  const rawRows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+  if (!rawRows || rawRows.length === 0) {
+    return { items: [], unmatchedRows: [] };
+  }
+
+  // Cố gắng nhận diện mã môn học từ tiêu đề hoặc tên file
+  let detectedSubjectCode: string | undefined;
+  const fileNameNorm = normalizeHeader(file.name);
+  if (fileNameNorm.includes('toan')) detectedSubjectCode = 'TOAN';
+  else if (fileNameNorm.includes('tieng viet') || fileNameNorm.includes('tv')) detectedSubjectCode = 'TIENG_VIET';
+  else if (fileNameNorm.includes('tieng anh') || fileNameNorm.includes('anh') || fileNameNorm.includes('ta')) detectedSubjectCode = 'TIENG_ANH';
+  else if (fileNameNorm.includes('khoa hoc')) detectedSubjectCode = 'KHOA_HOC';
+  else if (fileNameNorm.includes('lich su') || fileNameNorm.includes('dia ly')) detectedSubjectCode = 'LICH_SU_DIA_LY';
+  else if (fileNameNorm.includes('tin hoc')) detectedSubjectCode = 'TIN_HOC';
+  else if (fileNameNorm.includes('cong nghe')) detectedSubjectCode = 'CONG_NGHE';
+  else if (fileNameNorm.includes('dao duc')) detectedSubjectCode = 'DAO_DUC';
+  else if (fileNameNorm.includes('am nhac')) detectedSubjectCode = 'AM_NHAC';
+  else if (fileNameNorm.includes('my thuat')) detectedSubjectCode = 'MY_THUAT';
+  else if (fileNameNorm.includes('the duc') || fileNameNorm.includes('giao duc the chat')) detectedSubjectCode = 'GDTC';
+  else if (fileNameNorm.includes('hdtn')) detectedSubjectCode = 'HDTN';
+
+  // Quét 10 dòng đầu để tìm header row và bổ sung nhận diện môn học nếu chưa có
+  let bestHeaderRowIndex = -1;
+  let maxScore = -1;
+
+  for (let r = 0; r < Math.min(15, rawRows.length); r++) {
+    const row = rawRows[r];
+    if (!row || row.length === 0) continue;
+
+    const rowText = row.map((c) => normalizeHeader(c)).join(' ');
+    if (!detectedSubjectCode) {
+      if (rowText.includes('toan')) detectedSubjectCode = 'TOAN';
+      else if (rowText.includes('tieng viet')) detectedSubjectCode = 'TIENG_VIET';
+      else if (rowText.includes('tieng anh')) detectedSubjectCode = 'TIENG_ANH';
+      else if (rowText.includes('khoa hoc')) detectedSubjectCode = 'KHOA_HOC';
+      else if (rowText.includes('lich su')) detectedSubjectCode = 'LICH_SU_DIA_LY';
+      else if (rowText.includes('tin hoc')) detectedSubjectCode = 'TIN_HOC';
+      else if (rowText.includes('cong nghe')) detectedSubjectCode = 'CONG_NGHE';
+    }
+
+    let score = 0;
+    const normRow = row.map((cell) => normalizeHeader(cell));
+
+    normRow.forEach((h) => {
+      if (!h) return;
+      if (h === 'stt' || h.includes('so tt')) score += 2;
+      else if (h.includes('ho va ten') || h.includes('ho ten') || h.includes('ten hoc sinh') || h === 'ten') score += 5;
+      else if (h.includes('ma hoc sinh') || h.includes('ma hs') || h.includes('code') || h === 'ma') score += 4;
+      else if (h.includes('diem') || h.includes('diem so') || h.includes('score') || h.includes('diem kt')) score += 4;
+      else if (h.includes('muc') || h.includes('danh gia') || h.includes('t h c') || h.includes('muc dg')) score += 3;
+      else if (h.includes('nhan xet') || h.includes('loi nhan xet') || h.includes('comment')) score += 3;
+    });
+
+    if (score > maxScore && score >= 4) {
+      maxScore = score;
+      bestHeaderRowIndex = r;
+    }
+  }
+
+  if (bestHeaderRowIndex === -1) {
+    bestHeaderRowIndex = 0;
+  }
+
+  const rawHeaders = rawRows[bestHeaderRowIndex] || [];
+  const headers = rawHeaders.map((h) => normalizeHeader(h));
+
+  const codeIndex = headers.findIndex(
+    (h) => h.includes('ma hoc sinh') || h.includes('ma hs') || h.includes('code') || h === 'ma'
+  );
+  const nameIndex = headers.findIndex(
+    (h) => h.includes('ho va ten') || h.includes('ho ten') || h.includes('ten hoc sinh') || h === 'ten'
+  );
+  const scoreIndex = headers.findIndex(
+    (h) => h.includes('diem') || h.includes('diem so') || h.includes('score') || h.includes('diem kt')
+  );
+  const levelIndex = headers.findIndex(
+    (h) => (h.includes('muc') && (h.includes('dg') || h.includes('danh gia') || h.includes('t h c') || h.includes('dat'))) || h === 'muc'
+  );
+  const commentIndex = headers.findIndex(
+    (h) => h.includes('nhan xet') || h.includes('loi nhan xet') || h.includes('comment') || h.includes('y kien')
+  );
+
+  const items: ParsedSubjectScoreItem[] = [];
+  const unmatchedRows: { rowNumber: number; rawName: string; rawCode: string; reason: string }[] = [];
+
+  for (let i = bestHeaderRowIndex + 1; i < rawRows.length; i++) {
+    const row = rawRows[i];
+    if (!row || row.length === 0) continue;
+
+    const rawCode = codeIndex !== -1 && row[codeIndex] !== undefined ? String(row[codeIndex]).trim() : '';
+    const rawName = nameIndex !== -1 && row[nameIndex] !== undefined ? String(row[nameIndex]).trim() : '';
+
+    if (!rawName && !rawCode) continue;
+
+    const normName = normalizeHeader(rawName);
+    if (
+      normName.includes('tong so') ||
+      normName.includes('tong cong') ||
+      normName.includes('nguoi lap') ||
+      normName.includes('hieu truong') ||
+      normName.includes('giao vien')
+    ) {
+      continue;
+    }
+
+    // Tìm học sinh tương ứng trong danh sách lớp
+    let matchedStudent: Student | undefined;
+
+    if (rawCode) {
+      const codeClean = rawCode.toLowerCase();
+      matchedStudent = students.find((s) => s.studentCode.toLowerCase() === codeClean);
+    }
+
+    if (!matchedStudent && normName) {
+      matchedStudent = students.find((s) => normalizeHeader(s.fullName) === normName);
+    }
+
+    if (!matchedStudent && normName) {
+      // Tìm tương đối nếu họ tên bị thừa khoảng trắng hoặc ký tự đặc biệt
+      matchedStudent = students.find(
+        (s) => normalizeHeader(s.fullName).includes(normName) || normName.includes(normalizeHeader(s.fullName))
+      );
+    }
+
+    // Xử lý điểm số
+    let parsedScore: number | undefined;
+    if (scoreIndex !== -1 && row[scoreIndex] !== undefined && row[scoreIndex] !== null && String(row[scoreIndex]).trim() !== '') {
+      const rawScoreStr = String(row[scoreIndex]).replace(',', '.').trim();
+      const num = parseFloat(rawScoreStr);
+      if (!isNaN(num)) {
+        parsedScore = Math.min(10, Math.max(0, Math.round(num * 10) / 10));
+      }
+    }
+
+    // Xử lý mức đánh giá T / H / C
+    let parsedLevel: SubjectLevel = 'H';
+    let hasExplicitLevel = false;
+
+    if (levelIndex !== -1 && row[levelIndex] !== undefined && row[levelIndex] !== null) {
+      const lStr = normalizeHeader(row[levelIndex]);
+      if (lStr === 't' || lStr.includes('tot') || lStr.includes('hoan thanh tot')) {
+        parsedLevel = 'T';
+        hasExplicitLevel = true;
+      } else if (lStr === 'c' || lStr.includes('chua') || lStr.includes('co gang')) {
+        parsedLevel = 'C';
+        hasExplicitLevel = true;
+      } else if (lStr === 'h' || lStr.includes('dat') || lStr.includes('hoan thanh')) {
+        parsedLevel = 'H';
+        hasExplicitLevel = true;
+      }
+    }
+
+    // Nếu không có mức rõ ràng nhưng có điểm số, tự suy luận mức hợp lý
+    if (!hasExplicitLevel && parsedScore !== undefined) {
+      if (parsedScore >= 9) parsedLevel = 'T';
+      else if (parsedScore >= 5) parsedLevel = 'H';
+      else parsedLevel = 'C';
+    }
+
+    // Xử lý lời nhận xét
+    let parsedComment = '';
+    if (commentIndex !== -1 && row[commentIndex] !== undefined && row[commentIndex] !== null) {
+      parsedComment = String(row[commentIndex]).trim();
+    }
+
+    if (matchedStudent) {
+      items.push({
+        studentId: matchedStudent.id,
+        studentCode: matchedStudent.studentCode,
+        studentName: matchedStudent.fullName,
+        score: parsedScore,
+        level: parsedLevel,
+        comment: parsedComment,
+        isMatched: true,
+      });
+    } else {
+      unmatchedRows.push({
+        rowNumber: i + 1,
+        rawName,
+        rawCode,
+        reason: 'Không tìm thấy học sinh này trong danh sách lớp',
+      });
+    }
+  }
+
+  return {
+    detectedSubjectCode,
+    items,
+    unmatchedRows,
+  };
 }
 

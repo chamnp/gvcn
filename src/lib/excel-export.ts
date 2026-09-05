@@ -370,3 +370,68 @@ export function exportTeacherList(teachers: any[]) {
   XLSX.writeFile(workbook, `Danh_Sach_Giao_Vien_${new Date().toISOString().split('T')[0]}.xlsx`);
 }
 
+/**
+ * Xuất file Excel mẫu nhập điểm và đánh giá môn học có sẵn danh sách học sinh của lớp hiện tại
+ */
+export function exportSubjectScoreTemplate(
+  classInfo: ClassInfo,
+  students: Student[],
+  subject: { code: string; name: string; shortName: string },
+  subjectAssessments: SubjectAssessment[],
+  term: TermType
+) {
+  const headers = [
+    'STT',
+    'Mã học sinh (*)',
+    'Họ và tên (*)',
+    'Giới tính',
+    'Tổ',
+    'Điểm số (0 - 10)',
+    'Mức đánh giá (T / H / C)',
+    'Lời nhận xét môn học (Dạng lời)',
+  ];
+
+  const rows = students.map((s, i) => {
+    const existing = subjectAssessments.find(
+      (a) => a.studentId === s.id && a.subjectCode === subject.code && a.term === term
+    );
+    const tagTeam = (s.tags || []).find((t) => t.includes('Tổ '));
+    const teamLabel = tagTeam || `Tổ ${(i % (classInfo.numberOfTeams || 4)) + 1}`;
+
+    return [
+      i + 1,
+      s.studentCode,
+      s.fullName,
+      s.gender,
+      teamLabel,
+      existing?.score !== undefined ? existing.score : '',
+      existing?.level || 'H',
+      existing?.comment || '',
+    ];
+  });
+
+  const titleRows = [
+    [`BẢNG ĐIỂM & ĐÁNH GIÁ MÔN: ${subject.name.toUpperCase()} - LỚP ${classInfo.name}`],
+    [`Trường: ${classInfo.schoolName} - Năm học: ${classInfo.schoolYear} - GV: ${classInfo.teacherName} - Sĩ số: ${students.length} học sinh`],
+    [`Hướng dẫn: Điền Điểm số (0 - 10), Mức đánh giá (T: Tốt, H: Hoàn thành, C: Chưa hoàn thành), và Lời nhận xét môn học. Hệ thống sẽ tự động cập nhật khi tải file lên.`],
+    [],
+  ];
+
+  const worksheet = XLSX.utils.aoa_to_sheet([...titleRows, headers, ...rows]);
+  worksheet['!cols'] = [
+    { wch: 8 },
+    { wch: 16 },
+    { wch: 26 },
+    { wch: 12 },
+    { wch: 12 },
+    { wch: 18 },
+    { wch: 24 },
+    { wch: 50 },
+  ];
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, `Diem_${subject.code}`);
+  XLSX.writeFile(workbook, `Bang_Diem_${subject.code}_Lop_${classInfo.name}.xlsx`);
+}
+
+

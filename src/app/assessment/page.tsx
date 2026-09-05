@@ -26,6 +26,8 @@ import {
   Check,
   Smile,
   Copy,
+  Upload,
+  FileDown,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import {
@@ -43,6 +45,9 @@ import { SubjectLevel, TraitLevel, Student } from '@/types';
 import { exportTT27Form1, exportVnEduTemplate } from '@/lib/excel-export';
 import { ProgressMeterWidget } from '@/components/assessment/progress-meter-widget';
 import { GuardrailsAlertModal } from '@/components/assessment/guardrails-alert-modal';
+import { SyncQuizScoresModal } from '@/components/assessment/sync-quiz-scores-modal';
+import { ImportSubjectScoresModal } from '@/components/assessment/import-subject-scores-modal';
+import { ExportSubjectTemplateModal } from '@/components/assessment/export-subject-template-modal';
 import { VoiceInputButton } from '@/components/ui/voice-input-button';
 import { toast } from 'sonner';
 
@@ -74,7 +79,10 @@ export default function AssessmentPage() {
     subjectAssessments,
     traitAssessments,
     termSummaries,
+    homeworks,
+    quizSubmissions,
     updateSubjectAssessment,
+    batchUpdateSubjectAssessments,
     batchSetSubjectLevel,
     updateTraitAssessment,
     batchSetTraitLevel,
@@ -98,6 +106,9 @@ export default function AssessmentPage() {
   // Modals & UI States
   const [isGuardrailsModalOpen, setIsGuardrailsModalOpen] = useState(false);
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
+  const [isSyncQuizModalOpen, setIsSyncQuizModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   const termName = TERMS.find((t) => t.id === currentTerm)?.name || currentTerm;
   const currentGrade = classInfo?.grade || 4;
@@ -219,6 +230,44 @@ export default function AssessmentPage() {
     toast.success('Đã xuất file mẫu nhập điểm VnEdu / SMAS!');
   };
 
+  // Helper for flexible score input & auto-inferring level
+  const handleScoreChange = (
+    studentId: string,
+    subjectCode: string,
+    rawVal: string,
+    currentLevel: SubjectLevel,
+    currentComment?: string
+  ) => {
+    if (rawVal === '') {
+      updateSubjectAssessment(
+        studentId,
+        subjectCode,
+        currentTerm,
+        currentLevel,
+        undefined,
+        currentComment
+      );
+      return;
+    }
+    const parsed = parseFloat(rawVal);
+    if (!isNaN(parsed)) {
+      const val = Math.min(10, Math.max(0, parsed));
+      let nextLevel = currentLevel;
+      if (val >= 9) nextLevel = 'T';
+      else if (val >= 5 && currentLevel === 'C') nextLevel = 'H';
+      else if (val < 5) nextLevel = 'C';
+
+      updateSubjectAssessment(
+        studentId,
+        subjectCode,
+        currentTerm,
+        nextLevel,
+        val,
+        currentComment
+      );
+    }
+  };
+
   // Keyboard navigation handler for subject select elements
   const handleSubjectKeyDown = (
     e: React.KeyboardEvent<HTMLSelectElement>,
@@ -274,7 +323,7 @@ export default function AssessmentPage() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-base sm:text-lg font-black text-slate-900 leading-tight">
-                Bảng Đánh Giá Học Sinh Thông Tư 27
+                Bảng Đánh Giá Học Sinh
               </h1>
               <span className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full shadow-2xs">
                 {termName}
@@ -284,7 +333,7 @@ export default function AssessmentPage() {
               </span>
             </div>
             <p className="text-xs text-slate-500">
-              Đánh giá môn học (T/H/C), 5 phẩm chất & 10 năng lực, tự động xét khen thưởng Điều 13 TT27
+              Đánh giá linh hoạt & toàn diện: Điểm số (0-10), mức đạt (T/H/C), lời nhận xét chi tiết, tổng hợp từ trắc nghiệm online & Excel
             </p>
           </div>
         </div>
@@ -293,11 +342,32 @@ export default function AssessmentPage() {
         <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
-            onClick={() => setShowShortcutsHelp(!showShortcutsHelp)}
-            className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center gap-1.5 cursor-pointer"
+            onClick={() => setIsSyncQuizModalOpen(true)}
+            className="px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            title="Tổng hợp điểm từ bài tập và bài làm trắc nghiệm online"
           >
-            <Keyboard className="w-3.5 h-3.5 text-slate-600" />
-            <span className="hidden sm:inline">Phím Tắt</span>
+            <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+            <span>Tổng Hợp Trắc Nghiệm</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsImportModalOpen(true)}
+            className="px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            title="Nhập điểm và lời nhận xét môn học từ file Excel"
+          >
+            <Upload className="w-3.5 h-3.5 text-emerald-600" />
+            <span>Nhập Điểm Excel</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsExportModalOpen(true)}
+            className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 flex items-center gap-1.5 cursor-pointer"
+            title="Xuất file mẫu Excel theo môn có sẵn danh sách học sinh của lớp"
+          >
+            <FileDown className="w-3.5 h-3.5 text-slate-600" />
+            <span className="hidden sm:inline">Xuất Mẫu Điểm Môn</span>
           </button>
 
           <button
@@ -306,7 +376,7 @@ export default function AssessmentPage() {
             className="px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 flex items-center gap-1.5 cursor-pointer shadow-2xs"
           >
             <Zap className="w-3.5 h-3.5 text-indigo-600" />
-            <span>Xét Khen Thưởng</span>
+            <span className="hidden sm:inline">Xét Khen Thưởng</span>
           </button>
 
           <button
@@ -315,7 +385,7 @@ export default function AssessmentPage() {
             className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 flex items-center gap-1.5 cursor-pointer"
           >
             <Download className="w-3.5 h-3.5 text-slate-600" />
-            <span className="hidden sm:inline">VnEdu / SMAS</span>
+            <span className="hidden md:inline">VnEdu/SMAS</span>
           </button>
 
           <button
@@ -324,7 +394,16 @@ export default function AssessmentPage() {
             className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs flex items-center gap-1.5 cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>Xuất Mẫu 1 (TT27)</span>
+            <span>Xuất Mẫu 1 (Tổng Hợp)</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowShortcutsHelp(!showShortcutsHelp)}
+            className="px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-600 border border-slate-200 flex items-center gap-1 cursor-pointer"
+          >
+            <Keyboard className="w-3.5 h-3.5" />
+            <span className="hidden lg:inline">Phím Tắt</span>
           </button>
         </div>
       </div>
@@ -601,7 +680,8 @@ export default function AssessmentPage() {
                                       sub.code,
                                       currentTerm,
                                       e.target.value as SubjectLevel,
-                                      data?.score
+                                      data?.score,
+                                      data?.comment
                                     )
                                   }
                                   className={`px-2 py-1 rounded-xl text-xs font-bold border focus:ring-2 focus:ring-blue-500 focus:outline-hidden transition-all cursor-pointer ${getLevelBadgeClass(
@@ -613,34 +693,25 @@ export default function AssessmentPage() {
                                   <option value="C">C (Cố gắng)</option>
                                 </select>
 
-                                {sub.hasPeriodicTest && (
-                                  <input
-                                    type="number"
-                                    step="0.5"
-                                    min="0"
-                                    max="10"
-                                    placeholder="Điểm"
-                                    value={currentScore}
-                                    onChange={(e) => {
-                                      if (e.target.value === '') {
-                                        updateSubjectAssessment(st.id, sub.code, currentTerm, currentLevel, undefined);
-                                        return;
-                                      }
-                                      const parsed = parseFloat(e.target.value);
-                                      if (!isNaN(parsed)) {
-                                        const val = Math.min(10, Math.max(0, parsed));
-                                        updateSubjectAssessment(
-                                          st.id,
-                                          sub.code,
-                                          currentTerm,
-                                          currentLevel,
-                                          val
-                                        );
-                                      }
-                                    }}
-                                    className="w-14 px-1.5 py-1 text-center font-mono font-bold text-xs rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-hidden bg-slate-50"
-                                  />
-                                )}
+                                <input
+                                  type="number"
+                                  step="0.5"
+                                  min="0"
+                                  max="10"
+                                  placeholder="Điểm"
+                                  title="Điểm kiểm tra/bài tập (0-10)"
+                                  value={currentScore}
+                                  onChange={(e) =>
+                                    handleScoreChange(
+                                      st.id,
+                                      sub.code,
+                                      e.target.value,
+                                      currentLevel,
+                                      data?.comment
+                                    )
+                                  }
+                                  className="w-14 px-1.5 py-1 text-center font-mono font-bold text-xs rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 focus:outline-hidden bg-slate-50 hover:bg-white"
+                                />
                               </div>
                             </td>
                           );
@@ -664,23 +735,47 @@ export default function AssessmentPage() {
                       Chấm Tập Trung: {selectedFocusSubject.name} ({selectedFocusSubject.code})
                     </h3>
                     <p className="text-xs text-slate-500">
-                      {selectedFocusSubject.hasPeriodicTest ? 'Môn học có kiểm tra định kỳ bằng điểm số (1-10)' : 'Đánh giá bằng nhận xét định kỳ'}
+                      Đánh giá linh hoạt: Điểm số (0 - 10), mức đạt (T/H/C) và nhận xét dạng lời chi tiết
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => setIsSyncQuizModalOpen(true)}
+                    className="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-xs rounded-xl border border-blue-200 cursor-pointer flex items-center gap-1 shadow-2xs"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Tổng Hợp Trắc Nghiệm</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsImportModalOpen(true)}
+                    className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl border border-emerald-200 cursor-pointer flex items-center gap-1 shadow-2xs"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Nhập Excel</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsExportModalOpen(true)}
+                    className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl border border-slate-200 cursor-pointer flex items-center gap-1"
+                  >
+                    <FileDown className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Tải Mẫu Excel</span>
+                  </button>
                   <button
                     onClick={() => handleBatchSubject(selectedFocusSubject.code, 'T')}
-                    className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl border border-emerald-200 cursor-pointer"
+                    className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold text-xs rounded-xl border border-emerald-200 cursor-pointer"
                   >
-                    Tất cả Tốt (T)
+                    Tất cả T
                   </button>
                   <button
                     onClick={() => handleBatchSubject(selectedFocusSubject.code, 'H')}
-                    className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 font-bold text-xs rounded-xl border border-blue-200 cursor-pointer"
+                    className="px-2.5 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-800 font-bold text-xs rounded-xl border border-blue-200 cursor-pointer"
                   >
-                    Tất cả Hoàn Thành (H)
+                    Tất cả H
                   </button>
                 </div>
               </div>
@@ -693,10 +788,8 @@ export default function AssessmentPage() {
                       <th className="py-3 px-3 w-48">Học Sinh</th>
                       <th className="py-3 px-3 text-center w-24">Tổ</th>
                       <th className="py-3 px-3 text-center w-36">Mức ĐG (T/H/C)</th>
-                      {selectedFocusSubject.hasPeriodicTest && (
-                        <th className="py-3 px-3 text-center w-28">Điểm KTĐK</th>
-                      )}
-                      <th className="py-3 px-3">Lời Nhận Xét Môn Học Chi Tiết (Chuẩn TT27)</th>
+                      <th className="py-3 px-3 text-center w-28">Điểm Số (0 - 10)</th>
+                      <th className="py-3 px-3">Lời Nhận Xét Môn Học Chi Tiết</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -738,30 +831,26 @@ export default function AssessmentPage() {
                               <option value="C">C (Chưa hoàn thành)</option>
                             </select>
                           </td>
-                          {selectedFocusSubject.hasPeriodicTest && (
-                            <td className="py-2.5 px-3 text-center">
-                              <input
-                                type="number"
-                                step="0.5"
-                                min="0"
-                                max="10"
-                                placeholder="Điểm"
-                                value={currentScore}
-                                onChange={(e) => {
-                                  if (e.target.value === '') {
-                                    updateSubjectAssessment(st.id, selectedFocusSubject.code, currentTerm, currentLevel, undefined, currentComment);
-                                    return;
-                                  }
-                                  const parsed = parseFloat(e.target.value);
-                                  if (!isNaN(parsed)) {
-                                    const val = Math.min(10, Math.max(0, parsed));
-                                    updateSubjectAssessment(st.id, selectedFocusSubject.code, currentTerm, currentLevel, val, currentComment);
-                                  }
-                                }}
-                                className="w-16 px-2 py-1.5 text-center font-mono font-bold text-xs rounded-xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-blue-500"
-                              />
-                            </td>
-                          )}
+                          <td className="py-2.5 px-3 text-center">
+                            <input
+                              type="number"
+                              step="0.5"
+                              min="0"
+                              max="10"
+                              placeholder="Điểm"
+                              value={currentScore}
+                              onChange={(e) =>
+                                handleScoreChange(
+                                  st.id,
+                                  selectedFocusSubject.code,
+                                  e.target.value,
+                                  currentLevel,
+                                  currentComment
+                                )
+                              }
+                              className="w-16 px-2 py-1.5 text-center font-mono font-bold text-xs rounded-xl border border-slate-200 bg-slate-50 hover:bg-white focus:ring-2 focus:ring-blue-500"
+                            />
+                          </td>
                           <td className="py-2.5 px-3">
                             <div className="flex items-center space-x-1.5">
                               <input
@@ -1134,6 +1223,50 @@ export default function AssessmentPage() {
         onNavigateToStudent={(studentId, category) => {
           setActiveTab(category);
         }}
+      />
+
+      {/* SYNC ONLINE QUIZ / HOMEWORK SCORES MODAL */}
+      <SyncQuizScoresModal
+        isOpen={isSyncQuizModalOpen}
+        onClose={() => setIsSyncQuizModalOpen(false)}
+        subjects={subjects}
+        currentSubjectCode={focusSubjectCode}
+        students={students}
+        homeworks={homeworks}
+        quizSubmissions={quizSubmissions}
+        currentTerm={currentTerm}
+        onApply={(updates) => {
+          batchUpdateSubjectAssessments(updates);
+        }}
+      />
+
+      {/* IMPORT SUBJECT SCORES FROM EXCEL MODAL */}
+      <ImportSubjectScoresModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        subjects={subjects}
+        currentSubjectCode={focusSubjectCode}
+        students={students}
+        currentTerm={currentTerm}
+        onImportSuccess={(subjectCode, updates) => {
+          batchUpdateSubjectAssessments(updates);
+        }}
+        onOpenExportTemplate={() => {
+          setIsImportModalOpen(false);
+          setIsExportModalOpen(true);
+        }}
+      />
+
+      {/* EXPORT SUBJECT TEMPLATE MODAL */}
+      <ExportSubjectTemplateModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        classInfo={classInfo}
+        students={students}
+        subjects={subjects}
+        currentSubjectCode={focusSubjectCode}
+        subjectAssessments={subjectAssessments}
+        currentTerm={currentTerm}
       />
     </div>
   );

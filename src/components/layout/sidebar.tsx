@@ -68,7 +68,6 @@ export const NAV_GROUPS: NavGroup[] = [
       { href: '/attendance', label: 'Điểm danh & Bán trú', icon: CalendarCheck, badge: null },
       { href: '/behavior', label: 'Nề nếp & Tích sao', icon: Award, badge: null },
       { href: '/timetable', label: 'Thời khóa biểu', icon: Calendar, badge: '2 Buổi' },
-      { href: '/health-records', label: 'Sức Khỏe & Y Tế', icon: HeartPulse, badge: 'BMI' },
     ],
   },
   {
@@ -77,9 +76,9 @@ export const NAV_GROUPS: NavGroup[] = [
     icon: '🎓',
     items: [
       { href: '/lesson-plans', label: 'Giáo án điện tử', icon: Presentation, badge: 'CV 2345' },
-      { href: '/assessment', label: 'Đánh giá TT 27', icon: FileSpreadsheet, badge: 'Cốt lõi' },
-      { href: '/iep', label: 'Kế hoạch IEP TT27', icon: Target, badge: 'Phụ đạo' },
-      { href: '/matrix-exam', label: 'Ma trận Đề TT27', icon: BookOpen, badge: 'Đề 10đ' },
+      { href: '/assessment', label: 'Đánh giá Học sinh', icon: FileSpreadsheet, badge: 'Cốt lõi' },
+      { href: '/iep', label: 'Kế hoạch IEP', icon: Target, badge: 'Phụ đạo' },
+      { href: '/matrix-exam', label: 'Ma trận Đề kiểm tra', icon: BookOpen, badge: 'Đề 10đ' },
       { href: '/ai-assistant', label: 'Trợ lý Nhận xét AI', icon: Sparkles, badge: 'AI Pro' },
     ],
   },
@@ -160,9 +159,6 @@ const SidebarContent: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
             <div className="flex items-center space-x-1.5">
               <span className="font-bold text-white tracking-wide text-base group-hover:text-blue-400 transition-colors">
                 GVCN PRO
-              </span>
-              <span className="bg-emerald-500/20 text-emerald-400 text-[10px] font-bold px-1.5 py-0.5 rounded border border-emerald-500/30">
-                TT27
               </span>
             </div>
             <p className="text-[11px] text-slate-400 truncate max-w-[140px]" title={schoolInfo?.name || 'Tiểu học'}>

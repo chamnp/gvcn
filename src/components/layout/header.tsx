@@ -191,10 +191,10 @@ export const Header: React.FC = () => {
                 <div className="absolute left-0 mt-2 w-64 bg-white rounded-3xl shadow-2xl border border-slate-200 p-2.5 z-50 animate-in fade-in zoom-in-95 space-y-1.5">
                   <div className="px-2 py-1 border-b border-slate-100">
                     <p className="text-[10px] font-black text-slate-400 uppercase">
-                      Kỳ Đánh Giá TT27 ({schoolInfo.schoolYear}):
+                      Kỳ Đánh Giá ({schoolInfo.schoolYear}):
                     </p>
                     <p className="text-[10px] text-slate-500">
-                      Áp dụng cho Đánh giá TT27, Báo cáo & AI
+                      Áp dụng cho Đánh giá, Báo cáo & AI
                     </p>
                   </div>
 

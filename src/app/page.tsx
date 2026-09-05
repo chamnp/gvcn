@@ -428,13 +428,6 @@ export default function DashboardPage() {
               <Presentation className="w-3.5 h-3.5 text-purple-300" />
               <span>Họp Phụ Huynh</span>
             </Link>
-            <Link
-              href="/health-records"
-              className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-xl font-semibold backdrop-blur-md border border-white/20 transition-all"
-            >
-              <HeartPulse className="w-3.5 h-3.5 text-pink-300" />
-              <span>Sức Khỏe Học Đường</span>
-            </Link>
           </div>
         </div>
       </div>
