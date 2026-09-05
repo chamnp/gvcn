@@ -1,13 +1,13 @@
 /**
  * GVCN Pro - Side Panel Controller
- * Hỗ trợ giáo viên tra cứu học sinh, soạn giáo án CV 2345, và tạo nhận xét TT 27
  */
 
 let allStudents = [];
+let timetable = [];
 
 document.addEventListener('DOMContentLoaded', () => {
   initTabs();
-  loadStudents();
+  loadData();
   initLessonGenerator();
   initTT27Copy();
 });
@@ -21,7 +21,7 @@ function initTabs() {
       btn.classList.add('active');
 
       const targetId = btn.getAttribute('data-target');
-      ['tab-students', 'tab-lessons', 'tab-tt27'].forEach((id) => {
+      ['tab-students', 'tab-schedule', 'tab-lessons', 'tab-tt27'].forEach((id) => {
         const el = document.getElementById(id);
         if (el) {
           if (id === targetId) {
@@ -35,19 +35,26 @@ function initTabs() {
   });
 }
 
-// Load and render students
-function loadStudents() {
+// Load and render students & schedule
+function loadData() {
+  const headerSub = document.getElementById('headerSub');
   const listEl = document.getElementById('studentList');
   const searchInput = document.getElementById('studentSearch');
 
-  chrome.runtime.sendMessage({ action: 'fetchStudents' }, (res) => {
-    if (res && res.success && Array.isArray(res.data)) {
-      allStudents = res.data;
+  chrome.runtime.sendMessage({ action: 'fetchClassData' }, (res) => {
+    if (res && res.data) {
+      const d = res.data;
+      if (headerSub && d.currentClass) {
+        headerSub.textContent = `Lớp ${d.currentClass.name || '4A1'} • ${d.teacher?.fullName || 'Cô Minh Hằng'}`;
+      }
+      allStudents = d.students || [];
+      timetable = d.timetable || [];
       renderStudentList(allStudents);
+      renderTimetable(timetable);
     } else {
       listEl.innerHTML = `
         <div style="text-align:center; padding: 20px; color: #ef4444; font-size: 12px;">
-          Không thể kết nối đến GVCN Cloud. Vui lòng kiểm tra API Key trong Cài đặt.
+          Không thể kết nối đến GVCN Cloud. Đang sử dụng dữ liệu cục bộ.
         </div>
       `;
     }
@@ -81,14 +88,19 @@ function renderStudentList(students) {
 
   listEl.innerHTML = students
     .map((s, idx) => {
-      const genderBadge = s.gender === 'Nữ' ? '🌸 Nữ' : '👦 Nam';
+      const genderBadge = s.gender === 'Nữ' ? '🌸' : '👦';
       return `
       <div class="student-item" data-idx="${idx}">
         <div>
-          <div class="st-name">${s.fullName}</div>
-          <div class="st-code">${s.studentCode || 'HS-4A1'} • ${genderBadge} ${s.dateOfBirth ? '• ' + s.dateOfBirth : ''}</div>
+          <div class="st-name">
+            <span>${genderBadge} ${s.fullName}</span>
+            <span style="font-size:11px; color:#f59e0b; font-weight:700;">⭐ ${s.stars || 0}</span>
+          </div>
+          <div class="st-code">
+            ${s.studentCode || 'HS-4A1'} • Tổ ${s.teamId || 1} ${s.parentPhone ? '• 📞 ' + s.parentPhone : ''}
+          </div>
         </div>
-        <button class="btn-copy btn-copy-st" data-name="${s.fullName}" data-code="${s.studentCode || ''}" title="Sao chép thông tin">
+        <button class="btn-copy btn-copy-st" data-name="${s.fullName}" data-code="${s.studentCode || ''}" data-phone="${s.parentPhone || ''}" title="Sao chép thông tin">
           📋 Chép
         </button>
       </div>
@@ -96,16 +108,40 @@ function renderStudentList(students) {
     })
     .join('');
 
-  // Add click listeners to copy student info
   listEl.querySelectorAll('.btn-copy-st').forEach((btn) => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const name = btn.getAttribute('data-name');
       const code = btn.getAttribute('data-code');
-      const textToCopy = `${name} (${code}) - Lớp 4A1`;
+      const phone = btn.getAttribute('data-phone');
+      const textToCopy = `${name} (${code}) - Phụ huynh: ${phone || 'Chưa cập nhật'}`;
       copyToClipboard(textToCopy, btn);
     });
   });
+}
+
+function renderTimetable(slots) {
+  const container = document.getElementById('timetableList');
+  if (!container) return;
+
+  if (!slots || slots.length === 0) {
+    container.innerHTML = `
+      <div style="text-align:center; padding: 10px; color: #94a3b8; font-size: 12px;">
+        Hôm nay không có lịch dạy hoặc là ngày nghỉ cuối tuần.
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = slots.map((s) => `
+    <div class="timetable-item">
+      <div>
+        <span class="period-badge">Tiết ${s.period}</span>
+        <strong style="margin-left: 6px; color:#0f172a;">${s.subjectName}</strong>
+      </div>
+      <div style="font-size:11px; color:#64748b;">${s.time || ''}</div>
+    </div>
+  `).join('');
 }
 
 // Lesson Plan CV 2345 Generator
@@ -121,7 +157,7 @@ function initLessonGenerator() {
       const prompt = `Hãy soạn Kế hoạch bài dạy (Giáo án) tiểu học chi tiết theo Công văn 2345/BGDĐT-GDTH cho:
 - Môn học: Lớp 4
 - Tên bài: ${topic}
-- Cấu trúc chuẩn 4 pha:
+- Cấu trúc chuẩn 4 pha bắt buộc:
   1. Hoạt động 1: Mở đầu / Khởi động (Trò chơi/kết nối, 5-7 phút)
   2. Hoạt động 2: Hình thành kiến thức mới (Khám phá, hoạt động nhóm, 12-15 phút)
   3. Hoạt động 3: Luyện tập, thực hành (Bài tập củng cố, 10-12 phút)

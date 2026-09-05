@@ -1804,10 +1804,10 @@ export default function SettingsPage() {
                   </span>
                 </div>
                 <h3 className="text-xl sm:text-2xl font-black text-white flex items-center gap-2.5">
-                  <span>🧩 Chrome Extension: GVCN Pro Copilot</span>
+                  <span>🧩 Chrome Extension: GVCN Pro Classroom Copilot (v2.0)</span>
                 </h3>
                 <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
-                  Thay vì tạo Custom GPT phức tạp và dễ bị lỗi mạng của OpenAI, hãy cài đặt Tiện ích mở rộng Chrome GVCN Pro. Tiện ích tự động gắn thanh công cụ <strong>🎓 GVCN Pro</strong> ngay vào khung chat <code className="text-emerald-300 font-mono">chatgpt.com</code> và cung cấp <strong>Side Panel (Thanh bên)</strong> tra cứu học sinh, soạn giáo án CV 2345, và tạo nhận xét TT 27 trực tiếp.
+                  Trợ lý lớp học trực tiếp & trình chiếu: Đăng nhập Google để đồng bộ danh sách học sinh và thời khóa biểu. Thanh công cụ nổi <strong>🎓 Classroom Dock</strong> tự động gắn vào <strong>Google Slides, Canva, Hành trang số</strong> hỗ trợ <strong>Vòng quay may mắn bốc thăm</strong>, <strong>Bấm giờ thảo luận nhóm (CV 2345)</strong>, <strong>Khen thưởng sao nóng</strong> và <strong>Chuông hiệu lệnh lớp học</strong>.
                 </p>
               </div>
 
