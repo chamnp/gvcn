@@ -2,15 +2,26 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
+}
+
 export async function GET() {
   const origin = 'https://gvcn-eta.vercel.app';
 
   const spec = {
-    openapi: '3.1.0',
+    openapi: '3.0.1',
     info: {
-      title: 'GVCN Pro - Smart Classroom API & ChatGPT Custom Actions',
+      title: 'GVCN Pro API',
       description:
-        'API kết nối ChatGPT và trợ lý AI với hệ thống quản lý lớp học tiểu học GVCN Pro. Hỗ trợ tra cứu học sinh, đánh giá chuẩn Thông tư 27/2020/TT-BGDĐT, soạn kế hoạch bài dạy chuẩn Công văn 2345/BGDĐT-GDTH và sinh lời nhận xét học bạ.',
+        'Cổng kết nối AI quản lý lớp học tiểu học GVCN Pro chuẩn Thông tư 27/2020/TT-BGDĐT và Công văn 2345/BGDĐT-GDTH.',
       version: '1.0.0',
     },
     servers: [
@@ -24,10 +35,17 @@ export async function GET() {
         get: {
           summary: 'Lấy tổng quan thông tin lớp học',
           operationId: 'getClassOverview',
-          description: 'Trả về sĩ số, số nam, số nữ, số học sinh bán trú, khối lớp, năm học và niên khóa của lớp hiện tại.',
+          description: 'Trả về sĩ số, số nam, số nữ, số học sinh bán trú, khối lớp, năm học của lớp hiện tại.',
           responses: {
             '200': {
               description: 'Thông tin tổng quan lớp học thành công',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                  },
+                },
+              },
             },
           },
         },
@@ -70,6 +88,13 @@ export async function GET() {
           responses: {
             '200': {
               description: 'Danh sách học sinh',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                  },
+                },
+              },
             },
           },
         },
@@ -91,6 +116,13 @@ export async function GET() {
           responses: {
             '200': {
               description: 'Hồ sơ chi tiết học sinh',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                  },
+                },
+              },
             },
           },
         },
@@ -119,6 +151,13 @@ export async function GET() {
           responses: {
             '200': {
               description: 'Kết quả đánh giá môn học',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                  },
+                },
+              },
             },
           },
         },
@@ -148,6 +187,13 @@ export async function GET() {
           responses: {
             '200': {
               description: 'Cập nhật đánh giá môn học thành công',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                  },
+                },
+              },
             },
           },
         },
@@ -176,6 +222,13 @@ export async function GET() {
           responses: {
             '200': {
               description: 'Bảng đánh giá phẩm chất và năng lực',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                  },
+                },
+              },
             },
           },
         },
@@ -204,6 +257,13 @@ export async function GET() {
           responses: {
             '200': {
               description: 'Cập nhật thành công',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                  },
+                },
+              },
             },
           },
         },
@@ -232,6 +292,13 @@ export async function GET() {
           responses: {
             '200': {
               description: 'Tặng sao khen thưởng thành công',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                  },
+                },
+              },
             },
           },
         },
@@ -253,6 +320,13 @@ export async function GET() {
           responses: {
             '200': {
               description: 'Thời khóa biểu lớp học',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                  },
+                },
+              },
             },
           },
         },
@@ -283,6 +357,13 @@ export async function GET() {
           responses: {
             '200': {
               description: 'Kế hoạch bài dạy chi tiết',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                  },
+                },
+              },
             },
           },
         },
@@ -310,6 +391,13 @@ export async function GET() {
           responses: {
             '200': {
               description: 'Lời nhận xét sư phạm gợi ý',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                  },
+                },
+              },
             },
           },
         },
@@ -340,6 +428,13 @@ export async function GET() {
           responses: {
             '200': {
               description: 'Kịch bản họp phụ huynh và bài phát biểu',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                  },
+                },
+              },
             },
           },
         },
@@ -361,7 +456,9 @@ export async function GET() {
   return NextResponse.json(spec, {
     headers: {
       'Access-Control-Allow-Origin': '*',
-      'Content-Type': 'application/json',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Content-Type': 'application/json; charset=utf-8',
     },
   });
 }
