@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase';
 import { generateSmartComment } from '@/lib/comment-bank';
 import { generateAILessonPlan } from '@/lib/lesson-plan-engine';
 import { generateAISpeechScript } from '@/lib/parent-meeting-engine';
-import { getAcademicYearByDate } from '@/lib/tt27-engine';
+import { getAcademicYearByDate, getLocalDateString } from '@/lib/tt27-engine';
 
 type McpAuthContext = {
   classId?: string;
@@ -277,13 +277,23 @@ export async function executeTool(
     }
 
     case 'add_star_points': {
-      await getAuthorizedStudent(args.studentId, classId);
+      const student = await getAuthorizedStudent(args.studentId, classId);
+      const points = Number(args.points);
+      const reason = typeof args.reason === 'string' ? args.reason.trim() : '';
+      if (!Number.isInteger(points) || points === 0 || points < -10 || points > 10) {
+        throw new Error('Số sao phải là số nguyên khác 0 trong khoảng -10 đến 10.');
+      }
+      if (reason.length < 2 || reason.length > 200) {
+        throw new Error('Lý do cộng/trừ sao không hợp lệ.');
+      }
       const record = {
         id: `star-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`,
         studentId: args.studentId,
-        points: Number(args.points),
+        classId: student.classId,
+        points,
         category: args.category || 'Khác',
-        reason: args.reason,
+        reason,
+        date: getLocalDateString(),
         createdAt: new Date().toISOString(),
       };
       const { error } = await supabase.from('StarLog').insert(record);

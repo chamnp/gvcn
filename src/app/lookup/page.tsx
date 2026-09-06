@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -23,23 +23,27 @@ import {
   Check,
   GraduationCap,
 } from 'lucide-react';
-import { useAppStore, getDefaultPinForStudent } from '@/lib/store';
+import { supabase } from '@/lib/supabase';
+import type { ClassInfo, SchoolInfo } from '@/types';
 import { toast } from 'sonner';
-
-// Helper to normalize Vietnamese text for robust search matching
-function normalizeText(str: string) {
-  return str
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/đ/g, 'd')
-    .replace(/[^a-z0-9]/g, '')
-    .trim();
-}
 
 export default function StudentLookupPortal() {
   const router = useRouter();
-  const { schoolClasses, allStudents, schoolInfo } = useAppStore();
+  const [schoolClasses, setSchoolClasses] = useState<ClassInfo[]>([]);
+  const [schoolInfo, setSchoolInfo] = useState<SchoolInfo>({ id: '', name: '', schoolYear: '', departmentName: '', principalName: '' });
+
+  useEffect(() => {
+    let active = true;
+    void supabase.rpc('get_public_student_lookup_context').then(({ data }) => {
+      if (!active) return;
+      const context = data as { success?: boolean; school?: SchoolInfo; classes?: ClassInfo[] } | null;
+      if (context?.success) {
+        setSchoolInfo((prev) => ({ ...prev, ...(context.school || {}) }));
+        setSchoolClasses(context.classes || []);
+      }
+    });
+    return () => { active = false; };
+  }, []);
 
   // Selected Class
   const [selectedClassId, setSelectedClassId] = useState<string>(() => {
@@ -60,7 +64,7 @@ export default function StudentLookupPortal() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   // Handle Verify & Navigate
-  const handleVerify = (e: React.FormEvent) => {
+  const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     const query = studentIdentifierInput.trim();
     const pin = pinInput.trim();
@@ -76,37 +80,20 @@ export default function StudentLookupPortal() {
 
     setIsVerifying(true);
 
-    const normQuery = normalizeText(query);
-
-    // Find student in selected class matching name or studentCode
-    const classStudents = allStudents.filter(
-      (s) => s.classId === selectedClassId
-    );
-
-    const matchedStudent = classStudents.find((s) => {
-      const normName = normalizeText(s.fullName || '');
-      const normCode = normalizeText(s.studentCode || '');
-      return (normName && (normName === normQuery || normName.includes(normQuery))) || (normCode && normCode === normQuery);
+    const { data, error } = await supabase.rpc('lookup_student_portal', {
+      p_class_id: selectedClassId,
+      p_identifier: query,
+      p_pin: pin,
     });
+    const result = data as { success?: boolean; error?: string; studentToken?: string; studentName?: string } | null;
 
-    if (!matchedStudent) {
-      toast.error('Không tìm thấy học sinh trong lớp này. Quý phụ huynh vui lòng kiểm tra lại Họ tên hoặc Mã học sinh.');
-      setIsVerifying(false);
-      return;
-    }
-
-    const defaultPin = getDefaultPinForStudent(matchedStudent);
-    const isDefaultMatch = pin === defaultPin;
-    const isCustomMatch = matchedStudent.customPin && pin === matchedStudent.customPin;
-
-    if (isDefaultMatch || isCustomMatch) {
-      toast.success(`Xác thực thành công! Đang mở phiếu báo điểm em ${matchedStudent.fullName}...`);
-      const token = matchedStudent.shareToken || matchedStudent.id;
+    if (!error && result?.success && result.studentToken) {
+      toast.success(`Xác thực thành công! Đang mở phiếu báo điểm em ${result.studentName || ''}...`);
       setTimeout(() => {
-        router.push(`/student/${token}`);
+        router.push(`/student/${result.studentToken}`);
       }, 400);
     } else {
-      toast.error('Mã xác thực không chính xác! (Lần đầu đăng nhập là 4 số ngày tháng sinh của con, ví dụ: 15/08 thì nhập 1508).');
+      toast.error(result?.error || error?.message || 'Thông tin xác thực không chính xác.');
       setIsVerifying(false);
     }
   };

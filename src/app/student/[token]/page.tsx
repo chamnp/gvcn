@@ -43,10 +43,14 @@ import {
   Trash2,
   Crown,
 } from 'lucide-react';
-import { useAppStore, getDefaultPinForStudent } from '@/lib/store';
 import { TERMS, PRIMARY_SUBJECTS, TRAIT_DEFINITIONS, getLocalDateString } from '@/lib/tt27-engine';
-import { getSubjectTheme, DAYS_OF_WEEK } from '@/lib/timetable-data';
-import { TermType, DayOfWeek, ClassEvent, RewardProduct, RedemptionItem } from '@/types';
+import { getSubjectTheme, DAYS_OF_WEEK, calculatePeriods, DEFAULT_SCHEDULE_CONFIG } from '@/lib/timetable-data';
+import type {
+  TermType, DayOfWeek, ClassEvent, RewardProduct, RedemptionItem, Student,
+  ClassInfo, SchoolInfo, SubjectAssessment, TraitAssessment, StudentTermSummary,
+  DailyAttendance, StarLog, StarCriterion, RewardRedemption, HomeworkAssignment,
+  CustomSubject, TimetableSlot, LeaveRequest, ConferenceSlot,
+} from '@/types';
 import { supabase } from '@/lib/supabase';
 import { LeaveRequestModal } from '@/components/parent/leave-request-modal';
 import { ConferenceSchedulerModal } from '@/components/conference/conference-scheduler-modal';
@@ -94,41 +98,75 @@ export default function StudentPrivateReportPage({
   const resolvedParams = use(params);
   const rawToken = (resolvedParams.token || '').trim();
 
-  const {
-    allStudents,
-    schoolClasses,
-    schoolInfo,
-    subjectAssessments,
-    traitAssessments,
-    termSummaries,
-    attendances,
-    starLogs,
-    starCriteria,
-    rewardProducts,
-    rewardRedemptions,
-    createRewardRedemption,
-    getStudentMonthlyStars,
-    allHomeworks,
-    customSubjects,
-    timetable,
-    allClassEvents,
-    currentTerm: globalTerm,
-    updateStudentSecurity,
-    leaveRequests,
-    conferenceSlots,
-    periods,
-    isLoaded,
-  } = useAppStore();
+  const [allStudents, setAllStudents] = useState<Student[]>([]);
+  const [schoolClasses, setSchoolClasses] = useState<ClassInfo[]>([]);
+  const [schoolInfo, setSchoolInfo] = useState<SchoolInfo>({ id: '', name: '', schoolYear: '', departmentName: '', principalName: '' });
+  const [subjectAssessments, setSubjectAssessments] = useState<SubjectAssessment[]>([]);
+  const [traitAssessments, setTraitAssessments] = useState<TraitAssessment[]>([]);
+  const [termSummaries, setTermSummaries] = useState<StudentTermSummary[]>([]);
+  const [attendances, setAttendances] = useState<DailyAttendance[]>([]);
+  const [starLogs, setStarLogs] = useState<StarLog[]>([]);
+  const [starCriteria, setStarCriteria] = useState<StarCriterion[]>([]);
+  const [rewardProducts, setRewardProducts] = useState<RewardProduct[]>([]);
+  const [rewardRedemptions, setRewardRedemptions] = useState<RewardRedemption[]>([]);
+  const [allHomeworks, setAllHomeworks] = useState<HomeworkAssignment[]>([]);
+  const [customSubjects, setCustomSubjects] = useState<CustomSubject[]>([]);
+  const [timetable, setTimetable] = useState<TimetableSlot[]>([]);
+  const [allClassEvents, setAllClassEvents] = useState<ClassEvent[]>([]);
+  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
+  const [conferenceSlots, setConferenceSlots] = useState<ConferenceSlot[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [accessPin, setAccessPin] = useState('');
+  const [pinLoginInput, setPinLoginInput] = useState('');
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const globalTerm: TermType = 'GIUA_HK1';
+  const periods = useMemo(() => calculatePeriods(DEFAULT_SCHEDULE_CONFIG), []);
 
-  // Find student strictly by shareToken (NEVER allow sequential id or studentCode)
+  const loadPortal = async (pin: string) => {
+    setIsAuthenticating(true);
+    const { data, error } = await supabase.rpc('get_student_portal_bundle', {
+      p_student_share_token: rawToken,
+      p_pin: pin,
+    });
+    const bundle = data as {
+      success?: boolean; error?: string; school?: SchoolInfo; class?: ClassInfo; student?: Student;
+      subjectAssessments?: SubjectAssessment[]; traitAssessments?: TraitAssessment[];
+      termSummaries?: StudentTermSummary[]; attendances?: DailyAttendance[]; starLogs?: StarLog[];
+      criteria?: StarCriterion[]; products?: RewardProduct[]; redemptions?: RewardRedemption[];
+      homeworks?: HomeworkAssignment[]; customSubjects?: CustomSubject[]; timetable?: TimetableSlot[];
+      events?: ClassEvent[]; leaveRequests?: LeaveRequest[]; conferenceSlots?: ConferenceSlot[];
+    } | null;
+    if (error || !bundle?.success || !bundle.student || !bundle.class) {
+      toast.error(bundle?.error || error?.message || 'Không thể xác thực hồ sơ học sinh.');
+      setIsAuthenticating(false);
+      return;
+    }
+    setSchoolInfo((prev) => ({ ...prev, ...(bundle.school || {}) }));
+    setSchoolClasses([bundle.class]);
+    setAllStudents([bundle.student]);
+    setSubjectAssessments(bundle.subjectAssessments || []);
+    setTraitAssessments(bundle.traitAssessments || []);
+    setTermSummaries(bundle.termSummaries || []);
+    setAttendances(bundle.attendances || []);
+    setStarLogs(bundle.starLogs || []);
+    setStarCriteria(bundle.criteria || []);
+    setRewardProducts(bundle.products || []);
+    setRewardRedemptions(bundle.redemptions || []);
+    setAllHomeworks(bundle.homeworks || []);
+    setCustomSubjects(bundle.customSubjects || []);
+    setTimetable(bundle.timetable || []);
+    setAllClassEvents(bundle.events || []);
+    setLeaveRequests(bundle.leaveRequests || []);
+    setConferenceSlots(bundle.conferenceSlots || []);
+    setAccessPin(pin);
+    setIsLoaded(true);
+    setIsAuthenticating(false);
+  };
+
+  // The RPC has already resolved the opaque share token after PIN verification.
   const student = useMemo(() => {
-    if (!rawToken) return null;
-    return (
-      allStudents.find(
-        (s) => s.shareToken && s.shareToken.toLowerCase() === rawToken.toLowerCase()
-      ) || null
-    );
-  }, [allStudents, rawToken]);
+    return allStudents[0] || null;
+  }, [allStudents]);
 
   // Scoped class
   const studentClass = useMemo(() => {
@@ -163,6 +201,16 @@ export default function StudentPrivateReportPage({
 
   const todayStr = getLocalDateString();
   const currentMonthKey = todayStr.substring(0, 7); // 'YYYY-MM'
+
+  const getStudentMonthlyStars = (studentId: string, month: string) => {
+    const earned = starLogs
+      .filter((log) => log.studentId === studentId && (log.date || log.createdAt).startsWith(month))
+      .reduce((sum, log) => sum + log.points, 0);
+    const spent = rewardRedemptions
+      .filter((redemption) => redemption.studentId === studentId && redemption.month === month && redemption.status !== 'CANCELLED')
+      .reduce((sum, redemption) => sum + redemption.totalStars, 0);
+    return { earned, spent, available: Math.max(0, earned - spent) };
+  };
 
   useEffect(() => {
     if (!student) return;
@@ -299,7 +347,7 @@ export default function StudentPrivateReportPage({
 
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!student || cartItems.length === 0 || isSubmittingRedemption) return;
+    if (!student || !studentClass || cartItems.length === 0 || isSubmittingRedemption) return;
 
     if (studentMonthlyStars.available < totalCartStars) {
       toast.error(`Con chỉ có ${studentMonthlyStars.available} sao khả dụng, còn thiếu ${totalCartStars - studentMonthlyStars.available} sao nữa!`);
@@ -316,30 +364,87 @@ export default function StudentPrivateReportPage({
 
     setIsSubmittingRedemption(true);
     try {
-      const result = await createRewardRedemption({
-        studentId: student.id,
-        studentShareToken: rawToken,
-        studentName: student.fullName,
-        studentCode: student.studentCode,
-        studentAvatar: student.avatarUrl,
-        items,
-        totalStars: totalCartStars,
-        studentNote: studentNoteInput,
-        month: currentMonthKey,
+      const idempotencyKey = crypto.randomUUID().replaceAll('-', '');
+      const { data, error } = await supabase.rpc('redeem_reward_idempotent_tx', {
+        p_student_share_token: rawToken,
+        p_items: items,
+        p_student_note: studentNoteInput.trim() || null,
+        p_idempotency_key: idempotencyKey,
       });
+      const result = data as { success?: boolean; error?: string; redemption_id?: string; total_stars?: number; month?: string; requested_at?: string } | null;
 
-      if (result.success) {
+      if (!error && result?.success && result.redemption_id) {
+        const totalStars = result.total_stars ?? totalCartStars;
+        setRewardRedemptions((prev) => [{
+          id: result.redemption_id as string,
+          classId: studentClass.id,
+          studentId: student.id,
+          studentName: student.fullName,
+          studentCode: student.studentCode,
+          studentAvatar: student.avatarUrl,
+          items,
+          totalStars,
+          month: result.month || currentMonthKey,
+          status: 'PENDING',
+          studentNote: studentNoteInput.trim() || undefined,
+          requestedAt: result.requested_at || new Date().toISOString(),
+        }, ...prev]);
+        setRewardProducts((prev) => prev.map((product) => {
+          const item = items.find((candidate) => candidate.productId === product.id);
+          if (!item) return product;
+          const stock = Math.max(0, product.stock - item.quantity);
+          return { ...product, stock, isAvailable: stock > 0 };
+        }));
         confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
         toast.success('🎉 Chúc mừng con đã gửi yêu cầu đổi quà thành công! Cô giáo sẽ trao quà cho con sớm nhất nhé!');
         setCartItems([]);
         setStudentNoteInput('');
       } else {
-        toast.error(result.error || 'Có lỗi xảy ra khi đổi quà!');
+        toast.error(result?.error || error?.message || 'Có lỗi xảy ra khi đổi quà!');
       }
     } finally {
       setIsSubmittingRedemption(false);
     }
   };
+
+  if (!accessPin) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            void loadPortal(pinLoginInput.trim());
+          }}
+          className="bg-white rounded-3xl p-6 max-w-sm w-full space-y-4 border border-slate-200 shadow-xl"
+        >
+          <div className="text-center space-y-2">
+            <Lock className="w-10 h-10 text-blue-600 mx-auto" />
+            <h1 className="font-black text-slate-900">Xác thực hồ sơ học sinh</h1>
+            <p className="text-xs text-slate-500">Nhập PIN riêng; lần đầu dùng 4 số ngày và tháng sinh.</p>
+          </div>
+          <input
+            type="password"
+            inputMode="numeric"
+            autoComplete="current-password"
+            value={pinLoginInput}
+            onChange={(event) => setPinLoginInput(event.target.value.replace(/\D/g, '').slice(0, 6))}
+            className="w-full rounded-xl border border-slate-300 px-4 py-3 text-center tracking-[0.4em] font-bold"
+            placeholder="••••"
+            minLength={4}
+            maxLength={6}
+            required
+          />
+          <button
+            type="submit"
+            disabled={isAuthenticating}
+            className="w-full rounded-xl bg-blue-600 py-3 text-white font-bold disabled:opacity-60"
+          >
+            {isAuthenticating ? 'Đang xác thực…' : 'Mở hồ sơ'}
+          </button>
+        </form>
+      </div>
+    );
+  }
 
   if (!isLoaded) {
     return (
@@ -460,7 +565,7 @@ export default function StudentPrivateReportPage({
       .then();
   };
 
-  const handleSavePin = (e: React.FormEvent) => {
+  const handleSavePin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPin.length < 4 || newPin.length > 6) {
       toast.error('Mã PIN phải từ 4 đến 6 chữ số!');
@@ -471,11 +576,21 @@ export default function StudentPrivateReportPage({
       return;
     }
 
-    updateStudentSecurity(student.id, {
-      customPin: newPin,
-      isActivated: true,
-      parentPhone: parentPhoneInput.trim() || undefined,
+    const { data, error } = await supabase.rpc('set_student_portal_pin', {
+      p_student_share_token: rawToken,
+      p_current_pin: accessPin,
+      p_new_pin: newPin,
+      p_parent_phone: parentPhoneInput.trim() || null,
     });
+    const result = data as { success?: boolean; error?: string } | null;
+    if (error || !result?.success) {
+      toast.error(result?.error || error?.message || 'Không thể cập nhật mã PIN.');
+      return;
+    }
+    setAllStudents((prev) => prev.map((item) => item.id === student.id
+      ? { ...item, isActivated: true, parentPhone: parentPhoneInput.trim() || item.parentPhone }
+      : item));
+    setAccessPin(newPin);
 
     toast.success('Đã lưu Mã PIN bảo mật thành công! Từ lần sau bố mẹ dùng mã này để tra cứu.');
     setIsPinModalOpen(false);

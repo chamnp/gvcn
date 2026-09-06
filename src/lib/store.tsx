@@ -75,6 +75,7 @@ import {
   evaluateStudentTT27,
   getCurrentTermByDate,
   getAcademicYearByDate,
+  getLocalDateString,
 } from './tt27-engine';
 import {
   INITIAL_TIMETABLE,
@@ -270,8 +271,8 @@ interface AppContextType {
     reason: string,
     comment?: string,
     date?: string
-  ) => void;
-  deleteStarLog: (logId: string) => void;
+  ) => Promise<void>;
+  deleteStarLog: (logId: string) => Promise<void>;
   getStudentStars: (studentId: string) => number;
 
   // Star Criteria Management
@@ -300,6 +301,7 @@ interface AppContextType {
     totalStars: number;
     studentNote?: string;
     month?: string;
+    idempotencyKey?: string;
   }) => Promise<{ success: boolean; error?: string }>;
   fulfillRewardRedemption: (redemptionId: string) => Promise<void>;
   cancelRewardRedemption: (redemptionId: string) => Promise<void>;
@@ -1021,13 +1023,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     } catch (error) {
       console.warn('Không thể đọc tùy chọn cục bộ:', error);
-    } finally {
-      setIsLoaded(true);
     }
   }, []);
 
   // 100% Live API Connection: Đồng bộ dữ liệu 2 chiều thời gian thực với Supabase
   useEffect(() => {
+    const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+    if (/^\/(student|rewards)\//.test(pathname) || pathname === '/lookup') {
+      // Public portals fetch only narrow RPC bundles after token/PIN verification.
+      // Never hydrate the global school store for an anonymous browser.
+      setIsLoaded(true);
+      return;
+    }
     let isMounted = true;
 
     async function syncFromSupabase() {
@@ -1147,9 +1154,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
 
         if (dbClasses) {
-          const userEmail = (profile?.email || '').toLowerCase().trim();
+          const { data: sessionData } = await supabase.auth.getSession();
+          const sessionUser = sessionData?.session?.user;
+          const userEmail = (profile?.email || sessionUser?.email || '').toLowerCase().trim();
           const isAdminUser = profile?.role === 'ADMIN' || userEmail === 'anhnnh4@gmail.com';
           
+          let assignedClassId = profile?.assignedClassId;
+          if (!assignedClassId && userEmail) {
+            const { data: teacherRow } = await supabase
+              .from('Teacher')
+              .select('assignedClassId')
+              .eq('email', userEmail)
+              .maybeSingle();
+            if (teacherRow?.assignedClassId) {
+              assignedClassId = teacherRow.assignedClassId;
+            }
+          }
+
           // If admin, show all classes across all schools.
           // If teacher, show only classes owned by this teacher or assigned to them.
           const visibleClasses = isAdminUser
@@ -1157,7 +1178,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             : dbClasses.filter(
                 (c: any) =>
                   (c.teacherEmail && c.teacherEmail.toLowerCase() === userEmail) ||
-                  c.id === profile?.assignedClassId
+                  (assignedClassId && c.id === assignedClassId)
               );
 
           setSchoolClasses(visibleClasses);
@@ -1166,6 +1187,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               ? current
               : visibleClasses[0]?.id || ''
           );
+
+          if (visibleClasses.length > 0 && visibleClasses[0].schoolName) {
+            setSchoolInfo((prev) => {
+              if (!prev.name || prev.name === 'Trường Tiểu học Chuẩn Quốc Gia') {
+                return { ...prev, name: visibleClasses[0].schoolName };
+              }
+              return prev;
+            });
+          }
         }
 
         if (dbStudents) {
@@ -1300,6 +1330,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       } catch (err) {
         console.warn('Supabase initial fetch error:', err);
+      } finally {
+        if (isMounted) {
+          setIsLoaded(true);
+        }
       }
     }
 
@@ -1756,7 +1790,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       isMounted = false;
       supabase.removeChannel(channel);
     };
-  }, [profile?.email]);
+  }, [profile?.email, profile?.role, profile?.assignedClassId]);
 
   // Chỉ lưu tùy chọn giao diện; dữ liệu nghiệp vụ không dùng localStorage làm nguồn dự phòng.
   useEffect(() => {
@@ -1918,24 +1952,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, error: insertError.message };
     }
 
-    // 5. Update Teacher table in Supabase & local profile
+    // 5. Update Teacher table in Supabase & local profile & schoolInfo
     if (userEmail) {
       await supabase
         .from('Teacher')
         .update({
           assignedClassId: newClass.id,
+          assignedClassName: newClass.name,
           schoolName: newClass.schoolName,
+          district: newClass.district,
+          province: newClass.province,
           mainGrade: newClass.grade,
+          fullName: newClass.teacherName,
           updatedAt: new Date().toISOString(),
         })
         .eq('email', userEmail);
 
-      updateProfile({
+      await updateProfile({
         assignedClassId: newClass.id,
+        assignedClassName: newClass.name,
         schoolName: newClass.schoolName,
+        district: newClass.district,
+        province: newClass.province,
         mainGrade: newClass.grade,
+        fullName: newClass.teacherName,
       });
     }
+
+    // Synchronize schoolInfo in store with declared school
+    updateSchoolInfo({
+      name: newClass.schoolName,
+      address: [newClass.district, newClass.province].filter(Boolean).join(', '),
+    });
 
     toast.success(`Đã khởi tạo thành công Lớp ${newClass.name}! 🎉`);
     return { success: true };
@@ -2003,17 +2051,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return { success: false, error: error.message };
     }
 
-    // Update teacher record
-    if (updated.teacherEmail) {
+    // Update teacher record in Supabase & auth profile
+    const tEmail = (updated.teacherEmail || profile?.email || '').toLowerCase().trim();
+    if (tEmail) {
       await supabase
         .from('Teacher')
         .update({
           schoolName: trimmedSchool,
           mainGrade: updated.grade,
+          assignedClassName: trimmedName,
+          assignedClassId: updated.id,
+          fullName: updated.teacherName || profile?.fullName,
+          district: updated.district || profile?.district,
+          province: updated.province || profile?.province,
           updatedAt: new Date().toISOString(),
         })
-        .eq('email', updated.teacherEmail.toLowerCase());
+        .eq('email', tEmail);
+
+      await updateProfile({
+        schoolName: trimmedSchool,
+        mainGrade: updated.grade,
+        assignedClassName: trimmedName,
+        assignedClassId: updated.id,
+        fullName: updated.teacherName || profile?.fullName,
+        district: updated.district || profile?.district,
+        province: updated.province || profile?.province,
+      });
     }
+
+    // Synchronize schoolInfo as well
+    updateSchoolInfo({
+      name: trimmedSchool,
+      address: [updated.district || profile?.district, updated.province || profile?.province].filter(Boolean).join(', ') || undefined,
+    });
 
     toast.success(`Đã cập nhật thông tin Lớp ${trimmedName}!`);
     return { success: true };
@@ -3251,7 +3321,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   // STAR REWARDS & DAILY BEHAVIOR ASSESSMENTS
-  const addStarLog = (
+  const addStarLog = async (
     studentId: string,
     points: number,
     category: string,
@@ -3259,48 +3329,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     comment?: string,
     date?: string
   ) => {
-    const newLog: StarLog = {
-      id: `star-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      classId: activeClassId,
-      studentId,
-      points,
-      category,
-      reason,
-      comment: comment?.trim() || undefined,
-      date: date || new Date().toISOString().split('T')[0],
-      createdAt: new Date().toISOString(),
-    };
-    setStarLogs((prev) => [newLog, ...prev]);
-
-    // Live API Write to Supabase
-    const previous = starLogs;
-    void handleDbMutation(
-      supabase
-        .from('StarLog')
-        .insert({
-          id: newLog.id,
-          classId: newLog.classId,
-          studentId: newLog.studentId,
-          points: newLog.points,
-          category: newLog.category,
-          reason: newLog.reason,
-          comment: newLog.comment || '',
-          date: newLog.date,
-          createdAt: newLog.createdAt,
-        }),
-      () => setStarLogs(previous),
-      'Không thể lưu điểm sao khen thưởng'
-    );
+    if (!Number.isInteger(points) || points === 0 || points < -10 || points > 10) {
+      toast.error('Số sao phải là số nguyên khác 0 trong khoảng -10 đến 10.');
+      return;
+    }
+    const { data, error } = await supabase.rpc('add_star_log_tx', {
+      p_student_id: studentId,
+      p_points: points,
+      p_category: category,
+      p_reason: reason,
+      p_comment: comment?.trim() || null,
+      p_date: date || getLocalDateString(),
+    });
+    const result = data as { success?: boolean; error?: string; star_log?: StarLog } | null;
+    if (error || !result?.success || !result.star_log) {
+      toast.error(result?.error || error?.message || 'Không thể lưu điểm sao khen thưởng');
+      return;
+    }
+    setStarLogs((prev) => prev.some((log) => log.id === result.star_log?.id)
+      ? prev
+      : [result.star_log as StarLog, ...prev]);
   };
 
-  const deleteStarLog = (logId: string) => {
-    const previous = starLogs;
+  const deleteStarLog = async (logId: string) => {
+    const { data, error } = await supabase.rpc('delete_star_log_tx', { p_log_id: logId });
+    const result = data as { success?: boolean; error?: string } | null;
+    if (error || !result?.success) {
+      toast.error(result?.error || error?.message || 'Không thể xóa điểm sao');
+      return;
+    }
     setStarLogs((prev) => prev.filter((s) => s.id !== logId));
-    void handleDbMutation(
-      supabase.from('StarLog').delete().eq('id', logId),
-      () => setStarLogs(previous),
-      'Không thể xóa điểm sao'
-    );
   };
 
   const getStudentStars = (studentId: string) => {
@@ -3446,6 +3504,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     totalStars: number;
     studentNote?: string;
     month?: string;
+    idempotencyKey?: string;
   }): Promise<{ success: boolean; error?: string }> => {
     const currentMonth = data.month || new Date().toISOString().substring(0, 7);
     const targetStudent = allStudents.find(
@@ -3468,10 +3527,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // 1. Call atomic PostgreSQL RPC in Supabase (locks rows, validates server balance, decrements stock)
     try {
-      const { data: rpcData, error: rpcErr } = await supabase.rpc('redeem_reward_tx', {
+      const { data: rpcData, error: rpcErr } = await supabase.rpc('redeem_reward_idempotent_tx', {
         p_student_share_token: data.studentShareToken,
         p_items: data.items,
         p_student_note: data.studentNote?.trim() || null,
+        p_idempotency_key: data.idempotencyKey || crypto.randomUUID().replaceAll('-', ''),
       });
       const rpcRes = rpcData as RedeemRewardRpcResult | null;
 

@@ -70,7 +70,7 @@ export const Header: React.FC = () => {
         {/* Unified Elegant Context Bar */}
         <div className="inline-flex items-center bg-slate-100/90 hover:bg-slate-100 p-0.5 sm:p-1 rounded-2xl border border-slate-200/70 text-xs shadow-2xs">
           {/* 1. Class Switcher Pill */}
-          {schoolClasses.length > 1 ? (
+          {isAdmin && schoolClasses.length > 1 ? (
             <div className="relative">
               <button
                 type="button"
@@ -85,7 +85,7 @@ export const Header: React.FC = () => {
                   🏫
                 </div>
                 <span className="truncate max-w-[85px] sm:max-w-[120px]">
-                  Lớp {classInfo.name}
+                  Lớp {classInfo.name || profile?.assignedClassName || '...'}
                 </span>
                 <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
               </button>
@@ -141,7 +141,7 @@ export const Header: React.FC = () => {
                 🏫
               </div>
               <span className="truncate max-w-[90px] sm:max-w-[140px]">
-                Lớp {classInfo.name}
+                Lớp {classInfo.name || profile?.assignedClassName || 'Chưa đặt'}
               </span>
             </div>
           )}

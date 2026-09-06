@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { School, Sparkles, Building, MapPin, CheckCircle, AlertCircle, ArrowRight } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useAuth } from '@/lib/auth-context';
@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 
 export const TeacherClassRegistrationModal: React.FC = () => {
   const { schoolClasses, addClass, isLoaded } = useAppStore();
-  const { user, profile, isAdmin, isAuthorized } = useAuth();
+  const { user, profile, isAdmin, isAuthorized, loading: authLoading } = useAuth();
 
   const [schoolName, setSchoolName] = useState(profile?.schoolName || '');
   const [province, setProvince] = useState(profile?.province || 'Hà Nội');
@@ -19,15 +19,29 @@ export const TeacherClassRegistrationModal: React.FC = () => {
   const [className, setClassName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Sync default values when profile finishes loading
+  useEffect(() => {
+    if (profile) {
+      if (profile.schoolName && !schoolName) setSchoolName(profile.schoolName);
+      if (profile.province) setProvince(profile.province);
+      if (profile.district && !district) setDistrict(profile.district);
+      if (profile.mainGrade) setGrade(profile.mainGrade as GradeLevel);
+    }
+  }, [profile]);
+
   // Conditions to show:
-  // 1. User is authenticated and authorized
-  // 2. User is NOT Admin (Admin manages the platform, doesn't need mandatory homeroom class)
-  // 3. System is loaded and user has 0 classes
+  // 1. Auth and store MUST be completely finished loading (prevent flash during load)
+  // 2. User is authenticated and authorized
+  // 3. User is NOT Admin (Admin manages the platform, doesn't need mandatory homeroom class)
+  // 4. User has NO assignedClassId in their profile (already registered)
+  // 5. User has 0 classes in store
   const shouldShow =
+    !authLoading &&
     isLoaded &&
     isAuthorized &&
     user !== null &&
     !isAdmin &&
+    !profile?.assignedClassId &&
     schoolClasses.length === 0;
 
   if (!shouldShow) return null;

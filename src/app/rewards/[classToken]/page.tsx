@@ -1,6 +1,6 @@
 'use client';
 
-import React, { use, useState, useMemo } from 'react';
+import React, { use, useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Trophy,
@@ -22,7 +22,8 @@ import {
   CheckCircle2,
   ArrowRight,
 } from 'lucide-react';
-import { useAppStore } from '@/lib/store';
+import { supabase } from '@/lib/supabase';
+import type { ClassInfo, RewardProduct, RewardRedemption, SchoolInfo, StarCriterion, StarLog, Student } from '@/types';
 import { toast } from 'sonner';
 
 export default function PublicClassRewardsPage({
@@ -33,18 +34,57 @@ export default function PublicClassRewardsPage({
   const resolvedParams = use(params);
   const rawToken = (resolvedParams.classToken || '').trim();
 
-  const {
-    schoolClasses,
-    schoolInfo,
-    allStudents,
-    starLogs,
-    starCriteria,
-    rewardProducts,
-    rewardRedemptions,
-    getStudentMonthlyStars,
-    getStudentStars,
-    isLoaded,
-  } = useAppStore();
+  const [schoolInfo, setSchoolInfo] = useState<SchoolInfo>({ id: '', name: '', schoolYear: '', departmentName: '', principalName: '' });
+  const [schoolClasses, setSchoolClasses] = useState<ClassInfo[]>([]);
+  const [allStudents, setAllStudents] = useState<Student[]>([]);
+  const [starLogs, setStarLogs] = useState<StarLog[]>([]);
+  const [starCriteria, setStarCriteria] = useState<StarCriterion[]>([]);
+  const [rewardProducts, setRewardProducts] = useState<RewardProduct[]>([]);
+  const [rewardRedemptions, setRewardRedemptions] = useState<RewardRedemption[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void supabase.rpc('get_public_class_rewards_bundle', { p_class_share_token: rawToken })
+      .then(({ data, error }) => {
+        if (!active) return;
+        const bundle = data as {
+          success?: boolean;
+          school?: SchoolInfo;
+          class?: ClassInfo;
+          students?: Student[];
+          starLogs?: StarLog[];
+          criteria?: StarCriterion[];
+          products?: RewardProduct[];
+          redemptions?: RewardRedemption[];
+        } | null;
+        if (!error && bundle?.success && bundle.class) {
+          setSchoolInfo((prev) => ({ ...prev, ...(bundle.school || {}) }));
+          setSchoolClasses([bundle.class]);
+          setAllStudents(bundle.students || []);
+          setStarLogs(bundle.starLogs || []);
+          setStarCriteria(bundle.criteria || []);
+          setRewardProducts(bundle.products || []);
+          setRewardRedemptions(bundle.redemptions || []);
+        }
+        setIsLoaded(true);
+      });
+    return () => { active = false; };
+  }, [rawToken]);
+
+  const getStudentStars = (studentId: string) => starLogs
+    .filter((log) => log.studentId === studentId)
+    .reduce((sum, log) => sum + log.points, 0);
+
+  const getStudentMonthlyStars = (studentId: string, month: string) => {
+    const earned = starLogs
+      .filter((log) => log.studentId === studentId && (log.date || log.createdAt).startsWith(month))
+      .reduce((sum, log) => sum + log.points, 0);
+    const spent = rewardRedemptions
+      .filter((redemption) => redemption.studentId === studentId && redemption.month === month && redemption.status !== 'CANCELLED')
+      .reduce((sum, redemption) => sum + redemption.totalStars, 0);
+    return { earned, spent, available: Math.max(0, earned - spent) };
+  };
 
   // Find class strictly by shareToken (NEVER fallback to schoolClasses[0] and DO NOT accept raw id)
   const targetClass = useMemo(() => {
@@ -57,7 +97,8 @@ export default function PublicClassRewardsPage({
   }, [schoolClasses, rawToken]);
 
   // Current month key
-  const currentMonthKey = new Date().toISOString().substring(0, 7);
+  const now = new Date();
+  const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthKey);
   const [activeTab, setActiveTab] = useState<'LEADERBOARD' | 'SHOP' | 'CRITERIA'>('LEADERBOARD');
   const [searchQuery, setSearchQuery] = useState('');
@@ -95,7 +136,7 @@ export default function PublicClassRewardsPage({
       ...item,
       rank: idx + 1,
     }));
-  }, [classStudents, selectedMonth, starLogs, rewardRedemptions, getStudentMonthlyStars, getStudentStars]);
+  }, [classStudents, selectedMonth, starLogs, rewardRedemptions]);
 
   // Filtered leaderboard
   const filteredLeaderboard = useMemo(() => {
@@ -409,7 +450,7 @@ export default function PublicClassRewardsPage({
                           </div>
 
                           <Link
-                            href={`/student/${item.student.shareToken || item.student.id}`}
+                            href="/lookup"
                             className="h-8 w-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-200 hover:bg-blue-600 hover:text-white transition-colors"
                             title="Vào đổi quà"
                           >
@@ -470,7 +511,7 @@ export default function PublicClassRewardsPage({
                             </td>
                             <td className="py-3 px-4 text-right">
                               <Link
-                                href={`/student/${item.student.shareToken || item.student.id}`}
+                                href="/lookup"
                                 className="inline-flex items-center space-x-1 text-blue-600 hover:text-blue-800 font-bold text-xs"
                               >
                                 <span>Vào đổi quà</span>

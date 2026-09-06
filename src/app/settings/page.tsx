@@ -208,25 +208,33 @@ export default function SettingsPage() {
   const [profileMainGrade, setProfileMainGrade] = useState<number>(profile?.mainGrade || 4);
   const [profilePhone, setProfilePhone] = useState(profile?.phone || '');
   const [profileAvatarUrl, setProfileAvatarUrl] = useState(profile?.avatarUrl || AVATAR_PRESETS[0].url);
-  const [isProfileInitialized, setIsProfileInitialized] = useState(false);
-
-  // Sync profile state when auth profile loads initially
+  // Sync profile state when auth profile loads or updates
   useEffect(() => {
-    if (profile && !isProfileInitialized) {
-      setProfileFullName(profile.fullName || '');
-      setProfileTitle(profile.title || 'Giáo viên Chủ nhiệm');
-      setProfileSchoolName(profile.schoolName || classInfo.schoolName || '');
-      setProfileDistrict(profile.district || '');
-      setProfileProvince(profile.province || 'Hà Nội');
-      setProfileMainGrade(profile.mainGrade || 4);
-      setProfilePhone(profile.phone || '');
+    if (profile) {
+      if (profile.fullName) setProfileFullName(profile.fullName);
+      if (profile.title) setProfileTitle(profile.title);
+      setProfileSchoolName(profile.schoolName || classInfo.schoolName || schoolInfo.name || '');
+      if (profile.district) setProfileDistrict(profile.district);
+      if (profile.province) setProfileProvince(profile.province);
+      if (profile.mainGrade) setProfileMainGrade(profile.mainGrade);
+      if (profile.phone) setProfilePhone(profile.phone);
       if (profile.avatarUrl) setProfileAvatarUrl(profile.avatarUrl);
-      setIsProfileInitialized(true);
     }
-  }, [profile, isProfileInitialized, classInfo.schoolName]);
+  }, [
+    profile?.fullName,
+    profile?.title,
+    profile?.schoolName,
+    profile?.district,
+    profile?.province,
+    profile?.mainGrade,
+    profile?.phone,
+    profile?.avatarUrl,
+    classInfo.schoolName,
+    schoolInfo.name,
+  ]);
 
   // School Form State
-  const [schoolName, setSchoolName] = useState(schoolInfo.name);
+  const [schoolName, setSchoolName] = useState(schoolInfo.name || classInfo.schoolName || profile?.schoolName || '');
   const [departmentName, setDepartmentName] = useState(schoolInfo.departmentName);
   const [schoolYear, setSchoolYear] = useState(schoolInfo.schoolYear);
   const [principalName, setPrincipalName] = useState(schoolInfo.principalName);
@@ -234,25 +242,65 @@ export default function SettingsPage() {
   const [phone, setPhone] = useState(schoolInfo.phone || '');
   const [schoolLogoUrl, setSchoolLogoUrl] = useState(schoolInfo.logoUrl || '');
 
+  // Sync school form state when schoolInfo, classInfo, or profile loads
+  useEffect(() => {
+    const effectiveSchool = schoolInfo.name || classInfo.schoolName || profile?.schoolName || '';
+    if (effectiveSchool && (!schoolName || schoolName === 'Trường Tiểu học Chuẩn Quốc Gia')) {
+      setSchoolName(effectiveSchool);
+    }
+    if (schoolInfo.departmentName) setDepartmentName(schoolInfo.departmentName);
+    if (schoolInfo.schoolYear) setSchoolYear(schoolInfo.schoolYear);
+    if (schoolInfo.principalName) setPrincipalName(schoolInfo.principalName);
+    if (schoolInfo.address) setAddress(schoolInfo.address);
+    if (schoolInfo.phone) setPhone(schoolInfo.phone);
+    if (schoolInfo.logoUrl) setSchoolLogoUrl(schoolInfo.logoUrl);
+  }, [
+    schoolInfo.name,
+    schoolInfo.departmentName,
+    schoolInfo.schoolYear,
+    schoolInfo.principalName,
+    schoolInfo.address,
+    schoolInfo.phone,
+    schoolInfo.logoUrl,
+    classInfo.schoolName,
+    profile?.schoolName,
+  ]);
+
   // Class Form State
-  const [className, setClassName] = useState(classInfo.name);
-  const [grade, setGrade] = useState<GradeLevel>(classInfo.grade);
-  const [teacherName, setTeacherName] = useState(classInfo.teacherName);
-  const [classSchoolName, setClassSchoolName] = useState(classInfo.schoolName || '');
+  const [className, setClassName] = useState(classInfo.name || profile?.assignedClassName || '');
+  const [grade, setGrade] = useState<GradeLevel>((classInfo.grade || profile?.mainGrade || 1) as GradeLevel);
+  const [teacherName, setTeacherName] = useState(classInfo.teacherName || profile?.fullName || '');
+  const [classSchoolName, setClassSchoolName] = useState(classInfo.schoolName || profile?.schoolName || schoolInfo.name || '');
   const [rows, setRows] = useState(classInfo.seatingGridRows || 5);
   const [cols, setCols] = useState(classInfo.seatingGridCols || 8);
 
-  // Sync Class form state when classInfo changes (e.g. admin switches class)
+  // Sync Class form state when classInfo, profile, or schoolInfo changes
   useEffect(() => {
-    if (classInfo) {
-      setClassName(classInfo.name || '');
-      setGrade(classInfo.grade || 1);
-      setTeacherName(classInfo.teacherName || '');
-      setClassSchoolName(classInfo.schoolName || '');
-      setRows(classInfo.seatingGridRows || 5);
-      setCols(classInfo.seatingGridCols || 8);
-    }
-  }, [classInfo.id, classInfo.name, classInfo.schoolName, classInfo.grade, classInfo.teacherName, classInfo.seatingGridRows, classInfo.seatingGridCols]);
+    const effectiveName = classInfo.name || profile?.assignedClassName || '';
+    const effectiveGrade = (classInfo.grade || profile?.mainGrade || 1) as GradeLevel;
+    const effectiveSchool = classInfo.schoolName || profile?.schoolName || schoolInfo.name || '';
+    const effectiveTeacher = classInfo.teacherName || profile?.fullName || '';
+
+    if (effectiveName) setClassName(effectiveName);
+    if (effectiveGrade) setGrade(effectiveGrade);
+    if (effectiveSchool) setClassSchoolName(effectiveSchool);
+    if (effectiveTeacher) setTeacherName(effectiveTeacher);
+    if (classInfo.seatingGridRows) setRows(classInfo.seatingGridRows);
+    if (classInfo.seatingGridCols) setCols(classInfo.seatingGridCols);
+  }, [
+    classInfo.id,
+    classInfo.name,
+    classInfo.schoolName,
+    classInfo.grade,
+    classInfo.teacherName,
+    classInfo.seatingGridRows,
+    classInfo.seatingGridCols,
+    profile?.assignedClassName,
+    profile?.schoolName,
+    profile?.mainGrade,
+    profile?.fullName,
+    schoolInfo.name,
+  ]);
 
   // New Class Form State
   const [isNewClassModalOpen, setIsNewClassModalOpen] = useState(false);
@@ -596,6 +644,9 @@ export default function SettingsPage() {
 
     const res = await updateClass(updated);
     if (res.success) {
+      setProfileSchoolName(finalSchoolName);
+      setProfileMainGrade(grade);
+      setSchoolName(finalSchoolName);
       toast.success(`Đã lưu cấu hình Lớp ${className.trim()}!`);
     }
   };
