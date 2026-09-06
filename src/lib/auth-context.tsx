@@ -31,6 +31,15 @@ interface AuthContextType {
   // Whitelist & Teacher Management (Synchronized with Supabase)
   teachers: TeacherProfile[];
   refreshTeachers: () => Promise<TeacherProfile[]>;
+  submitTeacherRegistration: (data: {
+    fullName: string;
+    phone: string;
+    schoolName: string;
+    province: string;
+    district?: string;
+    mainGrade: any;
+    assignedClassName: string;
+  }) => Promise<{ success: boolean; error?: any }>;
   addTeacher: (data: {
     email: string;
     fullName: string;
@@ -239,16 +248,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const exists = teachersRef.current.some((t) => t.email.toLowerCase() === userEmail);
             if (!exists) {
               const fullName = currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || userEmail.split('@')[0];
-              const role = userEmail === 'anhnnh4@gmail.com' ? 'ADMIN' : 'TEACHER';
+              const isPrimaryAdmin = userEmail === 'anhnnh4@gmail.com';
+              const role: UserRole = isPrimaryAdmin ? 'ADMIN' : 'PENDING';
+              const isActive = isPrimaryAdmin;
               const avatarUrl = currentUser.user_metadata?.avatar_url;
               void supabase.from('Teacher').upsert({
                 id: `t-${currentUser.id}`,
                 email: userEmail,
                 fullName,
                 role,
+                title: isPrimaryAdmin ? 'Quản Trị Nền Tảng (Super Admin)' : 'Chờ duyệt kích hoạt',
                 planTier: 'BETA_ALL_ACCESS',
                 avatarUrl,
-                isActive: true,
+                isActive,
                 updatedAt: new Date().toISOString(),
               }, { onConflict: 'email' }).then(() => {
                 refreshTeachers();
@@ -289,16 +301,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const exists = teachersRef.current.some((t) => t.email.toLowerCase() === userEmail);
           if (!exists) {
             const fullName = currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || userEmail.split('@')[0];
-            const role = userEmail === 'anhnnh4@gmail.com' ? 'ADMIN' : 'TEACHER';
+            const isPrimaryAdmin = userEmail === 'anhnnh4@gmail.com';
+            const role: UserRole = isPrimaryAdmin ? 'ADMIN' : 'PENDING';
+            const isActive = isPrimaryAdmin;
             const avatarUrl = currentUser.user_metadata?.avatar_url;
             void supabase.from('Teacher').upsert({
               id: `t-${currentUser.id}`,
               email: userEmail,
               fullName,
               role,
+              title: isPrimaryAdmin ? 'Quản Trị Nền Tảng (Super Admin)' : 'Chờ duyệt kích hoạt',
               planTier: 'BETA_ALL_ACCESS',
               avatarUrl,
-              isActive: true,
+              isActive,
               updatedAt: new Date().toISOString(),
             }, { onConflict: 'email' }).then(() => {
               refreshTeachers();
@@ -536,6 +551,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     toast.success('Đã cập nhật thông tin hồ sơ của bạn!');
   };
 
+  // TEACHER SELF-REGISTRATION (Submits class & profile info while in PENDING status)
+  const submitTeacherRegistration = async (data: {
+    fullName: string;
+    phone: string;
+    schoolName: string;
+    province: string;
+    district?: string;
+    mainGrade: any;
+    assignedClassName: string;
+  }): Promise<{ success: boolean; error?: any }> => {
+    if (!user?.email) return { success: false, error: 'User not logged in' };
+    const email = user.email.toLowerCase().trim();
+    const cleanClass = data.assignedClassName.trim();
+    const classId = `class-${cleanClass.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}`;
+
+    try {
+      const { error } = await supabase.from('Teacher').upsert(
+        {
+          email,
+          fullName: data.fullName.trim(),
+          phone: data.phone.trim(),
+          schoolName: data.schoolName.trim(),
+          province: data.province.trim(),
+          district: (data.district || '').trim(),
+          mainGrade: Number(data.mainGrade) || 1,
+          assignedClassName: cleanClass,
+          assignedClassId: classId,
+          role: 'PENDING',
+          isActive: false,
+          title: 'Chờ duyệt kích hoạt',
+          updatedAt: new Date().toISOString(),
+        },
+        { onConflict: 'email' }
+      );
+
+      if (error) {
+        console.error('Supabase submitTeacherRegistration error:', error.message);
+        toast.error(`Lỗi khi nộp hồ sơ: ${error.message}`);
+        return { success: false, error };
+      }
+
+      await refreshTeachers();
+      toast.success('Đã gửi hồ sơ lớp học thành công! Vui lòng chờ Quản trị viên xét duyệt.');
+      return { success: true };
+    } catch (err: any) {
+      console.error('Exception submitTeacherRegistration:', err);
+      toast.error('Lỗi khi gửi hồ sơ đăng ký lớp: ' + (err?.message || 'Vui lòng thử lại'));
+      return { success: false, error: err };
+    }
+  };
+
   // TEACHER MANAGEMENT ACTIONS (Synced with Supabase)
   const addTeacher = async (data: {
     email: string;
@@ -571,6 +637,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           title: data.title || (data.role === 'ADMIN' ? 'Quản Trị Nền Tảng' : 'Giáo viên Chủ nhiệm'),
           department: data.department || null,
           assignedClassId: classId,
+          assignedClassName: data.assignedClassName || undefined,
           phone: data.phone,
           avatarUrl: data.avatarUrl,
           isActive: true,
@@ -629,7 +696,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const classId = cleanClass ? `class-${cleanClass.replace('Lớp ', '').toLowerCase()}` : undefined;
 
     const previousTeachers = teachers;
-    const updated = teachers.map((t) => (t.id === id ? { ...t, ...partial, assignedClassId: classId } : t));
+    const updated = teachers.map((t) => (t.id === id ? { ...t, ...partial, assignedClassName: cleanClass, assignedClassId: classId } : t));
     setTeachers(updated);
 
     // Update in Supabase
@@ -640,6 +707,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           role: cleanRole,
           isActive: cleanActive,
           assignedClassId: classId,
+          assignedClassName: cleanClass || null,
           fullName: partial.fullName || existing.fullName,
           schoolName: partial.schoolName !== undefined ? partial.schoolName : existing.schoolName,
           district: partial.district !== undefined ? partial.district : existing.district,
@@ -747,6 +815,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateProfile,
         teachers,
         refreshTeachers,
+        submitTeacherRegistration,
         addTeacher,
         updateTeacher,
         deleteTeacher,

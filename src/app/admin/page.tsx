@@ -43,6 +43,7 @@ import { ClassInfo, GradeLevel, UserRole, TeacherProfile, CommunityResource } fr
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 import Link from 'next/link';
+import { getAcademicYearByDate } from '@/lib/tt27-engine';
 
 export default function PlatformAdminPage() {
   const router = useRouter();
@@ -90,6 +91,7 @@ export default function PlatformAdminPage() {
     district: string;
     province: string;
     mainGrade: number;
+    assignedClassName: string;
     planTier: 'BETA_ALL_ACCESS' | 'PRO' | 'FREE';
     phone: string;
     isActive: boolean;
@@ -101,6 +103,7 @@ export default function PlatformAdminPage() {
     district: '',
     province: 'Hà Nội',
     mainGrade: 4,
+    assignedClassName: '',
     planTier: 'BETA_ALL_ACCESS',
     phone: '',
     isActive: true,
@@ -153,6 +156,7 @@ export default function PlatformAdminPage() {
         t.fullName.toLowerCase().includes(query) ||
         t.email.toLowerCase().includes(query) ||
         (t.schoolName || '').toLowerCase().includes(query) ||
+        (t.assignedClassName || '').toLowerCase().includes(query) ||
         (t.phone || '').includes(query);
 
       const matchStatus =
@@ -190,6 +194,7 @@ export default function PlatformAdminPage() {
         district: t.district || '',
         province: t.province || 'Hà Nội',
         mainGrade: t.mainGrade || 4,
+        assignedClassName: t.assignedClassName || '',
         planTier: t.planTier || 'BETA_ALL_ACCESS',
         phone: t.phone || '',
         isActive: t.isActive,
@@ -204,6 +209,7 @@ export default function PlatformAdminPage() {
         district: '',
         province: 'Hà Nội',
         mainGrade: 4,
+        assignedClassName: '',
         planTier: 'BETA_ALL_ACCESS',
         phone: '',
         isActive: true,
@@ -227,6 +233,7 @@ export default function PlatformAdminPage() {
         district: teacherForm.district,
         province: teacherForm.province,
         mainGrade: teacherForm.mainGrade as GradeLevel,
+        assignedClassName: teacherForm.assignedClassName ? teacherForm.assignedClassName.trim().toUpperCase() : undefined,
         planTier: teacherForm.planTier,
         phone: teacherForm.phone,
         isActive: teacherForm.isActive,
@@ -240,6 +247,7 @@ export default function PlatformAdminPage() {
         district: teacherForm.district,
         province: teacherForm.province,
         mainGrade: teacherForm.mainGrade,
+        assignedClassName: teacherForm.assignedClassName ? teacherForm.assignedClassName.trim().toUpperCase() : undefined,
         planTier: teacherForm.planTier,
         phone: teacherForm.phone,
       });
@@ -248,14 +256,57 @@ export default function PlatformAdminPage() {
     setIsTeacherModalOpen(false);
   };
 
-  // 1-Click Approve Teacher to Full BETA
+  // 1-Click Approve Teacher to Full BETA & Auto-provision Classroom
   const handleApproveTeacher = async (t: TeacherProfile) => {
-    await updateTeacher(t.id, {
-      role: 'TEACHER',
-      isActive: true,
-      planTier: 'BETA_ALL_ACCESS',
-    });
-    toast.success(`Đã kích hoạt quyền sử dụng Full BETA cho giáo viên ${t.fullName} (${t.email})!`);
+    try {
+      await updateTeacher(t.id, {
+        role: 'TEACHER',
+        isActive: true,
+        planTier: 'BETA_ALL_ACCESS',
+      });
+
+      // If teacher has declared an assigned class name & school name, ensure Class is in DB
+      if (t.assignedClassName && t.schoolName) {
+        const cleanName = t.assignedClassName.trim().toUpperCase();
+        const cleanSchool = t.schoolName.trim();
+        const cleanGrade = Number(t.mainGrade) || 1;
+        const teacherEmail = t.email.toLowerCase().trim();
+
+        // Check if class exists
+        const { data: existingClasses } = await supabase
+          .from('Class')
+          .select('id, name, schoolName')
+          .eq('schoolName', cleanSchool)
+          .eq('name', cleanName);
+
+        if (!existingClasses || existingClasses.length === 0) {
+          const classId = t.assignedClassId || `class-${Date.now()}`;
+          const randomSuffix = Math.random().toString(36).substring(2, 8);
+          await supabase.from('Class').insert({
+            id: classId,
+            name: cleanName,
+            grade: cleanGrade,
+            schoolYear: getAcademicYearByDate(),
+            schoolName: cleanSchool,
+            district: t.district || '',
+            province: t.province || '',
+            teacherName: t.fullName,
+            teacherEmail: teacherEmail,
+            totalStudents: 0,
+            seatingGridRows: 5,
+            seatingGridCols: 8,
+            shareToken: `c${cleanName.toLowerCase().replace(/[^a-z0-9]/g, '')}-${randomSuffix}`,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          });
+        }
+      }
+
+      toast.success(`Đã phê duyệt & kích hoạt quyền sử dụng cho giáo viên ${t.fullName} (${t.email})!`);
+    } catch (err: any) {
+      console.error('Lỗi duyệt giáo viên:', err);
+      toast.error('Lỗi khi duyệt giáo viên: ' + (err?.message || 'Vui lòng thử lại'));
+    }
   };
 
   // Toggle Account Active / Inactive
@@ -475,7 +526,7 @@ export default function PlatformAdminPage() {
                   <tr>
                     <th className="px-5 py-3.5">Giáo Viên</th>
                     <th className="px-4 py-3.5">Trường & Địa Phương</th>
-                    <th className="px-4 py-3.5">Khối Lớp</th>
+                    <th className="px-4 py-3.5">Lớp Đăng Ký / Khối</th>
                     <th className="px-4 py-3.5">Gói / Quyền Hạn</th>
                     <th className="px-4 py-3.5">Trạng Thái</th>
                     <th className="px-5 py-3.5 text-right">Thao Tác</th>
@@ -525,13 +576,18 @@ export default function PlatformAdminPage() {
                         </td>
 
                         <td className="px-4 py-3.5">
-                          {t.mainGrade ? (
-                            <span className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded-md font-bold text-[11px]">
-                              Khối {t.mainGrade}
-                            </span>
-                          ) : (
-                            <span className="text-slate-400 text-[11px]">Chưa gán</span>
-                          )}
+                          <div className="space-y-1">
+                            {t.assignedClassName ? (
+                              <span className="inline-block px-2 py-0.5 bg-blue-600 text-white rounded-md font-bold text-[11px] shadow-2xs">
+                                Lớp {t.assignedClassName}
+                              </span>
+                            ) : (
+                              <span className="text-slate-400 text-[11px]">Chưa đăng ký</span>
+                            )}
+                            {t.mainGrade ? (
+                              <p className="text-[10px] text-slate-500 font-semibold">Khối {t.mainGrade}</p>
+                            ) : null}
+                          </div>
                         </td>
 
                         <td className="px-4 py-3.5">
@@ -832,15 +888,28 @@ export default function PlatformAdminPage() {
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="font-bold text-slate-700">Tên trường tiểu học công tác</label>
-                <input
-                  type="text"
-                  value={teacherForm.schoolName}
-                  onChange={(e) => setTeacherForm({ ...teacherForm, schoolName: e.target.value })}
-                  placeholder="VD: Trường Tiểu học Chu Văn An"
-                  className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700">Tên trường tiểu học công tác</label>
+                  <input
+                    type="text"
+                    value={teacherForm.schoolName}
+                    onChange={(e) => setTeacherForm({ ...teacherForm, schoolName: e.target.value })}
+                    placeholder="VD: Trường Tiểu học Chu Văn An"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700">Lớp chủ nhiệm đăng ký</label>
+                  <input
+                    type="text"
+                    value={teacherForm.assignedClassName}
+                    onChange={(e) => setTeacherForm({ ...teacherForm, assignedClassName: e.target.value })}
+                    placeholder="VD: 4A1, 1A, 5B..."
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 font-bold text-blue-700"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -875,7 +944,9 @@ export default function PlatformAdminPage() {
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-slate-50 font-bold text-slate-700"
                   >
                     <option value="TEACHER">Giáo viên (TEACHER)</option>
-                    <option value="ADMIN">Platform Admin (ADMIN)</option>
+                    <option value="ADMIN_TEACHER">Admin kiêm GVCN (ADMIN_TEACHER)</option>
+                    <option value="ADMIN">Quản Trị BGH (ADMIN)</option>
+                    <option value="PENDING">Chờ duyệt (PENDING)</option>
                   </select>
                 </div>
 

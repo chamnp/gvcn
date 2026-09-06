@@ -27,6 +27,7 @@ import {
   ChevronDown,
   ChevronRight,
   Globe,
+  ShieldCheck,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useAuth } from '@/lib/auth-context';
@@ -111,7 +112,8 @@ export const NAV_ITEMS = NAV_GROUPS.flatMap((g) => g.items);
 const SidebarContent: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
   const pathname = usePathname();
   const { schoolClasses, activeClassId, classInfo, switchClass, students, schoolInfo, featureFlags } = useAppStore();
-  const { user, profile, signOut, isAdmin } = useAuth();
+  const { user, profile, signOut, isAdmin, teachers } = useAuth();
+  const pendingTeachersCount = (teachers || []).filter((t) => t.role === 'PENDING' || !t.isActive).length;
 
   // Collapsible state for each section (default all open)
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
@@ -222,6 +224,48 @@ const SidebarContent: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
 
       {/* Grouped Nav Menu */}
       <nav className="flex-1 px-3 py-1 space-y-3 overflow-y-auto custom-scrollbar">
+        {/* Admin Console Entry (Only for Admins) */}
+        {isAdmin && (
+          <div className="space-y-1 mb-2 pb-2.5 border-b border-slate-800">
+            <div className="px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-indigo-300 flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" />
+                <span>QUẢN TRỊ NỀN TẢNG</span>
+              </span>
+              <span className="text-[9px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-1.5 py-0.2 rounded font-bold">
+                BGH
+              </span>
+            </div>
+            <Link
+              href="/admin"
+              onClick={onClose}
+              className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
+                pathname === '/admin' || pathname.startsWith('/admin/')
+                  ? 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-md shadow-indigo-600/30 font-bold'
+                  : 'text-indigo-200 hover:bg-slate-800/90 hover:text-white bg-indigo-950/30 border border-indigo-800/40'
+              }`}
+            >
+              <div className="flex items-center space-x-2.5 min-w-0">
+                <ShieldCheck
+                  className={`w-4 h-4 shrink-0 ${
+                    pathname.startsWith('/admin') ? 'text-white' : 'text-indigo-400'
+                  }`}
+                />
+                <span className="truncate">Quản Trị Hệ Thống</span>
+              </div>
+              {pendingTeachersCount > 0 ? (
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-black bg-amber-500 text-slate-950 animate-pulse shrink-0 ml-1.5 shadow-sm">
+                  {pendingTeachersCount} chờ duyệt
+                </span>
+              ) : (
+                <span className="text-[9px] px-1.5 py-0.2 rounded-full font-bold bg-indigo-500/20 text-indigo-300 shrink-0 ml-1.5">
+                  Admin
+                </span>
+              )}
+            </Link>
+          </div>
+        )}
+
         {NAV_GROUPS.map((group) => {
           // Filter out items disabled by feature flags
           const visibleItems = group.items.filter((item) => {

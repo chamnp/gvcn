@@ -299,8 +299,10 @@ export const Header: React.FC = () => {
                   <div className="p-2.5 rounded-2xl bg-gradient-to-r from-slate-50 to-blue-50/40 border border-slate-100 text-xs space-y-1">
                     <div className="flex items-center justify-between">
                       <p className="font-black text-slate-900 truncate">{profile.fullName}</p>
-                      <span className="bg-blue-100 text-blue-800 font-black text-[9px] px-2 py-0.5 rounded-full">
-                        GVCN
+                      <span className={`font-black text-[9px] px-2 py-0.5 rounded-full ${
+                        isAdmin ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {isAdmin ? 'QUẢN TRỊ BGH' : 'GVCN'}
                       </span>
                     </div>
                     <p className="text-[10px] text-slate-500 font-mono truncate">{user?.email}</p>
@@ -311,6 +313,17 @@ export const Header: React.FC = () => {
 
                   {/* Quick Action Links */}
                   <div className="space-y-0.5 text-xs">
+                    {isAdmin && (
+                      <Link
+                        href="/admin"
+                        onClick={() => setShowUserMenu(false)}
+                        className="flex items-center space-x-2 px-3 py-2 rounded-2xl text-indigo-700 bg-indigo-50/90 hover:bg-indigo-100 font-black transition-colors"
+                      >
+                        <ShieldCheck className="w-4 h-4 text-indigo-600" />
+                        <span>Trang Quản Trị Hệ Thống</span>
+                      </Link>
+                    )}
+
                     <Link
                       href="/settings"
                       onClick={() => setShowUserMenu(false)}
