@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState, useSyncExternalStore } from 'react';
 import {
   CalendarCheck,
   CheckCircle2,
@@ -9,13 +9,89 @@ import {
   Utensils,
   Calendar,
   Copy,
-  Send,
-  Sparkles,
+  ChevronLeft,
+  ChevronRight,
+  Search,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { AttendanceStatus } from '@/types';
 import { getLocalDateString } from '@/lib/tt27-engine';
+import { paginate, summarizeAttendance } from '@/lib/attendance-utils';
 import { toast } from 'sonner';
+
+const PAGE_SIZE_STORAGE_KEY = 'gvcn_pro_attendance_page_size';
+const PAGE_SIZE_OPTIONS = [10, 20, 50, 100];
+const PAGE_SIZE_CHANGE_EVENT = 'gvcn-attendance-page-size-change';
+
+type DailyStatusFilter = 'ALL' | 'UNRECORDED' | AttendanceStatus;
+type MealFilter = 'ALL' | 'YES' | 'NO';
+
+function getStoredPageSize() {
+  const savedPageSize = Number(window.localStorage.getItem(PAGE_SIZE_STORAGE_KEY));
+  return PAGE_SIZE_OPTIONS.includes(savedPageSize) ? savedPageSize : 20;
+}
+
+function subscribeToPageSize(callback: () => void) {
+  window.addEventListener(PAGE_SIZE_CHANGE_EVENT, callback);
+  return () => window.removeEventListener(PAGE_SIZE_CHANGE_EVENT, callback);
+}
+
+function TablePagination({
+  page,
+  totalPages,
+  totalItems,
+  pageSize,
+  onPageChange,
+  onPageSizeChange,
+}: {
+  page: number;
+  totalPages: number;
+  totalItems: number;
+  pageSize: number;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
+}) {
+  const firstItem = totalItems === 0 ? 0 : (page - 1) * pageSize + 1;
+  const lastItem = Math.min(page * pageSize, totalItems);
+
+  return (
+    <div className="flex flex-col gap-3 border-t border-slate-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex items-center gap-2 text-xs text-slate-600">
+        <span>Hiển thị</span>
+        <select
+          value={pageSize}
+          onChange={(event) => onPageSizeChange(Number(event.target.value))}
+          className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 font-bold text-slate-800"
+          aria-label="Số dòng trên mỗi trang"
+        >
+          {PAGE_SIZE_OPTIONS.map((option) => (
+            <option key={option} value={option}>{option}</option>
+          ))}
+        </select>
+        <span>dòng/trang · {firstItem}-{lastItem} / {totalItems}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => onPageChange(page - 1)}
+          disabled={page <= 1}
+          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-bold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <ChevronLeft className="h-3.5 w-3.5" /> Trước
+        </button>
+        <span className="min-w-20 text-center text-xs font-bold text-slate-700">Trang {page}/{totalPages}</span>
+        <button
+          type="button"
+          onClick={() => onPageChange(page + 1)}
+          disabled={page >= totalPages}
+          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2.5 py-1.5 text-xs font-bold text-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          Sau <ChevronRight className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function AttendancePage() {
   const {
@@ -29,34 +105,84 @@ export default function AttendancePage() {
     rejectLeaveRequest,
   } = useAppStore();
   const [selectedDate, setSelectedDate] = useState<string>(() => getLocalDateString());
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => getLocalDateString().slice(0, 7));
   const [viewMode, setViewMode] = useState<'DAILY' | 'MONTHLY'>('DAILY');
+  const [dailySearch, setDailySearch] = useState('');
+  const [dailyStatusFilter, setDailyStatusFilter] = useState<DailyStatusFilter>('ALL');
+  const [mealFilter, setMealFilter] = useState<MealFilter>('ALL');
   const [monthlySearch, setMonthlySearch] = useState('');
+  const [dailyPage, setDailyPage] = useState(1);
+  const [monthlyPage, setMonthlyPage] = useState(1);
+  const pageSize = useSyncExternalStore(subscribeToPageSize, getStoredPageSize, () => 20);
+
+  const handlePageSizeChange = (nextPageSize: number) => {
+    setDailyPage(1);
+    setMonthlyPage(1);
+    window.localStorage.setItem(PAGE_SIZE_STORAGE_KEY, String(nextPageSize));
+    window.dispatchEvent(new Event(PAGE_SIZE_CHANGE_EVENT));
+  };
 
   // Lọc điểm danh theo ngày đã chọn
-  const dayAttendances = (students || []).map((st) => {
+  const dayAttendances = useMemo(() => (students || []).map((st) => {
     const record = attendances.find((a) => a.studentId === st.id && a.date === selectedDate);
+    const attendsSchool = record?.status === 'CO_MAT' || record?.status === 'MUON';
     return {
       student: st,
-      status: record?.status || 'CO_MAT',
-      hasBoardingMeal: record !== undefined ? record.hasBoardingMeal : st.isBoarding,
+      status: record?.status ?? null,
+      hasBoardingMeal: Boolean(record?.hasBoardingMeal && attendsSchool),
       reason: record?.reason || '',
+      isRecorded: Boolean(record),
     };
-  });
+  }), [attendances, selectedDate, students]);
 
   const presentCount = dayAttendances.filter((a) => a.status === 'CO_MAT').length;
   const excusedCount = dayAttendances.filter((a) => a.status === 'VANG_CO_PHEP').length;
   const unexcusedCount = dayAttendances.filter((a) => a.status === 'VANG_KHONG_PHEP').length;
   const lateCount = dayAttendances.filter((a) => a.status === 'MUON').length;
   const totalMeals = dayAttendances.filter((a) => a.hasBoardingMeal).length;
+  const recordedCount = dayAttendances.filter((a) => a.isRecorded).length;
+
+  const filteredDayAttendances = useMemo(() => {
+    const query = dailySearch.trim().toLocaleLowerCase('vi');
+    return dayAttendances.filter((item) => {
+      const matchesSearch = !query
+        || item.student.fullName.toLocaleLowerCase('vi').includes(query)
+        || item.student.studentCode.toLocaleLowerCase('vi').includes(query);
+      const matchesStatus = dailyStatusFilter === 'ALL'
+        || (dailyStatusFilter === 'UNRECORDED' ? !item.isRecorded : item.status === dailyStatusFilter);
+      const matchesMeal = mealFilter === 'ALL'
+        || (mealFilter === 'YES' ? item.hasBoardingMeal : !item.hasBoardingMeal);
+      return matchesSearch && matchesStatus && matchesMeal;
+    });
+  }, [dailySearch, dailyStatusFilter, dayAttendances, mealFilter]);
+  const dailyPagination = paginate(filteredDayAttendances, dailyPage, pageSize);
+
+  const monthlyRows = useMemo(() => {
+    const query = monthlySearch.trim().toLocaleLowerCase('vi');
+    return students
+      .filter((student) => !query
+        || student.fullName.toLocaleLowerCase('vi').includes(query)
+        || student.studentCode.toLocaleLowerCase('vi').includes(query))
+      .map((student) => ({
+        student,
+        summary: summarizeAttendance(
+          attendances.filter((record) => record.studentId === student.id),
+          selectedMonth
+        ),
+      }));
+  }, [attendances, monthlySearch, selectedMonth, students]);
+  const monthlyPagination = paginate(monthlyRows, monthlyPage, pageSize);
 
   const handleStatusChange = (studentId: string, status: AttendanceStatus) => {
     const student = students.find((s) => s.id === studentId);
-    const hasMeal = student ? student.isBoarding && status === 'CO_MAT' : false;
-    updateAttendance(studentId, selectedDate, status, hasMeal);
+    const current = dayAttendances.find((item) => item.student.id === studentId);
+    const attendsSchool = status === 'CO_MAT' || status === 'MUON';
+    const hasMeal = Boolean(student?.isBoarding && attendsSchool);
+    updateAttendance(studentId, selectedDate, status, hasMeal, current?.reason);
   };
 
-  const handleMealToggle = (studentId: string, currentMeal: boolean, status: AttendanceStatus) => {
-    updateAttendance(studentId, selectedDate, status, !currentMeal);
+  const handleMealToggle = (studentId: string, currentMeal: boolean, status: AttendanceStatus | null, reason: string) => {
+    updateAttendance(studentId, selectedDate, status || 'CO_MAT', !currentMeal, reason);
   };
 
   const handleReasonChange = (studentId: string, status: AttendanceStatus, hasMeal: boolean, reason: string) => {
@@ -70,8 +196,12 @@ export default function AttendancePage() {
 
   // Sao chép báo cáo bán trú gửi Zalo Nhà bếp / Ban Giám Hiệu
   const handleCopyKitchenReport = () => {
+    if (recordedCount < students.length) {
+      toast.error(`Còn ${students.length - recordedCount} học sinh chưa được điểm danh trong ngày này.`);
+      return;
+    }
     const absentList = dayAttendances
-      .filter((a) => a.status !== 'CO_MAT')
+      .filter((a) => a.status === 'VANG_CO_PHEP' || a.status === 'VANG_KHONG_PHEP')
       .map((a) => `- ${a.student.fullName} (${a.status === 'VANG_CO_PHEP' ? 'Nghỉ có phép' : 'Nghỉ không phép'}${a.reason ? `: ${a.reason}` : ''})`)
       .join('\n');
 
@@ -79,6 +209,7 @@ export default function AttendancePage() {
 🏫 Lớp: ${classInfo.name} - GVCN: ${classInfo.teacherName}
 👥 Sĩ số: ${students.length} em
 ✅ Có mặt: ${presentCount} em
+⏰ Đi muộn: ${lateCount} em
 ❌ Vắng: ${excusedCount + unexcusedCount} em
 🍱 TỔNG SUẤT ĂN BÁN TRÚ HÔM NAY: ${totalMeals} suất
 ${absentList ? `\nDanh sách học sinh vắng:\n${absentList}` : '\n(Cả lớp đi học đầy đủ)'}
@@ -114,22 +245,40 @@ ${absentList ? `\nDanh sách học sinh vắng:\n${absentList}` : '\n(Cả lớp
 
       {viewMode === 'MONTHLY' ? (
         <div className="bg-white rounded-3xl border border-slate-200 shadow-2xs overflow-hidden space-y-4 p-5 animate-in fade-in">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+          <div className="flex flex-col gap-3 border-b border-slate-100 pb-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <h3 className="font-black text-sm text-slate-900 flex items-center gap-2">
-                <span>📊 Bảng Tổng Hợp Chuyên Cần & Bán Trú Học Kỳ</span>
+                <span>📊 Bảng Tổng Hợp Chuyên Cần & Bán Trú Theo Tháng</span>
               </h3>
               <p className="text-xs text-slate-500">
-                Thống kê tổng số ngày đi học, vắng phép, không phép và tỷ lệ chuyên cần của từng học sinh.
+                Chỉ thống kê các ngày đã lưu trong tháng được chọn, không tự tạo số liệu mặc định.
               </p>
             </div>
-            <input
-              type="text"
-              placeholder="Tìm kiếm học sinh..."
-              value={monthlySearch}
-              onChange={(e) => setMonthlySearch(e.target.value)}
-              className="p-2 border border-slate-300 rounded-xl text-xs w-full sm:w-64"
-            />
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <input
+                type="month"
+                value={selectedMonth}
+                onChange={(event) => {
+                  setSelectedMonth(event.target.value);
+                  setMonthlyPage(1);
+                }}
+                className="rounded-xl border border-slate-300 p-2 text-xs font-bold text-slate-800"
+                aria-label="Tháng thống kê"
+              />
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                <input
+                  type="search"
+                  placeholder="Tìm tên hoặc mã học sinh..."
+                  value={monthlySearch}
+                  onChange={(event) => {
+                    setMonthlySearch(event.target.value);
+                    setMonthlyPage(1);
+                  }}
+                  className="w-full rounded-xl border border-slate-300 py-2 pl-9 pr-3 text-xs sm:w-64"
+                />
+              </div>
+            </div>
           </div>
 
           <div className="overflow-x-auto">
@@ -147,43 +296,51 @@ ${absentList ? `\nDanh sách học sinh vắng:\n${absentList}` : '\n(Cả lớp
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {students
-                  .filter((s) => s.fullName.toLowerCase().includes(monthlySearch.toLowerCase()))
-                  .map((st, idx) => {
-                    const stRecords = attendances.filter((a) => a.studentId === st.id);
-                    const pCount = stRecords.filter((a) => a.status === 'CO_MAT').length || 18;
-                    const exCount = stRecords.filter((a) => a.status === 'VANG_CO_PHEP').length;
-                    const unCount = stRecords.filter((a) => a.status === 'VANG_KHONG_PHEP').length;
-                    const lCount = stRecords.filter((a) => a.status === 'MUON').length;
-                    const mealCount = stRecords.filter((a) => a.hasBoardingMeal).length || (st.isBoarding ? 18 : 0);
-                    const totalTracked = pCount + exCount + unCount + lCount || 1;
-                    const rate = Math.round((pCount / totalTracked) * 100);
-
+                {monthlyPagination.items.map(({ student: st, summary }, idx) => {
                     return (
                       <tr key={st.id} className="hover:bg-slate-50">
-                        <td className="p-3 text-center font-bold text-slate-400">{idx + 1}</td>
+                        <td className="p-3 text-center font-bold text-slate-400">
+                          {(monthlyPagination.page - 1) * pageSize + idx + 1}
+                        </td>
                         <td className="p-3">
                           <span className="font-bold text-slate-900 block">{st.fullName}</span>
                           <span className="text-[10px] text-slate-400">Mã HS: {st.studentCode}</span>
                         </td>
-                        <td className="p-3 text-center font-bold text-emerald-600 bg-emerald-50/30">{pCount}</td>
-                        <td className="p-3 text-center font-bold text-amber-600 bg-amber-50/30">{exCount}</td>
-                        <td className="p-3 text-center font-bold text-rose-600 bg-rose-50/30">{unCount}</td>
-                        <td className="p-3 text-center font-bold text-blue-600 bg-blue-50/30">{lCount}</td>
-                        <td className="p-3 text-center font-bold text-indigo-600 bg-indigo-50/30">{mealCount}</td>
+                        <td className="p-3 text-center font-bold text-emerald-600 bg-emerald-50/30">{summary.present}</td>
+                        <td className="p-3 text-center font-bold text-amber-600 bg-amber-50/30">{summary.excused}</td>
+                        <td className="p-3 text-center font-bold text-rose-600 bg-rose-50/30">{summary.unexcused}</td>
+                        <td className="p-3 text-center font-bold text-blue-600 bg-blue-50/30">{summary.late}</td>
+                        <td className="p-3 text-center font-bold text-indigo-600 bg-indigo-50/30">{summary.meals}</td>
                         <td className="p-3 text-center">
                           <span className={`px-2 py-0.5 rounded-full font-bold text-[11px] ${
-                            rate >= 95 ? 'bg-emerald-100 text-emerald-800' : rate >= 85 ? 'bg-blue-100 text-blue-800' : 'bg-rose-100 text-rose-800'
+                            summary.attendanceRate === null
+                              ? 'bg-slate-100 text-slate-500'
+                              : summary.attendanceRate >= 95
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : summary.attendanceRate >= 85
+                                  ? 'bg-blue-100 text-blue-800'
+                                  : 'bg-rose-100 text-rose-800'
                           }`}>
-                            {rate}%
+                            {summary.attendanceRate === null ? '—' : `${summary.attendanceRate}%`}
                           </span>
                         </td>
                       </tr>
                     );
                   })}
+                {monthlyPagination.totalItems === 0 && (
+                  <tr><td colSpan={8} className="p-8 text-center text-slate-500">Không có học sinh phù hợp.</td></tr>
+                )}
               </tbody>
             </table>
           </div>
+          <TablePagination
+            page={monthlyPagination.page}
+            totalPages={monthlyPagination.totalPages}
+            totalItems={monthlyPagination.totalItems}
+            pageSize={pageSize}
+            onPageChange={setMonthlyPage}
+            onPageSizeChange={handlePageSizeChange}
+          />
         </div>
       ) : (
         <>
@@ -206,7 +363,10 @@ ${absentList ? `\nDanh sách học sinh vắng:\n${absentList}` : '\n(Cả lớp
                 <input
                   type="date"
                   value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
+                  onChange={(event) => {
+                    setSelectedDate(event.target.value);
+                    setDailyPage(1);
+                  }}
                   className="text-xs font-bold text-slate-800 bg-transparent focus:outline-none"
                 />
               </div>
@@ -277,8 +437,6 @@ ${absentList ? `\nDanh sách học sinh vắng:\n${absentList}` : '\n(Cả lớp
                           type="button"
                           onClick={() => {
                             approveLeaveRequest(req.id);
-                            updateAttendance(req.studentId, req.startDate, 'VANG_CO_PHEP', false, req.reasonDetail);
-                            toast.success(`Đã duyệt đơn và điểm danh VẮNG CÓ PHÉP cho em ${req.studentName}`);
                           }}
                           className="px-3.5 py-1.5 text-xs font-black bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-xs cursor-pointer"
                         >
@@ -292,7 +450,7 @@ ${absentList ? `\nDanh sách học sinh vắng:\n${absentList}` : '\n(Cả lớp
           )}
 
           {/* Summary Counters */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
             <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
               <div className="min-w-0">
                 <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Có Mặt</p>
@@ -300,6 +458,16 @@ ${absentList ? `\nDanh sách học sinh vắng:\n${absentList}` : '\n(Cả lớp
               </div>
               <div className="w-11 h-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
                 <CheckCircle2 className="w-6 h-6" />
+              </div>
+            </div>
+
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
+              <div className="min-w-0">
+                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Đi Muộn</p>
+                <h3 className="text-2xl font-black text-blue-600 mt-0.5">{lateCount}</h3>
+              </div>
+              <div className="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                <CalendarCheck className="w-6 h-6" />
               </div>
             </div>
 
@@ -336,6 +504,56 @@ ${absentList ? `\nDanh sách học sinh vắng:\n${absentList}` : '\n(Cả lớp
 
           {/* Attendance Table */}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+            <div className="flex flex-col gap-3 border-b border-slate-100 p-4 lg:flex-row lg:items-center lg:justify-between">
+              <div>
+                <p className="text-xs font-black text-slate-800">Danh sách ngày {selectedDate.split('-').reverse().join('/')}</p>
+                <p className="mt-0.5 text-[11px] text-slate-500">Đã lưu {recordedCount}/{students.length} học sinh</p>
+              </div>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="search"
+                    value={dailySearch}
+                    onChange={(event) => {
+                      setDailySearch(event.target.value);
+                      setDailyPage(1);
+                    }}
+                    placeholder="Tìm tên hoặc mã HS..."
+                    className="w-full rounded-xl border border-slate-300 py-2 pl-9 pr-3 text-xs"
+                  />
+                </div>
+                <select
+                  value={dailyStatusFilter}
+                  onChange={(event) => {
+                    setDailyStatusFilter(event.target.value as DailyStatusFilter);
+                    setDailyPage(1);
+                  }}
+                  className="rounded-xl border border-slate-300 bg-white p-2 text-xs font-bold text-slate-700"
+                  aria-label="Lọc trạng thái điểm danh"
+                >
+                  <option value="ALL">Tất cả trạng thái</option>
+                  <option value="UNRECORDED">Chưa điểm danh</option>
+                  <option value="CO_MAT">Có mặt</option>
+                  <option value="VANG_CO_PHEP">Vắng có phép</option>
+                  <option value="VANG_KHONG_PHEP">Vắng không phép</option>
+                  <option value="MUON">Đi muộn</option>
+                </select>
+                <select
+                  value={mealFilter}
+                  onChange={(event) => {
+                    setMealFilter(event.target.value as MealFilter);
+                    setDailyPage(1);
+                  }}
+                  className="rounded-xl border border-slate-300 bg-white p-2 text-xs font-bold text-slate-700"
+                  aria-label="Lọc suất ăn bán trú"
+                >
+                  <option value="ALL">Tất cả bán trú</option>
+                  <option value="YES">Có suất ăn</option>
+                  <option value="NO">Không có suất ăn</option>
+                </select>
+              </div>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs min-w-[700px]">
                 <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
@@ -349,7 +567,7 @@ ${absentList ? `\nDanh sách học sinh vắng:\n${absentList}` : '\n(Cả lớp
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {dayAttendances.map((item, idx) => {
+                  {dailyPagination.items.map((item, idx) => {
                     const approvedLeave = leaveRequests.find(
                       (r) =>
                         r.studentId === item.student.id &&
@@ -369,10 +587,12 @@ ${absentList ? `\nDanh sách học sinh vắng:\n${absentList}` : '\n(Cả lớp
                       <tr
                         key={item.student.id}
                         className={`hover:bg-slate-50 transition-colors ${
-                          item.status !== 'CO_MAT' ? 'bg-amber-50/20' : ''
+                          !item.isRecorded ? 'bg-slate-50/70' : item.status !== 'CO_MAT' ? 'bg-amber-50/20' : ''
                         }`}
                       >
-                        <td className="py-3 px-4 text-center font-medium text-slate-400">{idx + 1}</td>
+                        <td className="py-3 px-4 text-center font-medium text-slate-400">
+                          {(dailyPagination.page - 1) * pageSize + idx + 1}
+                        </td>
                         <td className="py-3 px-4 font-mono font-medium text-slate-600">{item.student.studentCode}</td>
                         <td className="py-3 px-4">
                           <div className="flex items-center space-x-2">
@@ -381,6 +601,11 @@ ${absentList ? `\nDanh sách học sinh vắng:\n${absentList}` : '\n(Cả lớp
                               <span className="text-[10px] text-pink-500 font-bold">♀</span>
                             )}
                           </div>
+                          {!item.isRecorded && (
+                            <span className="mt-0.5 inline-flex rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-bold text-slate-500">
+                              Chưa điểm danh
+                            </span>
+                          )}
                           {approvedLeave && (
                             <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200 mt-0.5">
                               ✓ Có đơn phép đã duyệt
@@ -448,8 +673,9 @@ ${absentList ? `\nDanh sách học sinh vắng:\n${absentList}` : '\n(Cả lớp
                           <input
                             type="checkbox"
                             checked={item.hasBoardingMeal}
-                            onChange={() => handleMealToggle(item.student.id, item.hasBoardingMeal, item.status)}
-                            className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 cursor-pointer"
+                            disabled={item.status === 'VANG_CO_PHEP' || item.status === 'VANG_KHONG_PHEP'}
+                            onChange={() => handleMealToggle(item.student.id, item.hasBoardingMeal, item.status, item.reason)}
+                            className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
                           />
                         </td>
 
@@ -458,9 +684,17 @@ ${absentList ? `\nDanh sách học sinh vắng:\n${absentList}` : '\n(Cả lớp
                           <input
                             type="text"
                             placeholder={item.status !== 'CO_MAT' ? 'Nhập lý do nghỉ...' : 'Ghi chú thêm...'}
-                            value={item.reason}
-                            onChange={(e) =>
-                              handleReasonChange(item.student.id, item.status, item.hasBoardingMeal, e.target.value)
+                            defaultValue={item.reason}
+                            key={`${item.student.id}-${selectedDate}-${item.reason}`}
+                            onBlur={(event) =>
+                              event.target.value !== item.reason
+                                ? handleReasonChange(
+                                    item.student.id,
+                                    item.status || 'CO_MAT',
+                                    item.hasBoardingMeal,
+                                    event.target.value
+                                  )
+                                : undefined
                             }
                             className="w-full px-2.5 py-1 rounded border border-slate-200 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none bg-transparent"
                           />
@@ -468,9 +702,20 @@ ${absentList ? `\nDanh sách học sinh vắng:\n${absentList}` : '\n(Cả lớp
                       </tr>
                     );
                   })}
+                  {dailyPagination.totalItems === 0 && (
+                    <tr><td colSpan={6} className="p-8 text-center text-slate-500">Không có học sinh phù hợp bộ lọc.</td></tr>
+                  )}
                 </tbody>
               </table>
             </div>
+            <TablePagination
+              page={dailyPagination.page}
+              totalPages={dailyPagination.totalPages}
+              totalItems={dailyPagination.totalItems}
+              pageSize={pageSize}
+              onPageChange={setDailyPage}
+              onPageSizeChange={handlePageSizeChange}
+            />
           </div>
         </>
       )}

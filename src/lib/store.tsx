@@ -93,6 +93,7 @@ import {
 } from './feature-flags';
 import { useAuth } from './auth-context';
 import { supabase } from './supabase';
+import { getIsoDateRange, isSameAttendanceDay, mergeAttendanceByDay } from './attendance-utils';
 import { toast } from 'sonner';
 
 export function getDefaultPinForStudent(student?: { dateOfBirth?: string }): string {
@@ -1467,16 +1468,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         (payload) => {
           if (payload.eventType === 'INSERT') {
             const newRow = payload.new as DailyAttendance;
-            setAttendances((prev) => {
-              if (prev.some((a) => a.id === newRow.id)) return prev;
-              return [...prev, newRow];
-            });
+            setAttendances((prev) => mergeAttendanceByDay(prev, newRow));
           } else if (payload.eventType === 'DELETE') {
             const oldRow = payload.old as any;
             setAttendances((prev) => prev.filter((a) => a.id !== oldRow.id));
           } else if (payload.eventType === 'UPDATE') {
             const newRow = payload.new as DailyAttendance;
-            setAttendances((prev) => prev.map((a) => (a.id === newRow.id ? newRow : a)));
+            setAttendances((prev) => mergeAttendanceByDay(prev, newRow));
           }
         }
       )
@@ -3146,48 +3144,73 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     reason?: string
   ) => {
     const recordId = `att-${studentId}-${date}`;
-    setAttendances((prev) => {
-      const idx = prev.findIndex((a) => a.studentId === studentId && a.date === date);
-      if (idx >= 0) {
-        const copy = [...prev];
-        copy[idx] = { ...copy[idx], status, hasBoardingMeal, reason };
-        return copy;
-      }
-      return [
-        ...prev,
-        {
-          id: recordId,
-          studentId,
-          date,
-          status,
-          hasBoardingMeal,
-          reason,
-        },
-      ];
-    });
+    const previousRecord = attendances.find((item) => item.studentId === studentId && item.date === date);
+    const optimisticRecord: DailyAttendance = {
+      id: previousRecord?.id || recordId,
+      studentId,
+      date,
+      status,
+      hasBoardingMeal,
+      reason,
+    };
+    setAttendances((prev) => mergeAttendanceByDay(prev, optimisticRecord));
 
     // Live API Write to Supabase
-    const previous = attendances;
     void handleDbMutation(
       supabase
         .from('DailyAttendance')
         .upsert({
-          id: recordId,
+          id: previousRecord?.id || recordId,
           studentId,
           date,
           status,
           hasBoardingMeal,
           reason: reason || '',
-        }),
-      () => setAttendances(previous),
+        }, { onConflict: 'studentId,date' }),
+      () => setAttendances((current) => {
+        const latest = current.find((item) => item.studentId === studentId && item.date === date);
+        const stillOptimistic = latest
+          && latest.status === optimisticRecord.status
+          && latest.hasBoardingMeal === optimisticRecord.hasBoardingMeal
+          && (latest.reason || '') === (optimisticRecord.reason || '');
+        if (!stillOptimistic) return current;
+        if (previousRecord) return mergeAttendanceByDay(current, previousRecord);
+        return current.filter((item) => !isSameAttendanceDay(item, optimisticRecord));
+      }),
       'Không thể lưu điểm danh'
     );
   };
 
   const batchSetAttendance = (date: string, status: AttendanceStatus) => {
-    students.forEach((st) => {
-      updateAttendance(st.id, date, status, st.isBoarding && status === 'CO_MAT');
-    });
+    const studentIds = new Set(students.map((student) => student.id));
+    const previousRecords = attendances.filter(
+      (record) => record.date === date && studentIds.has(record.studentId)
+    );
+    const previousByStudent = new Map(previousRecords.map((record) => [record.studentId, record]));
+    const optimisticRecords: DailyAttendance[] = students.map((student) => ({
+      id: previousByStudent.get(student.id)?.id || `att-${student.id}-${date}`,
+      studentId: student.id,
+      date,
+      status,
+      hasBoardingMeal: student.isBoarding && status === 'CO_MAT',
+      reason: '',
+    }));
+
+    setAttendances((current) => optimisticRecords.reduce(
+      (next, record) => mergeAttendanceByDay(next, record),
+      current
+    ));
+
+    void handleDbMutation(
+      supabase.from('DailyAttendance').upsert(optimisticRecords, { onConflict: 'studentId,date' }),
+      () => setAttendances((current) => {
+        const withoutBatch = current.filter(
+          (record) => record.date !== date || !studentIds.has(record.studentId)
+        );
+        return [...withoutBatch, ...previousRecords];
+      }),
+      'Không thể lưu điểm danh cả lớp'
+    );
   };
 
   // STAR REWARDS & DAILY BEHAVIOR ASSESSMENTS
@@ -3661,7 +3684,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       if (Array.isArray(data.attendances)) {
         setAttendances(data.attendances);
-        const { error } = await supabase.from('DailyAttendance').upsert(data.attendances);
+        const { error } = await supabase
+          .from('DailyAttendance')
+          .upsert(data.attendances, { onConflict: 'studentId,date' });
         if (error) errors.push(`Điểm danh: ${error.message}`);
       }
       if (Array.isArray(data.starLogs)) {
@@ -3941,14 +3966,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       )
     );
 
-    // AUTO-SYNC ATTENDANCE: Cập nhật học sinh sang VANG_CO_PHEP vào ngày nghỉ
-    updateAttendance(
-      req.studentId,
-      req.startDate,
-      'VANG_CO_PHEP',
-      !req.hasBoardingMealCancel,
-      `Đơn xin nghỉ phép trực tuyến (${req.reasonDetail})`
-    );
+    // AUTO-SYNC ATTENDANCE: mỗi ngày trong đơn là một bản ghi riêng và học sinh nghỉ không tính suất ăn.
+    getIsoDateRange(req.startDate, req.endDate).forEach((date) => {
+      updateAttendance(
+        req.studentId,
+        date,
+        'VANG_CO_PHEP',
+        false,
+        `Đơn xin nghỉ phép trực tuyến (${req.reasonDetail})`
+      );
+    });
 
     toast.success(`Đã duyệt đơn xin nghỉ của em ${req.studentName} và đồng bộ Sổ điểm danh!`);
     void handleDbMutation(
