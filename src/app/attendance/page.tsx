@@ -128,8 +128,10 @@ export default function AttendancePage() {
     const attendsSchool = record?.status === 'CO_MAT' || record?.status === 'MUON';
     return {
       student: st,
-      status: record?.status ?? null,
-      hasBoardingMeal: Boolean(record?.hasBoardingMeal && attendsSchool),
+      status: record?.status ?? 'CO_MAT',
+      hasBoardingMeal: record
+        ? Boolean(record.hasBoardingMeal && attendsSchool)
+        : st.isBoarding,
       reason: record?.reason || '',
       isRecorded: Boolean(record),
     };
@@ -181,8 +183,8 @@ export default function AttendancePage() {
     updateAttendance(studentId, selectedDate, status, hasMeal, current?.reason);
   };
 
-  const handleMealToggle = (studentId: string, currentMeal: boolean, status: AttendanceStatus | null, reason: string) => {
-    updateAttendance(studentId, selectedDate, status || 'CO_MAT', !currentMeal, reason);
+  const handleMealToggle = (studentId: string, currentMeal: boolean, status: AttendanceStatus, reason: string) => {
+    updateAttendance(studentId, selectedDate, status, !currentMeal, reason);
   };
 
   const handleReasonChange = (studentId: string, status: AttendanceStatus, hasMeal: boolean, reason: string) => {
@@ -603,7 +605,7 @@ ${absentList ? `\nDanh sách học sinh vắng:\n${absentList}` : '\n(Cả lớp
                           </div>
                           {!item.isRecorded && (
                             <span className="mt-0.5 inline-flex rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-bold text-slate-500">
-                              Chưa điểm danh
+                              Mặc định có mặt · Chưa lưu
                             </span>
                           )}
                           {approvedLeave && (
@@ -690,7 +692,7 @@ ${absentList ? `\nDanh sách học sinh vắng:\n${absentList}` : '\n(Cả lớp
                               event.target.value !== item.reason
                                 ? handleReasonChange(
                                     item.student.id,
-                                    item.status || 'CO_MAT',
+                                    item.status,
                                     item.hasBoardingMeal,
                                     event.target.value
                                   )
