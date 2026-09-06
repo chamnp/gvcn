@@ -25,7 +25,14 @@ export function QRCodeCanvas({
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    if (!url || !canvasRef.current) return;
+    if (!url || !canvasRef.current) {
+      const context = canvasRef.current?.getContext('2d');
+      if (context && canvasRef.current) {
+        context.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      }
+      const frameId = window.requestAnimationFrame(() => setDataUrl(''));
+      return () => window.cancelAnimationFrame(frameId);
+    }
 
     QRCode.toCanvas(
       canvasRef.current,
@@ -67,44 +74,37 @@ export function QRCodeCanvas({
       toast.error('Không thể mở cửa sổ in. Vui lòng cho phép popup!');
       return;
     }
-    printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>${title}</title>
-          <style>
-            body {
-              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              justify-content: center;
-              min-height: 90vh;
-              margin: 0;
-              padding: 24px;
-              text-align: center;
-            }
-            h1 { font-size: 24px; margin-bottom: 8px; color: #1e293b; }
-            p { font-size: 14px; color: #64748b; margin-bottom: 24px; }
-            img { width: 280px; height: 280px; border: 1px solid #e2e8f0; border-radius: 16px; padding: 12px; }
-            .url { font-family: monospace; font-size: 12px; margin-top: 16px; color: #475569; word-break: break-all; }
-          </style>
-        </head>
-        <body>
-          <h1>${title}</h1>
-          <p>Quét mã bằng Zalo hoặc Camera điện thoại để xem Bảng vinh danh & Đổi quà</p>
-          <img src="${dataUrl}" alt="${title}" />
-          <div class="url">${url}</div>
-          <script>
-            window.onload = () => {
-              window.print();
-              setTimeout(() => window.close(), 1000);
-            };
-          </script>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
+    const printDocument = printWindow.document;
+    printDocument.title = title;
+
+    const style = printDocument.createElement('style');
+    style.textContent = `
+      body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+        display:flex; flex-direction:column; align-items:center; justify-content:center;
+        min-height:90vh; margin:0; padding:24px; text-align:center; }
+      h1 { font-size:24px; margin-bottom:8px; color:#1e293b; }
+      p { font-size:14px; color:#64748b; margin-bottom:24px; }
+      img { width:280px; height:280px; border:1px solid #e2e8f0; border-radius:16px; padding:12px; }
+      .url { font-family:monospace; font-size:12px; margin-top:16px; color:#475569; word-break:break-all; }
+    `;
+    printDocument.head.appendChild(style);
+
+    const heading = printDocument.createElement('h1');
+    heading.textContent = title;
+    const instruction = printDocument.createElement('p');
+    instruction.textContent = 'Quét mã bằng Zalo hoặc Camera điện thoại để xem Bảng vinh danh & Đổi quà';
+    const image = printDocument.createElement('img');
+    image.src = dataUrl;
+    image.alt = title;
+    const link = printDocument.createElement('div');
+    link.className = 'url';
+    link.textContent = url;
+    printDocument.body.append(heading, instruction, image, link);
+
+    image.addEventListener('load', () => {
+      printWindow.print();
+      printWindow.setTimeout(() => printWindow.close(), 1000);
+    });
   };
 
   const handleCopyLink = () => {

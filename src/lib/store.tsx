@@ -285,6 +285,7 @@ interface AppContextType {
   rewardRedemptions: RewardRedemption[];
   createRewardRedemption: (data: {
     studentId: string;
+    studentShareToken: string;
     studentName: string;
     studentCode: string;
     studentAvatar?: string;
@@ -293,7 +294,7 @@ interface AppContextType {
     studentNote?: string;
     month?: string;
   }) => Promise<{ success: boolean; error?: string }>;
-  fulfillRewardRedemption: (redemptionId: string) => void;
+  fulfillRewardRedemption: (redemptionId: string) => Promise<void>;
   cancelRewardRedemption: (redemptionId: string) => Promise<void>;
   getStudentMonthlyStars: (studentId: string, monthStr?: string) => { earned: number; spent: number; available: number };
   resetMonthStars: (monthStr?: string) => Promise<void>;
@@ -2057,10 +2058,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const regenerateClassShareToken = (classId?: string): string => {
     const targetId = classId || activeClassId;
-    const targetClass = schoolClasses.find((c) => c.id === targetId) || classInfo;
-    const cleanName = targetClass.name.toLowerCase().replace(/[^a-z0-9]/g, '');
-    const randomSuffix = Math.random().toString(36).substring(2, 8);
-    const newToken = `c${cleanName}-${randomSuffix}`;
+    const newToken = `c-${crypto.randomUUID().replaceAll('-', '')}`;
 
     setSchoolClasses((prev) => {
       const updated = prev.map((c) => (c.id === targetId ? { ...c, shareToken: newToken } : c));
@@ -2847,8 +2845,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const regenerateStudentToken = (studentId: string): string => {
-    const randomSuffix = Math.random().toString(36).substring(2, 9);
-    const newToken = `s-${studentId.toLowerCase().replace(/[^a-z0-9]/g, '')}-${randomSuffix}`;
+    const newToken = `s-${crypto.randomUUID().replaceAll('-', '')}`;
     setAllStudents((prev) => {
       const updated = prev.map((s) => {
         if (s.id === studentId) {
@@ -3204,6 +3201,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   ) => {
     const newLog: StarLog = {
       id: `star-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      classId: activeClassId,
       studentId,
       points,
       category,
@@ -3221,6 +3219,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         .from('StarLog')
         .insert({
           id: newLog.id,
+          classId: newLog.classId,
           studentId: newLog.studentId,
           points: newLog.points,
           category: newLog.category,
@@ -3255,6 +3254,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const newCriterion: StarCriterion = {
       ...criterionData,
       id: `sc-${Date.now()}`,
+      classId: criterionData.classId || activeClassId,
     };
     const previous = starCriteria;
     setStarCriteria((prev) => [...prev, newCriterion]);
@@ -3378,6 +3378,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const createRewardRedemption = async (data: {
     studentId: string;
+    studentShareToken: string;
     studentName: string;
     studentCode: string;
     studentAvatar?: string;
@@ -3387,25 +3388,34 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     month?: string;
   }): Promise<{ success: boolean; error?: string }> => {
     const currentMonth = data.month || new Date().toISOString().substring(0, 7);
-    const targetStudent = allStudents.find((s) => s.id === data.studentId);
-    const resolvedClassId = targetStudent?.classId || activeClassId || 'class-4a1';
-    const newRedemptionId = `rd-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const targetStudent = allStudents.find(
+      (s) =>
+        s.id === data.studentId &&
+        s.shareToken?.toLowerCase() === data.studentShareToken.toLowerCase()
+    );
+    if (!targetStudent?.classId) {
+      return { success: false, error: 'Liên kết học sinh không hợp lệ hoặc đã hết hạn.' };
+    }
+
+    type RedeemRewardRpcResult = {
+      success: boolean;
+      error?: string;
+      redemption_id?: string;
+      total_stars?: number;
+      month?: string;
+      requested_at?: string;
+    };
 
     // 1. Call atomic PostgreSQL RPC in Supabase (locks rows, validates server balance, decrements stock)
     try {
-      const { data: rpcRes, error: rpcErr } = await (supabase.rpc as any)('redeem_reward_tx', {
-        p_redemption_id: newRedemptionId,
-        p_class_id: resolvedClassId,
-        p_student_id: data.studentId,
-        p_student_name: data.studentName,
-        p_student_code: data.studentCode,
-        p_student_avatar: data.studentAvatar || null,
+      const { data: rpcData, error: rpcErr } = await supabase.rpc('redeem_reward_tx', {
+        p_student_share_token: data.studentShareToken,
         p_items: data.items,
-        p_month: currentMonth,
         p_student_note: data.studentNote?.trim() || null,
       });
+      const rpcRes = rpcData as RedeemRewardRpcResult | null;
 
-      if (rpcErr || (rpcRes && !rpcRes.success)) {
+      if (rpcErr || !rpcRes?.success || !rpcRes.redemption_id) {
         const errorMsg = rpcRes?.error || rpcErr?.message || 'Không thể thực hiện đổi quà';
         return { success: false, error: errorMsg };
       }
@@ -3413,18 +3423,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const calculatedTotalStars = rpcRes?.total_stars ?? data.totalStars;
 
       const newRedemption: RewardRedemption = {
-        id: newRedemptionId,
-        classId: resolvedClassId,
+        id: rpcRes.redemption_id,
+        classId: targetStudent.classId,
         studentId: data.studentId,
         studentName: data.studentName,
         studentCode: data.studentCode,
         studentAvatar: data.studentAvatar,
         items: data.items,
         totalStars: calculatedTotalStars,
-        month: currentMonth,
+        month: rpcRes.month || currentMonth,
         status: 'PENDING',
         studentNote: data.studentNote?.trim() || undefined,
-        requestedAt: new Date().toISOString(),
+        requestedAt: rpcRes.requested_at || new Date().toISOString(),
       };
 
       // 2. Sync React local state
@@ -3442,31 +3452,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setRewardRedemptions((prev) => [newRedemption, ...prev]);
 
       return { success: true };
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Lỗi giao dịch đổi quà:', err);
-      return { success: false, error: err.message || 'Lỗi kết nối máy chủ' };
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : 'Lỗi kết nối máy chủ',
+      };
     }
   };
 
-  const fulfillRewardRedemption = (redemptionId: string) => {
-    const deliveredAt = new Date().toISOString();
+  const fulfillRewardRedemption = async (redemptionId: string) => {
+    const { data: rpcData, error } = await supabase.rpc('fulfill_reward_redemption_tx', {
+      p_redemption_id: redemptionId,
+    });
+    const result = rpcData as { success?: boolean; error?: string; delivered_at?: string } | null;
+    if (error || !result?.success) {
+      toast.error(result?.error || error?.message || 'Không thể cập nhật trạng thái trao thưởng');
+      return;
+    }
+
+    const deliveredAt = result.delivered_at || new Date().toISOString();
     setRewardRedemptions((prev) =>
-      prev.map((r) =>
-        r.id === redemptionId
-          ? { ...r, status: 'DELIVERED', deliveredAt }
-          : r
-      )
+      prev.map((r) => (r.id === redemptionId ? { ...r, status: 'DELIVERED', deliveredAt } : r))
     );
-
-    void handleDbMutation(
-      supabase
-        .from('RewardRedemption')
-        .update({ status: 'DELIVERED', deliveredAt })
-        .eq('id', redemptionId),
-      undefined,
-      'Không thể cập nhật trạng thái trao thưởng'
-    );
-
     toast.success('Đã xác nhận trao quà cho học sinh thành công! 🎉');
   };
 
@@ -3476,9 +3484,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     try {
       // 1. Call atomic PostgreSQL RPC in Supabase (locks redemption, restores stock, sets CANCELLED)
-      const { data: rpcRes, error: rpcErr } = await (supabase.rpc as any)('cancel_reward_redemption_tx', {
+      const { data: rpcData, error: rpcErr } = await supabase.rpc('cancel_reward_redemption_tx', {
         p_redemption_id: redemptionId,
       });
+      const rpcRes = rpcData as { success?: boolean; error?: string } | null;
 
       if (rpcErr || (rpcRes && !rpcRes.success)) {
         toast.error(rpcRes?.error || rpcErr?.message || 'Không thể hủy đơn đổi quà');
@@ -3504,7 +3513,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       );
 
       toast.info('Đã hủy đơn đổi quà và hoàn lại sao/tồn kho!');
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Lỗi khi hủy đơn đổi quà:', err);
       toast.error('Không thể hủy đơn đổi quà');
     }
@@ -3541,44 +3550,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return;
       }
 
-      const now = new Date().toISOString();
-      const closeRedemptions: RewardRedemption[] = studentsToClose.map(({ student, available }) => ({
-        id: `rd-close-${student.id}-${targetMonth}-${Date.now()}`,
-        classId: activeClassId,
-        studentId: student.id,
-        studentName: student.fullName,
-        studentCode: student.studentCode,
-        studentAvatar: student.avatarUrl,
-        items: [
-          {
-            productId: 'system-period-close',
-            productName: 'Chốt số dư thi đua tháng',
-            quantity: 1,
-            unitStarPrice: available,
-          },
-        ],
-        totalStars: available,
-        month: targetMonth,
-        status: 'DELIVERED' as const,
-        studentNote: 'Chốt số dư khả dụng cuối tháng mở chu kỳ thi đua mới',
-        requestedAt: now,
-        deliveredAt: now,
-      }));
+      const { data: rpcData, error } = await supabase.rpc('close_month_star_balance_tx', {
+        p_class_id: activeClassId,
+        p_month: targetMonth,
+      });
+      const result = rpcData as {
+        success?: boolean;
+        error?: string;
+        redemptions?: RewardRedemption[];
+      } | null;
 
-      const previous = rewardRedemptions;
-      setRewardRedemptions((prev) => [...closeRedemptions, ...prev]);
-
-      // Insert into Supabase with classId and proper rollback
-      const { error } = await supabase.from('RewardRedemption').insert(closeRedemptions);
-
-      if (error) {
-        setRewardRedemptions(previous);
-        toast.error('Không thể chốt số dư tháng: ' + error.message);
+      if (error || !result?.success) {
+        toast.error('Không thể chốt số dư tháng: ' + (result?.error || error?.message || 'Lỗi máy chủ'));
         return;
       }
 
+      const closeRedemptions = result.redemptions || [];
+      setRewardRedemptions((prev) => [...closeRedemptions, ...prev]);
+
       toast.success(
-        `Đã chốt số dư tháng ${targetMonth.replace('-', '/')} cho ${studentsToClose.length} học sinh thành công! Lịch sử điểm sao được giữ nguyên.`
+        `Đã chốt số dư tháng ${targetMonth.replace('-', '/')} cho ${closeRedemptions.length} học sinh thành công! Lịch sử điểm sao được giữ nguyên.`
       );
     }
   };

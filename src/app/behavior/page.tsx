@@ -122,6 +122,7 @@ export default function BehaviorPage() {
     cancelRewardRedemption,
     classInfo,
     activeClassId,
+    regenerateClassShareToken,
   } = useAppStore();
 
   const [activeTab, setActiveTab] = useState<'TABLE' | 'LEADERBOARD' | 'CRITERIA' | 'SHOP' | 'REDEMPTIONS' | 'HISTORY'>('TABLE');
@@ -220,7 +221,11 @@ export default function BehaviorPage() {
 
   // Scoped class RewardRedemptions
   const classRedemptions = useMemo(() => {
-    return rewardRedemptions.filter((r) => r.classId === activeClassId || classStudentIds.has(r.studentId));
+    return rewardRedemptions.filter(
+      (redemption) =>
+        (redemption.classId === activeClassId || classStudentIds.has(redemption.studentId)) &&
+        !redemption.items.some((item) => item.productId === 'system-period-close')
+    );
   }, [rewardRedemptions, activeClassId, classStudentIds]);
 
   // Scoped class RewardProducts
@@ -555,7 +560,12 @@ export default function BehaviorPage() {
           </button>
 
           <button
-            onClick={() => setIsShareModalOpen(true)}
+            onClick={() => {
+              if (!classInfo.shareToken) {
+                regenerateClassShareToken(activeClassId);
+              }
+              setIsShareModalOpen(true);
+            }}
             className="px-3 py-2 rounded-2xl text-xs font-bold bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 flex items-center gap-1.5 transition-all cursor-pointer"
           >
             <Share2 className="w-3.5 h-3.5 text-purple-600" />
@@ -1713,8 +1723,8 @@ export default function BehaviorPage() {
             </div>
 
             {(() => {
-              const publicRewardUrl = typeof window !== 'undefined'
-                ? `${window.location.origin}/rewards/${classInfo.shareToken || classInfo.id}`
+              const publicRewardUrl = typeof window !== 'undefined' && classInfo.shareToken
+                ? `${window.location.origin}/rewards/${classInfo.shareToken}`
                 : '';
               return (
                 <div className="space-y-3">

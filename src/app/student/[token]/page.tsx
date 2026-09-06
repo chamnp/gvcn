@@ -1,7 +1,6 @@
 'use client';
 
 import React, { use, useState, useMemo, useEffect } from 'react';
-import Link from 'next/link';
 import {
   Award,
   Star,
@@ -281,6 +280,23 @@ export default function StudentPrivateReportPage({
 
   const [isSubmittingRedemption, setIsSubmittingRedemption] = useState(false);
 
+  const classShopProducts = useMemo(() => {
+    if (!studentClass) return [];
+    return rewardProducts.filter((product) => !product.classId || product.classId === studentClass.id);
+  }, [rewardProducts, studentClass]);
+
+  const filteredShopProducts = useMemo(() => {
+    return classShopProducts.filter((product) => {
+      if (shopCategoryFilter === 'ALL') return true;
+      return product.category === shopCategoryFilter;
+    });
+  }, [classShopProducts, shopCategoryFilter]);
+
+  const classStarCriteria = useMemo(() => {
+    if (!studentClass) return [];
+    return starCriteria.filter((criterion) => !criterion.classId || criterion.classId === studentClass.id);
+  }, [starCriteria, studentClass]);
+
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!student || cartItems.length === 0 || isSubmittingRedemption) return;
@@ -302,6 +318,7 @@ export default function StudentPrivateReportPage({
     try {
       const result = await createRewardRedemption({
         studentId: student.id,
+        studentShareToken: rawToken,
         studentName: student.fullName,
         studentCode: student.studentCode,
         studentAvatar: student.avatarUrl,
@@ -324,26 +341,26 @@ export default function StudentPrivateReportPage({
     }
   };
 
-  // If student not found
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl p-6 max-w-md w-full text-center space-y-3 border border-slate-200 shadow-xl">
+          <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
+          <h2 className="font-bold text-slate-800 text-sm">Đang tải hồ sơ học sinh...</h2>
+        </div>
+      </div>
+    );
+  }
+
   if (!student || !studentClass) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xl text-center space-y-4">
-          <div className="w-16 h-16 rounded-3xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto text-3xl shadow-inner">
-            🔒
-          </div>
-          <h2 className="text-xl font-black text-slate-900">Liên Kết Học Sinh Không Hợp Lệ</h2>
+        <div className="bg-white rounded-3xl p-6 max-w-md w-full text-center space-y-3 border border-slate-200 shadow-xl">
+          <p className="text-4xl">⚠️</p>
+          <h2 className="font-black text-slate-900 text-lg">Không tìm thấy hồ sơ học sinh</h2>
           <p className="text-xs text-slate-500 leading-relaxed">
-            Đường dẫn xem góc học tập của con không tồn tại hoặc đã được Giáo viên chủ nhiệm thay đổi mã bảo mật mới. Vui lòng liên hệ Giáo viên để nhận liên kết chính xác.
+            Đường dẫn tra cứu không hợp lệ hoặc đã hết hạn. Vui lòng liên hệ Giáo viên chủ nhiệm để nhận liên kết cá nhân chính xác.
           </p>
-          <div className="pt-3 border-t border-slate-100 flex items-center justify-center gap-2">
-            <Link
-              href="/lookup"
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-xs transition-colors"
-            >
-              Vào Cổng Tra Cứu Bằng Mã PIN →
-            </Link>
-          </div>
         </div>
       </div>
     );
@@ -366,7 +383,11 @@ export default function StudentPrivateReportPage({
     .reduce((sum, s) => sum + s.points, 0);
 
   // Student Redemptions
-  const studentRedemptions = rewardRedemptions.filter((r) => r.studentId === student.id);
+  const studentRedemptions = rewardRedemptions.filter(
+    (redemption) =>
+      redemption.studentId === student.id &&
+      !redemption.items.some((item) => item.productId === 'system-period-close')
+  );
 
   // Attendance stats
   const studentAtt = attendances.filter((a) => a.studentId === student.id);
@@ -465,45 +486,6 @@ export default function StudentPrivateReportPage({
     navigator.clipboard.writeText(url);
     toast.success('Đã sao chép liên kết riêng tư của con vào bộ nhớ tạm!');
   };
-
-  // Scoped shop products for student's class
-  const classShopProducts = useMemo(() => {
-    if (!studentClass) return [];
-    return rewardProducts.filter((p) => !p.classId || p.classId === studentClass.id);
-  }, [rewardProducts, studentClass]);
-
-  // Filtered shop products
-  const filteredShopProducts = useMemo(() => {
-    return classShopProducts.filter((p) => {
-      if (shopCategoryFilter === 'ALL') return true;
-      return p.category === shopCategoryFilter;
-    });
-  }, [classShopProducts, shopCategoryFilter]);
-
-  if (!isLoaded) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-3xl p-6 max-w-md w-full text-center space-y-3 border border-slate-200 shadow-xl">
-          <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
-          <h2 className="font-bold text-slate-800 text-sm">Đang tải hồ sơ học sinh...</h2>
-        </div>
-      </div>
-    );
-  }
-
-  if (!student || !studentClass) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-3xl p-6 max-w-md w-full text-center space-y-3 border border-slate-200 shadow-xl">
-          <p className="text-4xl">⚠️</p>
-          <h2 className="font-black text-slate-900 text-lg">Không tìm thấy hồ sơ học sinh</h2>
-          <p className="text-xs text-slate-500 leading-relaxed">
-            Đường dẫn tra cứu không hợp lệ hoặc đã hết hạn. Vui lòng liên hệ Giáo viên chủ nhiệm để nhận liên kết cá nhân chính xác.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-24 w-full max-w-full overflow-x-hidden">
@@ -1155,11 +1137,11 @@ export default function StudentPrivateReportPage({
 
                       <button
                         type="submit"
-                        disabled={studentMonthlyStars.available < totalCartStars || totalCartStars === 0}
+                        disabled={isSubmittingRedemption || studentMonthlyStars.available < totalCartStars || totalCartStars === 0}
                         className="w-full py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 disabled:opacity-50 text-white font-black text-xs rounded-2xl shadow-md transition-all flex items-center justify-center space-x-1.5 cursor-pointer"
                       >
                         <Gift className="w-4 h-4" />
-                        <span>Xác Nhận Đổi Quà Ngay</span>
+                        <span>{isSubmittingRedemption ? 'Đang xử lý...' : 'Xác Nhận Đổi Quà Ngay'}</span>
                       </button>
                     </form>
                   )}
@@ -1520,7 +1502,7 @@ export default function StudentPrivateReportPage({
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-              {starCriteria.map((c) => (
+              {classStarCriteria.map((c) => (
                 <div key={c.id} className="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-center space-x-2">
                   <span className="text-xl shrink-0">{c.icon}</span>
                   <div className="min-w-0 flex-1">
