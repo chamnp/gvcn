@@ -474,6 +474,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (e) {}
     }
 
+    // Validate that assignedClassId exists in Class table before setting foreign key
+    let validClassId: string | null = null;
+    const targetClassId = partial.assignedClassId !== undefined ? partial.assignedClassId : profile.assignedClassId;
+    if (targetClassId) {
+      try {
+        const { data: clsCheck } = await supabase.from('Class').select('id').eq('id', targetClassId).maybeSingle();
+        if (clsCheck?.id) {
+          validClassId = clsCheck.id;
+        }
+      } catch (e) {}
+    }
+
     // 1. Update in Supabase Teacher table
     try {
       const { error } = await supabase.from('Teacher').upsert(
@@ -489,7 +501,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           phone: partial.phone !== undefined ? partial.phone : profile.phone,
           avatarUrl: partial.avatarUrl !== undefined ? partial.avatarUrl : profile.avatarUrl,
           role: profile.role,
-          assignedClassId: partial.assignedClassId !== undefined ? partial.assignedClassId : profile.assignedClassId,
+          assignedClassId: validClassId,
+          assignedClassName: partial.assignedClassName !== undefined ? partial.assignedClassName : profile.assignedClassName,
           isActive: profile.isActive,
         },
         { onConflict: 'email' }
@@ -563,8 +576,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }): Promise<{ success: boolean; error?: any }> => {
     if (!user?.email) return { success: false, error: 'User not logged in' };
     const email = user.email.toLowerCase().trim();
-    const cleanClass = data.assignedClassName.trim();
-    const classId = `class-${cleanClass.replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}`;
+    const cleanClass = data.assignedClassName.replace(/^Lớp\s+/i, '').trim().toUpperCase();
+    const cleanSchool = data.schoolName.trim();
+
+    // Check if the assigned class already exists in Class table
+    let matchedClassId: string | null = null;
+    try {
+      const { data: existingClass } = await supabase
+        .from('Class')
+        .select('id')
+        .eq('schoolName', cleanSchool)
+        .ilike('name', cleanClass)
+        .maybeSingle();
+
+      if (existingClass?.id) {
+        matchedClassId = existingClass.id;
+      }
+    } catch (e) {
+      console.warn('Check existing class error during registration:', e);
+    }
 
     try {
       const { error } = await supabase.from('Teacher').upsert(
@@ -572,12 +602,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email,
           fullName: data.fullName.trim(),
           phone: data.phone.trim(),
-          schoolName: data.schoolName.trim(),
+          schoolName: cleanSchool,
           province: data.province.trim(),
           district: (data.district || '').trim(),
           mainGrade: Number(data.mainGrade) || 1,
           assignedClassName: cleanClass,
-          assignedClassId: classId,
+          assignedClassId: matchedClassId,
           role: 'PENDING',
           isActive: false,
           title: 'Chờ duyệt kích hoạt',
@@ -620,7 +650,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }) => {
     const cleanEmail = data.email.trim().toLowerCase();
     const cleanName = data.fullName.trim();
-    const classId = data.assignedClassName ? `class-${data.assignedClassName.replace('Lớp ', '').toLowerCase()}` : undefined;
+    const cleanClass = data.assignedClassName ? data.assignedClassName.replace(/^Lớp\s+/i, '').trim().toUpperCase() : undefined;
+
+    // Check if class exists in Supabase Class table before setting foreign key
+    let validClassId: string | null = null;
+    if (cleanClass) {
+      try {
+        const { data: matchedClass } = await supabase
+          .from('Class')
+          .select('id')
+          .ilike('name', cleanClass)
+          .maybeSingle();
+        if (matchedClass?.id) {
+          validClassId = matchedClass.id;
+        }
+      } catch (e) {}
+    }
 
     // Write to Supabase
     try {
@@ -636,8 +681,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           planTier: data.planTier || 'BETA_ALL_ACCESS',
           title: data.title || (data.role === 'ADMIN' ? 'Quản Trị Nền Tảng' : 'Giáo viên Chủ nhiệm'),
           department: data.department || null,
-          assignedClassId: classId,
-          assignedClassName: data.assignedClassName || undefined,
+          assignedClassId: validClassId,
+          assignedClassName: cleanClass || undefined,
           phone: data.phone,
           avatarUrl: data.avatarUrl,
           isActive: true,
@@ -669,8 +714,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       badges: [],
       title: data.title || 'Giáo viên',
       department: data.department || undefined,
-      assignedClassId: classId,
-      assignedClassName: data.assignedClassName || (classId ? `Lớp ${data.assignedClassName}` : undefined),
+      assignedClassId: validClassId || undefined,
+      assignedClassName: cleanClass || undefined,
       phone: data.phone,
       avatarUrl: data.avatarUrl,
       isActive: true,
@@ -693,10 +738,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const cleanRole = partial.role || existing.role;
     const cleanActive = partial.isActive !== undefined ? partial.isActive : existing.isActive;
     const cleanClass = partial.assignedClassName !== undefined ? partial.assignedClassName : existing.assignedClassName;
-    const classId = cleanClass ? `class-${cleanClass.replace('Lớp ', '').toLowerCase()}` : undefined;
+
+    // Resolve valid class ID to prevent foreign key violation
+    let resolvedClassId: string | null = null;
+    const targetClassId = partial.assignedClassId !== undefined ? partial.assignedClassId : existing.assignedClassId;
+
+    if (targetClassId) {
+      try {
+        const { data: clsCheck } = await supabase.from('Class').select('id').eq('id', targetClassId).maybeSingle();
+        if (clsCheck?.id) {
+          resolvedClassId = clsCheck.id;
+        }
+      } catch (e) {}
+    } else if (cleanClass) {
+      const cleanClassName = cleanClass.replace(/^Lớp\s+/i, '').trim().toUpperCase();
+      try {
+        const { data: clsCheck } = await supabase.from('Class').select('id').ilike('name', cleanClassName).maybeSingle();
+        if (clsCheck?.id) {
+          resolvedClassId = clsCheck.id;
+        }
+      } catch (e) {}
+    }
 
     const previousTeachers = teachers;
-    const updated = teachers.map((t) => (t.id === id ? { ...t, ...partial, assignedClassName: cleanClass, assignedClassId: classId } : t));
+    const updated = teachers.map((t) =>
+      t.id === id
+        ? {
+            ...t,
+            ...partial,
+            assignedClassName: cleanClass,
+            assignedClassId: resolvedClassId || undefined,
+          }
+        : t
+    );
     setTeachers(updated);
 
     // Update in Supabase
@@ -706,7 +780,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .update({
           role: cleanRole,
           isActive: cleanActive,
-          assignedClassId: classId,
+          assignedClassId: resolvedClassId,
           assignedClassName: cleanClass || null,
           fullName: partial.fullName || existing.fullName,
           schoolName: partial.schoolName !== undefined ? partial.schoolName : existing.schoolName,

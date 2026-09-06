@@ -259,15 +259,11 @@ export default function PlatformAdminPage() {
   // 1-Click Approve Teacher to Full BETA & Auto-provision Classroom
   const handleApproveTeacher = async (t: TeacherProfile) => {
     try {
-      await updateTeacher(t.id, {
-        role: 'TEACHER',
-        isActive: true,
-        planTier: 'BETA_ALL_ACCESS',
-      });
+      let resolvedClassId: string | undefined = t.assignedClassId;
 
-      // If teacher has declared an assigned class name & school name, ensure Class is in DB
+      // If teacher has declared an assigned class name & school name, ensure Class is in DB first
       if (t.assignedClassName && t.schoolName) {
-        const cleanName = t.assignedClassName.trim().toUpperCase();
+        const cleanName = t.assignedClassName.replace(/^Lớp\s+/i, '').trim().toUpperCase();
         const cleanSchool = t.schoolName.trim();
         const cleanGrade = Number(t.mainGrade) || 1;
         const teacherEmail = t.email.toLowerCase().trim();
@@ -279,10 +275,13 @@ export default function PlatformAdminPage() {
           .eq('schoolName', cleanSchool)
           .eq('name', cleanName);
 
-        if (!existingClasses || existingClasses.length === 0) {
-          const classId = t.assignedClassId || `class-${Date.now()}`;
+        if (existingClasses && existingClasses.length > 0) {
+          resolvedClassId = existingClasses[0].id;
+        } else {
+          // Auto-provision class before linking foreign key
+          const classId = `class-${cleanName.toLowerCase().replace(/[^a-z0-9]/g, '')}-${Date.now().toString(36)}`;
           const randomSuffix = Math.random().toString(36).substring(2, 8);
-          await supabase.from('Class').insert({
+          const { error: insertClassError } = await supabase.from('Class').insert({
             id: classId,
             name: cleanName,
             grade: cleanGrade,
@@ -299,8 +298,21 @@ export default function PlatformAdminPage() {
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
           });
+
+          if (insertClassError) {
+            console.error('Lỗi khởi tạo lớp học khi duyệt giáo viên:', insertClassError.message);
+          } else {
+            resolvedClassId = classId;
+          }
         }
       }
+
+      await updateTeacher(t.id, {
+        role: 'TEACHER',
+        isActive: true,
+        planTier: 'BETA_ALL_ACCESS',
+        assignedClassId: resolvedClassId,
+      });
 
       toast.success(`Đã phê duyệt & kích hoạt quyền sử dụng cho giáo viên ${t.fullName} (${t.email})!`);
     } catch (err: any) {

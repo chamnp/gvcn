@@ -216,6 +216,30 @@ export default function UnauthorizedPage() {
         {/* ========================================================================= */}
         {isEditing ? (
           <form onSubmit={handleSubmitRegistration} className="space-y-4 text-xs">
+            {/* Current Account Card & Switch Account */}
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-3 flex items-center justify-between text-xs">
+              <div className="flex items-center space-x-2.5 min-w-0 pr-2">
+                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs shrink-0">
+                  {(user?.email?.[0] || 'U').toUpperCase()}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Đang đăng nhập bằng email:</p>
+                  <p className="font-bold text-slate-900 truncate text-xs" title={user?.email || ''}>
+                    {user?.email}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="shrink-0 inline-flex items-center space-x-1 text-rose-700 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 px-2.5 py-1.5 rounded-lg font-bold text-xs border border-rose-200 transition-colors cursor-pointer"
+                title="Đăng xuất để đăng nhập bằng tài khoản khác"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Đổi tài khoản</span>
+              </button>
+            </div>
+
             {/* Full Name & Phone */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>

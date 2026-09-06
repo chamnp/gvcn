@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase';
 import { generateSmartComment } from '@/lib/comment-bank';
 import { generateAILessonPlan } from '@/lib/lesson-plan-engine';
 import { generateAISpeechScript } from '@/lib/parent-meeting-engine';
-import { getAcademicYearByDate, getLocalDateString } from '@/lib/tt27-engine';
+import { getAcademicYearByDate, getLocalDateString, getCurrentTermByDate, evaluateStudentTT27 } from '@/lib/tt27-engine';
 
 type McpAuthContext = {
   classId?: string;
@@ -47,20 +47,115 @@ export async function executeTool(
 
   switch (name) {
     case 'get_class_overview': {
-      let studentQuery = supabase.from('Student').select('*');
+      const todayDate = args.date || getLocalDateString();
+      const currentTerm = args.term || getCurrentTermByDate();
+      const dayMap: Record<number, string> = { 1: 'T2', 2: 'T3', 3: 'T4', 4: 'T5', 5: 'T6' };
+      const currentDay = dayMap[new Date().getDay()] || 'T2';
+
+      let studentQuery = supabase.from('Student').select('*').order('fullName');
       studentQuery = applyClassScope(studentQuery, classId);
-      const [studentsResult, classResult, schoolResult] = await Promise.all([
+
+      let timetableQuery = supabase.from('TimetableSlot').select('*').eq('day', currentDay).order('period');
+      timetableQuery = applyClassScope(timetableQuery, classId);
+
+      const [studentsResult, classResult, schoolResult, timetableResult] = await Promise.all([
         studentQuery,
         classId
           ? supabase.from('Class').select('*').eq('id', classId).maybeSingle()
           : Promise.resolve({ data: null, error: null }),
         supabase.from('SchoolInfo').select('*').limit(1).maybeSingle(),
+        timetableQuery,
       ]);
       assertDbResult(studentsResult.error, 'Không thể tải tổng quan lớp');
       assertDbResult(classResult.error, 'Không thể tải thông tin lớp');
       assertDbResult(schoolResult.error, 'Không thể tải thông tin trường');
+      assertDbResult(timetableResult.error, 'Không thể tải thời khóa biểu');
+
       const students = studentsResult.data || [];
       const classRecord = classResult.data;
+      const studentIds = students.map((s) => s.id);
+
+      // Điểm danh hôm nay
+      let attendanceToday = {
+        totalClass: students.length,
+        presentCount: students.length,
+        absentCount: 0,
+        lateCount: 0,
+        boardingMealsCount: students.filter((s) => s.isBoarding).length,
+        isRecorded: false,
+      };
+
+      let assessmentSummary = {
+        term: currentTerm,
+        xuatSac: 0,
+        tieuBieu: 0,
+        hoanThanh: 0,
+        chuaHoanThanh: 0,
+        chuaDanhGia: students.length,
+      };
+
+      if (studentIds.length > 0) {
+        const [attResult, subResult, traitResult, summaryResult] = await Promise.all([
+          supabase.from('DailyAttendance').select('*').eq('date', todayDate).in('studentId', studentIds),
+          supabase.from('SubjectAssessment').select('*').eq('term', currentTerm).in('studentId', studentIds),
+          supabase.from('TraitAssessment').select('*').eq('term', currentTerm).in('studentId', studentIds),
+          supabase.from('TermSummary').select('*').eq('term', currentTerm).in('studentId', studentIds),
+        ]);
+
+        if (attResult.data && attResult.data.length > 0) {
+          const records = attResult.data;
+          const presentDirect = records.filter((r) => r.status === 'CO_MAT').length;
+          const late = records.filter((r) => r.status === 'MUON').length;
+          const excused = records.filter((r) => r.status === 'VANG_CO_PHEP').length;
+          const unexcused = records.filter((r) => r.status === 'VANG_KHONG_PHEP').length;
+          const meals = records.filter((r) => r.hasBoardingMeal && (r.status === 'CO_MAT' || r.status === 'MUON')).length;
+
+          attendanceToday = {
+            totalClass: students.length,
+            presentCount: presentDirect + late,
+            absentCount: excused + unexcused,
+            lateCount: late,
+            boardingMealsCount: meals,
+            isRecorded: true,
+          };
+        }
+
+        const subData = subResult.data || [];
+        const traitData = traitResult.data || [];
+        const sumData = summaryResult.data || [];
+
+        let xs = 0;
+        let tb = 0;
+        let ht = 0;
+        let cht = 0;
+        let cdg = 0;
+
+        students.forEach((st) => {
+          const sAss = subData.filter((a) => a.studentId === st.id);
+          const tAss = traitData.filter((a) => a.studentId === st.id);
+          const sum = sumData.find((s) => s.studentId === st.id);
+
+          if (!sum && sAss.length === 0 && tAss.length === 0) {
+            cdg++;
+            return;
+          }
+
+          const award = sum?.awardTitle || evaluateStudentTT27(sAss, tAss, currentTerm).awardTitle;
+          if (award === 'Học sinh Xuất sắc') xs++;
+          else if (award === 'Học sinh Tiêu biểu hoàn thành tốt') tb++;
+          else if (award === 'Hoàn thành chương trình lớp học' || award === 'Khen thưởng từng mặt') ht++;
+          else cht++;
+        });
+
+        assessmentSummary = {
+          term: currentTerm,
+          xuatSac: xs,
+          tieuBieu: tb,
+          hoanThanh: ht,
+          chuaHoanThanh: cht,
+          chuaDanhGia: cdg,
+        };
+      }
 
       return {
         className: classRecord?.name || auth.className || '',
@@ -73,8 +168,26 @@ export async function executeTool(
           female: students.filter((student) => student.gender === 'Nữ').length,
         },
         boardingStudents: students.filter((student) => student.isBoarding).length,
+        todayDate,
+        dayOfWeek: currentDay,
+        attendanceToday,
+        timetableToday: (timetableResult.data || []).map((slot: any) => ({
+          period: slot.period,
+          subjectCode: slot.subjectCode,
+          subjectName: slot.subjectName,
+          room: slot.room,
+        })),
+        assessmentSummary,
+        students: students.map((s: any) => ({
+          id: s.id,
+          fullName: s.fullName,
+          studentCode: s.studentCode,
+          gender: s.gender,
+          dateOfBirth: s.dateOfBirth,
+          isBoarding: s.isBoarding,
+          teamId: s.teamId,
+        })),
         standardCompliance: 'Thông tư 27/2020/TT-BGDĐT & Công văn 2345/BGDĐT-GDTH',
-        todayDate: new Date().toISOString().split('T')[0],
       };
     }
 
