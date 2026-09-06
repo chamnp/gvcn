@@ -31,15 +31,6 @@ interface AuthContextType {
   // Whitelist & Teacher Management (Synchronized with Supabase)
   teachers: TeacherProfile[];
   refreshTeachers: () => Promise<TeacherProfile[]>;
-  submitTeacherRegistration: (data: {
-    fullName: string;
-    phone: string;
-    schoolName: string;
-    province: string;
-    district?: string;
-    mainGrade: any;
-    assignedClassName: string;
-  }) => Promise<{ success: boolean; error?: any }>;
   addTeacher: (data: {
     email: string;
     fullName: string;
@@ -248,19 +239,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const exists = teachersRef.current.some((t) => t.email.toLowerCase() === userEmail);
             if (!exists) {
               const fullName = currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || userEmail.split('@')[0];
-              const isPrimaryAdmin = userEmail === 'anhnnh4@gmail.com';
-              const role: UserRole = isPrimaryAdmin ? 'ADMIN' : 'PENDING';
-              const isActive = isPrimaryAdmin;
+              const role = userEmail === 'anhnnh4@gmail.com' ? 'ADMIN' : 'TEACHER';
               const avatarUrl = currentUser.user_metadata?.avatar_url;
               void supabase.from('Teacher').upsert({
                 id: `t-${currentUser.id}`,
                 email: userEmail,
                 fullName,
                 role,
-                title: isPrimaryAdmin ? 'Quản Trị Nền Tảng (Super Admin)' : 'Chờ duyệt kích hoạt',
                 planTier: 'BETA_ALL_ACCESS',
                 avatarUrl,
-                isActive,
+                isActive: true,
                 updatedAt: new Date().toISOString(),
               }, { onConflict: 'email' }).then(() => {
                 refreshTeachers();
@@ -301,19 +289,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const exists = teachersRef.current.some((t) => t.email.toLowerCase() === userEmail);
           if (!exists) {
             const fullName = currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || userEmail.split('@')[0];
-            const isPrimaryAdmin = userEmail === 'anhnnh4@gmail.com';
-            const role: UserRole = isPrimaryAdmin ? 'ADMIN' : 'PENDING';
-            const isActive = isPrimaryAdmin;
+            const role = userEmail === 'anhnnh4@gmail.com' ? 'ADMIN' : 'TEACHER';
             const avatarUrl = currentUser.user_metadata?.avatar_url;
             void supabase.from('Teacher').upsert({
               id: `t-${currentUser.id}`,
               email: userEmail,
               fullName,
               role,
-              title: isPrimaryAdmin ? 'Quản Trị Nền Tảng (Super Admin)' : 'Chờ duyệt kích hoạt',
               planTier: 'BETA_ALL_ACCESS',
               avatarUrl,
-              isActive,
+              isActive: true,
               updatedAt: new Date().toISOString(),
             }, { onConflict: 'email' }).then(() => {
               refreshTeachers();
