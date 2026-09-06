@@ -80,9 +80,14 @@ export default function LoginPage() {
         <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-xl shadow-blue-500/20 mx-auto border-2 border-slate-100">
           <img src="/app-icon.jpg" alt="GVCN Pro Logo" className="w-full h-full object-cover" />
         </div>
-        <h1 className="text-2xl font-black text-slate-900 tracking-tight">GVCN PRO</h1>
+        <div className="flex items-center justify-center gap-2">
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight">GVCN PRO</h1>
+          <span className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full shadow-xs uppercase tracking-wider">
+            BETA
+          </span>
+        </div>
         <p className="text-xs text-slate-500">
-          Cổng Đăng Nhập Giáo Viên Chủ Nhiệm (Phân quyền bảo mật)
+          Nền Tảng Giáo Viên Chủ Nhiệm Tiểu Học Toàn Quốc • Miễn Phí Trải Nghiệm Full Tính Năng
         </p>
       </div>
 
@@ -258,12 +263,12 @@ export default function LoginPage() {
       <div className="bg-slate-100 p-4 rounded-2xl border border-slate-200 text-xs text-slate-600 space-y-2">
         <div className="flex items-center space-x-2 font-bold text-slate-800">
           <ShieldCheck className="w-4 h-4 text-emerald-600" />
-          <span>Cơ Chế Phân Quyền & Bảo Mật Lớp Học:</span>
+          <span>Quyền Lợi & Bảo Mật Dành Cho Giáo Viên:</span>
         </div>
         <ul className="list-disc list-inside space-y-1 text-[11px] text-slate-500">
-          <li>Chỉ các tài khoản Email được phân quyền (Role: Giáo viên / Admin) mới có thể chỉnh sửa dữ liệu lớp.</li>
-          <li>Mỗi giáo viên sẽ được cấu hình quản lý và chấm điểm độc lập cho 1 lớp học phụ trách.</li>
-          <li>Quản trị viên có thể thêm, sửa, xóa và phân công lớp cho giáo viên tại mục <strong>Cài đặt &gt; Quản lý Giáo viên</strong>.</li>
+          <li>Mỗi giáo viên tự quản lý các lớp học của mình từ bất kỳ trường tiểu học nào trên toàn quốc.</li>
+          <li><strong>Phiên bản BETA:</strong> Miễn phí toàn bộ 100% tính năng (Đánh giá TT27, Kế hoạch bài dạy CV 2345, Sổ sao thi đua, Kho học liệu cộng đồng, Trợ lý AI).</li>
+          <li>Dữ liệu học sinh được mã hóa bảo mật, phân lập riêng biệt cho từng lớp của giáo viên.</li>
         </ul>
       </div>
 

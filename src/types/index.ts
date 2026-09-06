@@ -57,8 +57,15 @@ export interface TeacherProfile {
   email: string;
   fullName: string;
   role: UserRole;
-  title?: string; // Chức vụ: Hiệu trưởng, Phó Hiệu trưởng, Tổ trưởng Khối 4, GVCN, GV Bộ môn...
-  department?: string; // Tổ chuyên môn: Ban Giám Hiệu, Tổ Khối 1, Tổ Khối 4-5, Tổ Năng khiếu...
+  schoolName?: string; // Tên trường tiểu học đang công tác (VD: TH Lê Văn Tám)
+  district?: string; // Quận/Huyện
+  province?: string; // Tỉnh/Thành phố
+  mainGrade?: GradeLevel; // Khối phụ trách chính: 1, 2, 3, 4, 5
+  planTier?: 'BETA_ALL_ACCESS' | 'PRO' | 'FREE'; // Mặc định mở full quyền trong giai đoạn BETA
+  reputationPoints?: number; // Điểm uy tín đóng góp cộng đồng
+  badges?: string[]; // Huy hiệu sư phạm
+  title?: string;
+  department?: string;
   assignedClassId?: string;
   assignedClassName?: string;
   phone?: string;
@@ -160,8 +167,12 @@ export interface ClassInfo {
   name: string; // Ví dụ: '4A1'
   grade: GradeLevel;
   schoolYear: string; // '2026-2027'
-  schoolName: string; // Trường Tiểu học Đại Mỗ
+  schoolName: string; // Ví dụ: 'Trường Tiểu học Đại Mỗ'
   teacherName: string; // Cô Nguyễn Thị Mai
+  teacherEmail?: string; // Email giáo viên chủ nhiệm sở hữu lớp
+  district?: string; // Quận/Huyện
+  province?: string; // Tỉnh/Thành phố
+  isArchived?: boolean; // Đã lưu trữ (các năm học trước)
   totalStudents: number;
   seatingGridRows: number;
   seatingGridCols: number;
@@ -706,6 +717,44 @@ export interface CurriculumTopicItem {
   title: string;
   textbook: TextbookSeries;
   suggestedObjectives: string[];
+}
+
+// Phase: Community & Cross-School Sharing Hub
+export type CommunityResourceType = 
+  | 'LESSON_PLAN'       // Kế hoạch bài dạy CV 2345
+  | 'COMMENT_BANK'      // Ngân hàng nhận xét TT27
+  | 'MEETING_TEMPLATE'  // Mẫu kịch bản Họp Phụ Huynh
+  | 'GAME_ACTIVITY'     // Trò chơi lớp học & Khởi động
+  | 'IEP_GUIDE';        // Kế hoạch & Kinh nghiệm phụ đạo IEP
+
+export interface CommunityResource {
+  id: string;
+  authorEmail: string;
+  authorName: string;
+  authorSchool?: string;
+  authorAvatar?: string;
+  type: CommunityResourceType;
+  grade: number; // 1 -> 5, hoặc 0 cho liên khối
+  subjectCode?: string;
+  title: string;
+  description?: string;
+  content: any; // Cấu trúc bài dạy CV 2345, danh sách nhận xét, hoặc kịch bản họp PH
+  fileUrl?: string;
+  likesCount: number;
+  downloadsCount: number;
+  isVerified: boolean; // Được Super Admin duyệt chuẩn
+  isFeatured: boolean; // Nổi bật
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CommunityInteraction {
+  id: string;
+  resourceId: string;
+  userEmail: string;
+  action: 'LIKE' | 'SAVE' | 'DOWNLOAD' | 'COMMENT';
+  commentText?: string;
+  createdAt: string;
 }
 
 

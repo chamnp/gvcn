@@ -175,6 +175,10 @@ export default function SettingsPage() {
     exportAllDataJSON,
     importAllDataJSON,
     regenerateClassShareToken,
+    schoolClasses,
+    switchClass,
+    addClass,
+    deleteClass,
   } = useAppStore();
   const { user, profile, isAdmin, updateProfile, teachers } = useAuth();
 
@@ -183,8 +187,11 @@ export default function SettingsPage() {
 
   // User Profile Form State
   const [profileFullName, setProfileFullName] = useState(profile?.fullName || '');
-  const [profileTitle, setProfileTitle] = useState(profile?.title || '');
-  const [profileDepartment, setProfileDepartment] = useState(profile?.department || 'Tổ Khối 4');
+  const [profileTitle, setProfileTitle] = useState(profile?.title || 'Giáo viên Chủ nhiệm');
+  const [profileSchoolName, setProfileSchoolName] = useState(profile?.schoolName || classInfo.schoolName || '');
+  const [profileDistrict, setProfileDistrict] = useState(profile?.district || '');
+  const [profileProvince, setProfileProvince] = useState(profile?.province || 'Hà Nội');
+  const [profileMainGrade, setProfileMainGrade] = useState<number>(profile?.mainGrade || 4);
   const [profilePhone, setProfilePhone] = useState(profile?.phone || '');
   const [profileAvatarUrl, setProfileAvatarUrl] = useState(profile?.avatarUrl || AVATAR_PRESETS[0].url);
   const [isProfileInitialized, setIsProfileInitialized] = useState(false);
@@ -193,13 +200,16 @@ export default function SettingsPage() {
   useEffect(() => {
     if (profile && !isProfileInitialized) {
       setProfileFullName(profile.fullName || '');
-      setProfileTitle(profile.title || '');
-      setProfileDepartment(profile.department || 'Tổ Khối 4');
+      setProfileTitle(profile.title || 'Giáo viên Chủ nhiệm');
+      setProfileSchoolName(profile.schoolName || classInfo.schoolName || '');
+      setProfileDistrict(profile.district || '');
+      setProfileProvince(profile.province || 'Hà Nội');
+      setProfileMainGrade(profile.mainGrade || 4);
       setProfilePhone(profile.phone || '');
       if (profile.avatarUrl) setProfileAvatarUrl(profile.avatarUrl);
       setIsProfileInitialized(true);
     }
-  }, [profile, isProfileInitialized]);
+  }, [profile, isProfileInitialized, classInfo.schoolName]);
 
   // School Form State
   const [schoolName, setSchoolName] = useState(schoolInfo.name);
@@ -216,6 +226,20 @@ export default function SettingsPage() {
   const [teacherName, setTeacherName] = useState(classInfo.teacherName);
   const [rows, setRows] = useState(classInfo.seatingGridRows || 5);
   const [cols, setCols] = useState(classInfo.seatingGridCols || 8);
+
+  // New Class Form State
+  const [isNewClassModalOpen, setIsNewClassModalOpen] = useState(false);
+  const [newClassForm, setNewClassForm] = useState<{
+    name: string;
+    grade: GradeLevel;
+    schoolName: string;
+    schoolYear: string;
+  }>({
+    name: '',
+    grade: 1,
+    schoolName: '',
+    schoolYear: getAcademicYearByDate(),
+  });
 
   // Multi-Vendor AI Form State
   const [aiProvider, setAiProvider] = useState<AIProviderType>(aiConfig?.provider || 'CUSTOM_OPENAI');
@@ -454,17 +478,22 @@ export default function SettingsPage() {
     await updateProfile({
       fullName: profileFullName.trim(),
       title: profileTitle.trim(),
-      department: profileDepartment,
+      schoolName: profileSchoolName.trim(),
+      district: profileDistrict.trim(),
+      province: profileProvince.trim(),
+      mainGrade: profileMainGrade as GradeLevel,
       phone: profilePhone.trim(),
       avatarUrl: profileAvatarUrl,
     });
 
-    if (profile?.assignedClassId === classInfo.id || profile?.assignedClassName === `Lớp ${classInfo.name}`) {
+    if (classInfo.id) {
       setClassInfo({
         ...classInfo,
         teacherName: profileFullName.trim(),
+        schoolName: profileSchoolName.trim() || classInfo.schoolName,
       });
     }
+    toast.success('Đã lưu thông tin hồ sơ và trường công tác thành công!');
   };
 
   const handleLogoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -487,10 +516,6 @@ export default function SettingsPage() {
 
   const handleSaveSchool = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isAdmin) {
-      toast.error('Chỉ Quản trị viên / Ban Giám Hiệu mới có quyền thay đổi thông tin toàn trường!');
-      return;
-    }
     updateSchoolInfo({
       name: schoolName,
       departmentName,
@@ -500,17 +525,21 @@ export default function SettingsPage() {
       phone,
       logoUrl: schoolLogoUrl,
     });
-    toast.success('Đã lưu thông tin hồ sơ trường học & logo thành công!');
+    if (classInfo.id) {
+      setClassInfo({
+        ...classInfo,
+        schoolName,
+      });
+    }
+    toast.success('Đã lưu thông tin trường học & logo thành công!');
   };
 
   const handleSyncRealDate = () => {
     const realTerm = getCurrentTermByDate();
     const realYear = getAcademicYearByDate();
     setCurrentTerm(realTerm);
-    if (isAdmin) {
-      setSchoolYear(realYear);
-      updateSchoolInfo({ schoolYear: realYear });
-    }
+    setSchoolYear(realYear);
+    updateSchoolInfo({ schoolYear: realYear });
     toast.success(`Đã đồng bộ về ${TERMS.find((t) => t.id === realTerm)?.name} (${realYear})!`);
   };
 
@@ -520,13 +549,41 @@ export default function SettingsPage() {
       ...classInfo,
       name: className,
       grade,
-      schoolYear: schoolInfo.schoolYear,
-      schoolName: schoolInfo.name,
+      schoolYear: classInfo.schoolYear || schoolInfo.schoolYear,
+      schoolName: profileSchoolName || classInfo.schoolName || schoolInfo.name,
       teacherName,
+      teacherEmail: profile?.email || classInfo.teacherEmail,
       seatingGridRows: Number(rows),
       seatingGridCols: Number(cols),
     });
     toast.success(`Đã lưu cấu hình Lớp ${className}!`);
+  };
+
+  const handleCreateNewClass = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newClassForm.name.trim()) {
+      toast.error('Vui lòng nhập tên lớp (ví dụ: 4A1)');
+      return;
+    }
+    addClass({
+      name: newClassForm.name.trim(),
+      grade: newClassForm.grade,
+      schoolName: newClassForm.schoolName.trim() || profileSchoolName.trim() || classInfo.schoolName || 'Trường Tiểu học',
+      schoolYear: newClassForm.schoolYear,
+      teacherName: profileFullName.trim() || 'Giáo viên',
+      teacherEmail: profile?.email || '',
+      totalStudents: 0,
+      seatingGridRows: 5,
+      seatingGridCols: 8,
+    });
+    toast.success(`Đã tạo mới Lớp ${newClassForm.name}!`);
+    setIsNewClassModalOpen(false);
+    setNewClassForm({
+      name: '',
+      grade: 1,
+      schoolName: profileSchoolName || classInfo.schoolName || '',
+      schoolYear: getAcademicYearByDate(),
+    });
   };
 
   const handleExportBackup = () => {
@@ -776,18 +833,54 @@ export default function SettingsPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
-                  <label className="block font-semibold text-slate-700 mb-1">Tổ Chuyên Môn</label>
+                  <label className="block font-semibold text-slate-700 mb-1">Trường Tiểu Học Công Tác (*)</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ví dụ: Trường Tiểu học Chu Văn An"
+                    value={profileSchoolName}
+                    onChange={(e) => setProfileSchoolName(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Khối Lớp Phụ Trách Chính</label>
                   <select
-                    value={profileDepartment}
-                    onChange={(e) => setProfileDepartment(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 font-semibold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
+                    value={profileMainGrade}
+                    onChange={(e) => setProfileMainGrade(Number(e.target.value))}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white cursor-pointer"
                   >
-                    {DEPARTMENTS.map((dept) => (
-                      <option key={dept} value={dept}>
-                        {dept}
-                      </option>
-                    ))}
+                    <option value={1}>Khối 1</option>
+                    <option value={2}>Khối 2</option>
+                    <option value={3}>Khối 3</option>
+                    <option value={4}>Khối 4</option>
+                    <option value={5}>Khối 5</option>
                   </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Quận / Huyện</label>
+                  <input
+                    type="text"
+                    placeholder="Ví dụ: Quận Cầu Giấy"
+                    value={profileDistrict}
+                    onChange={(e) => setProfileDistrict(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 mb-1">Tỉnh / Thành Phố</label>
+                  <input
+                    type="text"
+                    placeholder="Ví dụ: Hà Nội, TP.HCM..."
+                    value={profileProvince}
+                    onChange={(e) => setProfileProvince(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  />
                 </div>
 
                 <div>
@@ -838,7 +931,7 @@ export default function SettingsPage() {
                   </span>
                 </div>
                 <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                  Hoạt động
+                  BETA Full Access
                 </span>
               </div>
 
@@ -851,27 +944,25 @@ export default function SettingsPage() {
                 <div className="overflow-hidden">
                   <h3 className="font-black text-base truncate">{profileFullName || 'Giáo viên'}</h3>
                   <p className="text-xs text-blue-300 font-medium truncate">{profileTitle || 'Giáo viên Chủ nhiệm'}</p>
-                  <p className="text-[11px] text-slate-400 font-mono mt-0.5">{profileDepartment}</p>
+                  <p className="text-[11px] text-slate-300 truncate mt-0.5">{profileSchoolName || 'Trường Tiểu học'}</p>
                 </div>
               </div>
 
               <div className="pt-3 border-t border-white/10 space-y-2 text-xs">
                 <div className="flex items-center justify-between text-slate-300">
-                  <span>Trường:</span>
-                  <strong className="text-white truncate max-w-[170px]">{schoolInfo.name}</strong>
+                  <span>Trường công tác:</span>
+                  <strong className="text-white truncate max-w-[170px]">{profileSchoolName || classInfo.schoolName || 'Tiểu học'}</strong>
                 </div>
                 <div className="flex items-center justify-between text-slate-300">
-                  <span>Lớp phụ trách:</span>
+                  <span>Khối & Lớp:</span>
                   <span className="bg-blue-600/80 text-white font-bold px-2 py-0.5 rounded-md text-[11px]">
-                    Lớp {classInfo.name}
+                    Khối {profileMainGrade} • Lớp {classInfo.name}
                   </span>
                 </div>
-                {profilePhone && (
-                  <div className="flex items-center justify-between text-slate-300">
-                    <span>Số điện thoại:</span>
-                    <strong className="font-mono text-white">{profilePhone}</strong>
-                  </div>
-                )}
+                <div className="flex items-center justify-between text-slate-300">
+                  <span>Địa phương:</span>
+                  <strong className="text-slate-200 truncate max-w-[170px]">{[profileDistrict, profileProvince].filter(Boolean).join(', ') || 'Toàn quốc'}</strong>
+                </div>
               </div>
             </div>
 
@@ -1079,6 +1170,114 @@ export default function SettingsPage() {
                 </span>
               </div>
             </div>
+
+            {/* SECTION: MY CLASSES MANAGEMENT */}
+            <div className="pt-6 border-t border-slate-100 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <span>Danh Sách Tất Cả Các Lớp Của Bạn</span>
+                    <span className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full font-bold">
+                      {schoolClasses.length} lớp
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Bạn có thể quản lý nhiều lớp học ở các trường khác nhau hoặc các năm học khác nhau một cách độc lập.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewClassForm({
+                      name: '',
+                      grade: (profile?.mainGrade as GradeLevel) || 1,
+                      schoolName: profile?.schoolName || classInfo.schoolName || '',
+                      schoolYear: getAcademicYearByDate(),
+                    });
+                    setIsNewClassModalOpen(true);
+                  }}
+                  className="inline-flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-xs transition-colors cursor-pointer shrink-0"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  <span>+ Thêm Lớp Học Mới</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                {schoolClasses.map((c) => {
+                  const isActive = c.id === classInfo.id;
+                  return (
+                    <div
+                      key={c.id}
+                      className={`p-4 rounded-2xl border transition-all ${
+                        isActive
+                          ? 'border-blue-500 bg-blue-50/40 shadow-xs ring-2 ring-blue-100'
+                          : 'border-slate-200 bg-slate-50/50 hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="space-y-1">
+                          <div className="flex items-center space-x-2">
+                            <span className="font-bold text-slate-900 text-sm">{c.name}</span>
+                            <span className="bg-slate-200 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                              Khối {c.grade}
+                            </span>
+                            {isActive && (
+                              <span className="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                Đang chọn
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-slate-600 font-medium">
+                            🏫 {c.schoolName || profile?.schoolName || 'Chưa đặt trường'}
+                          </p>
+                          <p className="text-[11px] text-slate-500">
+                            GVCN: {c.teacherName || 'Chưa gán'} • Năm học: {c.schoolYear || '2026-2027'}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center space-x-1 shrink-0">
+                          {!isActive ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                switchClass(c.id);
+                                toast.success(`Đã chuyển sang ${c.name}`);
+                              }}
+                              className="bg-white hover:bg-blue-50 text-blue-600 border border-blue-200 text-xs font-bold px-3 py-1.5 rounded-xl cursor-pointer shadow-2xs"
+                            >
+                              Chọn lớp này
+                            </button>
+                          ) : (
+                            <span className="text-xs font-bold text-emerald-600 flex items-center gap-1 bg-emerald-50 px-2.5 py-1 rounded-xl">
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              <span>Hiện hành</span>
+                            </span>
+                          )}
+
+                          {schoolClasses.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (confirm(`Bạn có chắc chắn muốn xóa lớp ${c.name}?`)) {
+                                  deleteClass(c.id);
+                                  toast.success(`Đã xóa lớp ${c.name}`);
+                                }
+                              }}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                              title="Xóa lớp học này"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -1092,9 +1291,9 @@ export default function SettingsPage() {
                 <Building className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-slate-900">Hồ Sơ Toàn Trường & Niên Khóa</h2>
+                <h2 className="text-base font-bold text-slate-900">Hồ Sơ Trường Công Tác & Niên Khóa</h2>
                 <p className="text-xs text-slate-500">
-                  Thông tin này xuất hiện trên đầu trang mọi báo cáo, bảng điểm và học bạ TT27.
+                  Thông tin trường học xuất hiện trên tiêu đề các báo cáo, bảng tổng hợp đánh giá và học bạ TT27 của bạn.
                 </p>
               </div>
             </div>
@@ -1109,13 +1308,6 @@ export default function SettingsPage() {
               <span>Đồng Bộ Lịch Thực Tế (2026-2027)</span>
             </button>
           </div>
-
-          {!isAdmin && (
-            <div className="bg-amber-50 border border-amber-200 text-amber-900 p-3 rounded-2xl text-xs flex items-center space-x-2">
-              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-              <span>Chế độ chỉ xem dành cho Giáo viên. Chỉ Ban Giám Hiệu (Admin) mới có quyền sửa đổi thông tin toàn trường.</span>
-            </div>
-          )}
 
           <form onSubmit={handleSaveSchool} className="space-y-4 text-xs max-w-3xl">
             {/* School Logo Selector & Uploader */}
@@ -1141,19 +1333,18 @@ export default function SettingsPage() {
 
                 <div className="flex-1 min-w-[260px] space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <label className={`inline-flex items-center space-x-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold px-3 py-1.5 rounded-xl transition-colors ${!isAdmin ? 'opacity-50 pointer-events-none' : 'cursor-pointer'}`}>
+                    <label className="inline-flex items-center space-x-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold px-3 py-1.5 rounded-xl transition-colors cursor-pointer">
                       <Camera className="w-3.5 h-3.5" />
                       <span>Tải Ảnh Logo Lên (PNG/JPG)</span>
                       <input
                         type="file"
                         accept="image/*"
-                        disabled={!isAdmin}
                         onChange={handleLogoFileUpload}
                         className="hidden"
                       />
                     </label>
 
-                    {schoolLogoUrl && isAdmin && (
+                    {schoolLogoUrl && (
                       <button
                         type="button"
                         onClick={() => setSchoolLogoUrl('')}
@@ -1191,13 +1382,12 @@ export default function SettingsPage() {
                       <button
                         key={item.id}
                         type="button"
-                        disabled={!isAdmin}
                         onClick={() => setSchoolLogoUrl(item.url)}
                         className={`relative rounded-xl overflow-hidden border-2 transition-all ${
                           schoolLogoUrl === item.url
                             ? 'border-purple-600 ring-2 ring-purple-300 scale-105'
                             : 'border-slate-200 hover:border-slate-300'
-                        } ${!isAdmin ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                        } cursor-pointer`}
                         title={item.label}
                       >
                         <img src={item.url} alt={item.label} className="w-8 h-8 object-cover bg-white" />
@@ -1212,11 +1402,10 @@ export default function SettingsPage() {
 
                   <input
                     type="url"
-                    disabled={!isAdmin}
                     placeholder="Hoặc dán URL link ảnh logo trường..."
                     value={schoolLogoUrl}
                     onChange={(e) => setSchoolLogoUrl(e.target.value)}
-                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-700 focus:ring-1 focus:ring-purple-500 disabled:bg-slate-50"
+                    className="w-full px-3 py-1.5 rounded-lg border border-slate-200 text-xs text-slate-700 focus:ring-1 focus:ring-purple-500"
                   />
                 </div>
               </div>
@@ -1226,10 +1415,9 @@ export default function SettingsPage() {
               <label className="block font-semibold text-slate-700 mb-1">Tên Trường Tiểu Học (*)</label>
               <input
                 type="text"
-                disabled={!isAdmin}
                 value={schoolName}
                 onChange={(e) => setSchoolName(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 font-bold text-slate-900 focus:ring-2 focus:ring-purple-500 focus:outline-none disabled:bg-slate-50"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 font-bold text-slate-900 focus:ring-2 focus:ring-purple-500 focus:outline-none"
               />
             </div>
 
@@ -1238,10 +1426,9 @@ export default function SettingsPage() {
                 <label className="block font-semibold text-slate-700 mb-1">Cơ Quan Quản Lý Cấp Trên</label>
                 <input
                   type="text"
-                  disabled={!isAdmin}
                   value={departmentName}
                   onChange={(e) => setDepartmentName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-slate-900 disabled:bg-slate-50"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-slate-900 focus:ring-2 focus:ring-purple-500 focus:outline-none"
                 />
               </div>
 
@@ -1249,10 +1436,9 @@ export default function SettingsPage() {
                 <label className="block font-semibold text-slate-700 mb-1">Niên Khóa / Năm Học</label>
                 <input
                   type="text"
-                  disabled={!isAdmin}
                   value={schoolYear}
                   onChange={(e) => setSchoolYear(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 font-bold text-slate-900 disabled:bg-slate-50 font-mono"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 font-bold text-slate-900 focus:ring-2 focus:ring-purple-500 focus:outline-none font-mono"
                 />
               </div>
             </div>
@@ -1262,10 +1448,9 @@ export default function SettingsPage() {
                 <label className="block font-semibold text-slate-700 mb-1">Hiệu Trưởng / Đại Diện BGH</label>
                 <input
                   type="text"
-                  disabled={!isAdmin}
                   value={principalName}
                   onChange={(e) => setPrincipalName(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-slate-900 disabled:bg-slate-50"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-slate-900 focus:ring-2 focus:ring-purple-500 focus:outline-none"
                 />
               </div>
 
@@ -1273,10 +1458,9 @@ export default function SettingsPage() {
                 <label className="block font-semibold text-slate-700 mb-1">Số Điện Thoại Trường</label>
                 <input
                   type="text"
-                  disabled={!isAdmin}
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-slate-900 disabled:bg-slate-50 font-mono"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-slate-900 focus:ring-2 focus:ring-purple-500 focus:outline-none font-mono"
                 />
               </div>
             </div>
@@ -1285,24 +1469,21 @@ export default function SettingsPage() {
               <label className="block font-semibold text-slate-700 mb-1">Địa Chỉ Trường Học</label>
               <input
                 type="text"
-                disabled={!isAdmin}
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-slate-900 disabled:bg-slate-50"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-slate-900 focus:ring-2 focus:ring-purple-500 focus:outline-none"
               />
             </div>
 
-            {isAdmin && (
-              <div className="flex justify-end pt-3 border-t border-slate-100">
-                <button
-                  type="submit"
-                  className="inline-flex items-center space-x-2 bg-purple-600 hover:bg-purple-700 text-white font-bold px-6 py-2.5 rounded-xl shadow-xs transition-colors cursor-pointer"
-                >
-                  <Save className="w-4 h-4" />
-                  <span>Lưu Hồ Sơ Trường Học</span>
-                </button>
-              </div>
-            )}
+            <div className="flex justify-end pt-3 border-t border-slate-100">
+              <button
+                type="submit"
+                className="inline-flex items-center space-x-2 bg-purple-600 hover:bg-purple-700 text-white font-bold px-6 py-2.5 rounded-xl shadow-xs transition-colors cursor-pointer"
+              >
+                <Save className="w-4 h-4" />
+                <span>Lưu Hồ Sơ Trường Học</span>
+              </button>
+            </div>
           </form>
         </div>
       )}
@@ -2270,23 +2451,112 @@ Quy tắc sư phạm:
                   </p>
                 </div>
 
-                <div className="flex items-center justify-end space-x-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsCreateKeyModalOpen(false)}
-                    className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-bold cursor-pointer"
-                  >
-                    Hủy
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black shadow-md cursor-pointer"
-                  >
-                    Tạo Khóa Ngay
-                  </button>
+                  <div className="flex items-center justify-end space-x-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsCreateKeyModalOpen(false)}
+                      className="px-4 py-2 rounded-xl text-slate-600 hover:bg-slate-100 font-bold cursor-pointer"
+                    >
+                      Hủy
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black shadow-md cursor-pointer"
+                    >
+                      Tạo Khóa Ngay
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        )}
+
+      {/* MODAL: CREATE NEW CLASS */}
+      {isNewClassModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                  <School className="w-4 h-4" />
                 </div>
-              </form>
-            )}
+                <h3 className="font-bold text-slate-900 text-base">Thêm Lớp Học Mới</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsNewClassModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 text-lg font-bold p-1 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateNewClass} className="space-y-3.5 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Tên Lớp (*)</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ví dụ: 4A2, 5B, 1C..."
+                  value={newClassForm.name}
+                  onChange={(e) => setNewClassForm({ ...newClassForm, name: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Khối Lớp</label>
+                <select
+                  value={newClassForm.grade}
+                  onChange={(e) => setNewClassForm({ ...newClassForm, grade: Number(e.target.value) as GradeLevel })}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white cursor-pointer"
+                >
+                  {[1, 2, 3, 4, 5].map((g) => (
+                    <option key={g} value={g}>
+                      Khối {g}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Trường Tiểu Học</label>
+                <input
+                  type="text"
+                  placeholder="Tên trường học của lớp này..."
+                  value={newClassForm.schoolName}
+                  onChange={(e) => setNewClassForm({ ...newClassForm, schoolName: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">Niên Khóa / Năm Học</label>
+                <input
+                  type="text"
+                  value={newClassForm.schoolYear}
+                  onChange={(e) => setNewClassForm({ ...newClassForm, schoolYear: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 font-mono text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsNewClassModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 font-semibold hover:bg-slate-50 cursor-pointer"
+                >
+                  Hủy Bỏ
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-xs cursor-pointer"
+                >
+                  Tạo Lớp Ngay
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

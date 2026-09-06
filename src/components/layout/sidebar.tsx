@@ -30,6 +30,7 @@ import {
   ChevronDown,
   ChevronRight,
   Smartphone,
+  Globe,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useAuth } from '@/lib/auth-context';
@@ -96,13 +97,21 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    id: 'community',
+    title: 'CỘNG ĐỒNG & CHIA SẺ',
+    icon: '🌐',
+    items: [
+      { href: '/community', label: 'Cộng đồng GVCN', icon: Globe, badge: 'BETA' },
+    ],
+  },
+  {
     id: 'system',
     title: 'BÁO CÁO & HỆ THỐNG',
     icon: '⚙️',
     items: [
       { href: '/reports', label: 'Báo cáo & Xuất Excel', icon: FileDown, badge: null },
-      { href: '/settings', label: 'Cài đặt & Lớp học', icon: Settings, badge: null },
-      { href: '/admin', label: 'Quản Trị Trường', icon: ShieldCheck, badge: 'Admin' },
+      { href: '/settings', label: 'Cài đặt Cá nhân & Lớp', icon: Settings, badge: null },
+      { href: '/admin', label: 'Quản Trị Nền Tảng', icon: ShieldCheck, badge: 'Admin' },
     ],
   },
 ];
@@ -160,9 +169,12 @@ const SidebarContent: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
               <span className="font-bold text-white tracking-wide text-base group-hover:text-blue-400 transition-colors">
                 GVCN PRO
               </span>
+              <span className="px-1.5 py-0.5 text-[9px] font-black bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-md tracking-wider shadow-xs">
+                BETA
+              </span>
             </div>
-            <p className="text-[11px] text-slate-400 truncate max-w-[140px]" title={schoolInfo?.name || 'Tiểu học'}>
-              {schoolInfo?.name || 'Tiểu học Đại Mỗ'}
+            <p className="text-[11px] text-slate-400 truncate max-w-[140px]" title={profile?.schoolName || classInfo.schoolName || 'Cộng đồng GVCN Tiểu học'}>
+              {profile?.schoolName || classInfo.schoolName || 'Cộng đồng GVCN'}
             </p>
           </div>
         </Link>
@@ -182,13 +194,13 @@ const SidebarContent: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
       <div className="mx-3 sm:mx-4 my-2.5 p-3 rounded-xl bg-slate-800/80 border border-slate-700/60 shadow-xs space-y-2 shrink-0">
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-            {isAdmin ? 'Chọn Lớp Quản Lý' : 'Lớp Phụ Trách'}
+            {schoolClasses.length > 1 ? 'Chọn Lớp Phụ Trách' : 'Lớp Phụ Trách'}
           </span>
-          {isAdmin ? (
+          {schoolClasses.length > 0 ? (
             <select
               value={activeClassId}
               onChange={(e) => switchClass(e.target.value)}
-              className="bg-blue-600 text-white text-xs px-2 py-0.5 rounded-lg font-bold border-none focus:ring-1 focus:ring-blue-400 cursor-pointer"
+              className="bg-blue-600 hover:bg-blue-500 text-white text-xs px-2 py-0.5 rounded-lg font-bold border-none focus:ring-1 focus:ring-blue-400 cursor-pointer max-w-[130px] truncate"
             >
               {schoolClasses.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -197,14 +209,19 @@ const SidebarContent: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
               ))}
             </select>
           ) : (
-            <span className="bg-blue-600 text-white text-xs px-2.5 py-0.5 rounded-lg font-bold">
-              Lớp {classInfo.name}
-            </span>
+            <Link
+              href="/settings"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] px-2 py-0.5 rounded-lg font-bold transition-colors"
+            >
+              + Tạo Lớp
+            </Link>
           )}
         </div>
-        <p className="text-xs font-semibold text-white truncate">{classInfo.schoolName}</p>
+        <p className="text-xs font-semibold text-white truncate" title={classInfo.schoolName || profile?.schoolName || 'Trường Tiểu học'}>
+          {classInfo.schoolName || profile?.schoolName || 'Chưa cập nhật trường'}
+        </p>
         <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1.5 border-t border-slate-700/50">
-          <span className="truncate">GV: {classInfo.teacherName}</span>
+          <span className="truncate">GV: {classInfo.teacherName || profile?.fullName || 'Giáo viên'}</span>
           <span className="text-emerald-400 font-semibold shrink-0">{students.length} HS</span>
         </div>
       </div>

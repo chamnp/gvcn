@@ -35,6 +35,11 @@ interface AuthContextType {
     email: string;
     fullName: string;
     role: UserRole;
+    schoolName?: string;
+    district?: string;
+    province?: string;
+    mainGrade?: any;
+    planTier?: any;
     title?: string;
     department?: string;
     assignedClassName?: string;
@@ -44,91 +49,6 @@ interface AuthContextType {
   updateTeacher: (id: string, partial: Partial<TeacherProfile>) => Promise<void>;
   deleteTeacher: (id: string) => Promise<void>;
 }
-
-const DEFAULT_TEACHERS: TeacherProfile[] = [
-  {
-    id: 't-admin-1',
-    email: 'anhnnh4@gmail.com',
-    fullName: 'Cô Nguyễn Ngọc Ánh',
-    role: 'ADMIN',
-    title: 'Ban Giám Hiệu Nhà Trường',
-    department: 'Ban Giám Hiệu',
-    phone: '024 3839 0134',
-    avatarUrl: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=150&auto=format&fit=crop&q=80',
-    isActive: true,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 't-teacher-hang',
-    email: 'hangnm47@gmail.com',
-    fullName: 'Cô Nguyễn Thị Minh Hằng',
-    role: 'TEACHER',
-    title: 'Giáo viên Chủ nhiệm',
-    department: 'Tổ Khối 4',
-    assignedClassId: 'class-4a1',
-    assignedClassName: 'Lớp 4A1',
-    phone: '0912 345 678',
-    avatarUrl: 'https://lh3.googleusercontent.com/a/ACg8ocL0TzXHoPSDo70WjAvdYsHLYuIeNTimmSsUwrK31Tdm3tRzCNzE=s96-c',
-    isActive: true,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 't-teacher-2',
-    email: 'leha@school.edu.vn',
-    fullName: 'Cô Lê Thị Hà',
-    role: 'TEACHER',
-    title: 'Tổ trưởng Khối 1 & GVCN',
-    department: 'Tổ Khối 1',
-    assignedClassId: 'class-1a1',
-    assignedClassName: 'Lớp 1A1',
-    phone: '0988 123 456',
-    avatarUrl: 'https://images.unsplash.com/photo-1580894732444-8ecded7900cd?w=150&auto=format&fit=crop&q=80',
-    isActive: true,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 't-teacher-3',
-    email: 'thucuc@school.edu.vn',
-    fullName: 'Cô Trần Thu Cúc',
-    role: 'TEACHER',
-    title: 'Giáo viên Chủ nhiệm',
-    department: 'Tổ Khối 2',
-    assignedClassId: 'class-2a1',
-    assignedClassName: 'Lớp 2A1',
-    phone: '0977 234 567',
-    avatarUrl: 'https://images.unsplash.com/photo-1594744803329-e58b31de8bf5?w=150&auto=format&fit=crop&q=80',
-    isActive: true,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 't-teacher-4',
-    email: 'vannam@school.edu.vn',
-    fullName: 'Thầy Phạm Văn Nam',
-    role: 'TEACHER',
-    title: 'Giáo viên Chủ nhiệm',
-    department: 'Tổ Khối 3',
-    assignedClassId: 'class-3a1',
-    assignedClassName: 'Lớp 3A1',
-    phone: '0966 345 678',
-    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-    isActive: true,
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: 't-teacher-5',
-    email: 'minhduc@school.edu.vn',
-    fullName: 'Thầy Hoàng Minh Đức',
-    role: 'TEACHER',
-    title: 'Tổ trưởng Khối 5 & GVCN',
-    department: 'Tổ Khối 5',
-    assignedClassId: 'class-5a1',
-    assignedClassName: 'Lớp 5A1',
-    phone: '0944 567 890',
-    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-    isActive: true,
-    createdAt: new Date().toISOString(),
-  },
-];
 
 // Helper to get custom avatar from localStorage
 function getCustomAvatar(email: string): string | undefined {
@@ -140,13 +60,13 @@ function getCustomAvatar(email: string): string | undefined {
   }
 }
 
-// Helper to synchronously resolve a profile given user & teacher list
+// Helper to synchronously resolve a profile given user & teacher list from Supabase
 function resolveUserProfile(user: User | null, teachersList: TeacherProfile[]): TeacherProfile | null {
   if (!user) return null;
   const email = (user.email || '').toLowerCase().trim();
   const customAvatar = getCustomAvatar(email);
 
-  // Primary Admin Email Check
+  // Platform Super Admin Check
   if (email === 'anhnnh4@gmail.com') {
     const matched = teachersList.find((t) => t.email.toLowerCase() === email);
     const resolvedAvatar =
@@ -158,12 +78,14 @@ function resolveUserProfile(user: User | null, teachersList: TeacherProfile[]): 
     return {
       id: matched?.id || `admin-${user.id}`,
       email,
-      fullName: matched?.fullName || user.user_metadata?.full_name || 'Cô Nguyễn Ngọc Ánh',
+      fullName: matched?.fullName || user.user_metadata?.full_name || 'Quản Trị Viên GVCN Pro',
       role: 'ADMIN',
-      title: matched?.title || 'Ban Giám Hiệu Nhà Trường',
-      department: matched?.department || 'Ban Giám Hiệu',
-      assignedClassId: undefined,
-      assignedClassName: undefined,
+      title: 'Quản Trị Nền Tảng (Super Admin)',
+      schoolName: matched?.schoolName || 'GVCN Pro Platform',
+      district: matched?.district || '',
+      province: matched?.province || 'Toàn quốc',
+      planTier: 'BETA_ALL_ACCESS',
+      reputationPoints: 9999,
       phone: matched?.phone || '024 3839 0134',
       avatarUrl: resolvedAvatar,
       isActive: true,
@@ -171,23 +93,25 @@ function resolveUserProfile(user: User | null, teachersList: TeacherProfile[]): 
     };
   }
 
-  // Whitelist match
+  // Teacher Profile from Supabase
   const matched = teachersList.find((t) => t.email.toLowerCase() === email);
   if (matched) {
     return {
       ...matched,
+      planTier: matched.planTier || 'BETA_ALL_ACCESS',
       avatarUrl: customAvatar || matched.avatarUrl || user.user_metadata?.avatar_url,
     };
   }
 
-  // Not in whitelist -> Pending request
+  // Registered teacher pending Super Admin approval
   return {
     id: `pending-${user.id}`,
     email,
     fullName: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Giáo viên mới',
     role: 'PENDING',
-    title: 'Chờ duyệt',
-    department: 'Chưa phân bổ',
+    title: 'Chờ duyệt kích hoạt',
+    schoolName: 'Chưa cập nhật trường',
+    planTier: 'BETA_ALL_ACCESS',
     assignedClassName: undefined,
     avatarUrl: customAvatar || user.user_metadata?.avatar_url,
     isActive: false,
@@ -204,21 +128,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const isSignedOut = localStorage.getItem('gvcn_signed_out') === 'true';
         if (isSignedOut) return null;
 
-        // Mock user for development only
+        // Development mock if explicitly set by developer in localStorage
         if (process.env.NODE_ENV === 'development') {
-          const mockEmail = localStorage.getItem('gvcn_mock_email') || 'hangnm47@gmail.com';
-          const isHang = mockEmail === 'hangnm47@gmail.com';
-          const isAdmin = mockEmail === 'anhnnh4@gmail.com';
-          const fullName = isHang ? 'Cô Nguyễn Thị Minh Hằng' : isAdmin ? 'Cô Nguyễn Ngọc Ánh' : 'Giáo viên';
+          const mockEmail = localStorage.getItem('gvcn_mock_email');
+          if (mockEmail) {
+            const isHang = mockEmail === 'hangnm47@gmail.com';
+            const isAdmin = mockEmail === 'anhnnh4@gmail.com';
+            const fullName = isHang ? 'Cô Nguyễn Thị Minh Hằng' : isAdmin ? 'Quản Trị Viên GVCN Pro' : 'Giáo viên';
 
-          return {
-            id: `user-${mockEmail.replace(/[^a-z0-9]/g, '')}`,
-            app_metadata: {},
-            user_metadata: { full_name: fullName },
-            aud: 'authenticated',
-            created_at: new Date().toISOString(),
-            email: mockEmail,
-          } as User;
+            return {
+              id: `user-${mockEmail.replace(/[^a-z0-9]/g, '')}`,
+              app_metadata: {},
+              user_metadata: { full_name: fullName },
+              aud: 'authenticated',
+              created_at: new Date().toISOString(),
+              email: mockEmail,
+            } as User;
+          }
         }
       } catch (e) {}
     }
@@ -232,7 +158,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (saved) return JSON.parse(saved);
       } catch (e) {}
     }
-    return DEFAULT_TEACHERS;
+    return [];
   });
   const [loading, setLoading] = useState(true);
   const [googleAccessToken, setGoogleAccessToken] = useState<string | null>(() => {
@@ -270,10 +196,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             email: (row.email || '').toLowerCase().trim(),
             fullName: row.fullName || 'Giáo viên',
             role: (row.role || 'TEACHER') as UserRole,
-            title: row.title || (row.role === 'ADMIN' ? 'Ban Giám Hiệu' : row.role === 'ADMIN_TEACHER' ? 'BGH kiêm GVCN' : 'Giáo viên Chủ nhiệm'),
-            department: row.department || (row.role === 'ADMIN' ? 'Ban Giám Hiệu' : 'Tổ Chuyên môn'),
+            schoolName: row.schoolName || (row.email === 'anhnnh4@gmail.com' ? 'GVCN Pro Platform' : 'Trường Tiểu học'),
+            district: row.district || '',
+            province: row.province || '',
+            mainGrade: row.mainGrade || undefined,
+            planTier: (row.planTier || 'BETA_ALL_ACCESS') as any,
+            reputationPoints: row.reputationPoints || 0,
+            badges: Array.isArray(row.badges) ? row.badges : [],
+            title: row.title || (row.role === 'ADMIN' ? 'Quản Trị Nền Tảng' : 'Giáo viên Chủ nhiệm'),
+            department: row.department || undefined,
             assignedClassId: row.assignedClassId || undefined,
-            assignedClassName: row.assignedClassName || (row.assignedClassId ? `Lớp ${row.assignedClassId.replace('class-', '').toUpperCase()}` : 'Lớp 4A1'),
+            assignedClassName: row.assignedClassName || undefined,
             phone: row.phone || undefined,
             avatarUrl: row.avatarUrl || undefined,
             isActive: row.isActive !== false,
@@ -540,6 +473,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         {
           email: cleanEmail,
           fullName: partial.fullName || profile.fullName,
+          schoolName: partial.schoolName !== undefined ? partial.schoolName : profile.schoolName,
+          district: partial.district !== undefined ? partial.district : profile.district,
+          province: partial.province !== undefined ? partial.province : profile.province,
+          mainGrade: partial.mainGrade !== undefined ? partial.mainGrade : profile.mainGrade,
           title: partial.title !== undefined ? partial.title : profile.title,
           department: partial.department !== undefined ? partial.department : profile.department,
           phone: partial.phone !== undefined ? partial.phone : profile.phone,
@@ -612,6 +549,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     email: string;
     fullName: string;
     role: UserRole;
+    schoolName?: string;
+    district?: string;
+    province?: string;
+    mainGrade?: any;
+    planTier?: any;
     title?: string;
     department?: string;
     assignedClassName?: string;
@@ -629,8 +571,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: cleanEmail,
           fullName: cleanName,
           role: data.role,
-          title: data.title,
-          department: data.department,
+          schoolName: data.schoolName || 'Trường Tiểu học',
+          district: data.district || '',
+          province: data.province || '',
+          mainGrade: data.mainGrade || null,
+          planTier: data.planTier || 'BETA_ALL_ACCESS',
+          title: data.title || (data.role === 'ADMIN' ? 'Quản Trị Nền Tảng' : 'Giáo viên Chủ nhiệm'),
+          department: data.department || null,
           assignedClassId: classId,
           phone: data.phone,
           avatarUrl: data.avatarUrl,
@@ -654,8 +601,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       email: cleanEmail,
       fullName: cleanName,
       role: data.role,
+      schoolName: data.schoolName || 'Trường Tiểu học',
+      district: data.district || '',
+      province: data.province || '',
+      mainGrade: data.mainGrade || undefined,
+      planTier: data.planTier || 'BETA_ALL_ACCESS',
+      reputationPoints: 0,
+      badges: [],
       title: data.title || 'Giáo viên',
-      department: data.department || 'Tổ Chuyên môn',
+      department: data.department || undefined,
       assignedClassId: classId,
       assignedClassName: data.assignedClassName || (classId ? `Lớp ${data.assignedClassName}` : undefined),
       phone: data.phone,
@@ -695,8 +649,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           isActive: cleanActive,
           assignedClassId: classId,
           fullName: partial.fullName || existing.fullName,
+          schoolName: partial.schoolName !== undefined ? partial.schoolName : existing.schoolName,
+          district: partial.district !== undefined ? partial.district : existing.district,
+          province: partial.province !== undefined ? partial.province : existing.province,
+          mainGrade: partial.mainGrade !== undefined ? partial.mainGrade : existing.mainGrade,
+          planTier: partial.planTier !== undefined ? partial.planTier : existing.planTier,
+          reputationPoints: partial.reputationPoints !== undefined ? partial.reputationPoints : existing.reputationPoints,
           title: partial.title !== undefined ? partial.title : existing.title,
-          department: partial.department !== undefined ? partial.department : existing.department,
           phone: partial.phone !== undefined ? partial.phone : existing.phone,
           avatarUrl: partial.avatarUrl !== undefined ? partial.avatarUrl : existing.avatarUrl,
         })
@@ -719,7 +678,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('gvcn_teachers', JSON.stringify(updated));
     } catch (e) {}
 
-    toast.success('Đã cập nhật quyền và phân công cán bộ/giáo viên!');
+    toast.success('Đã cập nhật thông tin và quyền giáo viên!');
   };
 
   const deleteTeacher = async (id: string) => {

@@ -99,10 +99,10 @@ export default function UnauthorizedPage() {
             <span>Tài Khoản Đang Chờ Phê Duyệt</span>
           </div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-            Chưa Được Cấp Quyền Giáo Viên
+            Chờ Kích Hoạt Quyền Giáo Viên (BETA)
           </h1>
           <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
-            Để đảm bảo an toàn thông tin học sinh theo quy định của Bộ Giáo dục & Đào tạo, chỉ những tài khoản được Quản trị viên (Hiệu trưởng / Quản lý trường) phê duyệt mới có thể truy cập hồ sơ lớp học.
+            Để đảm bảo chất lượng và quyền riêng tư dữ liệu học sinh, tài khoản đăng ký mới sẽ được Quản trị viên nền tảng kích hoạt quyền truy cập miễn phí toàn bộ tính năng (BETA Full Access).
           </p>
         </div>
 
@@ -119,7 +119,7 @@ export default function UnauthorizedPage() {
           <div className="flex items-center justify-between">
             <span className="text-slate-500 font-medium">Trạng thái quyền:</span>
             <span className="bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full text-[10px]">
-              Chờ Quản Trị Viên Phân Lớp
+              Chờ Kích Hoạt BETA Full Access
             </span>
           </div>
         </div>
@@ -128,14 +128,14 @@ export default function UnauthorizedPage() {
         <div className="bg-blue-50/60 rounded-2xl p-4 border border-blue-200/80 text-left space-y-2.5">
           <div className="flex items-center space-x-2 font-bold text-blue-900 text-xs">
             <Mail className="w-4 h-4 text-blue-600" />
-            <span>Liên Hệ Quản Trị Viên Trường:</span>
+            <span>Quản Trị Viên Nền Tảng (Super Admin):</span>
           </div>
           <p className="text-[11px] text-blue-800 leading-relaxed">
-            Vui lòng liên hệ với Thầy/Cô Quản trị viên để được gán vào lớp phụ trách tương ứng:
+            Hệ thống sẽ tự động duyệt hoặc bạn có thể gửi tin nhắn để được kích hoạt ngay:
           </p>
           <div className="bg-white p-2.5 rounded-xl border border-blue-200 font-mono text-xs font-bold text-blue-900 flex items-center justify-between">
             <span>anhnnh4@gmail.com</span>
-            <span className="text-[10px] font-sans font-normal text-slate-500">Admin Trường Tiểu học Đại Mỗ</span>
+            <span className="text-[10px] font-sans font-normal text-slate-500">Super Admin GVCN PRO</span>
           </div>
         </div>
 

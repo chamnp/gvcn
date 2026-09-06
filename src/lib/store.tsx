@@ -1114,9 +1114,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
 
         if (dbClasses) {
-          setSchoolClasses(dbClasses);
+          const userEmail = (profile?.email || '').toLowerCase().trim();
+          const isAdminUser = profile?.role === 'ADMIN' || userEmail === 'anhnnh4@gmail.com';
+          
+          // If admin, show all classes across all schools.
+          // If teacher, show only classes owned by this teacher or assigned to them.
+          const visibleClasses = isAdminUser
+            ? dbClasses
+            : dbClasses.filter(
+                (c: any) =>
+                  (c.teacherEmail && c.teacherEmail.toLowerCase() === userEmail) ||
+                  c.id === profile?.assignedClassId
+              );
+
+          setSchoolClasses(visibleClasses);
           setActiveClassId((current) =>
-            dbClasses.some((item) => item.id === current) ? current : dbClasses[0]?.id || ''
+            visibleClasses.some((item: any) => item.id === current)
+              ? current
+              : visibleClasses[0]?.id || ''
           );
         }
 
@@ -1788,6 +1803,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const newClass: ClassInfo = {
       ...newClassData,
       id: `class-${Date.now()}`,
+      teacherEmail: newClassData.teacherEmail || profile?.email || '',
+      schoolName: newClassData.schoolName || profile?.schoolName || 'Trường Tiểu học',
+      district: newClassData.district || profile?.district || '',
+      province: newClassData.province || profile?.province || '',
+      teacherName: newClassData.teacherName || profile?.fullName || 'Giáo viên',
       shareToken: newClassData.shareToken || `c${cleanName}-${randomSuffix}`,
     };
     setSchoolClasses((prev) => [...prev, newClass]);
@@ -1805,6 +1825,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           schoolYear: newClass.schoolYear,
           schoolName: newClass.schoolName,
           teacherName: newClass.teacherName,
+          teacherEmail: newClass.teacherEmail,
+          district: newClass.district,
+          province: newClass.province,
           totalStudents: newClass.totalStudents || 0,
           seatingGridRows: newClass.seatingGridRows || 5,
           seatingGridCols: newClass.seatingGridCols || 8,
@@ -1835,6 +1858,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           schoolYear: updated.schoolYear,
           schoolName: updated.schoolName,
           teacherName: updated.teacherName,
+          teacherEmail: updated.teacherEmail || profile?.email || '',
+          district: updated.district || profile?.district || '',
+          province: updated.province || profile?.province || '',
+          isArchived: updated.isArchived || false,
           totalStudents: updated.totalStudents || 0,
           seatingGridRows: updated.seatingGridRows || 5,
           seatingGridCols: updated.seatingGridCols || 8,

@@ -365,7 +365,7 @@ export default function DashboardPage() {
               </h1>
 
               <p className="text-sm sm:text-base text-blue-100 font-medium max-w-2xl leading-relaxed">
-                Trợ lý sư phạm & Quản lý toàn diện lớp <strong>{classInfo.name}</strong> ({schoolInfo?.name || 'Trường Tiểu học'}).
+                Trợ lý sư phạm & Quản lý toàn diện lớp <strong>{classInfo.name}</strong> ({classInfo.schoolName || schoolInfo?.name || 'Trường Tiểu học'}).
               </p>
             </div>
 
@@ -402,6 +402,13 @@ export default function DashboardPage() {
 
           {/* Quick Nav Shortcuts Bar */}
           <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-white/15 text-xs">
+            <Link
+              href="/community"
+              className="inline-flex items-center gap-1.5 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-3 py-1.5 rounded-xl font-bold backdrop-blur-md border border-white/20 transition-all shadow-xs"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+              <span>Cộng Đồng Giáo Viên</span>
+            </Link>
             <Link
               href="/classroom-tools"
               className="inline-flex items-center gap-1.5 bg-amber-400 text-slate-950 px-3 py-1.5 rounded-xl font-bold hover:bg-amber-300 transition-all shadow-xs"
