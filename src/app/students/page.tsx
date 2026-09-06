@@ -104,7 +104,7 @@ export default function StudentsPage() {
     dateOfBirth: `${new Date().getFullYear() - 6 - (classInfo?.grade ? classInfo.grade - 1 : 3)}-01-01`,
     parentName: '',
     parentPhone: '',
-    isBoarding: true,
+    isBoarding: false,
     healthNotes: '',
     tagInput: '',
   });
@@ -149,6 +149,7 @@ export default function StudentsPage() {
   const activatedCount = students.filter((s) => s.isActivated).length;
   const pendingCount = students.length - activatedCount;
   const activatedPercent = students.length > 0 ? Math.round((activatedCount / students.length) * 100) : 0;
+  const regularBoardingCount = students.filter((student) => student.isBoarding).length;
 
   // Open Add Modal
   const handleOpenAdd = () => {
@@ -160,7 +161,7 @@ export default function StudentsPage() {
       dateOfBirth: `${new Date().getFullYear() - 6 - (classInfo?.grade ? classInfo.grade - 1 : 3)}-01-01`,
       parentName: '',
       parentPhone: '',
-      isBoarding: true,
+      isBoarding: false,
       healthNotes: '',
       tagInput: '',
     });
@@ -249,6 +250,16 @@ export default function StudentsPage() {
       deleteStudent(id);
       toast.success(`Đã xóa học sinh ${name}`);
     }
+  };
+
+  const handleToggleRegularBoarding = (student: Student) => {
+    const isBoarding = !student.isBoarding;
+    updateStudent({ ...student, isBoarding });
+    toast.success(
+      isBoarding
+        ? `Đã đăng ký bán trú thường xuyên cho em ${student.fullName}`
+        : `Đã bỏ đăng ký bán trú thường xuyên của em ${student.fullName}`
+    );
   };
 
   // Import Excel
@@ -528,6 +539,13 @@ export default function StudentsPage() {
       {/* 2. TAB 1: ROSTER LIST VIEW */}
       {activeTab === 'ROSTER' && (
         <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-5 sm:p-6 space-y-4">
+          <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-indigo-100 bg-indigo-50/60 px-3 py-2 text-xs text-slate-700">
+            <span className="font-bold text-indigo-800">Đăng ký thường xuyên:</span>
+            <span><strong>{regularBoardingCount}</strong> bán trú</span>
+            <span className="text-slate-300">•</span>
+            <span><strong>{students.length - regularBoardingCount}</strong> không bán trú</span>
+            <span className="ml-auto text-[11px] text-slate-500">Bấm trạng thái ở từng học sinh để thay đổi.</span>
+          </div>
           {/* Team Filter Pills & Search */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 text-xs">
             {/* Team Pills */}
@@ -622,7 +640,7 @@ export default function StudentsPage() {
                   <th className="py-3 px-3 text-center">Tổ</th>
                   <th className="py-3 px-3">Giới Tính</th>
                   <th className="py-3 px-3">Ngày Sinh</th>
-                  <th className="py-3 px-3">Bán Trú</th>
+                  <th className="py-3 px-3">Đăng ký bán trú</th>
                   <th className="py-3 px-4">Phụ Huynh & SĐT</th>
                   <th className="py-3 px-4 text-center">Thao Tác</th>
                 </tr>
@@ -659,13 +677,21 @@ export default function StudentsPage() {
                         </td>
                         <td className="py-3 px-3 text-slate-600 font-mono">{st.dateOfBirth}</td>
                         <td className="py-3 px-3">
-                          {st.isBoarding ? (
-                            <span className="text-emerald-700 font-semibold flex items-center gap-1">
-                              <CheckCircle2 className="w-3.5 h-3.5" /> Có
-                            </span>
-                          ) : (
-                            <span className="text-slate-400 font-medium">Không</span>
-                          )}
+                          <button
+                            type="button"
+                            role="switch"
+                            aria-checked={Boolean(st.isBoarding)}
+                            onClick={() => handleToggleRegularBoarding(st)}
+                            title="Thay đổi đăng ký bán trú thường xuyên"
+                            className={`inline-flex min-w-24 items-center justify-center gap-1 rounded-lg border px-2 py-1 font-bold transition-colors ${
+                              st.isBoarding
+                                ? 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                                : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100'
+                            }`}
+                          >
+                            {st.isBoarding && <CheckCircle2 className="h-3.5 w-3.5" />}
+                            {st.isBoarding ? 'Đã đăng ký' : 'Không đăng ký'}
+                          </button>
                         </td>
                         <td className="py-3 px-4 text-slate-600">
                           <div>

@@ -16,7 +16,7 @@ import {
 import { useAppStore } from '@/lib/store';
 import { AttendanceStatus } from '@/types';
 import { getLocalDateString } from '@/lib/tt27-engine';
-import { getCompletedAttendanceDates, paginate, summarizeAttendance } from '@/lib/attendance-utils';
+import { getCompletedAttendanceDates, paginate, resolveDailyBoardingMeal, summarizeAttendance } from '@/lib/attendance-utils';
 import { toast } from 'sonner';
 
 const PAGE_SIZE_STORAGE_KEY = 'gvcn_pro_attendance_page_size';
@@ -126,13 +126,14 @@ export default function AttendancePage() {
   // Lọc điểm danh theo ngày đã chọn
   const dayAttendances = useMemo(() => (students || []).map((st) => {
     const record = attendances.find((a) => a.studentId === st.id && a.date === selectedDate);
-    const attendsSchool = record?.status === 'CO_MAT' || record?.status === 'MUON';
     return {
       student: st,
       status: record?.status ?? 'CO_MAT',
-      hasBoardingMeal: record
-        ? Boolean(record.hasBoardingMeal && attendsSchool)
-        : st.isBoarding,
+      hasBoardingMeal: resolveDailyBoardingMeal(
+        Boolean(st.isBoarding),
+        record?.status ?? 'CO_MAT',
+        record ? Boolean(record.hasBoardingMeal) : undefined
+      ),
       reason: record?.reason || '',
       isRecorded: Boolean(record),
     };
@@ -194,8 +195,10 @@ export default function AttendancePage() {
   const handleStatusChange = (studentId: string, status: AttendanceStatus) => {
     const student = students.find((s) => s.id === studentId);
     const current = dayAttendances.find((item) => item.student.id === studentId);
-    const attendsSchool = status === 'CO_MAT' || status === 'MUON';
-    const hasMeal = Boolean(student?.isBoarding && attendsSchool);
+    const savedDailyMeal = current?.isRecorded && (current.status === 'CO_MAT' || current.status === 'MUON')
+      ? current.hasBoardingMeal
+      : undefined;
+    const hasMeal = resolveDailyBoardingMeal(Boolean(student?.isBoarding), status, savedDailyMeal);
     updateAttendance(studentId, selectedDate, status, hasMeal, current?.reason);
   };
 
@@ -610,7 +613,10 @@ ${absentList ? `\nDanh sách học sinh vắng:\n${absentList}` : '\n(Cả lớp
                     <th className="py-3 px-4 w-28">Mã HS</th>
                     <th className="py-3 px-4">Họ và Tên</th>
                     <th className="py-3 px-4 w-72 text-center">Trạng Thái Điểm Danh</th>
-                    <th className="py-3 px-4 w-32 text-center">Ăn Bán Trú</th>
+                    <th className="py-3 px-4 w-36 text-center">
+                      <span className="block">Suất ăn hôm nay</span>
+                      <span className="block text-[9px] font-medium normal-case text-slate-400">Riêng ngày đang chọn</span>
+                    </th>
                     <th className="py-3 px-4">Lý do nghỉ / Ghi chú</th>
                   </tr>
                 </thead>
@@ -723,6 +729,8 @@ ${absentList ? `\nDanh sách học sinh vắng:\n${absentList}` : '\n(Cả lớp
                             checked={item.hasBoardingMeal}
                             disabled={item.status === 'VANG_CO_PHEP' || item.status === 'VANG_KHONG_PHEP'}
                             onChange={() => handleMealToggle(item.student.id, item.hasBoardingMeal, item.status, item.reason)}
+                            title={item.hasBoardingMeal ? 'Bỏ suất ăn riêng ngày này' : 'Thêm suất ăn riêng ngày này'}
+                            aria-label={`${item.hasBoardingMeal ? 'Bỏ' : 'Thêm'} suất ăn ngày ${selectedDate} cho ${item.student.fullName}`}
                             className="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 cursor-pointer disabled:cursor-not-allowed disabled:opacity-40"
                           />
                         </td>

@@ -17,6 +17,16 @@ export interface AttendanceSummary {
   attendanceRate: number | null;
 }
 
+export function resolveDailyBoardingMeal(
+  isRegularBoarding: boolean,
+  status: string,
+  savedDailyMeal?: boolean
+): boolean {
+  const attendsSchool = status === 'CO_MAT' || status === 'MUON';
+  if (!attendsSchool) return false;
+  return savedDailyMeal ?? isRegularBoarding;
+}
+
 export function isSameAttendanceDay(
   left: Pick<AttendanceRecordLike, 'studentId' | 'date'>,
   right: Pick<AttendanceRecordLike, 'studentId' | 'date'>

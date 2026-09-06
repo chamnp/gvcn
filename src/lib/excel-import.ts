@@ -246,12 +246,10 @@ export async function parseStudentExcelFile(file: File): Promise<Partial<Student
     const parentName = parentNameIndex !== -1 ? String(row[parentNameIndex] || '').trim().replace(/\s+/g, ' ') : '';
     const parentPhone = phoneIndex !== -1 ? parsePhoneValue(row[phoneIndex]) : '';
 
-    let isBoarding = true;
+    let isBoarding = false;
     if (boardingIndex !== -1 && row[boardingIndex] !== undefined && row[boardingIndex] !== null) {
       const bStr = normalizeHeader(row[boardingIndex]);
-      if (bStr === 'khong' || bStr === 'ko' || bStr === 'k' || bStr === 'false' || bStr === '0' || bStr === 'no' || bStr.includes('khong')) {
-        isBoarding = false;
-      }
+      isBoarding = bStr === 'co' || bStr === 'yes' || bStr === 'true' || bStr === '1' || bStr === 'x' || bStr.includes('ban tru');
     }
 
     const healthNotes = healthIndex !== -1 ? String(row[healthIndex] || '').trim() : '';
@@ -603,4 +601,3 @@ export async function parseSubjectScoreExcelFile(
     unmatchedRows,
   };
 }
-

@@ -7,6 +7,7 @@ import {
   getUnrecordedStudentIds,
   mergeAttendanceByDay,
   paginate,
+  resolveDailyBoardingMeal,
   summarizeAttendance,
 } from '../src/lib/attendance-utils.ts';
 
@@ -91,4 +92,12 @@ test('pagination clamps an out-of-range page after filtering', () => {
   assert.deepEqual(result.items, ['c']);
   assert.equal(result.page, 2);
   assert.equal(result.totalPages, 2);
+});
+
+test('daily meal defaults to the regular registration but keeps a saved one-day exception', () => {
+  assert.equal(resolveDailyBoardingMeal(true, 'CO_MAT'), true);
+  assert.equal(resolveDailyBoardingMeal(false, 'CO_MAT'), false);
+  assert.equal(resolveDailyBoardingMeal(true, 'VANG_CO_PHEP'), false);
+  assert.equal(resolveDailyBoardingMeal(true, 'MUON', false), false);
+  assert.equal(resolveDailyBoardingMeal(false, 'MUON', true), true);
 });
