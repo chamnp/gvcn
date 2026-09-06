@@ -163,7 +163,7 @@ const SidebarContent: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
                 GVCN PRO
               </span>
               <span className="px-1.5 py-0.5 text-[9px] font-black bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-md tracking-wider shadow-xs">
-                STABLE
+                BETA
               </span>
             </div>
             <p className="text-[11px] text-slate-400 truncate max-w-[140px]" title={classInfo.schoolName || profile?.schoolName || 'Trợ Lý Sư Phạm GVCN'}>
