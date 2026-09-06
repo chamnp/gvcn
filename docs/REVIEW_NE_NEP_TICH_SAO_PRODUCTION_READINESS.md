@@ -621,3 +621,34 @@ Không phát hành chính thức cho đến khi tất cả điều kiện sau đ
 Không nên tiếp tục dùng thao tác “Reset tháng” theo cách xóa log. Mô hình an toàn hơn là giữ StarLog bất biến, tạo `CompetitionPeriod` hoặc trạng thái kỳ thi đua, rồi tính bảng xếp hạng theo khoảng thời gian. Cách này giữ được lịch sử rèn luyện, hỗ trợ audit và tránh mất dữ liệu giáo dục.
 
 Ưu tiên triển khai P0-01, P0-02 và P0-03 dưới dạng hotfix trước; sau đó thực hiện migration/RLS và transaction đổi quà trong một nhánh riêng có staging test. Chỉ dọn mock data sau khi đã backup và có xác nhận của người phụ trách dữ liệu.
+
+## 13. Nhật ký làm sạch dữ liệu trước khi mở production
+
+Thực hiện ngày **06/09/2026** trên Supabase project `lgyoekaaefzpymfxfggf`, sau khi có xác nhận xoá toàn bộ số sao và lịch sử phát sinh để khởi tạo tính năng từ trạng thái sạch.
+
+### Phạm vi đã xoá
+
+- `StarLog`: **104 → 0** dòng.
+- `RewardRedemption`: **2 → 0** dòng; cả hai bản ghi cũ có trạng thái `DELIVERED`.
+- Không có bản ghi đóng tháng cần xoá.
+
+### Bản lưu có thể phục hồi
+
+- `archive.star_log_before_rewards_launch_20260906`: **104** dòng.
+- `archive.reward_redemption_before_rewards_launch_20260906`: **2** dòng.
+- Việc sao lưu, kiểm tra số dòng và xoá được thực hiện trong cùng một transaction. Transaction sẽ dừng nếu bảng lưu đã tồn tại hoặc số dòng sao lưu không khớp nguồn.
+
+### Dữ liệu được giữ nguyên
+
+- `Student` và dữ liệu lớp học.
+- `StarCriterion`: **25** dòng.
+- `RewardProduct`: **11** dòng.
+- Tổng tồn kho quà: **350**, không thay đổi trong lần làm sạch này.
+
+### Trạng thái sau làm sạch
+
+- [x] Không còn lịch sử cộng/trừ sao.
+- [x] Không còn lịch sử đổi quà.
+- [x] Có bản lưu ngoài schema `public` để phục hồi khi cần.
+- [x] Danh mục tiêu chí và quà tặng không bị thay đổi.
+- [ ] RLS/authorization production vẫn phải hoàn tất trước khi coi tính năng là production-ready hoàn toàn.
