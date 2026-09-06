@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import {
   Award,
@@ -47,7 +47,12 @@ import {
   QrCode,
   Copy,
   Mic,
+  Link2,
+  Upload,
+  Camera,
+  Loader2,
 } from 'lucide-react';
+import { DEFAULT_FALLBACK_PRODUCT_IMAGE, compressImageFile } from '@/lib/image-utils';
 import { useAppStore } from '@/lib/store';
 import { QRCodeCanvas } from '@/components/ui/qr-code-canvas';
 import {
@@ -63,6 +68,7 @@ import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import { getLocalDateString } from '@/lib/tt27-engine';
+import { rankMonthlyStarLeaderboard } from '@/lib/star-leaderboard';
 
 const COMMENT_SUGGESTIONS = [
   'Hôm nay em rất hăng hái phát biểu và tiếp thu bài nhanh.',
@@ -193,6 +199,11 @@ export default function BehaviorPage() {
   const [productStarPrice, setProductStarPrice] = useState(10);
   const [productStock, setProductStock] = useState(15);
   const [productImageUrl, setProductImageUrl] = useState(PRESET_SAMPLE_IMAGES[0].url);
+  const [productImageSourceTab, setProductImageSourceTab] = useState<'URL' | 'UPLOAD' | 'PRESET'>('PRESET');
+  const [externalUrlInput, setExternalUrlInput] = useState('');
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [imageLoadError, setImageLoadError] = useState(false);
+  const productImageFileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Modal State for Restocking Product
   const [restockModalProduct, setRestockModalProduct] = useState<RewardProduct | null>(null);
@@ -389,21 +400,17 @@ export default function BehaviorPage() {
       };
     });
 
-    scoredList.sort((a, b) => {
-      if (b.monthlyEarned !== a.monthlyEarned) {
-        return b.monthlyEarned - a.monthlyEarned;
-      }
-      if (b.allTimeStars !== a.allTimeStars) {
-        return b.allTimeStars - a.allTimeStars;
-      }
-      return a.student.fullName.localeCompare(b.student.fullName);
-    });
-
-    return scoredList.map((item, idx) => ({
-      ...item,
-      rank: idx + 1,
-    }));
+    return rankMonthlyStarLeaderboard(scoredList);
   }, [students, selectedMonth, starLogs, rewardRedemptions, getStudentMonthlyStars, getStudentStars]);
+
+  const rankedLeaderboard = useMemo(
+    () => leaderboard.filter((item) => item.rank !== null),
+    [leaderboard]
+  );
+  const hasDistinctPodium = rankedLeaderboard.length >= 3
+    && rankedLeaderboard[0].rank === 1
+    && rankedLeaderboard[1].rank === 2
+    && rankedLeaderboard[2].rank === 3;
 
   // Criteria Handlers
   const handleOpenAddCriterion = () => {
@@ -460,6 +467,9 @@ export default function BehaviorPage() {
     setProductStarPrice(10);
     setProductStock(15);
     setProductImageUrl(PRESET_SAMPLE_IMAGES[0].url);
+    setProductImageSourceTab('PRESET');
+    setExternalUrlInput('');
+    setImageLoadError(false);
     setIsProductModalOpen(true);
   };
 
@@ -467,11 +477,67 @@ export default function BehaviorPage() {
     setEditingProduct(prod);
     setProductName(prod.name);
     setProductDescription(prod.description);
-    setProductCategory(prod.category);
+    setProductCategory(prod.category || 'Bút viết');
     setProductStarPrice(prod.starPrice);
     setProductStock(prod.stock);
     setProductImageUrl(prod.imageUrl);
+    setImageLoadError(false);
+
+    // Tự động chọn Tab nguồn ảnh tương ứng
+    const isPreset = PRESET_SAMPLE_IMAGES.some((p) => p.url === prod.imageUrl);
+    if (isPreset) {
+      setProductImageSourceTab('PRESET');
+      setExternalUrlInput('');
+    } else if (prod.imageUrl?.startsWith('data:image/')) {
+      setProductImageSourceTab('UPLOAD');
+      setExternalUrlInput('');
+    } else {
+      setProductImageSourceTab('URL');
+      setExternalUrlInput(prod.imageUrl || '');
+    }
     setIsProductModalOpen(true);
+  };
+
+  const handlePasteClipboardUrl = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      const trimmed = text.trim();
+      if (trimmed && (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:image/'))) {
+        setExternalUrlInput(trimmed);
+        setProductImageUrl(trimmed);
+        setImageLoadError(false);
+        toast.success('Đã dán và áp dụng link ảnh!');
+      } else {
+        toast.error('Bộ nhớ tạm không chứa link ảnh hợp lệ (cần bắt đầu bằng http:// hoặc https://)');
+      }
+    } catch {
+      toast.error('Trình duyệt chặn truy cập bộ nhớ tạm. Bạn hãy dùng tổ hợp phím Ctrl+V hoặc Cmd+V để dán trực tiếp.');
+    }
+  };
+
+  const handleProductImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast.error('Vui lòng chọn tệp hình ảnh hợp lệ (.jpg, .png, .webp, .gif)!');
+      return;
+    }
+
+    try {
+      setIsUploadingImage(true);
+      const compressedData = await compressImageFile(file, 600, 600, 0.82);
+      setProductImageUrl(compressedData);
+      setImageLoadError(false);
+      toast.success('Đã tối ưu và tải ảnh thành công!');
+    } catch (err: any) {
+      toast.error(err?.message || 'Không thể xử lý ảnh này, vui lòng thử ảnh khác!');
+    } finally {
+      setIsUploadingImage(false);
+      if (productImageFileInputRef.current) {
+        productImageFileInputRef.current.value = '';
+      }
+    }
   };
 
   const handleSaveProduct = (e: React.FormEvent) => {
@@ -1035,6 +1101,7 @@ export default function BehaviorPage() {
           </p>
 
           {/* PODIUM TOP 1, TOP 2, TOP 3 */}
+          {hasDistinctPodium ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4 pt-2">
             {/* TOP 2 (BẠC) */}
             <div className="order-2 md:order-1 bg-gradient-to-b from-slate-100 to-white rounded-3xl p-5 border-2 border-slate-300 shadow-md text-center space-y-3 relative overflow-hidden flex flex-col justify-between">
@@ -1043,17 +1110,17 @@ export default function BehaviorPage() {
               </div>
               <div className="pt-4 space-y-2">
                 <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-slate-300 to-slate-100 border-4 border-slate-300 text-slate-700 font-black text-xl flex items-center justify-center mx-auto shadow-inner">
-                  {leaderboard[1]?.student.fullName.split(' ').pop()?.substring(0, 2) || '2'}
+                  {rankedLeaderboard[1].student.fullName.split(' ').pop()?.substring(0, 2) || '2'}
                 </div>
                 <h4 className="font-black text-sm sm:text-base text-slate-900 truncate">
-                  {leaderboard[1]?.student.fullName || 'Đang cập nhật'}
+                  {rankedLeaderboard[1].student.fullName}
                 </h4>
-                <p className="text-xs text-slate-500 font-mono">Tổ {leaderboard[1]?.teamId} • {leaderboard[1]?.student.studentCode || ''}</p>
+                <p className="text-xs text-slate-500 font-mono">Tổ {rankedLeaderboard[1].teamId} • {rankedLeaderboard[1].student.studentCode}</p>
               </div>
 
               <div className="bg-slate-200/70 p-3 rounded-2xl space-y-1">
-                <span className="text-2xl font-black text-slate-800">+{leaderboard[1]?.monthlyEarned || 0} ⭐</span>
-                <p className="text-[11px] text-slate-600 font-medium">Khả dụng: {leaderboard[1]?.monthlyAvailable || 0} sao</p>
+                <span className="text-2xl font-black text-slate-800">+{rankedLeaderboard[1].monthlyEarned} ⭐</span>
+                <p className="text-[11px] text-slate-600 font-medium">Khả dụng: {rankedLeaderboard[1].monthlyAvailable} sao</p>
               </div>
             </div>
 
@@ -1065,17 +1132,17 @@ export default function BehaviorPage() {
               </div>
               <div className="pt-5 space-y-2">
                 <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-amber-400 to-yellow-200 border-4 border-amber-400 text-amber-900 font-black text-2xl flex items-center justify-center mx-auto shadow-lg ring-4 ring-amber-200/50">
-                  {leaderboard[0]?.student.fullName.split(' ').pop()?.substring(0, 2) || '1'}
+                  {rankedLeaderboard[0].student.fullName.split(' ').pop()?.substring(0, 2) || '1'}
                 </div>
                 <h4 className="font-black text-base sm:text-lg text-slate-900 truncate">
-                  {leaderboard[0]?.student.fullName || 'Đang cập nhật'}
+                  {rankedLeaderboard[0].student.fullName}
                 </h4>
-                <p className="text-xs text-slate-600 font-mono font-bold">Tổ {leaderboard[0]?.teamId} • {leaderboard[0]?.student.studentCode || ''}</p>
+                <p className="text-xs text-slate-600 font-mono font-bold">Tổ {rankedLeaderboard[0].teamId} • {rankedLeaderboard[0].student.studentCode}</p>
               </div>
 
               <div className="bg-amber-200/80 p-3.5 rounded-2xl space-y-1 border border-amber-300">
-                <span className="text-3xl font-black text-amber-950">+{leaderboard[0]?.monthlyEarned || 0} ⭐</span>
-                <p className="text-xs text-amber-900 font-semibold">Khả dụng: {leaderboard[0]?.monthlyAvailable || 0} sao</p>
+                <span className="text-3xl font-black text-amber-950">+{rankedLeaderboard[0].monthlyEarned} ⭐</span>
+                <p className="text-xs text-amber-900 font-semibold">Khả dụng: {rankedLeaderboard[0].monthlyAvailable} sao</p>
               </div>
             </div>
 
@@ -1086,20 +1153,26 @@ export default function BehaviorPage() {
               </div>
               <div className="pt-4 space-y-2">
                 <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-amber-700 to-amber-500 border-4 border-amber-600/50 text-white font-black text-xl flex items-center justify-center mx-auto shadow-inner">
-                  {leaderboard[2]?.student.fullName.split(' ').pop()?.substring(0, 2) || '3'}
+                  {rankedLeaderboard[2].student.fullName.split(' ').pop()?.substring(0, 2) || '3'}
                 </div>
                 <h4 className="font-black text-sm sm:text-base text-slate-900 truncate">
-                  {leaderboard[2]?.student.fullName || 'Đang cập nhật'}
+                  {rankedLeaderboard[2].student.fullName}
                 </h4>
-                <p className="text-xs text-slate-500 font-mono">Tổ {leaderboard[2]?.teamId} • {leaderboard[2]?.student.studentCode || ''}</p>
+                <p className="text-xs text-slate-500 font-mono">Tổ {rankedLeaderboard[2].teamId} • {rankedLeaderboard[2].student.studentCode}</p>
               </div>
 
               <div className="bg-amber-100/70 p-3 rounded-2xl space-y-1">
-                <span className="text-2xl font-black text-amber-900">+{leaderboard[2]?.monthlyEarned || 0} ⭐</span>
-                <p className="text-[11px] text-amber-800 font-medium">Khả dụng: {leaderboard[2]?.monthlyAvailable || 0} sao</p>
+                <span className="text-2xl font-black text-amber-900">+{rankedLeaderboard[2].monthlyEarned} ⭐</span>
+                <p className="text-[11px] text-amber-800 font-medium">Khả dụng: {rankedLeaderboard[2].monthlyAvailable} sao</p>
               </div>
             </div>
           </div>
+          ) : (
+            <div className="rounded-3xl border border-dashed border-amber-200 bg-amber-50/60 px-5 py-8 text-center">
+              <p className="font-bold text-amber-900">{rankedLeaderboard.length === 0 ? 'Tháng này chưa phát sinh sao thi đua' : 'Chưa đủ ba thứ hạng riêng biệt để hiển thị bục vinh danh'}</p>
+              <p className="mt-1 text-xs text-amber-700">Học sinh bằng điểm được đồng hạng và không bị phân hạng theo tên hoặc sao toàn khóa.</p>
+            </div>
+          )}
 
           {/* FULL RANKING TABLE */}
           <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-4 sm:p-5 space-y-4">
@@ -1134,12 +1207,12 @@ export default function BehaviorPage() {
                               ? 'bg-slate-300 text-slate-800'
                               : item.rank === 3
                               ? 'bg-amber-700 text-white'
-                              : item.rank <= 10
+                              : item.rank !== null && item.rank <= 10
                               ? 'bg-blue-100 text-blue-800 font-bold'
                               : 'text-slate-400'
                           }`}
                         >
-                          {item.rank}
+                          {item.rank ?? '—'}
                         </span>
                       </td>
                       <td className="py-3 px-3 sm:px-4">
@@ -1308,11 +1381,14 @@ export default function BehaviorPage() {
                 className="rounded-3xl border border-slate-200 bg-white shadow-2xs hover:shadow-md transition-all overflow-hidden flex flex-col justify-between"
               >
                 <div>
-                  <div className="relative h-36 bg-slate-100 overflow-hidden">
+                  <div className="relative h-36 bg-slate-100 overflow-hidden group">
                     <img
-                      src={prod.imageUrl}
+                      src={prod.imageUrl || DEFAULT_FALLBACK_PRODUCT_IMAGE}
                       alt={prod.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      onError={(e) => {
+                        e.currentTarget.src = DEFAULT_FALLBACK_PRODUCT_IMAGE;
+                      }}
                     />
                     <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-xs text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
                       {prod.category}
@@ -1325,6 +1401,19 @@ export default function BehaviorPage() {
                     >
                       {prod.stock > 0 ? `Còn ${prod.stock}` : 'Hết hàng'}
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenEditProduct(prod);
+                      }}
+                      className="absolute inset-x-0 bottom-0 py-1.5 bg-black/65 hover:bg-black/85 backdrop-blur-xs text-white text-[11px] font-bold flex items-center justify-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                      title="Bấm để đổi hình ảnh hoặc chỉnh sửa món quà"
+                    >
+                      <Camera className="w-3.5 h-3.5" />
+                      <span>Đổi ảnh món quà</span>
+                    </button>
                   </div>
 
                   <div className="p-3.5 space-y-1.5">
@@ -1441,7 +1530,14 @@ export default function BehaviorPage() {
                     >
                       <div className="flex items-start space-x-3 min-w-0">
                         <div className="w-12 h-12 rounded-2xl bg-white border border-slate-200 overflow-hidden shrink-0 shadow-xs">
-                          <img src={itemImg} alt={itemTitle} className="w-full h-full object-cover" />
+                          <img
+                            src={itemImg}
+                            alt={itemTitle}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = DEFAULT_FALLBACK_PRODUCT_IMAGE;
+                            }}
+                          />
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
@@ -1873,19 +1969,39 @@ export default function BehaviorPage() {
       {/* MODAL 5: PRODUCT MODAL */}
       {isProductModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl max-w-md w-full p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4">
-            <h3 className="font-bold text-sm text-slate-900">
-              {editingProduct ? 'Chỉnh Sửa Món Quà' : 'Thêm Quà Mới Vào Shop'}
-            </h3>
-            <form onSubmit={handleSaveProduct} className="space-y-3">
+          <div className="bg-white rounded-3xl max-w-lg w-full max-h-[92vh] overflow-y-auto p-5 sm:p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-emerald-100 text-emerald-700 rounded-xl">
+                  <ShoppingBag className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm sm:text-base text-slate-900">
+                    {editingProduct ? 'Chỉnh Sửa Món Quà' : 'Thêm Quà Mới Vào Shop'}
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    Cài đặt thông tin, giá đổi sao và hình ảnh đại diện món quà
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsProductModalOpen(false)}
+                className="p-1.5 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveProduct} className="space-y-3.5">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">Tên món quà</label>
                 <input
                   type="text"
                   value={productName}
                   onChange={(e) => setProductName(e.target.value)}
-                  placeholder="Ví dụ: Bút mực tím..."
-                  className="w-full px-3 py-1.5 border border-slate-200 rounded-xl text-xs"
+                  placeholder="Ví dụ: Bút mực tím Thiên Long, Hộp bút Capybara..."
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
                   required
                 />
               </div>
@@ -1896,12 +2012,27 @@ export default function BehaviorPage() {
                   type="text"
                   value={productDescription}
                   onChange={(e) => setProductDescription(e.target.value)}
-                  placeholder="Mô tả công dụng hoặc màu sắc..."
-                  className="w-full px-3 py-1.5 border border-slate-200 rounded-xl text-xs"
+                  placeholder="Mô tả công dụng, màu sắc hoặc đặc điểm phần thưởng..."
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Danh mục quà</label>
+                  <select
+                    value={productCategory}
+                    onChange={(e) => setProductCategory(e.target.value as RewardProductCategory)}
+                    className="w-full px-2.5 py-2 border border-slate-200 rounded-xl text-xs bg-white text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-hidden font-medium"
+                  >
+                    <option value="Bút viết">Bút viết</option>
+                    <option value="Vở & Sổ">Vở & Sổ</option>
+                    <option value="Hộp bút & Thước">Hộp bút & Thước</option>
+                    <option value="Dụng cụ học tập">Dụng cụ học tập</option>
+                    <option value="Phụ kiện dễ thương">Phụ kiện dễ thương</option>
+                    <option value="Khác">Khác</option>
+                  </select>
+                </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-700 mb-1">Giá đổi (Sao ⭐)</label>
                   <input
@@ -1909,7 +2040,7 @@ export default function BehaviorPage() {
                     min={1}
                     value={productStarPrice}
                     onChange={(e) => setProductStarPrice(Number(e.target.value))}
-                    className="w-full px-3 py-1.5 border border-slate-200 rounded-xl text-xs"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold text-amber-700 focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
                     required
                   />
                 </div>
@@ -1920,41 +2051,231 @@ export default function BehaviorPage() {
                     min={0}
                     value={productStock}
                     onChange={(e) => setProductStock(Number(e.target.value))}
-                    className="w-full px-3 py-1.5 border border-slate-200 rounded-xl text-xs"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
                     required
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Ảnh minh họa</label>
-                <div className="grid grid-cols-5 gap-1.5 mb-2">
-                  {PRESET_SAMPLE_IMAGES.map((img) => (
-                    <button
-                      key={img.name}
-                      type="button"
-                      onClick={() => setProductImageUrl(img.url)}
-                      className={`h-12 rounded-lg overflow-hidden border-2 transition-all ${
-                        productImageUrl === img.url ? 'border-emerald-500 scale-105' : 'border-transparent opacity-70'
-                      }`}
-                    >
-                      <img src={img.url} alt={img.name} className="w-full h-full object-cover" />
-                    </button>
-                  ))}
+              {/* PRODUCT IMAGE SECTION */}
+              <div className="space-y-2.5 pt-2 border-t border-slate-100">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                    <Camera className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Hình ảnh minh họa sản phẩm</span>
+                  </label>
+                  <span className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                    {productImageUrl?.startsWith('data:image/')
+                      ? '📁 Ảnh tải từ thiết bị'
+                      : PRESET_SAMPLE_IMAGES.some((p) => p.url === productImageUrl)
+                      ? '✨ Mẫu có sẵn'
+                      : '🌐 Link ngoài'}
+                  </span>
                 </div>
+
+                {/* Selected Image Preview */}
+                <div className="flex items-center gap-3 p-2.5 bg-slate-50 border border-slate-200 rounded-2xl">
+                  <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-slate-200 shrink-0 border border-slate-200">
+                    <img
+                      src={productImageUrl || DEFAULT_FALLBACK_PRODUCT_IMAGE}
+                      alt="Xem trước món quà"
+                      className="w-full h-full object-cover"
+                      onError={() => setImageLoadError(true)}
+                      onLoad={() => setImageLoadError(false)}
+                    />
+                    {imageLoadError && (
+                      <div className="absolute inset-0 bg-rose-50/95 flex flex-col items-center justify-center p-1 text-center">
+                        <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />
+                        <span className="text-[8px] font-bold text-rose-600 leading-tight mt-0.5">Lỗi ảnh</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[11px] font-bold text-slate-800 truncate max-w-[210px]">
+                        {productName || 'Ảnh minh họa món quà'}
+                      </span>
+                      {imageLoadError ? (
+                        <span className="text-[9px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded-full font-bold">
+                          Không tải được ảnh
+                        </span>
+                      ) : (
+                        <span className="text-[9px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full font-bold flex items-center gap-0.5">
+                          <Check className="w-2.5 h-2.5" /> Ảnh hợp lệ
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-slate-500 leading-snug">
+                      {imageLoadError
+                        ? 'Đường link ảnh không tải được. Vui lòng kiểm tra lại URL hoặc tải ảnh trực tiếp từ máy.'
+                        : 'Ảnh sẽ hiển thị trên Thẻ quà tặng của GV và Cổng đổi quà của học sinh.'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Source Selection Tabs */}
+                <div className="flex items-center p-0.5 bg-slate-100 rounded-xl gap-0.5 text-[11px] font-bold">
+                  <button
+                    type="button"
+                    onClick={() => setProductImageSourceTab('URL')}
+                    className={`flex-1 py-1.5 rounded-lg flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                      productImageSourceTab === 'URL'
+                        ? 'bg-white text-emerald-700 shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Link2 className="w-3.5 h-3.5" />
+                    <span>Link ngoài (URL)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setProductImageSourceTab('UPLOAD')}
+                    className={`flex-1 py-1.5 rounded-lg flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                      productImageSourceTab === 'UPLOAD'
+                        ? 'bg-white text-emerald-700 shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Tải từ máy/ĐT</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setProductImageSourceTab('PRESET')}
+                    className={`flex-1 py-1.5 rounded-lg flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                      productImageSourceTab === 'PRESET'
+                        ? 'bg-white text-emerald-700 shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>Mẫu có sẵn</span>
+                  </button>
+                </div>
+
+                {/* TAB 1: EXTERNAL URL */}
+                {productImageSourceTab === 'URL' && (
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+                    <div className="flex gap-1.5">
+                      <div className="relative flex-1">
+                        <input
+                          type="url"
+                          value={externalUrlInput}
+                          onChange={(e) => {
+                            setExternalUrlInput(e.target.value);
+                            setProductImageUrl(e.target.value);
+                            setImageLoadError(false);
+                          }}
+                          placeholder="Dán đường link ảnh từ web (https://...)"
+                          className="w-full pl-7 pr-2 py-1.5 border border-slate-200 rounded-xl text-xs bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-hidden"
+                        />
+                        <Link2 className="w-3.5 h-3.5 text-slate-400 absolute left-2 top-2.5" />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handlePasteClipboardUrl}
+                        className="px-2.5 py-1.5 bg-white border border-slate-200 hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 rounded-xl text-xs font-bold shrink-0 transition-colors flex items-center gap-1 cursor-pointer"
+                        title="Dán nhanh từ bộ nhớ tạm"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>Dán link</span>
+                      </button>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[10px] text-slate-400">
+                      <span>💡 Mẹo: Tìm ảnh trên Google Images hoặc Shopee, chuột phải chọn &ldquo;Sao chép địa chỉ hình ảnh&rdquo; rồi dán vào đây.</span>
+                      {externalUrlInput && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setExternalUrlInput('');
+                            setProductImageUrl(PRESET_SAMPLE_IMAGES[0].url);
+                            setImageLoadError(false);
+                          }}
+                          className="text-rose-500 hover:underline shrink-0 ml-1 cursor-pointer"
+                        >
+                          Xóa
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB 2: UPLOAD FROM DEVICE */}
+                {productImageSourceTab === 'UPLOAD' && (
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+                    <input
+                      ref={productImageFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleProductImageUpload}
+                      className="hidden"
+                    />
+                    <div
+                      onClick={() => productImageFileInputRef.current?.click()}
+                      className="border-2 border-dashed border-slate-300 hover:border-emerald-500 bg-white hover:bg-emerald-50/20 rounded-2xl p-4 text-center cursor-pointer transition-colors space-y-1.5"
+                    >
+                      {isUploadingImage ? (
+                        <div className="flex items-center justify-center gap-2 text-emerald-600 py-2">
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          <span className="text-xs font-bold">Đang nén & tối ưu hình ảnh...</span>
+                        </div>
+                      ) : (
+                        <>
+                          <Upload className="w-6 h-6 text-slate-400 mx-auto" />
+                          <p className="text-xs font-bold text-slate-700">
+                            Nhấn để chọn ảnh từ máy tính hoặc điện thoại
+                          </p>
+                          <p className="text-[10px] text-slate-400">
+                            Hỗ trợ JPG, PNG, WEBP, GIF. Tự động thu nhỏ chuẩn nét & siêu nhẹ (~40KB).
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB 3: PRESETS */}
+                {productImageSourceTab === 'PRESET' && (
+                  <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-1.5">
+                    <div className="grid grid-cols-5 gap-1.5">
+                      {PRESET_SAMPLE_IMAGES.map((img) => (
+                        <button
+                          key={img.name}
+                          type="button"
+                          onClick={() => {
+                            setProductImageUrl(img.url);
+                            setImageLoadError(false);
+                          }}
+                          className={`h-12 rounded-lg overflow-hidden border-2 transition-all relative group cursor-pointer ${
+                            productImageUrl === img.url
+                              ? 'border-emerald-500 scale-105 shadow-xs'
+                              : 'border-transparent opacity-70 hover:opacity-100'
+                          }`}
+                          title={img.name}
+                        >
+                          <img src={img.url} alt={img.name} className="w-full h-full object-cover" />
+                          <span className="absolute inset-x-0 bottom-0 bg-black/60 text-white text-[8px] truncate px-1 py-0.5 text-center font-medium">
+                            {img.name}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
-              <div className="pt-2 flex items-center justify-end space-x-2">
+              <div className="pt-2 flex items-center justify-end space-x-2 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setIsProductModalOpen(false)}
-                  className="px-3.5 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl"
+                  className="px-3.5 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
                 >
                   Hủy
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-xs"
+                  className="px-4 py-2 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-xs transition-colors cursor-pointer"
                 >
                   Lưu Sản Phẩm
                 </button>

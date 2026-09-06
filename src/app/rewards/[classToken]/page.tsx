@@ -25,6 +25,8 @@ import {
 import { supabase } from '@/lib/supabase';
 import type { ClassInfo, RewardProduct, RewardRedemption, SchoolInfo, StarCriterion, StarLog, Student } from '@/types';
 import { toast } from 'sonner';
+import { rankMonthlyStarLeaderboard } from '@/lib/star-leaderboard';
+import { DEFAULT_FALLBACK_PRODUCT_IMAGE } from '@/lib/image-utils';
 
 export default function PublicClassRewardsPage({
   params,
@@ -124,19 +126,17 @@ export default function PublicClassRewardsPage({
       };
     });
 
-    // Sort descending by monthly earned stars, then all time
-    scoredList.sort((a, b) => {
-      if (b.monthlyEarned !== a.monthlyEarned) {
-        return b.monthlyEarned - a.monthlyEarned;
-      }
-      return b.allTimeStars - a.allTimeStars;
-    });
-
-    return scoredList.map((item, idx) => ({
-      ...item,
-      rank: idx + 1,
-    }));
+    return rankMonthlyStarLeaderboard(scoredList);
   }, [classStudents, selectedMonth, starLogs, rewardRedemptions]);
+
+  const rankedLeaderboard = useMemo(
+    () => leaderboard.filter((item) => item.rank !== null),
+    [leaderboard]
+  );
+  const hasDistinctPodium = rankedLeaderboard.length >= 3
+    && rankedLeaderboard[0].rank === 1
+    && rankedLeaderboard[1].rank === 2
+    && rankedLeaderboard[2].rank === 3;
 
   // Filtered leaderboard
   const filteredLeaderboard = useMemo(() => {
@@ -309,7 +309,7 @@ export default function PublicClassRewardsPage({
         {activeTab === 'LEADERBOARD' && (
           <div className="space-y-4 sm:space-y-5">
             {/* TOP 1, 2, 3 PODIUM */}
-            {leaderboard.length >= 3 && (
+            {hasDistinctPodium && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4 pt-1">
                 {/* TOP 2 (BẠC) */}
                 <div className="order-2 md:order-1 bg-gradient-to-b from-slate-100 to-white rounded-3xl p-4 sm:p-5 border-2 border-slate-300 shadow-md text-center space-y-2.5 relative overflow-hidden flex flex-col justify-between">
@@ -318,17 +318,17 @@ export default function PublicClassRewardsPage({
                   </div>
                   <div className="pt-3 space-y-1.5">
                     <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-tr from-slate-300 to-slate-100 border-4 border-slate-300 text-slate-700 font-black text-lg sm:text-xl flex items-center justify-center mx-auto shadow-inner">
-                      {leaderboard[1]?.student?.fullName ? leaderboard[1].student.fullName.split(' ').pop()?.substring(0, 2) : '2'}
+                      {rankedLeaderboard[1].student.fullName.split(' ').pop()?.substring(0, 2) || '2'}
                     </div>
                     <h4 className="font-black text-sm sm:text-base text-slate-900 truncate">
-                      {leaderboard[1]?.student?.fullName || 'Đang cập nhật'}
+                      {rankedLeaderboard[1].student.fullName}
                     </h4>
-                    <p className="text-[11px] text-slate-500 font-mono">Mã: {leaderboard[1]?.student?.studentCode || ''}</p>
+                    <p className="text-[11px] text-slate-500 font-mono">Mã: {rankedLeaderboard[1].student.studentCode}</p>
                   </div>
 
                   <div className="bg-slate-200/70 p-2.5 rounded-2xl space-y-0.5">
-                    <span className="text-xl sm:text-2xl font-black text-slate-800">+{leaderboard[1]?.monthlyEarned || 0} ⭐</span>
-                    <p className="text-[10px] text-slate-500 font-medium">Khả dụng: {leaderboard[1]?.monthlyAvailable || 0} sao</p>
+                    <span className="text-xl sm:text-2xl font-black text-slate-800">+{rankedLeaderboard[1].monthlyEarned} ⭐</span>
+                    <p className="text-[10px] text-slate-500 font-medium">Khả dụng: {rankedLeaderboard[1].monthlyAvailable} sao</p>
                   </div>
                 </div>
 
@@ -340,17 +340,17 @@ export default function PublicClassRewardsPage({
                   </div>
                   <div className="pt-4 space-y-1.5">
                     <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-tr from-amber-400 to-yellow-200 border-4 border-amber-400 text-amber-900 font-black text-xl sm:text-2xl flex items-center justify-center mx-auto shadow-lg ring-4 ring-amber-200/50">
-                      {leaderboard[0]?.student?.fullName ? leaderboard[0].student.fullName.split(' ').pop()?.substring(0, 2) : '1'}
+                      {rankedLeaderboard[0].student.fullName.split(' ').pop()?.substring(0, 2) || '1'}
                     </div>
                     <h4 className="font-black text-base sm:text-lg text-slate-900 truncate">
-                      {leaderboard[0]?.student?.fullName || 'Đang cập nhật'}
+                      {rankedLeaderboard[0].student.fullName}
                     </h4>
-                    <p className="text-xs text-slate-600 font-mono font-bold">Mã: {leaderboard[0]?.student?.studentCode || ''}</p>
+                    <p className="text-xs text-slate-600 font-mono font-bold">Mã: {rankedLeaderboard[0].student.studentCode}</p>
                   </div>
 
                   <div className="bg-amber-200/80 p-3 rounded-2xl space-y-0.5 border border-amber-300">
-                    <span className="text-2xl sm:text-3xl font-black text-amber-950">+{leaderboard[0]?.monthlyEarned || 0} ⭐</span>
-                    <p className="text-[11px] text-amber-900 font-semibold">Khả dụng: {leaderboard[0]?.monthlyAvailable || 0} sao</p>
+                    <span className="text-2xl sm:text-3xl font-black text-amber-950">+{rankedLeaderboard[0].monthlyEarned} ⭐</span>
+                    <p className="text-[11px] text-amber-900 font-semibold">Khả dụng: {rankedLeaderboard[0].monthlyAvailable} sao</p>
                   </div>
                 </div>
 
@@ -361,19 +361,31 @@ export default function PublicClassRewardsPage({
                   </div>
                   <div className="pt-3 space-y-1.5">
                     <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gradient-to-tr from-amber-700 to-amber-500 border-4 border-amber-600/50 text-white font-black text-lg sm:text-xl flex items-center justify-center mx-auto shadow-inner">
-                      {leaderboard[2]?.student?.fullName ? leaderboard[2].student.fullName.split(' ').pop()?.substring(0, 2) : '3'}
+                      {rankedLeaderboard[2].student.fullName.split(' ').pop()?.substring(0, 2) || '3'}
                     </div>
                     <h4 className="font-black text-sm sm:text-base text-slate-900 truncate">
-                      {leaderboard[2]?.student?.fullName || 'Đang cập nhật'}
+                      {rankedLeaderboard[2].student.fullName}
                     </h4>
-                    <p className="text-[11px] text-slate-500 font-mono">Mã: {leaderboard[2]?.student?.studentCode || ''}</p>
+                    <p className="text-[11px] text-slate-500 font-mono">Mã: {rankedLeaderboard[2].student.studentCode}</p>
                   </div>
 
                   <div className="bg-amber-100/70 p-2.5 rounded-2xl space-y-0.5">
-                    <span className="text-xl sm:text-2xl font-black text-amber-900">+{leaderboard[2]?.monthlyEarned || 0} ⭐</span>
-                    <p className="text-[10px] text-amber-800 font-medium">Khả dụng: {leaderboard[2]?.monthlyAvailable || 0} sao</p>
+                    <span className="text-xl sm:text-2xl font-black text-amber-900">+{rankedLeaderboard[2].monthlyEarned} ⭐</span>
+                    <p className="text-[10px] text-amber-800 font-medium">Khả dụng: {rankedLeaderboard[2].monthlyAvailable} sao</p>
                   </div>
                 </div>
+              </div>
+            )}
+            {!hasDistinctPodium && (
+              <div className="rounded-3xl border border-dashed border-amber-200 bg-amber-50/60 px-5 py-8 text-center">
+                <p className="font-bold text-amber-900">
+                  {rankedLeaderboard.length === 0
+                    ? 'Tháng này chưa phát sinh sao thi đua'
+                    : 'Chưa đủ ba thứ hạng riêng biệt để hiển thị bục vinh danh'}
+                </p>
+                <p className="mt-1 text-xs text-amber-700">
+                  Học sinh bằng điểm được đồng hạng; học sinh có 0 sao chưa được xếp hạng.
+                </p>
               </div>
             )}
 
@@ -423,12 +435,12 @@ export default function PublicClassRewardsPage({
                                 ? 'bg-slate-300 text-slate-800'
                                 : item.rank === 3
                                 ? 'bg-amber-700 text-white'
-                                : item.rank <= 10
+                                : item.rank !== null && item.rank <= 10
                                 ? 'bg-blue-100 text-blue-800 font-bold'
                                 : 'bg-white border border-slate-200 text-slate-500'
                             }`}
                           >
-                            {item.rank}
+                            {item.rank ?? '—'}
                           </span>
 
                           <div className="min-w-0 flex-1">
@@ -486,12 +498,12 @@ export default function PublicClassRewardsPage({
                                     ? 'bg-slate-300 text-slate-800'
                                     : item.rank === 3
                                     ? 'bg-amber-700 text-white'
-                                    : item.rank <= 10
+                                    : item.rank !== null && item.rank <= 10
                                     ? 'bg-blue-100 text-blue-800 font-bold'
                                     : 'text-slate-400'
                                 }`}
                               >
-                                {item.rank}
+                                {item.rank ?? '—'}
                               </span>
                             </td>
                             <td className="py-3 px-4">
@@ -573,7 +585,14 @@ export default function PublicClassRewardsPage({
                   >
                     <div>
                       <div className="relative h-36 bg-slate-100 overflow-hidden">
-                        <img src={prod.imageUrl} alt={prod.name} className="w-full h-full object-cover" />
+                        <img
+                          src={prod.imageUrl || DEFAULT_FALLBACK_PRODUCT_IMAGE}
+                          alt={prod.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.src = DEFAULT_FALLBACK_PRODUCT_IMAGE;
+                          }}
+                        />
                         <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-xs text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
                           {prod.category}
                         </div>

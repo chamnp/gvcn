@@ -56,6 +56,7 @@ import { LeaveRequestModal } from '@/components/parent/leave-request-modal';
 import { ConferenceSchedulerModal } from '@/components/conference/conference-scheduler-modal';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
+import { DEFAULT_FALLBACK_PRODUCT_IMAGE } from '@/lib/image-utils';
 
 // Helper to check birthday for this specific student
 function getStudentBirthdayStatus(dobStr: string) {
@@ -1114,7 +1115,14 @@ export default function StudentPrivateReportPage({
                     >
                       <div>
                         <div className="relative h-32 bg-slate-100 overflow-hidden">
-                          <img src={prod.imageUrl} alt={prod.name} className="w-full h-full object-cover" />
+                          <img
+                            src={prod.imageUrl || DEFAULT_FALLBACK_PRODUCT_IMAGE}
+                            alt={prod.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = DEFAULT_FALLBACK_PRODUCT_IMAGE;
+                            }}
+                          />
                           <div
                             className={`absolute top-2 right-2 px-2.5 py-0.5 rounded-full text-[10px] font-black shadow-xs ${
                               prod.stock > 0 ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'
