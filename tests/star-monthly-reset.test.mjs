@@ -35,7 +35,7 @@ test('monthly close preserves star logs by using the transactional close ledger'
   assert.doesNotMatch(resetSection, /from\('StarLog'\)\.delete/);
 });
 
-test('vietnamese month selector and date picker for closing date are configured correctly', async () => {
+test('vietnamese month selector and recurring reset-day input are configured correctly', async () => {
   const [behaviorSource, rewardsSource] = await Promise.all([
     readFile(behaviorPath, 'utf8'),
     readFile(new URL('../src/app/rewards/[classToken]/page.tsx', import.meta.url), 'utf8'),
@@ -45,11 +45,9 @@ test('vietnamese month selector and date picker for closing date are configured 
   assert.doesNotMatch(behaviorSource, /type="month"/);
   assert.doesNotMatch(rewardsSource, /type="month"/);
 
-  // Closing date uses date picker and defaults to last date of month
-  assert.match(behaviorSource, /type="date"/);
-  assert.match(behaviorSource, /id="star-reset-date"/);
-  assert.match(behaviorSource, /getLastDateOfMonth\(selectedMonth\)/);
-  assert.match(behaviorSource, /Cuối tháng/);
+  assert.match(behaviorSource, /id="star-reset-day"/);
+  assert.match(behaviorSource, /max=\{28\}/);
+  assert.doesNotMatch(behaviorSource, /id="star-reset-date"/);
 });
 
 test('date helpers correctly calculate end of month for leap and non-leap years', async () => {
@@ -75,3 +73,16 @@ test('date helpers correctly calculate end of month for leap and non-leap years'
   assert.equal(formatDateVN('2026-09-30'), '30/09/2026');
 });
 
+test('monthly reset uses a recurring safe day and does not promise automatic execution', async () => {
+  const [behavior, store, migration] = await Promise.all([
+    readFile(behaviorPath, 'utf8'),
+    readFile(storePath, 'utf8'),
+    readFile(new URL('../supabase/migrations/20260907023000_fix_star_reset_semantics.sql', import.meta.url), 'utf8'),
+  ]);
+
+  assert.match(behavior, /starResetDay/);
+  assert.doesNotMatch(behavior, /starResetDate/);
+  assert.doesNotMatch(store, /starAutoReset:/);
+  assert.match(migration, /between 1 and 28/i);
+  assert.match(migration, /default false/i);
+});

@@ -179,9 +179,7 @@ export interface ClassInfo {
   seatingGridCols: number;
   numberOfTeams?: number; // Số lượng tổ trong lớp (2 đến 8 tổ, mặc định: 4)
   seatsPerDesk?: number; // Số học sinh mỗi bàn (1: Bàn đơn, 2: Bàn đôi, 3: Bàn 3 chỗ, 4: Bàn 4 chỗ, mặc định: 2)
-  starResetDay?: number; // Ngày chốt số dư sao định kỳ hằng tháng (1-31, mặc định ngày cuối tháng)
-  starResetDate?: string; // Ngày chốt số dư khả dụng cụ thể (YYYY-MM-DD)
-  starAutoReset?: boolean; // Tự động chốt khi đến ngày chốt (mặc định: true)
+  starResetDay?: number; // Ngày nhắc chốt số dư sao định kỳ hằng tháng (1-28)
   shareToken?: string; // Mã ngẫu nhiên bảo mật cho link public phụ huynh (VD: c4a1-8f92a4)
 }
 
@@ -822,4 +820,3 @@ export interface CommunityInteraction {
   commentText?: string;
   createdAt: string;
 }
-

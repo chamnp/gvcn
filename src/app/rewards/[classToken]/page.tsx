@@ -26,7 +26,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import type { ClassInfo, RewardProduct, RewardRedemption, SchoolInfo, StarCriterion, StarLog, Student } from '@/types';
 import { toast } from 'sonner';
-import { rankMonthlyStarLeaderboard } from '@/lib/star-leaderboard';
+import { getMonthlyRedemptionSummary, rankMonthlyStarLeaderboard } from '@/lib/star-leaderboard';
 import { DEFAULT_FALLBACK_PRODUCT_IMAGE } from '@/lib/image-utils';
 import { formatMonthVN } from '@/lib/tt27-engine';
 
@@ -84,10 +84,11 @@ export default function PublicClassRewardsPage({
     const earned = starLogs
       .filter((log) => log.studentId === studentId && (log.date || log.createdAt).startsWith(month))
       .reduce((sum, log) => sum + log.points, 0);
-    const spent = rewardRedemptions
-      .filter((redemption) => redemption.studentId === studentId && redemption.month === month && redemption.status !== 'CANCELLED')
-      .reduce((sum, redemption) => sum + redemption.totalStars, 0);
-    return { earned, spent, available: Math.max(0, earned - spent) };
+    const summary = getMonthlyRedemptionSummary(
+      rewardRedemptions.filter((redemption) => redemption.studentId === studentId && redemption.month === month)
+    );
+    const spent = summary.rewardSpent + summary.closedBalance;
+    return { ...summary, earned, spent, available: Math.max(0, earned - spent) };
   };
 
   // Find class strictly by shareToken (NEVER fallback to schoolClasses[0] and DO NOT accept raw id)

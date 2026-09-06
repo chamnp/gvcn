@@ -70,9 +70,7 @@ import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import {
   getLocalDateString,
-  getLastDateOfMonth,
   formatMonthVN,
-  formatDateVN,
 } from '@/lib/tt27-engine';
 import { rankMonthlyStarLeaderboard } from '@/lib/star-leaderboard';
 
@@ -209,40 +207,21 @@ export default function BehaviorPage() {
     }
   };
 
-  // Star Balance Reset Date Picker (defaults automatically to the exact last day of selectedMonth)
-  const defaultResetDateForMonth = useMemo(() => {
-    return getLastDateOfMonth(selectedMonth);
-  }, [selectedMonth]);
+  const [starResetDay, setStarResetDay] = useState(classInfo.starResetDay || 1);
+  const [isSavingResetDay, setIsSavingResetDay] = useState(false);
 
-  const [starResetDate, setStarResetDate] = useState<string>(() => {
-    if (classInfo.starResetDate && classInfo.starResetDate.startsWith(currentMonthKey)) {
-      return classInfo.starResetDate;
-    }
-    return getLastDateOfMonth(currentMonthKey);
-  });
-  const [isSavingResetDate, setIsSavingResetDate] = useState(false);
-
-  // Automatically default to the last day of that month when selectedMonth changes
   useEffect(() => {
-    if (classInfo.starResetDate && classInfo.starResetDate.startsWith(selectedMonth)) {
-      setStarResetDate(classInfo.starResetDate);
-    } else {
-      setStarResetDate(getLastDateOfMonth(selectedMonth));
-    }
-  }, [selectedMonth, classInfo.starResetDate]);
+    setStarResetDay(classInfo.starResetDay || 1);
+  }, [classInfo.id, classInfo.starResetDay]);
 
-  const handleSaveStarResetDate = async () => {
-    if (!starResetDate) return;
-    const day = Math.min(31, Math.max(1, Number(starResetDate.split('-')[2]) || 1));
-    setIsSavingResetDate(true);
-    const result = await updateClass({
-      ...classInfo,
-      starResetDay: day,
-      starResetDate: starResetDate,
-    });
-    setIsSavingResetDate(false);
+  const handleSaveStarResetDay = async () => {
+    const day = Math.min(28, Math.max(1, Number(starResetDay) || 1));
+    setStarResetDay(day);
+    setIsSavingResetDay(true);
+    const result = await updateClass({ ...classInfo, starResetDay: day });
+    setIsSavingResetDay(false);
     if (result.success) {
-      toast.success(`Đã đặt ngày chốt sao ${formatMonthVN(selectedMonth)} là ngày ${formatDateVN(starResetDate)}.`);
+      toast.success(`Đã đặt ngày nhắc chốt sao hằng tháng là ngày ${day}.`);
     }
   };
 
@@ -474,7 +453,9 @@ export default function BehaviorPage() {
         student: st,
         teamId,
         monthlyEarned: balance.earned,
-        monthlySpent: balance.spent,
+        monthlySpent: balance.rewardSpent,
+        closedBalance: balance.closedBalance,
+        hasPeriodClose: balance.hasPeriodClose,
         monthlyAvailable: balance.available,
         allTimeStars,
       };
@@ -496,13 +477,11 @@ export default function BehaviorPage() {
     return leaderboard.reduce((sum, item) => sum + (item.monthlyAvailable > 0 ? 1 : 0), 0);
   }, [leaderboard]);
 
-  const totalMonthlyEarned = useMemo(() => {
-    return leaderboard.reduce((sum, item) => sum + item.monthlyEarned, 0);
-  }, [leaderboard]);
-
-  const isMonthClosed = totalMonthlyEarned > 0 && remainingAvailableCount === 0;
+  const hasMonthCloseLedger = leaderboard.some((item) => item.hasPeriodClose);
+  const isMonthClosed = hasMonthCloseLedger && remainingAvailableCount === 0;
   const todayDateStr = getLocalDateString();
-  const isPastOrDueResetDate = Boolean(starResetDate && todayDateStr >= starResetDate);
+  const scheduledResetDate = `${selectedMonth}-${String(starResetDay).padStart(2, '0')}`;
+  const isPastOrDueResetDate = todayDateStr >= scheduledResetDate;
 
   // Criteria Handlers
   const handleOpenAddCriterion = () => {
@@ -751,12 +730,7 @@ export default function BehaviorPage() {
       </div>
 
       {/* 2. Interactive Dynamic Team Race Scoreboard & Top Metrics */}
-      <div
-        className="grid gap-3"
-        style={{
-          gridTemplateColumns: `repeat(${Math.min(4, numTeams)}, minmax(0, 1fr))`,
-        }}
-      >
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {teamStats.map((team) => (
           <div
             key={team.id}
@@ -1205,38 +1179,30 @@ export default function BehaviorPage() {
                 </button>
               </div>
 
-              {/* BỘ CHỌN NGÀY CHỐT (PICK DATE - MẶC ĐỊNH NGÀY CUỐI THÁNG) */}
+              {/* NGÀY NHẮC CHỐT LẶP LẠI HẰNG THÁNG */}
               <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 text-xs font-bold text-slate-800 shadow-2xs">
-                <label htmlFor="star-reset-date" className="text-[11px] font-semibold text-slate-500 shrink-0 cursor-pointer">
-                  Ngày chốt:
+                <label htmlFor="star-reset-day" className="text-[11px] font-semibold text-slate-500 shrink-0 cursor-pointer">
+                  Ngày nhắc:
                 </label>
                 <input
-                  id="star-reset-date"
-                  type="date"
-                  value={starResetDate}
-                  onChange={(e) => setStarResetDate(e.target.value)}
-                  min={`${selectedMonth}-01`}
-                  max={getLastDateOfMonth(selectedMonth)}
-                  className="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer font-mono"
-                  aria-label="Ngày chốt số dư sao của tháng"
+                  id="star-reset-day"
+                  type="number"
+                  min={1}
+                  max={28}
+                  value={starResetDay}
+                  onChange={(e) => setStarResetDay(Number(e.target.value))}
+                  className="w-12 bg-transparent text-xs font-bold text-slate-800 focus:outline-none font-mono"
+                  aria-label="Ngày nhắc chốt số dư sao hằng tháng"
                 />
-                <button
-                  type="button"
-                  onClick={() => setStarResetDate(getLastDateOfMonth(selectedMonth))}
-                  title="Đặt lại đúng ngày cuối cùng của tháng này"
-                  className="px-1.5 py-0.5 text-[10px] bg-white hover:bg-slate-200 text-slate-600 rounded-md border border-slate-200 transition-colors cursor-pointer shrink-0 font-medium"
-                >
-                  Cuối tháng
-                </button>
               </div>
 
               <button
                 type="button"
-                onClick={handleSaveStarResetDate}
-                disabled={isSavingResetDate || starResetDate === (classInfo.starResetDate || getLastDateOfMonth(selectedMonth))}
+                onClick={handleSaveStarResetDay}
+                disabled={isSavingResetDay || starResetDay === (classInfo.starResetDay || 1)}
                 className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition-colors cursor-pointer"
               >
-                {isSavingResetDate ? 'Đang lưu...' : 'Lưu ngày'}
+                {isSavingResetDay ? 'Đang lưu...' : 'Lưu ngày'}
               </button>
 
               {isMonthClosed ? (
@@ -1265,7 +1231,7 @@ export default function BehaviorPage() {
             </div>
           </div>
           <p className="px-1 text-[11px] text-slate-500">
-            Lớp được đặt ngày chốt số dư vào ngày {formatDateVN(starResetDate || getLastDateOfMonth(selectedMonth))} ({starResetDate === getLastDateOfMonth(selectedMonth) ? 'tự động là ngày cuối tháng' : 'ngày giáo viên tự chọn'}). Nút chốt luôn áp dụng cho đúng tháng đang chọn và không xóa lịch sử tích sao thi đua Thông tư 27.
+            Hệ thống nhắc chốt vào ngày {classInfo.starResetDay || 1} hằng tháng. Giáo viên chủ động bấm chốt đúng tháng đang chọn; không có reset tự động và lịch sử sao được giữ nguyên.
           </p>
 
           {/* PODIUM TOP 1, TOP 2, TOP 3 */}
@@ -1397,6 +1363,7 @@ export default function BehaviorPage() {
                       </td>
                       <td className="py-3 px-3 sm:px-4 text-center text-slate-500 font-semibold">
                         {item.monthlySpent > 0 ? `-${item.monthlySpent} ⭐` : '0'}
+                        {item.closedBalance > 0 && <div className="text-[10px] text-slate-400">Đã khóa khi chốt: {item.closedBalance} ⭐</div>}
                       </td>
                       <td className="py-3 px-3 sm:px-4 text-center">
                         <span className="bg-emerald-50 text-emerald-800 font-black px-2.5 py-0.5 rounded-full border border-emerald-200">

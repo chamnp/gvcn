@@ -2,7 +2,10 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 
-import { rankMonthlyStarLeaderboard } from '../src/lib/star-leaderboard.ts';
+import {
+  getMonthlyRedemptionSummary,
+  rankMonthlyStarLeaderboard,
+} from '../src/lib/star-leaderboard.ts';
 
 const item = (name, monthlyEarned) => ({ student: { fullName: name }, monthlyEarned });
 
@@ -55,4 +58,21 @@ test('teacher and public leaderboards use the same ranking rule', async () => {
     assert.match(source, /rankMonthlyStarLeaderboard\(scoredList\)/);
     assert.match(source, /item\.rank \?\? '—'/);
   }
+});
+
+test('period-close ledger is not counted as reward spending', () => {
+  const summary = getMonthlyRedemptionSummary([
+    { status: 'DELIVERED', totalStars: 7, items: [{ productId: 'pen' }] },
+    { status: 'DELIVERED', totalStars: 13, items: [{ productId: 'system-period-close' }] },
+    { status: 'CANCELLED', totalStars: 99, items: [{ productId: 'book' }] },
+  ]);
+
+  assert.deepEqual(summary, { rewardSpent: 7, closedBalance: 13, hasPeriodClose: true });
+});
+
+test('spending all stars on rewards does not mean the month was closed', () => {
+  const rewardsOnly = getMonthlyRedemptionSummary([
+    { status: 'DELIVERED', totalStars: 10, items: [{ productId: 'book' }] },
+  ]);
+  assert.equal(rewardsOnly.hasPeriodClose, false);
 });

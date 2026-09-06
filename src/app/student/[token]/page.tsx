@@ -58,6 +58,7 @@ import { ConferenceSchedulerModal } from '@/components/conference/conference-sch
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
 import { DEFAULT_FALLBACK_PRODUCT_IMAGE } from '@/lib/image-utils';
+import { getMonthlyRedemptionSummary, rankMonthlyStarLeaderboard } from '@/lib/star-leaderboard';
 
 // Helper to check birthday for this specific student
 function getStudentBirthdayStatus(dobStr: string) {
@@ -279,10 +280,11 @@ export default function StudentPrivateReportPage({
     const earned = starLogs
       .filter((log) => log.studentId === studentId && (log.date || log.createdAt).startsWith(month))
       .reduce((sum, log) => sum + log.points, 0);
-    const spent = rewardRedemptions
-      .filter((redemption) => redemption.studentId === studentId && redemption.month === month && redemption.status !== 'CANCELLED')
-      .reduce((sum, redemption) => sum + redemption.totalStars, 0);
-    return { earned, spent, available: Math.max(0, earned - spent) };
+    const summary = getMonthlyRedemptionSummary(
+      rewardRedemptions.filter((redemption) => redemption.studentId === studentId && redemption.month === month)
+    );
+    const spent = summary.rewardSpent + summary.closedBalance;
+    return { ...summary, earned, spent, available: Math.max(0, earned - spent) };
   };
 
   useEffect(() => {
@@ -331,22 +333,22 @@ export default function StudentPrivateReportPage({
 
   // Student monthly stars balance & class rank
   const studentMonthlyStars = useMemo(() => {
-    if (!student) return { earned: 0, spent: 0, available: 0 };
+    if (!student) return { earned: 0, spent: 0, rewardSpent: 0, closedBalance: 0, hasPeriodClose: false, available: 0 };
     return getStudentMonthlyStars(student.id, currentMonthKey);
   }, [student, currentMonthKey, getStudentMonthlyStars, starLogs, rewardRedemptions]);
 
   const studentRankInClass = useMemo(() => {
-    if (!student || !studentClass) return 1;
+    if (!student || !studentClass) return null;
     const classStudents = allStudents.filter((s) => s.classId === studentClass.id);
-    const ranked = classStudents
-      .map((st) => ({
+    const ranked = rankMonthlyStarLeaderboard(
+      classStudents.map((st) => ({
+        student: st,
         id: st.id,
-        earned: getStudentMonthlyStars(st.id, currentMonthKey).earned,
+        monthlyEarned: getStudentMonthlyStars(st.id, currentMonthKey).earned,
       }))
-      .sort((a, b) => b.earned - a.earned);
+    );
 
-    const idx = ranked.findIndex((r) => r.id === student.id);
-    return idx >= 0 ? idx + 1 : 1;
+    return ranked.find((item) => item.id === student.id)?.rank ?? null;
   }, [student, studentClass, allStudents, currentMonthKey, getStudentMonthlyStars, starLogs]);
 
   // Total cart stars
@@ -1331,7 +1333,7 @@ export default function StudentPrivateReportPage({
                 </div>
                 <div className="bg-white/10 backdrop-blur-md p-3 rounded-2xl border border-white/10">
                   <span className="text-[10px] text-white/70 uppercase font-bold">Đã Đổi Quà</span>
-                  <p className="text-xl font-black text-rose-200">-{studentMonthlyStars.spent} ⭐</p>
+                  <p className="text-xl font-black text-rose-200">-{studentMonthlyStars.rewardSpent} ⭐</p>
                 </div>
                 <div className="bg-white/20 backdrop-blur-md p-3 rounded-2xl border border-yellow-300/40">
                   <span className="text-[10px] text-yellow-200 uppercase font-black">Khả Dụng Đổi Quà</span>
@@ -1341,7 +1343,7 @@ export default function StudentPrivateReportPage({
                   <span className="text-[10px] text-white/70 uppercase font-bold">Hạng Thi Đua</span>
                   <p className="text-xl font-black text-white flex items-center gap-1">
                     <Crown className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                    <span>#{studentRankInClass}</span>
+                    <span>{studentRankInClass === null ? '—' : `#${studentRankInClass}`}</span>
                   </p>
                 </div>
               </div>

@@ -103,6 +103,7 @@ import {
   mergeAttendanceByDay,
 } from './attendance-utils';
 import { toast } from 'sonner';
+import { getMonthlyRedemptionSummary } from './star-leaderboard';
 
 export function getDefaultPinForStudent(student?: { dateOfBirth?: string }): string {
   if (!student?.dateOfBirth) return '1234';
@@ -310,7 +311,7 @@ interface AppContextType {
   }) => Promise<{ success: boolean; error?: string }>;
   fulfillRewardRedemption: (redemptionId: string) => Promise<void>;
   cancelRewardRedemption: (redemptionId: string) => Promise<void>;
-  getStudentMonthlyStars: (studentId: string, monthStr?: string) => { earned: number; spent: number; available: number };
+  getStudentMonthlyStars: (studentId: string, monthStr?: string) => { earned: number; spent: number; rewardSpent: number; closedBalance: number; hasPeriodClose: boolean; available: number };
   resetMonthStars: (monthStr?: string, options?: { skipConfirm?: boolean; silent?: boolean }) => Promise<void>;
 
   // Full Database Backup & Restore
@@ -1176,9 +1177,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             }
           }
 
-          // If admin, show all classes across all schools.
-          // If teacher, show only classes owned by this teacher or assigned to them.
-          const visibleClasses = isAdminUser
+          // If admin or unauthenticated/public visitor (e.g. parent viewing /hw/[classId]), show all classes.
+          // If logged-in teacher, show only classes owned by this teacher or assigned to them.
+          const visibleClasses = (isAdminUser || !userEmail)
             ? dbClasses
             : dbClasses.filter(
                 (c: any) =>
@@ -2057,9 +2058,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         totalStudents: updated.totalStudents || 0,
         seatingGridRows: updated.seatingGridRows || 5,
         seatingGridCols: updated.seatingGridCols || 8,
-        starResetDay: Math.min(31, Math.max(1, updated.starResetDay || 1)),
-        starResetDate: updated.starResetDate || null,
-        starAutoReset: updated.starAutoReset ?? true,
+        starResetDay: Math.min(28, Math.max(1, updated.starResetDay || 1)),
         shareToken: updated.shareToken,
         updatedAt: new Date().toISOString(),
       })
@@ -3506,13 +3505,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .reduce((sum, l) => sum + l.points, 0);
 
     // Spent stars in target month (from non-cancelled redemptions)
-    const spent = rewardRedemptions
-      .filter((r) => r.studentId === studentId && r.month === targetMonth && r.status !== 'CANCELLED')
-      .reduce((sum, r) => sum + r.totalStars, 0);
+    const monthlyRedemptions = rewardRedemptions
+      .filter((r) => r.studentId === studentId && r.month === targetMonth);
+    const { rewardSpent, closedBalance, hasPeriodClose } = getMonthlyRedemptionSummary(monthlyRedemptions);
+    const spent = rewardSpent + closedBalance;
 
     const available = Math.max(0, earned - spent);
 
-    return { earned, spent, available };
+    return { earned, spent, rewardSpent, closedBalance, hasPeriodClose, available };
   };
 
   const createRewardRedemption = async (data: {
