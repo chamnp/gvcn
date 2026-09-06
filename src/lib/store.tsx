@@ -294,7 +294,7 @@ interface AppContextType {
 
   // Full Database Backup & Restore
   exportAllDataJSON: () => string;
-  importAllDataJSON: (jsonStr: string) => { success: boolean; error?: string };
+  importAllDataJSON: (jsonStr: string) => Promise<{ success: boolean; error?: string; failedTables?: string[] }>;
   resetData: () => void;
 
   // Phase 3: Leave Requests & Health/Pickup Notes
@@ -782,6 +782,30 @@ export async function safeSupabaseUpsert(table: string, payload: any) {
     }
   } catch (err: any) {
     console.warn(`[Supabase Sync] Network exception on ${table}:`, err?.message);
+  }
+}
+
+export async function handleDbMutation(
+  promise: PromiseLike<{ error: any }>,
+  rollback?: () => void,
+  errorMessage?: string
+): Promise<boolean> {
+  try {
+    const { error } = await promise;
+    if (error) {
+      if (rollback) rollback();
+      const msg = errorMessage ? `${errorMessage}: ${error.message}` : error.message;
+      console.error('[Supabase Mutation Error]', msg);
+      toast.error(msg);
+      return false;
+    }
+    return true;
+  } catch (err: any) {
+    if (rollback) rollback();
+    const msg = errorMessage ? `${errorMessage}: ${err?.message || 'Lỗi mạng'}` : (err?.message || 'Lỗi kết nối máy chủ');
+    console.error('[Supabase Mutation Exception]', msg);
+    toast.error(msg);
+    return false;
   }
 }
 
@@ -1721,22 +1745,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       // Live API Write to Supabase
-      supabase
-        .from('SchoolInfo')
-        .upsert({
-          id: 'default',
-          name: updated.name,
-          departmentName: updated.departmentName || '',
-          address: updated.address || '',
-          phone: updated.phone || '',
-          email: updated.email || '',
-          website: updated.website || '',
-          logoUrl: updated.logoUrl || '',
-          principalName: updated.principalName,
-          schoolYear: updated.schoolYear,
-          updatedAt: new Date().toISOString(),
-        })
-        .then();
+      void handleDbMutation(
+        supabase
+          .from('SchoolInfo')
+          .upsert({
+            id: 'default',
+            name: updated.name,
+            departmentName: updated.departmentName || '',
+            address: updated.address || '',
+            phone: updated.phone || '',
+            email: updated.email || '',
+            website: updated.website || '',
+            logoUrl: updated.logoUrl || '',
+            principalName: updated.principalName,
+            schoolYear: updated.schoolYear,
+            updatedAt: new Date().toISOString(),
+          }),
+        undefined,
+        'Không thể cập nhật thông tin trường'
+      );
 
       return updated;
     });
@@ -1767,45 +1794,56 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setActiveClassId(newClass.id);
 
     // Live API Write to Supabase
-    supabase
-      .from('Class')
-      .upsert({
-        id: newClass.id,
-        name: newClass.name,
-        grade: newClass.grade,
-        schoolYear: newClass.schoolYear,
-        schoolName: newClass.schoolName,
-        teacherName: newClass.teacherName,
-        totalStudents: newClass.totalStudents || 0,
-        seatingGridRows: newClass.seatingGridRows || 5,
-        seatingGridCols: newClass.seatingGridCols || 8,
-        shareToken: newClass.shareToken,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      })
-      .then();
+    const previousClasses = schoolClasses;
+    void handleDbMutation(
+      supabase
+        .from('Class')
+        .upsert({
+          id: newClass.id,
+          name: newClass.name,
+          grade: newClass.grade,
+          schoolYear: newClass.schoolYear,
+          schoolName: newClass.schoolName,
+          teacherName: newClass.teacherName,
+          totalStudents: newClass.totalStudents || 0,
+          seatingGridRows: newClass.seatingGridRows || 5,
+          seatingGridCols: newClass.seatingGridCols || 8,
+          shareToken: newClass.shareToken,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }),
+      () => {
+        setSchoolClasses(previousClasses);
+        if (previousClasses.length > 0) setActiveClassId(previousClasses[0].id);
+      },
+      'Không thể thêm lớp học'
+    );
   };
 
   const updateClass = (updated: ClassInfo) => {
     setSchoolClasses((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
 
     // Live API Write to Supabase
-    supabase
-      .from('Class')
-      .upsert({
-        id: updated.id,
-        name: updated.name,
-        grade: updated.grade,
-        schoolYear: updated.schoolYear,
-        schoolName: updated.schoolName,
-        teacherName: updated.teacherName,
-        totalStudents: updated.totalStudents || 0,
-        seatingGridRows: updated.seatingGridRows || 5,
-        seatingGridCols: updated.seatingGridCols || 8,
-        shareToken: updated.shareToken,
-        updatedAt: new Date().toISOString(),
-      })
-      .then();
+    const previousClasses = schoolClasses;
+    void handleDbMutation(
+      supabase
+        .from('Class')
+        .upsert({
+          id: updated.id,
+          name: updated.name,
+          grade: updated.grade,
+          schoolYear: updated.schoolYear,
+          schoolName: updated.schoolName,
+          teacherName: updated.teacherName,
+          totalStudents: updated.totalStudents || 0,
+          seatingGridRows: updated.seatingGridRows || 5,
+          seatingGridCols: updated.seatingGridCols || 8,
+          shareToken: updated.shareToken,
+          updatedAt: new Date().toISOString(),
+        }),
+      () => setSchoolClasses(previousClasses),
+      'Không thể cập nhật lớp học'
+    );
   };
 
   const deleteClass = (classId: string) => {
@@ -1832,13 +1870,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     // Cascade delete in Supabase
-    supabase.from('Student').delete().eq('classId', classId).then();
-    supabase.from('HomeworkAssignment').delete().eq('classId', classId).then();
-    supabase.from('TimetableSlot').delete().eq('classId', classId).then();
-    supabase.from('ClassEvent').delete().eq('classId', classId).then();
-    supabase.from('RewardProduct').delete().eq('classId', classId).then();
-    supabase.from('RewardRedemption').delete().eq('classId', classId).then();
-    supabase.from('Class').delete().eq('id', classId).then();
+    void handleDbMutation(
+      (async () => {
+        await Promise.allSettled([
+          supabase.from('Student').delete().eq('classId', classId),
+          supabase.from('HomeworkAssignment').delete().eq('classId', classId),
+          supabase.from('TimetableSlot').delete().eq('classId', classId),
+          supabase.from('ClassEvent').delete().eq('classId', classId),
+          supabase.from('RewardProduct').delete().eq('classId', classId),
+          supabase.from('RewardRedemption').delete().eq('classId', classId),
+        ]);
+        return supabase.from('Class').delete().eq('id', classId);
+      })(),
+      undefined,
+      'Không thể xóa lớp học trên máy chủ'
+    );
   };
 
   const regenerateClassShareToken = (classId?: string): string => {
@@ -1856,7 +1902,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return updated;
     });
 
-    supabase.from('Class').update({ shareToken: newToken, updatedAt: new Date().toISOString() }).eq('id', targetId).then();
+    void handleDbMutation(
+      supabase.from('Class').update({ shareToken: newToken, updatedAt: new Date().toISOString() }).eq('id', targetId),
+      undefined,
+      'Không thể cập nhật mã chia sẻ lớp'
+    );
 
     return newToken;
   };
@@ -1869,26 +1919,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     setCustomSubjects((prev) => [...prev, newSub]);
 
-    supabase
-      .from('CustomSubject')
-      .upsert({
-        id: newSub.id,
-        code: newSub.code,
-        name: newSub.name,
-        shortName: newSub.shortName,
-        icon: newSub.icon,
-        bgColor: newSub.bgColor,
-        textColor: newSub.textColor,
-        borderColor: newSub.borderColor,
-        category: newSub.category,
-        createdAt: new Date().toISOString(),
-      })
-      .then();
+    const previous = customSubjects;
+    void handleDbMutation(
+      supabase
+        .from('CustomSubject')
+        .upsert({
+          id: newSub.id,
+          code: newSub.code,
+          name: newSub.name,
+          shortName: newSub.shortName,
+          icon: newSub.icon,
+          bgColor: newSub.bgColor,
+          textColor: newSub.textColor,
+          borderColor: newSub.borderColor,
+          category: newSub.category,
+          createdAt: new Date().toISOString(),
+        }),
+      () => setCustomSubjects(previous),
+      'Không thể thêm môn học tự chọn'
+    );
   };
 
   const deleteCustomSubject = (id: string) => {
+    const previous = customSubjects;
     setCustomSubjects((prev) => prev.filter((s) => s.id !== id));
-    supabase.from('CustomSubject').delete().eq('id', id).then();
+    void handleDbMutation(
+      supabase.from('CustomSubject').delete().eq('id', id),
+      () => setCustomSubjects(previous),
+      'Không thể xóa môn học tự chọn'
+    );
   };
 
   // HOMEWORK ACTIONS
@@ -1903,49 +1962,62 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAllHomeworks((prev) => [newHw, ...prev]);
 
     // Live API Write to Supabase
-    supabase
-      .from('HomeworkAssignment')
-      .upsert({
-        id: newHw.id,
-        classId: newHw.classId,
-        className: newHw.className,
-        subjectCode: newHw.subjectCode,
-        subjectName: newHw.subjectName,
-        title: newHw.title,
-        description: newHw.description,
-        attachmentUrl: newHw.attachmentUrl,
-        assignedDate: newHw.assignedDate,
-        dueDate: newHw.dueDate,
-        reminderNotes: newHw.reminderNotes,
-        createdAt: newHw.createdAt,
-      })
-      .then();
+    const previous = allHomeworks;
+    void handleDbMutation(
+      supabase
+        .from('HomeworkAssignment')
+        .upsert({
+          id: newHw.id,
+          classId: newHw.classId,
+          className: newHw.className,
+          subjectCode: newHw.subjectCode,
+          subjectName: newHw.subjectName,
+          title: newHw.title,
+          description: newHw.description,
+          attachmentUrl: newHw.attachmentUrl,
+          assignedDate: newHw.assignedDate,
+          dueDate: newHw.dueDate,
+          reminderNotes: newHw.reminderNotes,
+          createdAt: newHw.createdAt,
+        }),
+      () => setAllHomeworks(previous),
+      'Không thể lưu bài tập'
+    );
   };
 
   const updateHomework = (updated: HomeworkAssignment) => {
     setAllHomeworks((prev) => prev.map((h) => (h.id === updated.id ? updated : h)));
 
-    supabase
-      .from('HomeworkAssignment')
-      .upsert({
-        id: updated.id,
-        classId: updated.classId,
-        className: updated.className,
-        subjectCode: updated.subjectCode,
-        subjectName: updated.subjectName,
-        title: updated.title,
-        description: updated.description,
-        attachmentUrl: updated.attachmentUrl,
-        assignedDate: updated.assignedDate,
-        dueDate: updated.dueDate,
-        reminderNotes: updated.reminderNotes,
-      })
-      .then();
+    const previous = allHomeworks;
+    void handleDbMutation(
+      supabase
+        .from('HomeworkAssignment')
+        .upsert({
+          id: updated.id,
+          classId: updated.classId,
+          className: updated.className,
+          subjectCode: updated.subjectCode,
+          subjectName: updated.subjectName,
+          title: updated.title,
+          description: updated.description,
+          attachmentUrl: updated.attachmentUrl,
+          assignedDate: updated.assignedDate,
+          dueDate: updated.dueDate,
+          reminderNotes: updated.reminderNotes,
+        }),
+      () => setAllHomeworks(previous),
+      'Không thể cập nhật bài tập'
+    );
   };
 
   const deleteHomework = (id: string) => {
+    const previous = allHomeworks;
     setAllHomeworks((prev) => prev.filter((h) => h.id !== id));
-    supabase.from('HomeworkAssignment').delete().eq('id', id).then();
+    void handleDbMutation(
+      supabase.from('HomeworkAssignment').delete().eq('id', id),
+      () => setAllHomeworks(previous),
+      'Không thể xóa bài tập'
+    );
   };
 
   // TIMETABLE ACTIONS
@@ -1991,21 +2063,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ];
     });
 
-    supabase
-      .from('TimetableSlot')
-      .upsert({
-        id: slotId,
-        classId: activeClassId,
-        day,
-        period,
-        session,
-        subjectCode,
-        subjectName,
-        note: note || '',
-        teacherName: teacherName || null,
-        createdAt: new Date().toISOString(),
-      })
-      .then();
+    void handleDbMutation(
+      supabase
+        .from('TimetableSlot')
+        .upsert({
+          id: slotId,
+          classId: activeClassId,
+          day,
+          period,
+          session,
+          subjectCode,
+          subjectName,
+          note: note || '',
+          teacherName: teacherName || null,
+          createdAt: new Date().toISOString(),
+        }),
+      undefined,
+      'Không thể lưu tiết thời khóa biểu'
+    );
   };
 
   const setTimetable = (slots: TimetableSlot[]) => {
@@ -2027,7 +2102,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       teacherName: s.teacherName || null,
       createdAt: new Date().toISOString(),
     }));
-    supabase.from('TimetableSlot').upsert(dbSlots).then();
+    void handleDbMutation(
+      supabase.from('TimetableSlot').upsert(dbSlots),
+      undefined,
+      'Không thể lưu thời khóa biểu'
+    );
   };
 
   const resetTimetableToStandard = () => {
@@ -2069,65 +2148,73 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAllStudents((prev) => [...prev, newStudent]);
 
     // Live API Write to Supabase
-    supabase
-      .from('Student')
-      .upsert({
-        id: newStudent.id,
-        classId: newStudent.classId,
-        studentCode: newStudent.studentCode,
-        fullName: newStudent.fullName,
-        gender: newStudent.gender,
-        dateOfBirth: newStudent.dateOfBirth,
-        birthPlace: newStudent.birthPlace || null,
-        ethnicity: newStudent.ethnicity || null,
-        address: newStudent.address || null,
-        parentName: newStudent.parentName || null,
-        parentPhone: newStudent.parentPhone || null,
-        isBoarding: newStudent.isBoarding,
-        seatRow: newStudent.seatRow ?? null,
-        seatCol: newStudent.seatCol ?? null,
-        healthNotes: newStudent.healthNotes || null,
-        tags: JSON.stringify(newStudent.tags || []),
-        avatarUrl: newStudent.avatarUrl || null,
-        shareToken: newStudent.shareToken,
-        customPin: newStudent.customPin || null,
-        isActivated: newStudent.isActivated || false,
-        createdAt: newStudent.createdAt,
-        updatedAt: new Date().toISOString(),
-      })
-      .then();
+    const previous = allStudents;
+    void handleDbMutation(
+      supabase
+        .from('Student')
+        .upsert({
+          id: newStudent.id,
+          classId: newStudent.classId,
+          studentCode: newStudent.studentCode,
+          fullName: newStudent.fullName,
+          gender: newStudent.gender,
+          dateOfBirth: newStudent.dateOfBirth,
+          birthPlace: newStudent.birthPlace || null,
+          ethnicity: newStudent.ethnicity || null,
+          address: newStudent.address || null,
+          parentName: newStudent.parentName || null,
+          parentPhone: newStudent.parentPhone || null,
+          isBoarding: newStudent.isBoarding,
+          seatRow: newStudent.seatRow ?? null,
+          seatCol: newStudent.seatCol ?? null,
+          healthNotes: newStudent.healthNotes || null,
+          tags: JSON.stringify(newStudent.tags || []),
+          avatarUrl: newStudent.avatarUrl || null,
+          shareToken: newStudent.shareToken,
+          customPin: newStudent.customPin || null,
+          isActivated: newStudent.isActivated || false,
+          createdAt: newStudent.createdAt,
+          updatedAt: new Date().toISOString(),
+        }),
+      () => setAllStudents(previous),
+      'Không thể thêm học sinh'
+    );
   };
 
   const updateStudent = (updated: Student) => {
     setAllStudents((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
 
     // Live API Write to Supabase
-    supabase
-      .from('Student')
-      .upsert({
-        id: updated.id,
-        classId: updated.classId,
-        studentCode: updated.studentCode,
-        fullName: updated.fullName,
-        gender: updated.gender,
-        dateOfBirth: updated.dateOfBirth,
-        birthPlace: updated.birthPlace,
-        ethnicity: updated.ethnicity,
-        address: updated.address,
-        parentName: updated.parentName,
-        parentPhone: updated.parentPhone,
-        isBoarding: updated.isBoarding,
-        seatRow: updated.seatRow,
-        seatCol: updated.seatCol,
-        healthNotes: updated.healthNotes,
-        tags: JSON.stringify(updated.tags || []),
-        avatarUrl: updated.avatarUrl,
-        shareToken: updated.shareToken,
-        customPin: updated.customPin,
-        isActivated: updated.isActivated,
-        updatedAt: new Date().toISOString(),
-      })
-      .then();
+    const previous = allStudents;
+    void handleDbMutation(
+      supabase
+        .from('Student')
+        .upsert({
+          id: updated.id,
+          classId: updated.classId,
+          studentCode: updated.studentCode,
+          fullName: updated.fullName,
+          gender: updated.gender,
+          dateOfBirth: updated.dateOfBirth,
+          birthPlace: updated.birthPlace,
+          ethnicity: updated.ethnicity,
+          address: updated.address,
+          parentName: updated.parentName,
+          parentPhone: updated.parentPhone,
+          isBoarding: updated.isBoarding,
+          seatRow: updated.seatRow,
+          seatCol: updated.seatCol,
+          healthNotes: updated.healthNotes,
+          tags: JSON.stringify(updated.tags || []),
+          avatarUrl: updated.avatarUrl,
+          shareToken: updated.shareToken,
+          customPin: updated.customPin,
+          isActivated: updated.isActivated,
+          updatedAt: new Date().toISOString(),
+        }),
+      () => setAllStudents(previous),
+      'Không thể cập nhật thông tin học sinh'
+    );
   };
 
   const deleteStudent = (id: string) => {
@@ -2139,12 +2226,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setTermSummaries((prev) => prev.filter((a) => a.studentId !== id));
 
     // Live API Deletion from Supabase
-    supabase.from('Student').delete().eq('id', id).then();
-    supabase.from('StarLog').delete().eq('studentId', id).then();
-    supabase.from('DailyAttendance').delete().eq('studentId', id).then();
-    supabase.from('SubjectAssessment').delete().eq('studentId', id).then();
-    supabase.from('TraitAssessment').delete().eq('studentId', id).then();
-    supabase.from('TermSummary').delete().eq('studentId', id).then();
+    const prevStudents = allStudents;
+    void handleDbMutation(
+      (async () => {
+        await Promise.allSettled([
+          supabase.from('StarLog').delete().eq('studentId', id),
+          supabase.from('DailyAttendance').delete().eq('studentId', id),
+          supabase.from('SubjectAssessment').delete().eq('studentId', id),
+          supabase.from('TraitAssessment').delete().eq('studentId', id),
+          supabase.from('TermSummary').delete().eq('studentId', id),
+        ]);
+        return supabase.from('Student').delete().eq('id', id);
+      })(),
+      () => setAllStudents(prevStudents),
+      'Không thể xóa học sinh trên máy chủ'
+    );
   };
 
   const importStudents = (
@@ -2194,33 +2290,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setAllStudents([...otherClassStudents, ...newStudents]);
 
       // Delete old students from Supabase and write new ones
-      supabase.from('Student').delete().eq('classId', activeClassId).then(() => {
-        const dbRows = newStudents.map((st) => ({
-          id: st.id,
-          classId: st.classId,
-          studentCode: st.studentCode,
-          fullName: st.fullName,
-          gender: st.gender,
-          dateOfBirth: st.dateOfBirth,
-          birthPlace: st.birthPlace || null,
-          ethnicity: st.ethnicity || null,
-          address: st.address || null,
-          parentName: st.parentName || null,
-          parentPhone: st.parentPhone || null,
-          isBoarding: st.isBoarding,
-          seatRow: st.seatRow ?? null,
-          seatCol: st.seatCol ?? null,
-          healthNotes: st.healthNotes || null,
-          tags: JSON.stringify(st.tags || []),
-          avatarUrl: st.avatarUrl || null,
-          shareToken: st.shareToken,
-          customPin: st.customPin || null,
-          isActivated: st.isActivated || false,
-          createdAt: st.createdAt,
-          updatedAt: new Date().toISOString(),
-        }));
-        supabase.from('Student').upsert(dbRows).then();
-      });
+      void handleDbMutation(
+        (async () => {
+          await supabase.from('Student').delete().eq('classId', activeClassId);
+          const dbRows = newStudents.map((st) => ({
+            id: st.id,
+            classId: st.classId,
+            studentCode: st.studentCode,
+            fullName: st.fullName,
+            gender: st.gender,
+            dateOfBirth: st.dateOfBirth,
+            birthPlace: st.birthPlace || null,
+            ethnicity: st.ethnicity || null,
+            address: st.address || null,
+            parentName: st.parentName || null,
+            parentPhone: st.parentPhone || null,
+            isBoarding: st.isBoarding,
+            seatRow: st.seatRow ?? null,
+            seatCol: st.seatCol ?? null,
+            healthNotes: st.healthNotes || null,
+            tags: JSON.stringify(st.tags || []),
+            avatarUrl: st.avatarUrl || null,
+            shareToken: st.shareToken,
+            customPin: st.customPin || null,
+            isActivated: st.isActivated || false,
+            createdAt: st.createdAt,
+            updatedAt: new Date().toISOString(),
+          }));
+          return supabase.from('Student').upsert(dbRows);
+        })(),
+        undefined,
+        'Không thể thay thế danh sách học sinh trên máy chủ'
+      );
 
       return { added: newStudents.length, updated: 0 };
     }
@@ -2276,7 +2377,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         createdAt: st.createdAt,
         updatedAt: new Date().toISOString(),
       }));
-      supabase.from('Student').upsert(dbRows).then();
+      void handleDbMutation(
+        supabase.from('Student').upsert(dbRows),
+        undefined,
+        'Không thể thêm mới danh sách học sinh'
+      );
 
       return { added: newStudents.length, updated: 0 };
     }
@@ -2381,7 +2486,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         createdAt: st.createdAt,
         updatedAt: new Date().toISOString(),
       }));
-      supabase.from('Student').upsert(dbRows).then();
+      void handleDbMutation(
+        supabase.from('Student').upsert(dbRows),
+        undefined,
+        'Không thể cập nhật danh sách học sinh'
+      );
 
       return [...otherClassStudents, ...updatedClassStudents];
     });
@@ -2403,7 +2512,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setTermSummaries((prev) => prev.filter((a) => !classStudentIds.has(a.studentId)));
 
     // Live API Deletion from Supabase
-    supabase.from('Student').delete().eq('classId', activeClassId).then();
+    void handleDbMutation(
+      supabase.from('Student').delete().eq('classId', activeClassId),
+      undefined,
+      'Không thể xóa danh sách học sinh của lớp'
+    );
   };
 
   const loadDemoStudents = () => {
@@ -2437,7 +2550,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createdAt: st.createdAt,
       updatedAt: new Date().toISOString(),
     }));
-    supabase.from('Student').upsert(dbRows).then();
+    void handleDbMutation(
+      supabase.from('Student').upsert(dbRows),
+      undefined,
+      'Không thể lưu dữ liệu học sinh mẫu'
+    );
   };
 
   const updateSeatPosition = (studentId: string, row: number, col: number) => {
@@ -2446,7 +2563,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAllStudents((prev) =>
       prev.map((s) => (s.id === studentId ? { ...s, seatRow: finalRow, seatCol: finalCol } : s))
     );
-    supabase.from('Student').update({ seatRow: finalRow ?? null, seatCol: finalCol ?? null, updatedAt: new Date().toISOString() }).eq('id', studentId).then();
+    void handleDbMutation(
+      supabase.from('Student').update({ seatRow: finalRow ?? null, seatCol: finalCol ?? null, updatedAt: new Date().toISOString() }).eq('id', studentId),
+      undefined,
+      'Không thể cập nhật vị trí chỗ ngồi'
+    );
   };
 
   const swapSeatPositions = (studentId1: string, studentId2: string) => {
@@ -2467,8 +2588,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       })
     );
 
-    supabase.from('Student').update({ seatRow: s2Row ?? null, seatCol: s2Col ?? null, updatedAt: new Date().toISOString() }).eq('id', studentId1).then();
-    supabase.from('Student').update({ seatRow: s1Row ?? null, seatCol: s1Col ?? null, updatedAt: new Date().toISOString() }).eq('id', studentId2).then();
+    void handleDbMutation(
+      supabase.from('Student').update({ seatRow: s2Row ?? null, seatCol: s2Col ?? null, updatedAt: new Date().toISOString() }).eq('id', studentId1),
+      undefined,
+      'Không thể đổi chỗ ngồi học sinh 1'
+    );
+    void handleDbMutation(
+      supabase.from('Student').update({ seatRow: s1Row ?? null, seatCol: s1Col ?? null, updatedAt: new Date().toISOString() }).eq('id', studentId2),
+      undefined,
+      'Không thể đổi chỗ ngồi học sinh 2'
+    );
   };
 
   const updateStudentSecurity = (
@@ -2500,17 +2629,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return updated;
     });
 
-    supabase
-      .from('Student')
-      .update({
-        customPin: security.customPin,
-        isActivated: security.isActivated,
-        parentPhone: security.parentPhone,
-        shareToken: security.shareToken,
-        updatedAt: new Date().toISOString(),
-      })
-      .eq('id', studentId)
-      .then();
+    void handleDbMutation(
+      supabase
+        .from('Student')
+        .update({
+          customPin: security.customPin,
+          isActivated: security.isActivated,
+          parentPhone: security.parentPhone,
+          shareToken: security.shareToken,
+          updatedAt: new Date().toISOString(),
+        })
+        .eq('id', studentId),
+      undefined,
+      'Không thể cập nhật bảo mật học sinh'
+    );
   };
 
   const resetStudentPin = (studentId: string) => {
@@ -2532,15 +2664,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return updated;
     });
 
-    supabase
-      .from('Student')
-      .update({
-        customPin: null,
-        isActivated: false,
-        updatedAt: new Date().toISOString(),
-      })
-      .eq('id', studentId)
-      .then();
+    void handleDbMutation(
+      supabase
+        .from('Student')
+        .update({
+          customPin: null,
+          isActivated: false,
+          updatedAt: new Date().toISOString(),
+        })
+        .eq('id', studentId),
+      undefined,
+      'Không thể xóa mã PIN học sinh'
+    );
   };
 
   const regenerateStudentToken = (studentId: string): string => {
@@ -2562,14 +2697,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return updated;
     });
 
-    supabase
-      .from('Student')
-      .update({
-        shareToken: newToken,
-        updatedAt: new Date().toISOString(),
-      })
-      .eq('id', studentId)
-      .then();
+    void handleDbMutation(
+      supabase
+        .from('Student')
+        .update({
+          shareToken: newToken,
+          updatedAt: new Date().toISOString(),
+        })
+        .eq('id', studentId),
+      undefined,
+      'Không thể cập nhật mã chia sẻ học sinh'
+    );
 
     return newToken;
   };
@@ -2615,19 +2753,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     // Live API Write to Supabase
-    supabase
-      .from('SubjectAssessment')
-      .upsert({
-        id: recordId,
-        studentId,
-        subjectCode,
-        term,
-        level,
-        score: score !== undefined ? score : null,
-        comment: comment || '',
-        updatedAt: new Date().toISOString(),
-      })
-      .then();
+    const previous = subjectAssessments;
+    void handleDbMutation(
+      supabase
+        .from('SubjectAssessment')
+        .upsert({
+          id: recordId,
+          studentId,
+          subjectCode,
+          term,
+          level,
+          score: score !== undefined ? score : null,
+          comment: comment || '',
+          updatedAt: new Date().toISOString(),
+        }),
+      () => setSubjectAssessments(previous),
+      'Không thể lưu đánh giá môn học'
+    );
   };
 
   const batchSetSubjectLevel = (subjectCode: string, level: SubjectLevel) => {
@@ -2690,7 +2832,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     if (dbRows.length > 0) {
-      supabase.from('SubjectAssessment').upsert(dbRows).then();
+      void handleDbMutation(
+        supabase.from('SubjectAssessment').upsert(dbRows),
+        undefined,
+        'Không thể lưu danh sách đánh giá môn học'
+      );
     }
   };
 
@@ -2733,19 +2879,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     // Live API Write to Supabase
-    supabase
-      .from('TraitAssessment')
-      .upsert({
-        id: recordId,
-        studentId,
-        traitCode,
-        category,
-        term,
-        level,
-        comment: comment || '',
-        updatedAt: new Date().toISOString(),
-      })
-      .then();
+    const previous = traitAssessments;
+    void handleDbMutation(
+      supabase
+        .from('TraitAssessment')
+        .upsert({
+          id: recordId,
+          studentId,
+          traitCode,
+          category,
+          term,
+          level,
+          comment: comment || '',
+          updatedAt: new Date().toISOString(),
+        }),
+      () => setTraitAssessments(previous),
+      'Không thể lưu đánh giá phẩm chất/năng lực'
+    );
   };
 
   const batchSetTraitLevel = (traitCode: string, level: TraitLevel) => {
@@ -2785,22 +2935,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     // Live API Write to Supabase with safe merge
     const existing = termSummaries.find((s) => s.studentId === studentId && s.term === term);
-    supabase
-      .from('TermSummary')
-      .upsert({
-        id: recordId,
-        studentId,
-        term,
-        overallLearningLevel: partial.overallLearningLevel ?? existing?.overallLearningLevel ?? 'H',
-        overallTraitsLevel: partial.overallTraitsLevel ?? existing?.overallTraitsLevel ?? 'Đ',
-        awardTitle: partial.awardTitle ?? existing?.awardTitle ?? 'Hoàn thành chương trình lớp học',
-        awardDetail: partial.awardDetail ?? existing?.awardDetail ?? null,
-        teacherComment: partial.teacherComment ?? existing?.teacherComment ?? '',
-        promotedToNextGrade: partial.promotedToNextGrade ?? existing?.promotedToNextGrade ?? true,
-        summerRemediation: partial.summerRemediation ?? existing?.summerRemediation ?? false,
-        updatedAt: new Date().toISOString(),
-      })
-      .then();
+    const previous = termSummaries;
+    void handleDbMutation(
+      supabase
+        .from('TermSummary')
+        .upsert({
+          id: recordId,
+          studentId,
+          term,
+          overallLearningLevel: partial.overallLearningLevel ?? existing?.overallLearningLevel ?? 'H',
+          overallTraitsLevel: partial.overallTraitsLevel ?? existing?.overallTraitsLevel ?? 'Đ',
+          awardTitle: partial.awardTitle ?? existing?.awardTitle ?? 'Hoàn thành chương trình lớp học',
+          awardDetail: partial.awardDetail ?? existing?.awardDetail ?? null,
+          teacherComment: partial.teacherComment ?? existing?.teacherComment ?? '',
+          promotedToNextGrade: partial.promotedToNextGrade ?? existing?.promotedToNextGrade ?? true,
+          summerRemediation: partial.summerRemediation ?? existing?.summerRemediation ?? false,
+          updatedAt: new Date().toISOString(),
+        }),
+      () => setTermSummaries(previous),
+      'Không thể lưu tổng kết kỳ học sinh'
+    );
   };
 
   const recalculateAllAwards = (term: TermType) => {
@@ -2848,17 +3002,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     // Live API Write to Supabase
-    supabase
-      .from('DailyAttendance')
-      .upsert({
-        id: recordId,
-        studentId,
-        date,
-        status,
-        hasBoardingMeal,
-        reason: reason || '',
-      })
-      .then();
+    const previous = attendances;
+    void handleDbMutation(
+      supabase
+        .from('DailyAttendance')
+        .upsert({
+          id: recordId,
+          studentId,
+          date,
+          status,
+          hasBoardingMeal,
+          reason: reason || '',
+        }),
+      () => setAttendances(previous),
+      'Không thể lưu điểm danh'
+    );
   };
 
   const batchSetAttendance = (date: string, status: AttendanceStatus) => {
@@ -2889,24 +3047,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setStarLogs((prev) => [newLog, ...prev]);
 
     // Live API Write to Supabase
-    supabase
-      .from('StarLog')
-      .insert({
-        id: newLog.id,
-        studentId: newLog.studentId,
-        points: newLog.points,
-        category: newLog.category,
-        reason: newLog.reason,
-        comment: newLog.comment || '',
-        date: newLog.date,
-        createdAt: newLog.createdAt,
-      })
-      .then();
+    const previous = starLogs;
+    void handleDbMutation(
+      supabase
+        .from('StarLog')
+        .insert({
+          id: newLog.id,
+          studentId: newLog.studentId,
+          points: newLog.points,
+          category: newLog.category,
+          reason: newLog.reason,
+          comment: newLog.comment || '',
+          date: newLog.date,
+          createdAt: newLog.createdAt,
+        }),
+      () => setStarLogs(previous),
+      'Không thể lưu điểm sao khen thưởng'
+    );
   };
 
   const deleteStarLog = (logId: string) => {
+    const previous = starLogs;
     setStarLogs((prev) => prev.filter((s) => s.id !== logId));
-    supabase.from('StarLog').delete().eq('id', logId).then();
+    void handleDbMutation(
+      supabase.from('StarLog').delete().eq('id', logId),
+      () => setStarLogs(previous),
+      'Không thể xóa điểm sao'
+    );
   };
 
   const getStudentStars = (studentId: string) => {
@@ -2921,26 +3088,46 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...criterionData,
       id: `sc-${Date.now()}`,
     };
+    const previous = starCriteria;
     setStarCriteria((prev) => [...prev, newCriterion]);
-    supabase.from('StarCriterion').upsert(newCriterion).then();
+    void handleDbMutation(
+      supabase.from('StarCriterion').upsert(newCriterion),
+      () => setStarCriteria(previous),
+      'Không thể thêm tiêu chí sao'
+    );
     toast.success('Đã thêm tiêu chí đánh giá mới!');
   };
 
   const updateStarCriterion = (updated: StarCriterion) => {
+    const previous = starCriteria;
     setStarCriteria((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
-    supabase.from('StarCriterion').upsert(updated).then();
+    void handleDbMutation(
+      supabase.from('StarCriterion').upsert(updated),
+      () => setStarCriteria(previous),
+      'Không thể cập nhật tiêu chí sao'
+    );
     toast.success('Đã cập nhật tiêu chí!');
   };
 
   const deleteStarCriterion = (id: string) => {
+    const previous = starCriteria;
     setStarCriteria((prev) => prev.filter((c) => c.id !== id));
-    supabase.from('StarCriterion').delete().eq('id', id).then();
+    void handleDbMutation(
+      supabase.from('StarCriterion').delete().eq('id', id),
+      () => setStarCriteria(previous),
+      'Không thể xóa tiêu chí sao'
+    );
     toast.success('Đã xóa tiêu chí!');
   };
 
   const resetStarCriteriaToDefault = () => {
+    const previous = starCriteria;
     setStarCriteria(INITIAL_STAR_CRITERIA);
-    supabase.from('StarCriterion').upsert(INITIAL_STAR_CRITERIA).then();
+    void handleDbMutation(
+      supabase.from('StarCriterion').upsert(INITIAL_STAR_CRITERIA),
+      () => setStarCriteria(previous),
+      'Không thể khôi phục tiêu chí sao mặc định'
+    );
     toast.success('Đã khôi phục danh mục tiêu chí chuẩn Thông tư 27!');
   };
 
@@ -2952,20 +3139,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       classId: productData.classId || activeClassId,
       createdAt: new Date().toISOString(),
     };
+    const previous = rewardProducts;
     setRewardProducts((prev) => [newProduct, ...prev]);
-    supabase.from('RewardProduct').upsert(newProduct).then();
+    void handleDbMutation(
+      supabase.from('RewardProduct').upsert(newProduct),
+      () => setRewardProducts(previous),
+      'Không thể thêm sản phẩm'
+    );
     toast.success('Đã thêm sản phẩm mới vào Shop Quà!');
   };
 
   const updateRewardProduct = (updated: RewardProduct) => {
+    const previous = rewardProducts;
     setRewardProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-    supabase.from('RewardProduct').upsert(updated).then();
+    void handleDbMutation(
+      supabase.from('RewardProduct').upsert(updated),
+      () => setRewardProducts(previous),
+      'Không thể cập nhật sản phẩm'
+    );
     toast.success('Đã cập nhật thông tin sản phẩm!');
   };
 
   const deleteRewardProduct = (id: string) => {
+    const previous = rewardProducts;
     setRewardProducts((prev) => prev.filter((p) => p.id !== id));
-    supabase.from('RewardProduct').delete().eq('id', id).then();
+    void handleDbMutation(
+      supabase.from('RewardProduct').delete().eq('id', id),
+      () => setRewardProducts(previous),
+      'Không thể xóa sản phẩm'
+    );
     toast.success('Đã xóa sản phẩm khỏi Shop!');
   };
 
@@ -2973,12 +3175,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const target = rewardProducts.find((p) => p.id === id);
     const newStock = target ? Math.max(0, target.stock + additionalStock) : additionalStock;
     const isAvailable = newStock > 0;
+    const previous = rewardProducts;
 
     setRewardProducts((prev) =>
       prev.map((p) => (p.id === id ? { ...p, stock: newStock, isAvailable } : p))
     );
 
-    supabase.from('RewardProduct').update({ stock: newStock, isAvailable }).eq('id', id).then();
+    void handleDbMutation(
+      supabase.from('RewardProduct').update({ stock: newStock, isAvailable }).eq('id', id),
+      () => setRewardProducts(previous),
+      'Không thể cập nhật tồn kho sản phẩm'
+    );
     toast.success(`Đã cập nhật số lượng tồn kho (+${additionalStock})!`);
   };
 
@@ -3057,7 +3264,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const matchingItem = data.items.find((item) => item.productId === p.id);
         if (matchingItem) {
           const remainingStock = Math.max(0, p.stock - matchingItem.quantity);
-          supabase.from('RewardProduct').update({ stock: remainingStock, isAvailable: remainingStock > 0 }).eq('id', p.id).then();
+          void handleDbMutation(
+            supabase.from('RewardProduct').update({ stock: remainingStock, isAvailable: remainingStock > 0 }).eq('id', p.id),
+            undefined,
+            'Không thể cập nhật tồn kho quà'
+          );
           return { ...p, stock: remainingStock, isAvailable: remainingStock > 0 };
         }
         return p;
@@ -3067,23 +3278,26 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setRewardRedemptions((prev) => [newRedemption, ...prev]);
 
     // Live API Write to Supabase
-    supabase
-      .from('RewardRedemption')
-      .insert({
-        id: newRedemption.id,
-        classId: newRedemption.classId,
-        studentId: newRedemption.studentId,
-        studentName: newRedemption.studentName,
-        studentCode: newRedemption.studentCode,
-        studentAvatar: newRedemption.studentAvatar || null,
-        items: newRedemption.items,
-        totalStars: newRedemption.totalStars,
-        month: newRedemption.month,
-        status: newRedemption.status,
-        studentNote: newRedemption.studentNote || null,
-        requestedAt: newRedemption.requestedAt,
-      })
-      .then();
+    void handleDbMutation(
+      supabase
+        .from('RewardRedemption')
+        .insert({
+          id: newRedemption.id,
+          classId: newRedemption.classId,
+          studentId: newRedemption.studentId,
+          studentName: newRedemption.studentName,
+          studentCode: newRedemption.studentCode,
+          studentAvatar: newRedemption.studentAvatar || null,
+          items: newRedemption.items,
+          totalStars: newRedemption.totalStars,
+          month: newRedemption.month,
+          status: newRedemption.status,
+          studentNote: newRedemption.studentNote || null,
+          requestedAt: newRedemption.requestedAt,
+        }),
+      undefined,
+      'Không thể lưu yêu cầu đổi thưởng'
+    );
 
     return { success: true };
   };
@@ -3098,11 +3312,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       )
     );
 
-    supabase
-      .from('RewardRedemption')
-      .update({ status: 'DELIVERED', deliveredAt })
-      .eq('id', redemptionId)
-      .then();
+    void handleDbMutation(
+      supabase
+        .from('RewardRedemption')
+        .update({ status: 'DELIVERED', deliveredAt })
+        .eq('id', redemptionId),
+      undefined,
+      'Không thể cập nhật trạng thái trao thưởng'
+    );
 
     toast.success('Đã xác nhận trao quà cho học sinh thành công! 🎉');
   };
@@ -3118,7 +3335,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           const matched = target.items.find((item) => item.productId === p.id);
           if (matched) {
             const restoredStock = p.stock + matched.quantity;
-            supabase.from('RewardProduct').update({ stock: restoredStock, isAvailable: true }).eq('id', p.id).then();
+            void handleDbMutation(
+              supabase.from('RewardProduct').update({ stock: restoredStock, isAvailable: true }).eq('id', p.id),
+              undefined,
+              'Không thể hoàn trả tồn kho'
+            );
             return { ...p, stock: restoredStock, isAvailable: true };
           }
           return p;
@@ -3130,11 +3351,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       prev.map((r) => (r.id === redemptionId ? { ...r, status: 'CANCELLED' } : r))
     );
 
-    supabase
-      .from('RewardRedemption')
-      .update({ status: 'CANCELLED' })
-      .eq('id', redemptionId)
-      .then();
+    void handleDbMutation(
+      supabase
+        .from('RewardRedemption')
+        .update({ status: 'CANCELLED' })
+        .eq('id', redemptionId),
+      undefined,
+      'Không thể hủy yêu cầu đổi quà'
+    );
 
     toast.info('Đã hủy đơn đổi quà và hoàn lại sao/tồn kho!');
   };
@@ -3150,8 +3374,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       );
 
       // Delete in Supabase
-      supabase.from('StarLog').delete().ilike('date', `${targetMonth}%`).then();
-      supabase.from('RewardRedemption').delete().eq('month', targetMonth).then();
+      void handleDbMutation(
+        (async () => {
+          await supabase.from('StarLog').delete().ilike('date', `${targetMonth}%`);
+          return supabase.from('RewardRedemption').delete().eq('month', targetMonth);
+        })(),
+        undefined,
+        'Không thể làm mới điểm thi đua tháng'
+      );
 
       toast.success(`Đã reset điểm thi đua tháng ${targetMonth.replace('-', '/')}!`);
     }
@@ -3181,16 +3411,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return JSON.stringify(payload, null, 2);
   };
 
-  const importAllDataJSON = (jsonStr: string): { success: boolean; error?: string } => {
+  const importAllDataJSON = async (
+    jsonStr: string
+  ): Promise<{ success: boolean; error?: string; failedTables?: string[] }> => {
     try {
       const data = JSON.parse(jsonStr);
       if (!data || typeof data !== 'object') {
         return { success: false, error: 'File sao lưu không hợp lệ' };
       }
 
+      const errors: string[] = [];
+
       if (Array.isArray(data.schoolClasses)) {
         setSchoolClasses(data.schoolClasses);
-        supabase.from('Class').upsert(data.schoolClasses).then();
+        const { error } = await supabase.from('Class').upsert(data.schoolClasses);
+        if (error) errors.push(`Lớp học: ${error.message}`);
       }
       if (typeof data.activeClassId === 'string') setActiveClassId(data.activeClassId);
       if (Array.isArray(data.students)) {
@@ -3219,54 +3454,72 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           createdAt: st.createdAt,
           updatedAt: new Date().toISOString(),
         }));
-        supabase.from('Student').upsert(dbRows).then();
+        const { error } = await supabase.from('Student').upsert(dbRows);
+        if (error) errors.push(`Học sinh: ${error.message}`);
       }
       if (Array.isArray(data.subjectAssessments)) {
         setSubjectAssessments(data.subjectAssessments);
-        supabase.from('SubjectAssessment').upsert(data.subjectAssessments).then();
+        const { error } = await supabase.from('SubjectAssessment').upsert(data.subjectAssessments);
+        if (error) errors.push(`Đánh giá môn học: ${error.message}`);
       }
       if (Array.isArray(data.traitAssessments)) {
         setTraitAssessments(data.traitAssessments);
-        supabase.from('TraitAssessment').upsert(data.traitAssessments).then();
+        const { error } = await supabase.from('TraitAssessment').upsert(data.traitAssessments);
+        if (error) errors.push(`Đánh giá phẩm chất: ${error.message}`);
       }
       if (Array.isArray(data.termSummaries)) {
         setTermSummaries(data.termSummaries);
-        supabase.from('TermSummary').upsert(data.termSummaries).then();
+        const { error } = await supabase.from('TermSummary').upsert(data.termSummaries);
+        if (error) errors.push(`Tổng kết kỳ: ${error.message}`);
       }
       if (Array.isArray(data.attendances)) {
         setAttendances(data.attendances);
-        supabase.from('DailyAttendance').upsert(data.attendances).then();
+        const { error } = await supabase.from('DailyAttendance').upsert(data.attendances);
+        if (error) errors.push(`Điểm danh: ${error.message}`);
       }
       if (Array.isArray(data.starLogs)) {
         setStarLogs(data.starLogs);
-        supabase.from('StarLog').upsert(data.starLogs).then();
+        const { error } = await supabase.from('StarLog').upsert(data.starLogs);
+        if (error) errors.push(`Nhật ký sao: ${error.message}`);
       }
       if (Array.isArray(data.starCriteria)) {
         setStarCriteria(data.starCriteria);
-        supabase.from('StarCriterion').upsert(data.starCriteria).then();
+        const { error } = await supabase.from('StarCriterion').upsert(data.starCriteria);
+        if (error) errors.push(`Tiêu chí sao: ${error.message}`);
       }
       if (Array.isArray(data.rewardProducts)) {
         setRewardProducts(data.rewardProducts);
-        supabase.from('RewardProduct').upsert(data.rewardProducts).then();
+        const { error } = await supabase.from('RewardProduct').upsert(data.rewardProducts);
+        if (error) errors.push(`Phần thưởng: ${error.message}`);
       }
       if (Array.isArray(data.rewardRedemptions)) {
         setRewardRedemptions(data.rewardRedemptions);
-        supabase.from('RewardRedemption').upsert(data.rewardRedemptions).then();
+        const { error } = await supabase.from('RewardRedemption').upsert(data.rewardRedemptions);
+        if (error) errors.push(`Đổi thưởng: ${error.message}`);
       }
       if (Array.isArray(data.timetable)) {
         setAllTimetables(data.timetable);
-        supabase.from('TimetableSlot').upsert(data.timetable).then();
+        const { error } = await supabase.from('TimetableSlot').upsert(data.timetable);
+        if (error) errors.push(`Thời khóa biểu: ${error.message}`);
       }
       if (Array.isArray(data.customSubjects)) {
         setCustomSubjects(data.customSubjects);
-        supabase.from('CustomSubject').upsert(data.customSubjects).then();
+        const { error } = await supabase.from('CustomSubject').upsert(data.customSubjects);
+        if (error) errors.push(`Môn học tự chọn: ${error.message}`);
       }
       if (Array.isArray(data.homeworks)) {
         setAllHomeworks(data.homeworks);
-        supabase.from('HomeworkAssignment').upsert(data.homeworks).then();
+        const { error } = await supabase.from('HomeworkAssignment').upsert(data.homeworks);
+        if (error) errors.push(`Bài tập: ${error.message}`);
       }
       if (data.currentTerm) setCurrentTerm(data.currentTerm);
 
+      if (errors.length > 0) {
+        toast.error(`Đã nhập dữ liệu nhưng gặp lỗi ở: ${errors.join(', ')}`);
+        return { success: false, error: errors.join('; '), failedTables: errors };
+      }
+
+      toast.success('Đã nhập và đồng bộ toàn bộ dữ liệu lên máy chủ thành công!');
       return { success: true };
     } catch (e: any) {
       return { success: false, error: e?.message || 'Lỗi khi giải mã file JSON' };
@@ -3303,14 +3556,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } catch (e) {}
 
       // Live API Write to Supabase
-      supabase
-        .from('SchoolInfo')
-        .update({
-          aiConfig: updated,
-          updatedAt: new Date().toISOString(),
-        })
-        .eq('id', 'default')
-        .then();
+      void handleDbMutation(
+        supabase
+          .from('SchoolInfo')
+          .update({
+            aiConfig: updated,
+            updatedAt: new Date().toISOString(),
+          })
+          .eq('id', 'default'),
+        undefined,
+        'Không thể cập nhật cấu hình AI'
+      );
 
       return updated;
     });
@@ -3325,14 +3581,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (e) {}
 
     // Live API Write to Supabase
-    supabase
-      .from('SchoolInfo')
-      .update({
-        aiConfig: config,
-        updatedAt: new Date().toISOString(),
-      })
-      .eq('id', 'default')
-      .then();
+    void handleDbMutation(
+      supabase
+        .from('SchoolInfo')
+        .update({
+          aiConfig: config,
+          updatedAt: new Date().toISOString(),
+        })
+        .eq('id', 'default'),
+      undefined,
+      'Không thể lưu cấu hình AI'
+    );
   };
 
   const setAiGenSettings = (settings: AIGenerationSettings) => {
@@ -3342,14 +3601,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (e) {}
 
     // Live API Write to Supabase
-    supabase
-      .from('SchoolInfo')
-      .update({
-        aiGenSettings: settings,
-        updatedAt: new Date().toISOString(),
-      })
-      .eq('id', 'default')
-      .then();
+    void handleDbMutation(
+      supabase
+        .from('SchoolInfo')
+        .update({
+          aiGenSettings: settings,
+          updatedAt: new Date().toISOString(),
+        })
+        .eq('id', 'default'),
+      undefined,
+      'Không thể lưu tùy chọn sinh AI'
+    );
   };
 
   const addClassEvent = (event: Omit<ClassEvent, 'id'>) => {
@@ -3366,21 +3628,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return updated;
     });
 
-    supabase
-      .from('ClassEvent')
-      .upsert({
-        id: newEv.id,
-        classId: newEv.classId,
-        title: newEv.title,
-        eventType: newEv.type || 'OTHER',
-        date: newEv.date,
-        time: newEv.time,
-        location: newEv.location,
-        description: newEv.description,
-        isImportant: newEv.isImportant,
-        createdAt: new Date().toISOString(),
-      })
-      .then();
+    void handleDbMutation(
+      supabase
+        .from('ClassEvent')
+        .upsert({
+          id: newEv.id,
+          classId: newEv.classId,
+          title: newEv.title,
+          eventType: newEv.type || 'OTHER',
+          date: newEv.date,
+          time: newEv.time,
+          location: newEv.location,
+          description: newEv.description,
+          isImportant: newEv.isImportant,
+          createdAt: new Date().toISOString(),
+        }),
+      undefined,
+      'Không thể thêm sự kiện lớp'
+    );
   };
 
   const updateClassEvent = (event: ClassEvent) => {
@@ -3392,20 +3657,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return updated;
     });
 
-    supabase
-      .from('ClassEvent')
-      .upsert({
-        id: event.id,
-        classId: event.classId,
-        title: event.title,
-        eventType: event.type || 'OTHER',
-        date: event.date,
-        time: event.time,
-        location: event.location,
-        description: event.description,
-        isImportant: event.isImportant,
-      })
-      .then();
+    void handleDbMutation(
+      supabase
+        .from('ClassEvent')
+        .upsert({
+          id: event.id,
+          classId: event.classId,
+          title: event.title,
+          eventType: event.type || 'OTHER',
+          date: event.date,
+          time: event.time,
+          location: event.location,
+          description: event.description,
+          isImportant: event.isImportant,
+        }),
+      undefined,
+      'Không thể cập nhật sự kiện lớp'
+    );
   };
 
   const deleteClassEvent = (id: string) => {
@@ -3417,7 +3685,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return updated;
     });
 
-    supabase.from('ClassEvent').delete().eq('id', id).then();
+    void handleDbMutation(
+      supabase.from('ClassEvent').delete().eq('id', id),
+      undefined,
+      'Không thể xóa sự kiện lớp'
+    );
   };
 
   const addFormativeNote = (note: Omit<FormativeNote, 'id' | 'createdAt'>) => {
@@ -3428,13 +3700,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     setFormativeNotes((prev) => [newNote, ...prev]);
     toast.success('Đã lưu ghi chú tiến bộ thường xuyên!');
-    supabase.from('FormativeNote').upsert(newNote).then();
+    void handleDbMutation(
+      supabase.from('FormativeNote').upsert(newNote),
+      undefined,
+      'Không thể lưu ghi chú thường xuyên'
+    );
   };
 
   const deleteFormativeNote = (id: string) => {
     setFormativeNotes((prev) => prev.filter((n) => n.id !== id));
     toast.success('Đã xóa ghi chú');
-    supabase.from('FormativeNote').delete().eq('id', id).then();
+    void handleDbMutation(
+      supabase.from('FormativeNote').delete().eq('id', id),
+      undefined,
+      'Không thể xóa ghi chú thường xuyên'
+    );
   };
 
   // PHASE 3: LEAVE REQUEST ACTIONS
@@ -3447,7 +3727,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     setLeaveRequests((prev) => [newReq, ...prev]);
     toast.success('Đã gửi đơn xin nghỉ phép đến Giáo viên chủ nhiệm!');
-    supabase.from('LeaveRequest').upsert(newReq).then();
+    void handleDbMutation(
+      supabase.from('LeaveRequest').upsert(newReq),
+      undefined,
+      'Không thể gửi đơn xin nghỉ phép'
+    );
   };
 
   const approveLeaveRequest = (id: string, teacherNote?: string) => {
@@ -3480,7 +3764,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
 
     toast.success(`Đã duyệt đơn xin nghỉ của em ${req.studentName} và đồng bộ Sổ điểm danh!`);
-    supabase.from('LeaveRequest').update({ status: 'APPROVED', teacherNote: note, reviewedAt }).eq('id', id).then();
+    void handleDbMutation(
+      supabase.from('LeaveRequest').update({ status: 'APPROVED', teacherNote: note, reviewedAt }).eq('id', id),
+      undefined,
+      'Không thể duyệt đơn xin nghỉ phép'
+    );
   };
 
   const rejectLeaveRequest = (id: string, teacherNote?: string) => {
@@ -3500,7 +3788,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       )
     );
     toast.info('Đã từ chối đơn xin nghỉ phép');
-    supabase.from('LeaveRequest').update({ status: 'REJECTED', teacherNote: note, reviewedAt }).eq('id', id).then();
+    void handleDbMutation(
+      supabase.from('LeaveRequest').update({ status: 'REJECTED', teacherNote: note, reviewedAt }).eq('id', id),
+      undefined,
+      'Không thể từ chối đơn xin nghỉ phép'
+    );
   };
 
   // PHASE 3: CLASSROOM MOMENTS ACTIONS
@@ -3514,7 +3806,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     setClassMoments((prev) => [newMoment, ...prev]);
     toast.success('Đã đăng bài viết khoảnh khắc lớp học thành công!');
-    supabase.from('ClassMoment').upsert(newMoment).then();
+    void handleDbMutation(
+      supabase.from('ClassMoment').upsert(newMoment),
+      undefined,
+      'Không thể đăng bài viết khoảnh khắc lớp'
+    );
   };
 
   const likeClassMoment = (id: string, userToken: string) => {
@@ -3533,7 +3829,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               likesCount: m.likesCount + 1,
               likedBy: [...(m.likedBy || []), userToken],
             };
-        supabase.from('ClassMoment').update({ likesCount: updated.likesCount, likedBy: updated.likedBy }).eq('id', id).then();
+        void handleDbMutation(
+          supabase.from('ClassMoment').update({ likesCount: updated.likesCount, likedBy: updated.likedBy }).eq('id', id),
+          undefined,
+          'Không thể cập nhật lượt thích'
+        );
         return updated;
       })
     );
@@ -3542,7 +3842,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const deleteClassMoment = (id: string) => {
     setClassMoments((prev) => prev.filter((m) => m.id !== id));
     toast.success('Đã xóa bài viết khoảnh khắc');
-    supabase.from('ClassMoment').delete().eq('id', id).then();
+    void handleDbMutation(
+      supabase.from('ClassMoment').delete().eq('id', id),
+      undefined,
+      'Không thể xóa bài viết khoảnh khắc'
+    );
   };
 
   // PHASE 3: PARENT CONFERENCE 1-ON-1 ACTIONS
@@ -3555,7 +3859,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     setConferenceSlots((prev) => [...prev, newSlot]);
     toast.success('Đã tạo khung giờ hẹn trao đổi phụ huynh!');
-    supabase.from('ConferenceSlot').upsert(newSlot).then();
+    void handleDbMutation(
+      supabase.from('ConferenceSlot').upsert(newSlot),
+      undefined,
+      'Không thể lưu khung giờ hẹn'
+    );
   };
 
   const createMultipleConferenceSlots = (slots: Omit<ConferenceSlot, 'id' | 'isBooked' | 'createdAt'>[]) => {
@@ -3568,7 +3876,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
     setConferenceSlots((prev) => [...prev, ...newSlots]);
     toast.success(`Đã tạo hàng loạt ${newSlots.length} khung giờ hẹn thành công!`);
-    supabase.from('ConferenceSlot').upsert(newSlots).then();
+    void handleDbMutation(
+      supabase.from('ConferenceSlot').upsert(newSlots),
+      undefined,
+      'Không thể lưu danh sách khung giờ hẹn'
+    );
   };
 
   const bookConferenceSlot = (
@@ -3601,7 +3913,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       )
     );
     toast.success('Đã đăng ký lịch hẹn trao đổi với Giáo viên chủ nhiệm thành công!');
-    supabase.from('ConferenceSlot').update(updatePayload).eq('id', slotId).then();
+    void handleDbMutation(
+      supabase.from('ConferenceSlot').update(updatePayload).eq('id', slotId),
+      undefined,
+      'Không thể cập nhật đăng ký lịch hẹn'
+    );
   };
 
   const cancelConferenceBooking = (slotId: string) => {
@@ -3630,13 +3946,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       )
     );
     toast.success('Đã hủy đặt lịch hẹn');
-    supabase.from('ConferenceSlot').update(resetPayload).eq('id', slotId).then();
+    void handleDbMutation(
+      supabase.from('ConferenceSlot').update(resetPayload).eq('id', slotId),
+      undefined,
+      'Không thể hủy đăng ký lịch hẹn'
+    );
   };
 
   const deleteConferenceSlot = (slotId: string) => {
     setConferenceSlots((prev) => prev.filter((s) => s.id !== slotId));
     toast.success('Đã xóa khung giờ hẹn');
-    supabase.from('ConferenceSlot').delete().eq('id', slotId).then();
+    void handleDbMutation(
+      supabase.from('ConferenceSlot').delete().eq('id', slotId),
+      undefined,
+      'Không thể xóa khung giờ hẹn'
+    );
   };
 
   const quizSubmissions = useMemo(
@@ -3702,7 +4026,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } catch (e) {}
       return next;
     });
-    supabase.from('IEPPlan').insert(newPlan).then();
+    void handleDbMutation(
+      supabase.from('IEPPlan').insert(newPlan),
+      undefined,
+      'Không thể lưu kế hoạch IEP'
+    );
     toast.success(`Đã tạo Kế hoạch Giáo dục Cá nhân cho em ${newPlan.studentName}!`);
     return newPlan;
   };
@@ -3716,7 +4044,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } catch (e) {}
       return next;
     });
-    supabase.from('IEPPlan').update(withTimestamp).eq('id', updated.id).then();
+    void handleDbMutation(
+      supabase.from('IEPPlan').update(withTimestamp).eq('id', updated.id),
+      undefined,
+      'Không thể cập nhật kế hoạch IEP'
+    );
     toast.success(`Đã cập nhật Kế hoạch IEP của em ${updated.studentName}!`);
   };
 
@@ -3728,7 +4060,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } catch (e) {}
       return next;
     });
-    supabase.from('IEPPlan').delete().eq('id', id).then();
+    void handleDbMutation(
+      supabase.from('IEPPlan').delete().eq('id', id),
+      undefined,
+      'Không thể xóa kế hoạch IEP'
+    );
     toast.success('Đã xóa hồ sơ Kế hoạch IEP!');
   };
 
@@ -3750,7 +4086,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try { localStorage.setItem(STORAGE_PREFIX + 'parentMeetings', JSON.stringify(next)); } catch (e) {}
       return next;
     });
-    supabase.from('ParentMeeting').insert(newDoc).then();
+    void handleDbMutation(
+      supabase.from('ParentMeeting').insert(newDoc),
+      undefined,
+      'Không thể lưu tài liệu họp phụ huynh'
+    );
     toast.success(`Đã lưu biên bản cuộc họp phụ huynh!`);
     return newDoc;
   };
@@ -3762,7 +4102,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try { localStorage.setItem(STORAGE_PREFIX + 'parentMeetings', JSON.stringify(next)); } catch (e) {}
       return next;
     });
-    supabase.from('ParentMeeting').update(withTimestamp).eq('id', updated.id).then();
+    void handleDbMutation(
+      supabase.from('ParentMeeting').update(withTimestamp).eq('id', updated.id),
+      undefined,
+      'Không thể cập nhật tài liệu họp phụ huynh'
+    );
     toast.success('Đã cập nhật biên bản cuộc họp phụ huynh!');
   };
 
@@ -3772,7 +4116,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try { localStorage.setItem(STORAGE_PREFIX + 'parentMeetings', JSON.stringify(next)); } catch (e) {}
       return next;
     });
-    supabase.from('ParentMeeting').delete().eq('id', id).then();
+    void handleDbMutation(
+      supabase.from('ParentMeeting').delete().eq('id', id),
+      undefined,
+      'Không thể xóa tài liệu họp phụ huynh'
+    );
     toast.success('Đã xóa biên bản cuộc họp!');
   };
 
@@ -3795,7 +4143,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try { localStorage.setItem(STORAGE_PREFIX + 'healthRecords', JSON.stringify(next)); } catch (e) {}
       return next;
     });
-    supabase.from('HealthRecord').upsert(newRec).then();
+    void handleDbMutation(
+      supabase.from('HealthRecord').upsert(newRec),
+      undefined,
+      'Không thể lưu hồ sơ sức khỏe'
+    );
     toast.success(`Đã lưu hồ sơ sức khỏe em ${newRec.studentName}!`);
     return newRec;
   };
@@ -3807,7 +4159,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try { localStorage.setItem(STORAGE_PREFIX + 'healthRecords', JSON.stringify(next)); } catch (e) {}
       return next;
     });
-    supabase.from('HealthRecord').update(withTimestamp).eq('id', updated.id).then();
+    void handleDbMutation(
+      supabase.from('HealthRecord').update(withTimestamp).eq('id', updated.id),
+      undefined,
+      'Không thể cập nhật hồ sơ sức khỏe'
+    );
     toast.success(`Đã cập nhật hồ sơ sức khỏe em ${updated.studentName}!`);
   };
 
@@ -3817,7 +4173,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try { localStorage.setItem(STORAGE_PREFIX + 'healthRecords', JSON.stringify(next)); } catch (e) {}
       return next;
     });
-    supabase.from('HealthRecord').delete().eq('id', id).then();
+    void handleDbMutation(
+      supabase.from('HealthRecord').delete().eq('id', id),
+      undefined,
+      'Không thể xóa hồ sơ sức khỏe'
+    );
     toast.success('Đã xóa hồ sơ sức khỏe!');
   };
 
@@ -3838,7 +4198,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try { localStorage.setItem(STORAGE_PREFIX + 'classroomBooks', JSON.stringify(next)); } catch (e) {}
       return next;
     });
-    supabase.from('ClassroomBook').insert(newBook).then();
+    void handleDbMutation(
+      supabase.from('ClassroomBook').insert(newBook),
+      undefined,
+      'Không thể lưu sách thư viện'
+    );
     toast.success(`Đã thêm sách "${newBook.title}" vào tủ sách lớp!`);
     return newBook;
   };
@@ -3849,7 +4213,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try { localStorage.setItem(STORAGE_PREFIX + 'classroomBooks', JSON.stringify(next)); } catch (e) {}
       return next;
     });
-    supabase.from('ClassroomBook').update(updated).eq('id', updated.id).then();
+    void handleDbMutation(
+      supabase.from('ClassroomBook').update(updated).eq('id', updated.id),
+      undefined,
+      'Không thể cập nhật thông tin sách'
+    );
     toast.success('Đã cập nhật thông tin sách!');
   };
 
@@ -3859,7 +4227,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try { localStorage.setItem(STORAGE_PREFIX + 'classroomBooks', JSON.stringify(next)); } catch (e) {}
       return next;
     });
-    supabase.from('ClassroomBook').delete().eq('id', id).then();
+    void handleDbMutation(
+      supabase.from('ClassroomBook').delete().eq('id', id),
+      undefined,
+      'Không thể xóa sách khỏi thư viện'
+    );
     toast.success('Đã xóa sách khỏi tủ sách!');
   };
 
@@ -3881,7 +4253,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       try { localStorage.setItem(STORAGE_PREFIX + 'bookBorrowLogs', JSON.stringify(next)); } catch (e) {}
       return next;
     });
-    supabase.from('BookBorrowLog').insert(newLog).then();
+    void handleDbMutation(
+      supabase.from('BookBorrowLog').insert(newLog),
+      undefined,
+      'Không thể lưu phiếu mượn sách'
+    );
 
     // Decrease available copies
     const targetBook = allClassroomBooks.find((b) => b.id === data.bookId);
@@ -3889,7 +4265,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAllClassroomBooks((prev) =>
       prev.map((b) => (b.id === data.bookId ? { ...b, availableCopies: newAvail } : b))
     );
-    supabase.from('ClassroomBook').update({ availableCopies: newAvail }).eq('id', data.bookId).then();
+    void handleDbMutation(
+      supabase.from('ClassroomBook').update({ availableCopies: newAvail }).eq('id', data.bookId),
+      undefined,
+      'Không thể cập nhật số lượng sách sẵn sàng'
+    );
 
     toast.success(`Em ${data.studentName} đã mượn sách "${data.bookTitle}"!`);
     return newLog;
@@ -3911,7 +4291,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         try { localStorage.setItem(STORAGE_PREFIX + 'bookBorrowLogs', JSON.stringify(next)); } catch (e) {}
         return next;
       });
-      supabase.from('BookBorrowLog').update(updatedLog).eq('id', logId).then();
+      void handleDbMutation(
+        supabase.from('BookBorrowLog').update(updatedLog).eq('id', logId),
+        undefined,
+        'Không thể cập nhật phiếu trả sách'
+      );
 
       // Increase available copies
       const targetBook = allClassroomBooks.find((b) => b.id === targetLog.bookId);
@@ -3919,7 +4303,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setAllClassroomBooks((prev) =>
         prev.map((b) => (b.id === targetLog.bookId ? { ...b, availableCopies: newAvail } : b))
       );
-      supabase.from('ClassroomBook').update({ availableCopies: newAvail }).eq('id', targetLog.bookId).then();
+      void handleDbMutation(
+        supabase.from('ClassroomBook').update({ availableCopies: newAvail }).eq('id', targetLog.bookId),
+        undefined,
+        'Không thể cập nhật số lượng sách trả'
+      );
 
       toast.success(`Đã trả sách "${targetLog.bookTitle}" vào tủ sách thành công!`);
     }

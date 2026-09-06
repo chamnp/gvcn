@@ -545,14 +545,14 @@ export default function SettingsPage() {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       try {
         const content = event.target?.result as string;
         if (!content) {
           toast.error('File sao lưu rỗng!');
           return;
         }
-        const res = importAllDataJSON(content);
+        const res = await importAllDataJSON(content);
         if (res.success) {
           toast.success('Khôi phục dữ liệu từ file sao lưu thành công! Đang tải lại trang...');
           setTimeout(() => window.location.reload(), 1000);

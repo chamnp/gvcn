@@ -13,7 +13,13 @@
 import readline from 'readline';
 
 const API_URL = process.env.GVCN_API_URL || 'https://www.gvcn.pro.vn/api/mcp';
-const API_KEY = process.env.GVCN_API_KEY || 'gvcn_pat_demo_teacher_2026_pro';
+const API_KEY = process.env.GVCN_API_KEY || '';
+
+if (!API_KEY) {
+  process.stderr.write(`[gvcn-mcp] LỖI: Thiếu biến môi trường GVCN_API_KEY. Vui lòng cung cấp khóa Personal Access Token hợp lệ.\n`);
+  process.stderr.write(`[gvcn-mcp] Hướng dẫn: Tạo khóa tại Cài Đặt > Khóa API (MCP) trên https://www.gvcn.pro.vn\n`);
+  process.exit(1);
+}
 
 process.stderr.write(`[gvcn-mcp] Server starting...\n`);
 process.stderr.write(`[gvcn-mcp] Connecting to upstream: ${API_URL}\n`);

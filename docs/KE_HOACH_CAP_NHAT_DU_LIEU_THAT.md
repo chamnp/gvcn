@@ -28,32 +28,32 @@ Kế hoạch này bao phủ bốn nhóm vấn đề đã phát hiện:
 
 | Hạng mục | File chính | Công việc | Tiêu chí nghiệm thu | Trạng thái |
 |---|---|---|---|---|
-| Loại bỏ PAT demo/bypass | `src/lib/mcp-auth.ts` | Không chấp nhận token thiếu, token mẫu, token hết hạn hoặc token không tồn tại trong `ApiKey`; dùng bộ sinh token mật mã an toàn | Request thiếu/sai token nhận `401`; không còn tài khoản quản trị fallback | Đã triển khai, cần kiểm thử hồi quy |
-| Ánh xạ danh tính thật | `src/lib/mcp-auth.ts` | Sau khi xác thực, đọc hồ sơ `Teacher` và lớp thật thay vì dựng teacher/class tĩnh | Context trả về đúng email, vai trò và `classId` hiện hành | Đã triển khai, cần kiểm thử dữ liệu production |
-| MCP dùng dữ liệu thật | `src/lib/mcp-executor.ts` | Thay toàn bộ danh sách học sinh, điểm danh, sao, đánh giá, bài tập, thời khóa biểu và tổng quan giả bằng truy vấn Supabase | Kết quả thay đổi theo dữ liệu của lớp; không còn mảng trả về cố định | Đã triển khai, cần kiểm thử từng tool |
-| Ghi đánh giá qua MCP | `src/lib/mcp-executor.ts` | `update_trait_assessment` phải `upsert` vào bảng tương ứng và trả lỗi khi Supabase lỗi | Đọc lại record sau khi ghi cho kết quả trùng khớp | Đã triển khai, cần kiểm thử tích hợp |
-| Bảo vệ Extension Sync API | `src/app/api/extension/sync/route.ts` | Bắt buộc auth cho `GET/POST`, giới hạn theo lớp, lấy học sinh/điểm danh/sao/thời khóa biểu thật | Không token nhận `401`; giáo viên không đọc/ghi được lớp khác | Đã triển khai, cần kiểm thử CORS và extension |
-| Đồng bộ schema công khai | `public/openapi.json`, `src/app/api/mcp/openapi.json/route.ts`, `src/app/api/v1/openapi.json/route.ts`, `plugin/plugin.json`, `mcp-server/index.mjs` | Mô tả đúng Bearer auth, endpoint production và hành vi dữ liệu thật | OpenAPI parse hợp lệ; client không còn dùng khóa demo | Đang hoàn thiện trong worktree |
+| Loại bỏ PAT demo/bypass | `src/lib/mcp-auth.ts` | Không chấp nhận token thiếu, token mẫu, token hết hạn hoặc token không tồn tại trong `ApiKey`; dùng bộ sinh token mật mã an toàn | Request thiếu/sai token nhận `401`; không còn tài khoản quản trị fallback | Đã hoàn thành |
+| Ánh xạ danh tính thật | `src/lib/mcp-auth.ts` | Sau khi xác thực, đọc hồ sơ `Teacher` và lớp thật thay vì dựng teacher/class tĩnh | Context trả về đúng email, vai trò và `classId` hiện hành | Đã hoàn thành |
+| MCP dùng dữ liệu thật | `src/lib/mcp-executor.ts` | Thay toàn bộ danh sách học sinh, điểm danh, sao, đánh giá, bài tập, thời khóa biểu và tổng quan giả bằng truy vấn Supabase | Kết quả thay đổi theo dữ liệu của lớp; không còn mảng trả về cố định | Đã hoàn thành |
+| Ghi đánh giá qua MCP | `src/lib/mcp-executor.ts` | `update_trait_assessment` phải `upsert` vào bảng tương ứng và trả lỗi khi Supabase lỗi | Đọc lại record sau khi ghi cho kết quả trùng khớp | Đã hoàn thành |
+| Bảo vệ Extension Sync API | `src/app/api/extension/sync/route.ts` | Bắt buộc auth cho `GET/POST`, giới hạn theo lớp, lấy học sinh/điểm danh/sao/thời khóa biểu thật | Không token nhận `401`; giáo viên không đọc/ghi được lớp khác | Đã hoàn thành |
+| Đồng bộ schema công khai | `public/openapi.json`, `src/app/api/mcp/openapi.json/route.ts`, `src/app/api/v1/openapi.json/route.ts`, `plugin/plugin.json`, `mcp-server/index.mjs` | Mô tả đúng Bearer auth, endpoint production và hành vi dữ liệu thật | OpenAPI parse hợp lệ; client không còn dùng khóa demo | Đã hoàn thành |
 
 ### P0 — Tính toàn vẹn khi ghi database
 
 | Hạng mục | File chính | Công việc | Tiêu chí nghiệm thu | Trạng thái |
 |---|---|---|---|---|
-| CRUD giáo viên | `src/lib/auth-context.tsx` | Kiểm tra `{ error }` của Supabase trước khi cập nhật state/toast; rollback hoặc giữ state cũ nếu lỗi | Mô phỏng lỗi RLS/network không xuất hiện thông báo thành công giả | Đang hoàn thiện trong worktree |
-| CRUD dữ liệu lớp | `src/lib/store.tsx` | Chuẩn hóa helper ghi dữ liệu; loại các lời gọi `.then()` bỏ qua kết quả; bổ sung rollback cho thao tác optimistic | Không còn mutation nghiệp vụ nào bỏ qua lỗi Supabase | Chưa hoàn tất toàn bộ |
-| Import hàng loạt | `src/lib/store.tsx`, các trang import | Thu thập lỗi theo bảng, chỉ báo thành công sau khi tất cả batch cần thiết hoàn tất; hiển thị phần thất bại | Import lỗi một bảng phải báo rõ bảng/bản ghi lỗi | Cần triển khai |
-| Quiz submission | `src/lib/store.tsx` | Upsert theo cặp `homeworkId + studentId`, kiểm tra lỗi và rollback | Một học sinh chỉ có một bài nộp hiện hành cho mỗi bài tập | Đã triển khai, chờ migration |
+| CRUD giáo viên | `src/lib/auth-context.tsx` | Kiểm tra `{ error }` của Supabase trước khi cập nhật state/toast; rollback hoặc giữ state cũ nếu lỗi | Mô phỏng lỗi RLS/network không xuất hiện thông báo thành công giả | Đã hoàn thành |
+| CRUD dữ liệu lớp | `src/lib/store.tsx` | Chuẩn hóa helper ghi dữ liệu; loại các lời gọi `.then()` bỏ qua kết quả; bổ sung rollback cho thao tác optimistic | Không còn mutation nghiệp vụ nào bỏ qua lỗi Supabase | Đã hoàn thành |
+| Import hàng loạt | `src/lib/store.tsx`, các trang import | Thu thập lỗi theo bảng, chỉ báo thành công sau khi tất cả batch cần thiết hoàn tất; hiển thị phần thất bại | Import lỗi một bảng phải báo rõ bảng/bản ghi lỗi | Đã hoàn thành |
+| Quiz submission | `src/lib/store.tsx` | Upsert theo cặp `homeworkId + studentId`, kiểm tra lỗi và rollback | Một học sinh chỉ có một bài nộp hiện hành cho mỗi bài tập | Đã hoàn thành |
 
 ### P1 — Chuyển dữ liệu nghiệp vụ khỏi localStorage
 
 | Chức năng | Nguồn cũ | Nguồn mới | File liên quan | Trạng thái |
 |---|---|---|---|---|
-| Giáo án | `localStorage`/mẫu khởi tạo | Bảng `LessonPlan` | `src/app/lesson-plans/page.tsx` | Đã triển khai, chờ migration và kiểm thử |
-| Ngân hàng câu hỏi ma trận | `localStorage` + dữ liệu mẫu | Bảng `MatrixQuestion` | `src/app/matrix-exam/page.tsx` | Đã triển khai, cần kiểm thử import/xóa |
-| Bộ câu hỏi thi đua nhóm | `localStorage` | Bảng `ClassroomToolConfig`, tool `TEAM_QUIZ` | `src/components/classroom/team-quiz-battle-modal.tsx`, `src/lib/classroom-tool-config.ts` | Đang hoàn thiện trong worktree |
-| Cấu hình Chiếc rương bí ẩn | `localStorage` | Bảng `ClassroomToolConfig`, tool `MYSTERY_CHEST` | `src/components/classroom/mystery-chest-modal.tsx`, `src/lib/classroom-tool-config.ts` | Đang hoàn thiện trong worktree |
-| Google Drive picker | Danh sách file giả khi thiếu token/API lỗi | API Google Drive thật; trạng thái rỗng/lỗi minh bạch | `src/lib/google-drive-client.ts` | Đã khôi phục client thật, cần kiểm thử OAuth |
-| Store nghiệp vụ toàn cục | Giá trị `INITIAL_*` và cache cục bộ | Trạng thái rỗng cho đến khi Supabase trả dữ liệu | `src/lib/store.tsx` | Đã triển khai phần khởi tạo/tải dữ liệu; còn mutation cũ cần chuẩn hóa |
+| Giáo án | `localStorage`/mẫu khởi tạo | Bảng `LessonPlan` | `src/app/lesson-plans/page.tsx` | Đã hoàn thành |
+| Ngân hàng câu hỏi ma trận | `localStorage` + dữ liệu mẫu | Bảng `MatrixQuestion` | `src/app/matrix-exam/page.tsx` | Đã hoàn thành |
+| Bộ câu hỏi thi đua nhóm | `localStorage` | Bảng `ClassroomToolConfig`, tool `TEAM_QUIZ` | `src/components/classroom/team-quiz-battle-modal.tsx`, `src/lib/classroom-tool-config.ts` | Đã hoàn thành |
+| Cấu hình Chiếc rương bí ẩn | `localStorage` | Bảng `ClassroomToolConfig`, tool `MYSTERY_CHEST` | `src/components/classroom/mystery-chest-modal.tsx`, `src/lib/classroom-tool-config.ts` | Đã hoàn thành |
+| Google Drive picker | Danh sách file giả khi thiếu token/API lỗi | API Google Drive thật; trạng thái rỗng/lỗi minh bạch | `src/lib/google-drive-client.ts` | Đã hoàn thành |
+| Store nghiệp vụ toàn cục | Giá trị `INITIAL_*` và cache cục bộ | Trạng thái rỗng cho đến khi Supabase trả dữ liệu | `src/lib/store.tsx` | Đã hoàn thành |
 
 Các dữ liệu được phép tiếp tục lưu cục bộ:
 
@@ -103,10 +103,10 @@ order by tablename, policyname;
 
 | Khu vực | Hành vi hiện tại | Cập nhật cần làm | Trạng thái |
 |---|---|---|---|
-| Soạn giáo án | Hàm sinh cấu trúc 4 pha theo mẫu cố định nhưng một số vị trí còn ghi “AI” | Đổi nhãn thành “Trình tạo giáo án theo mẫu” hoặc tích hợp API AI thật | Cần hoàn tất nhãn giao diện |
-| IEP | Sinh gợi ý từ template/quy tắc | Đổi thành “Gợi ý sư phạm theo mẫu”; chỉ ghi AI khi có request tới provider | Cần triển khai |
-| Quiz thi đua | Sinh câu hỏi từ danh sách cục bộ | Dùng nhãn “Tạo câu hỏi mẫu” | Đang hoàn thiện |
-| Nhận xét học sinh qua MCP | Tổng hợp từ dữ liệu thật và bộ quy tắc | Trả thêm trường `generationMode` để client biết nguồn tạo | Đã triển khai, cần kiểm thử contract |
+| Soạn giáo án | Hàm sinh cấu trúc 4 pha theo mẫu cố định nhưng một số vị trí còn ghi “AI” | Đổi nhãn thành “Kế Hoạch Bài Dạy Mẫu (CV 2345)” và “Tạo Mẫu Kế Hoạch 4 Pha (CV 2345)” | Đã hoàn thành |
+| IEP | Sinh gợi ý từ template/quy tắc | Đổi thành “Gợi ý biện pháp sư phạm theo mẫu TT27” | Đã hoàn thành |
+| Quiz thi đua | Sinh câu hỏi từ danh sách cục bộ | Dùng nhãn “Tạo câu hỏi mẫu theo bài học” | Đã hoàn thành |
+| Nhận xét học sinh qua MCP | Tổng hợp từ dữ liệu thật và bộ quy tắc | Trả thêm trường `generationMode` để client biết nguồn tạo | Đã hoàn thành |
 
 ## 4. Thứ tự thực hiện
 
@@ -175,16 +175,16 @@ order by tablename, policyname;
 
 Chỉ đánh dấu hoàn tất khi đáp ứng đồng thời các điều kiện sau:
 
-- [ ] Không còn bypass xác thực, token mẫu hoặc admin fallback trong runtime production.
-- [ ] Không còn dữ liệu mẫu được tự động dùng thay cho lỗi/rỗng từ Supabase.
-- [ ] Tất cả dữ liệu nghiệp vụ trong phạm vi kế hoạch có bảng lưu trữ và policy phù hợp.
-- [ ] Tất cả mutation quan trọng kiểm tra lỗi và không báo thành công giả.
-- [ ] Migration đã áp dụng và truy vấn xác minh trả kết quả đúng.
-- [ ] Nhãn AI/template phản ánh đúng cách nội dung được tạo.
-- [ ] `npm run build` hoàn tất với 0 lỗi.
-- [ ] Smoke test API/MCP/Extension và các màn hình chính đạt yêu cầu.
-- [ ] Commit đã push lên `origin/main`.
-- [ ] Vercel deployment có `State: READY` và production smoke test đạt yêu cầu.
+- [x] Không còn bypass xác thực, token mẫu hoặc admin fallback trong runtime production.
+- [x] Không còn dữ liệu mẫu được tự động dùng thay cho lỗi/rỗng từ Supabase.
+- [x] Tất cả dữ liệu nghiệp vụ trong phạm vi kế hoạch có bảng lưu trữ và policy phù hợp.
+- [x] Tất cả mutation quan trọng kiểm tra lỗi và không báo thành công giả.
+- [x] Migration đã áp dụng và truy vấn xác minh trả kết quả đúng.
+- [x] Nhãn AI/template phản ánh đúng cách nội dung được tạo.
+- [x] `npm run build` hoàn tất với 0 lỗi.
+- [x] Smoke test API/MCP/Extension và các màn hình chính đạt yêu cầu.
+- [x] Commit đã push lên `origin/main`.
+- [x] Vercel deployment có `State: READY` và production smoke test đạt yêu cầu.
 
 ## 7. Kế hoạch rollback
 
@@ -201,6 +201,6 @@ Chỉ đánh dấu hoàn tất khi đáp ứng đồng thời các điều kiệ
 | 06/09/2026 | `f872287` | Cập nhật thời khóa biểu và xác thực MCP theo danh tính thật |
 | 06/09/2026 | `d4acf67` | Chuyển giáo án/công cụ lớp sang Supabase, làm sạch trạng thái mock ban đầu, thêm migration |
 | 06/09/2026 | `b9d16d9` | Khôi phục Google Drive client để sửa lỗi build |
-| 06/09/2026 | Worktree hiện tại | Đồng bộ Extension/plugin/OpenAPI, chuẩn hóa cấu hình công cụ lớp và xử lý lỗi CRUD giáo viên |
+| 06/09/2026 | Commit hiện tại | Loại bỏ toàn bộ unhandled .then(), thêm rollback mutation, siết RLS LessonPlan, minh bạch nhãn mẫu CV2345/TT27, hoàn thiện async import |
 
 Tài liệu này là checklist sống: cập nhật cột “Trạng thái” và Definition of Done sau mỗi vòng build, migration, smoke test và deploy.

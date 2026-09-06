@@ -183,7 +183,7 @@ export function IEPEditorModal({
       }
 
       setIsGeneratingAI(false);
-      toast.success('Đã ứng dụng AI Sư phạm sinh mục tiêu và biện pháp can thiệp TT27!');
+      toast.success('Đã tạo mục tiêu và biện pháp can thiệp theo mẫu sư phạm TT27!');
     }, 600);
   };
 
@@ -408,8 +408,8 @@ export function IEPEditorModal({
                 <Sparkles className="w-4 h-4" />
               </div>
               <div>
-                <h5 className="font-black text-indigo-950">Trợ Lý AI Đề Xuất Biện Pháp Sư Phạm TT27</h5>
-                <p className="text-[11px] text-indigo-700">Tự động lập mục tiêu 1 tháng & biện pháp kèm cặp phân hóa</p>
+                <h5 className="font-black text-indigo-950">Gợi Ý Biện Pháp Sư Phạm Theo Mẫu TT27</h5>
+                <p className="text-[11px] text-indigo-700">Tự động gợi ý mục tiêu 1 tháng & biện pháp kèm cặp phân hóa theo mẫu</p>
               </div>
             </div>
 
@@ -420,7 +420,7 @@ export function IEPEditorModal({
               className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-black text-xs shadow-md transition-all cursor-pointer disabled:opacity-50"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              <span>{isGeneratingAI ? 'Đang phân tích...' : 'AI Gợi Ý Ngay ✨'}</span>
+              <span>{isGeneratingAI ? 'Đang tải gợi ý...' : 'Gợi Ý Theo Mẫu ✨'}</span>
             </button>
           </div>
 

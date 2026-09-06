@@ -550,9 +550,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         },
         { onConflict: 'email' }
       );
-      if (error) console.error('Supabase upsert error:', error);
-    } catch (e) {
-      console.warn('Supabase update profile error:', e);
+      if (error) {
+        console.error('Supabase update profile error:', error.message);
+        toast.error(`Không thể lưu hồ sơ lên máy chủ: ${error.message}`);
+        return;
+      }
+    } catch (e: any) {
+      console.warn('Supabase update profile network exception:', e);
+      toast.error(`Lỗi kết nối khi cập nhật hồ sơ: ${e?.message || 'Vui lòng thử lại'}`);
+      return;
     }
 
     // 2. Also update Supabase auth metadata if full_name or avatar_url changed
@@ -618,7 +624,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Write to Supabase
     try {
-      await supabase.from('Teacher').upsert(
+      const { error } = await supabase.from('Teacher').upsert(
         {
           email: cleanEmail,
           fullName: cleanName,
@@ -632,8 +638,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         },
         { onConflict: 'email' }
       );
-    } catch (e) {
-      console.warn('Supabase upsert teacher error:', e);
+      if (error) {
+        console.error('Supabase upsert teacher error:', error.message);
+        toast.error(`Không thể cấp quyền cho giáo viên: ${error.message}`);
+        return;
+      }
+    } catch (e: any) {
+      console.warn('Supabase upsert teacher network exception:', e);
+      toast.error(`Lỗi kết nối khi cấp quyền giáo viên: ${e?.message || 'Vui lòng thử lại'}`);
+      return;
     }
 
     const newT: TeacherProfile = {
@@ -669,9 +682,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const cleanClass = partial.assignedClassName !== undefined ? partial.assignedClassName : existing.assignedClassName;
     const classId = cleanClass ? `class-${cleanClass.replace('Lớp ', '').toLowerCase()}` : undefined;
 
+    const previousTeachers = teachers;
+    const updated = teachers.map((t) => (t.id === id ? { ...t, ...partial, assignedClassId: classId } : t));
+    setTeachers(updated);
+
     // Update in Supabase
     try {
-      await supabase
+      const { error } = await supabase
         .from('Teacher')
         .update({
           role: cleanRole,
@@ -684,12 +701,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           avatarUrl: partial.avatarUrl !== undefined ? partial.avatarUrl : existing.avatarUrl,
         })
         .eq('email', existing.email.toLowerCase());
-    } catch (e) {
-      console.warn('Supabase update teacher error:', e);
+
+      if (error) {
+        setTeachers(previousTeachers);
+        console.error('Supabase update teacher error:', error.message);
+        toast.error(`Không thể cập nhật giáo viên trên máy chủ: ${error.message}`);
+        return;
+      }
+    } catch (e: any) {
+      setTeachers(previousTeachers);
+      console.warn('Supabase update teacher exception:', e);
+      toast.error(`Lỗi kết nối khi cập nhật giáo viên: ${e?.message || 'Vui lòng thử lại'}`);
+      return;
     }
 
-    const updated = teachers.map((t) => (t.id === id ? { ...t, ...partial, assignedClassId: classId } : t));
-    setTeachers(updated);
     try {
       localStorage.setItem('gvcn_teachers', JSON.stringify(updated));
     } catch (e) {}
@@ -701,15 +726,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const existing = teachers.find((t) => t.id === id);
     if (!existing) return;
 
-    // Delete in Supabase
-    try {
-      await supabase.from('Teacher').delete().eq('email', existing.email.toLowerCase());
-    } catch (e) {
-      console.warn('Supabase delete teacher error:', e);
-    }
-
+    const previousTeachers = teachers;
     const updated = teachers.filter((t) => t.id !== id);
     setTeachers(updated);
+
+    // Delete in Supabase
+    try {
+      const { error } = await supabase.from('Teacher').delete().eq('email', existing.email.toLowerCase());
+      if (error) {
+        setTeachers(previousTeachers);
+        console.error('Supabase delete teacher error:', error.message);
+        toast.error(`Không thể xóa tài khoản giáo viên: ${error.message}`);
+        return;
+      }
+    } catch (e: any) {
+      setTeachers(previousTeachers);
+      console.warn('Supabase delete teacher exception:', e);
+      toast.error(`Lỗi kết nối khi xóa tài khoản giáo viên: ${e?.message || 'Vui lòng thử lại'}`);
+      return;
+    }
+
     try {
       localStorage.setItem('gvcn_teachers', JSON.stringify(updated));
     } catch (e) {}

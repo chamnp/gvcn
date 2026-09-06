@@ -344,8 +344,8 @@ export default function LessonPlansPage() {
             <h1 className="text-xl sm:text-3xl font-black tracking-tight">
               E-Lesson Plan Studio Lớp {classInfo.name} (Khối 4)
             </h1>
-            <p className="text-xs sm:text-sm text-blue-200 font-medium">
-              Mỗi tiết học có sẵn giáo án chuẩn mực 4 bước, slide TV tương tác, AI tự động soạn bài và 1-Click xuất Word (.doc).
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Mỗi tiết học có sẵn giáo án chuẩn mực 4 bước, slide TV tương tác, tự động soạn bài theo mẫu chuẩn CV 2345 và 1-Click xuất Word (.doc).
             </p>
           </div>
 
@@ -491,7 +491,7 @@ export default function LessonPlansPage() {
           {[
             { id: 'WEEK_SCHEDULE', label: `📅 Lịch Dạy Tuần ${selectedWeek} (${weekPlans.length})` },
             { id: 'LIBRARY', label: `📚 Thư Viện Bài Dạy Khối 4 (${plans.length})` },
-            { id: 'AI_STUDIO', label: '✨ AI Soạn Bài Mới (CV 2345)' },
+            { id: 'AI_STUDIO', label: '✨ Soạn Bài Mới Theo Mẫu (CV 2345)' },
             { id: 'IMPORT_EXPORT', label: '🌐 Chia Sẻ & Xuất / Nhập' },
           ].map((tab) => (
             <button
@@ -710,7 +710,7 @@ export default function LessonPlansPage() {
                   Tuần {selectedWeek} chưa có kế hoạch bài dạy nào
                 </h3>
                 <p className="text-xs text-slate-500 max-w-md mx-auto">
-                  Bạn có thể dùng Trợ lý AI để tự động soạn trọn gói giáo án & slide TV chỉ trong 1 click.
+                  Bạn có thể dùng Trình tạo kế hoạch bài dạy để tự động tạo trọn gói giáo án & slide TV theo mẫu chuẩn CV 2345.
                 </p>
               </div>
 
@@ -723,7 +723,7 @@ export default function LessonPlansPage() {
                 className="inline-flex items-center space-x-1.5 px-5 py-2.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-black text-xs shadow-md cursor-pointer transition-all"
               >
                 <Sparkles className="w-4 h-4" />
-                <span>AI Soạn Bài Cho Tuần {selectedWeek}</span>
+                <span>Soạn Bài Theo Mẫu Cho Tuần {selectedWeek}</span>
               </button>
             </div>
           )}
@@ -896,13 +896,13 @@ export default function LessonPlansPage() {
             <div className="space-y-1 border-b border-slate-100 pb-4">
               <div className="inline-flex items-center space-x-1.5 text-xs font-black text-purple-700 bg-purple-50 px-3 py-1 rounded-full border border-purple-200">
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>AI Lesson Plan Generator</span>
+                <span>Lesson Plan Template Generator (CV 2345)</span>
               </div>
               <h3 className="text-lg font-black text-slate-900">
-                Tự Động Soạn Giáo Án & Slide TV Chuẩn Công Văn 2345
+                Tự Động Soạn Giáo Án & Slide TV Theo Mẫu Chuẩn Công Văn 2345
               </h3>
               <p className="text-xs text-slate-500">
-                Nhập tên bài học hoặc chọn bài từ khung chương trình Khối 4 để AI tạo trọn gói 4 pha sư phạm và bộ slide TV trực quan.
+                Nhập tên bài học hoặc chọn bài từ khung chương trình Khối 4 để tạo trọn gói 4 pha sư phạm và bộ slide TV trực quan theo mẫu chuẩn.
               </p>
             </div>
 
@@ -973,7 +973,7 @@ export default function LessonPlansPage() {
                 className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-black text-sm shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center space-x-2"
               >
                 <Zap className="w-4 h-4" />
-                <span>⚡ TỰ ĐỘNG SOẠN GIÁO ÁN & SLIDE TV NGAY</span>
+                <span>⚡ TẠO GIÁO ÁN & SLIDE TV THEO MẪU CV 2345</span>
               </button>
             </div>
           </div>
