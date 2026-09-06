@@ -354,7 +354,7 @@ export default function UnauthorizedPage() {
               </span>
             </div>
 
-            {/* Submit & Cancel Buttons */}
+            {/* Submit & Cancel & Logout Buttons */}
             <div className="flex flex-col sm:flex-row items-center gap-2 pt-2">
               <button
                 type="submit"
@@ -383,6 +383,16 @@ export default function UnauthorizedPage() {
                   Quay Lại
                 </button>
               )}
+
+              <button
+                type="button"
+                onClick={handleSignOut}
+                className="w-full sm:w-auto inline-flex items-center justify-center space-x-1.5 bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-700 font-bold text-xs py-3 px-4 rounded-xl border border-slate-200 hover:border-rose-200 transition-colors cursor-pointer"
+                title="Đăng xuất khỏi hệ thống để đổi tài khoản"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Đăng Xuất</span>
+              </button>
             </div>
           </form>
         ) : (
@@ -490,12 +500,24 @@ export default function UnauthorizedPage() {
           </div>
         )}
 
-        {/* Demo Mode Link */}
-        <div className="pt-2 border-t border-slate-100 flex items-center justify-center text-xs">
-          <span className="text-slate-400">Muốn dùng thử tính năng trước khi duyệt?</span>
-          <Link href="/demo" className="ml-1.5 font-bold text-indigo-600 hover:underline">
-            Xem Bản Demo Mẫu →
-          </Link>
+        {/* Demo Mode & Account Switcher Footer */}
+        <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
+          <div className="flex items-center space-x-1.5 text-[11px]">
+            <span>Đang đăng nhập:</span>
+            <span className="font-semibold text-slate-800 font-mono truncate max-w-[180px]">{user?.email}</span>
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="text-rose-600 hover:text-rose-800 font-bold hover:underline cursor-pointer"
+            >
+              (Đăng xuất)
+            </button>
+          </div>
+          <div>
+            <Link href="/demo" className="font-bold text-indigo-600 hover:underline text-[11px]">
+              Xem Bản Demo Mẫu →
+            </Link>
+          </div>
         </div>
       </div>
     </div>
