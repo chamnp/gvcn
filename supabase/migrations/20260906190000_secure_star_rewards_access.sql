@@ -361,7 +361,7 @@ begin
     'products', coalesce((select jsonb_agg(to_jsonb(p)) from public."RewardProduct" p where p."classId" is null or p."classId" = v_student."classId"), '[]'::jsonb),
     'redemptions', coalesce((select jsonb_agg(to_jsonb(r)) from public."RewardRedemption" r where r."studentId" = v_student.id and r."classId" = v_student."classId"), '[]'::jsonb),
     'homeworks', coalesce((select jsonb_agg(to_jsonb(h)) from public."HomeworkAssignment" h where h."classId" = v_student."classId"), '[]'::jsonb),
-    'customSubjects', coalesce((select jsonb_agg(to_jsonb(s)) from public."CustomSubject" s where s."classId" is null or s."classId" = v_student."classId"), '[]'::jsonb),
+    'customSubjects', coalesce((select jsonb_agg(to_jsonb(s)) from public."CustomSubject" s), '[]'::jsonb),
     'timetable', coalesce((select jsonb_agg(to_jsonb(t)) from public."TimetableSlot" t where t."classId" = v_student."classId"), '[]'::jsonb),
     'events', coalesce((select jsonb_agg(to_jsonb(e)) from public."ClassEvent" e where e."classId" = v_student."classId"), '[]'::jsonb),
     'leaveRequests', coalesce((select jsonb_agg(to_jsonb(l)) from public."LeaveRequest" l where l."studentId" = v_student.id), '[]'::jsonb),
