@@ -12,7 +12,7 @@
 
 import readline from 'readline';
 
-const API_URL = process.env.GVCN_API_URL || 'https://gvcn-eta.vercel.app/api/mcp';
+const API_URL = process.env.GVCN_API_URL || 'https://www.gvcn.pro.vn/api/mcp';
 const API_KEY = process.env.GVCN_API_KEY || 'gvcn_pat_demo_teacher_2026_pro';
 
 process.stderr.write(`[gvcn-mcp] Server starting...\n`);

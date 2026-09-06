@@ -161,7 +161,7 @@ export async function fetchTeacherDriveFiles(
       type: 'POWERPOINT',
       thumbnailLink: 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=300&auto=format&fit=crop&q=80',
       webViewLink: 'https://onedrive.live.com/view.aspx?resid=khoahoc4',
-      embedUrl: 'https://view.officeapps.live.com/op/embed.aspx?src=https%3A%2F%2Fgvcn-eta.vercel.app%2Fsamples%2Fkhoahoc4.pptx',
+      embedUrl: 'https://view.officeapps.live.com/op/embed.aspx?src=https%3A%2F%2Fwww.gvcn.pro.vn%2Fsamples%2Fkhoahoc4.pptx',
       modifiedTime: new Date(Date.now() - 3600000 * 24).toISOString(),
       size: '5.1 MB',
     },

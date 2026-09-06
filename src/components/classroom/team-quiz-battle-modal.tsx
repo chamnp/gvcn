@@ -29,6 +29,8 @@ import {
 } from "lucide-react";
 import { Student, QuizPack, QuizQuestion, QuizTeam, GradeLevel } from "@/types";
 import { useAppStore } from "@/lib/store";
+import { useAuth } from "@/lib/auth-context";
+import { loadClassroomToolConfig, saveClassroomToolConfig } from "@/lib/classroom-tool-config";
 import { DEFAULT_QUIZ_PACKS } from "@/lib/quiz-bank";
 import { getLocalDateString } from "@/lib/tt27-engine";
 import confetti from "canvas-confetti";
@@ -58,13 +60,15 @@ export function TeamQuizBattleModal({
   students,
   className = "4A1",
 }: TeamQuizBattleModalProps) {
-  const { addStarLog } = useAppStore();
+  const { addStarLog, classInfo } = useAppStore();
+  const { user } = useAuth();
 
   // Game Configuration State
   const [numTeams, setNumTeams] = useState<number>(4);
   const [targetScore, setTargetScore] = useState<number>(5);
   const [selectedPackId, setSelectedPackId] = useState<string>(DEFAULT_QUIZ_PACKS[0].id);
   const [customPacks, setCustomPacks] = useState<QuizPack[]>([]);
+  const [configLoaded, setConfigLoaded] = useState(false);
   
   // Game Play State
   const [gameState, setGameState] = useState<"SETUP" | "PLAYING" | "FINISHED">("SETUP");
@@ -108,6 +112,34 @@ export function TeamQuizBattleModal({
     [allPacks, selectedPackId]
   );
   const currentQuestion: QuizQuestion | undefined = activePack.questions[currentQuestionIndex];
+
+  useEffect(() => {
+    if (!isOpen || !user?.email || !classInfo.id) return;
+    let active = true;
+    setConfigLoaded(false);
+    void loadClassroomToolConfig<{ customPacks: QuizPack[] }>(user.email, classInfo.id, 'TEAM_QUIZ')
+      .then((config) => {
+        if (active) setCustomPacks(config?.customPacks || []);
+      })
+      .catch((error) => {
+        console.error('Không thể tải bộ câu hỏi trò chơi:', error);
+        toast.error('Không thể tải bộ câu hỏi tùy chỉnh từ máy chủ.');
+      })
+      .finally(() => {
+        if (active) setConfigLoaded(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, [isOpen, user?.email, classInfo.id]);
+
+  useEffect(() => {
+    if (!configLoaded || !user?.email || !classInfo.id) return;
+    void saveClassroomToolConfig(user.email, classInfo.id, 'TEAM_QUIZ', { customPacks }).catch((error) => {
+      console.error('Không thể lưu bộ câu hỏi trò chơi:', error);
+      toast.error('Không thể lưu bộ câu hỏi tùy chỉnh lên máy chủ.');
+    });
+  }, [configLoaded, customPacks, user?.email, classInfo.id]);
 
   // Sync fullscreen state with browser native events
   useEffect(() => {
@@ -361,7 +393,7 @@ export function TeamQuizBattleModal({
     toast.success(`Đã cộng +${starAmount} Sao thi đua cho ${teamStudents.length} học sinh thuộc ${winningTeam.name}! 🌟`);
   };
 
-  // AI Quiz Generator
+  // Bộ tạo câu hỏi nhanh theo mẫu sư phạm
   const handleGenerateAIQuiz = async () => {
     if (!aiTopic.trim()) {
       toast.error("Vui lòng nhập tên bài học hoặc chủ đề cần tạo câu hỏi!");
@@ -440,8 +472,8 @@ export function TeamQuizBattleModal({
 
       const newPack: QuizPack = {
         id: `pack-ai-${Date.now()}`,
-        title: `AI: ${aiTopic} (Lớp ${aiGrade})`,
-        description: `Gói câu hỏi tương tác nhanh được AI sinh tự động theo chủ đề "${aiTopic}".`,
+        title: `Mẫu nhanh: ${aiTopic} (Lớp ${aiGrade})`,
+        description: `Gói câu hỏi tương tác nhanh theo mẫu sư phạm cho chủ đề "${aiTopic}".`,
         subjectCode: 'TONG_HOP',
         grade: aiGrade,
         category: 'TRIVIA_LOGIC',
@@ -453,9 +485,9 @@ export function TeamQuizBattleModal({
       setSelectedPackId(newPack.id);
       setIsAiModalOpen(false);
       setAiTopic('');
-      toast.success(`Đã dùng AI tạo thành công bộ 5 câu hỏi về "${aiTopic}"!`);
+      toast.success(`Đã tạo và lưu bộ 5 câu hỏi mẫu về "${aiTopic}"!`);
     } catch (e) {
-      toast.error('Có lỗi xảy ra khi tạo câu hỏi AI');
+      toast.error('Có lỗi xảy ra khi tạo câu hỏi mẫu');
     } finally {
       setIsAiGenerating(false);
     }
@@ -626,7 +658,7 @@ export function TeamQuizBattleModal({
                       className="inline-flex items-center space-x-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white px-3 py-1.5 rounded-xl text-xs font-bold shadow-xs transition-all cursor-pointer"
                     >
                       <Sparkles className="w-3.5 h-3.5" />
-                      <span>⚡ AI Tạo Câu Hỏi Theo Bài</span>
+                      <span>⚡ Tạo Câu Hỏi Mẫu Theo Bài</span>
                     </button>
                   </div>
 
@@ -927,7 +959,7 @@ export function TeamQuizBattleModal({
           </div>
         )}
 
-        {/* AI GENERATOR MODAL OVERLAY */}
+        {/* TEMPLATE GENERATOR MODAL OVERLAY */}
         {isAiModalOpen && (
           <div
             className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-slate-950/80 backdrop-blur-sm animate-in fade-in"
@@ -940,7 +972,7 @@ export function TeamQuizBattleModal({
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <h4 className="font-black text-sm text-indigo-300 flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-purple-400" />
-                  <span>AI Sinh Câu Hỏi Tức Thì Theo Bài Học</span>
+                  <span>Tạo Câu Hỏi Mẫu Theo Bài Học</span>
                 </h4>
                 <button
                   type="button"

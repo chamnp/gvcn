@@ -2,8 +2,13 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
-  const origin = 'https://gvcn-eta.vercel.app';
+export async function GET(req?: Request) {
+  let origin = 'https://www.gvcn.pro.vn';
+  if (req?.headers) {
+    const host = req.headers.get('x-forwarded-host') || req.headers.get('host');
+    const proto = req.headers.get('x-forwarded-proto') || 'https';
+    if (host) origin = `${proto}://${host}`;
+  }
 
   const openApiSpec = {
     openapi: '3.1.0',

@@ -76,7 +76,8 @@ export function ZaloMessageGeneratorModal({ isOpen, onClose }: ZaloMessageGenera
       .filter((l) => l.studentId === student.id)
       .reduce((sum, l) => sum + l.points, 0);
 
-    const lookupUrl = `https://gvcn-eta.vercel.app/student/${student.shareToken || student.id}`;
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.gvcn.pro.vn';
+    const lookupUrl = `${origin}/student/${student.shareToken || student.id}`;
 
     if (selectedTemplate === "TERM_ASSESSMENT") {
       // Periodic assessment report

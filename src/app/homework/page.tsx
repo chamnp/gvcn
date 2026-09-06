@@ -153,7 +153,7 @@ export default function HomeworkPage() {
   const shareToken = classInfo.shareToken || 'c4a1-8f92a4';
   const publicPortalUrl = typeof window !== 'undefined'
     ? `${window.location.origin}/hw/${shareToken}`
-    : `https://gvcn-eta.vercel.app/hw/${shareToken}`;
+    : `https://www.gvcn.pro.vn/hw/${shareToken}`;
 
   // QR Code Image API
   const qrCodeImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(publicPortalUrl)}`;

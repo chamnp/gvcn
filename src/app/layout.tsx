@@ -21,6 +21,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://www.gvcn.pro.vn'),
   title: 'GVCN Pro - Quản lý Lớp học & Đánh giá Học sinh Tiểu học (TT27)',
   description: 'Phần mềm trợ lý toàn diện cho Giáo viên Chủ nhiệm Tiểu học theo Thông tư 27/2020/TT-BGDĐT',
   manifest: '/manifest.json',

@@ -1072,7 +1072,7 @@ export default function SettingsPage() {
 
               <div className="bg-white/80 p-2.5 rounded-xl border border-blue-100 flex items-center justify-between text-xs font-mono">
                 <span className="text-slate-600 truncate">
-                  {typeof window !== 'undefined' ? `${window.location.origin}/hw/${classInfo.shareToken || 'c4a1-8f92a4'}` : `https://gvcn-eta.vercel.app/hw/${classInfo.shareToken || 'c4a1-8f92a4'}`}
+                  {typeof window !== 'undefined' ? `${window.location.origin}/hw/${classInfo.shareToken || 'c4a1-8f92a4'}` : `https://www.gvcn.pro.vn/hw/${classInfo.shareToken || 'c4a1-8f92a4'}`}
                 </span>
                 <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full ml-2 shrink-0">
                   Mã: {classInfo.shareToken || 'c4a1-8f92a4'}
@@ -1779,15 +1779,15 @@ export default function SettingsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-white/10 text-xs">
               <div className="bg-white/10 rounded-2xl p-3 border border-white/15">
                 <span className="text-[10px] text-emerald-300 font-bold block uppercase">Plugin Package (Skill + MCP):</span>
-                <code className="text-xs text-white font-mono font-bold select-all">https://gvcn-eta.vercel.app/api/plugin</code>
+                <code className="text-xs text-white font-mono font-bold select-all">https://www.gvcn.pro.vn/api/plugin</code>
               </div>
               <div className="bg-white/10 rounded-2xl p-3 border border-white/15">
                 <span className="text-[10px] text-teal-300 font-bold block uppercase">OpenAPI 3.1 Spec (ChatGPT Actions):</span>
-                <code className="text-xs text-white font-mono font-bold select-all">https://gvcn-eta.vercel.app/api/v1/openapi.json</code>
+                <code className="text-xs text-white font-mono font-bold select-all">https://www.gvcn.pro.vn/api/v1/openapi.json</code>
               </div>
               <div className="bg-white/10 rounded-2xl p-3 border border-white/15">
                 <span className="text-[10px] text-blue-300 font-bold block uppercase">MCP Endpoint (JSON-RPC 2.0 / SSE):</span>
-                <code className="text-xs text-white font-mono font-bold select-all">https://gvcn-eta.vercel.app/api/mcp</code>
+                <code className="text-xs text-white font-mono font-bold select-all">https://www.gvcn.pro.vn/api/mcp</code>
               </div>
             </div>
           </div>
@@ -1917,7 +1917,7 @@ export default function SettingsPage() {
                       mcpServers: {
                         'gvcn-pro': {
                           command: 'npx',
-                          args: ['-y', 'mcp-remote', `https://gvcn-eta.vercel.app/api/mcp?key=${activeKey}`],
+                          args: ['-y', 'mcp-remote', `https://www.gvcn.pro.vn/api/mcp?key=${activeKey}`],
                         },
                       },
                     },
@@ -1953,7 +1953,7 @@ export default function SettingsPage() {
                 type="button"
                 onClick={() => {
                   const activeKey = apiKeys.find((k) => k.isActive)?.key || 'gvcn_pat_YOUR_KEY';
-                  const snippet = `Endpoint: https://gvcn-eta.vercel.app/api/mcp\nAuthorization: Bearer ${activeKey}`;
+                  const snippet = `Endpoint: https://www.gvcn.pro.vn/api/mcp\nAuthorization: Bearer ${activeKey}`;
                   navigator.clipboard.writeText(snippet);
                   toast.success('Đã sao chép Endpoint & Token cho Gemini!');
                 }}
@@ -1983,7 +1983,7 @@ export default function SettingsPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    navigator.clipboard.writeText('https://gvcn-eta.vercel.app/api/v1/openapi.json');
+                    navigator.clipboard.writeText('https://www.gvcn.pro.vn/api/v1/openapi.json');
                     toast.success('Đã sao chép OpenAPI Schema URL cho ChatGPT!');
                   }}
                   className="w-full py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors cursor-pointer flex items-center justify-center space-x-1.5"
@@ -2030,7 +2030,7 @@ Quy tắc sư phạm:
                 type="button"
                 onClick={() => {
                   const activeKey = apiKeys.find((k) => k.isActive)?.key || 'gvcn_pat_YOUR_KEY';
-                  navigator.clipboard.writeText(`https://gvcn-eta.vercel.app/api/mcp?key=${activeKey}`);
+                  navigator.clipboard.writeText(`https://www.gvcn.pro.vn/api/mcp?key=${activeKey}`);
                   toast.success('Đã sao chép MCP URL cho Cursor!');
                 }}
                 className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition-colors cursor-pointer flex items-center justify-center space-x-1.5"

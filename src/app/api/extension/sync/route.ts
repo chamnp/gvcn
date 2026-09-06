@@ -6,7 +6,8 @@ export const dynamic = 'force-dynamic';
 
 function corsHeaders(req: NextRequest): Record<string, string> {
   const origin = req.headers.get('origin') || '';
-  const configured = (process.env.EXTENSION_ALLOWED_ORIGINS || 'https://gvcn-eta.vercel.app')
+  const defaultOrigins = 'https://www.gvcn.pro.vn,https://gvcn.pro.vn,https://gvcn-eta.vercel.app,http://localhost:3000';
+  const configured = (process.env.EXTENSION_ALLOWED_ORIGINS || defaultOrigins)
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean);

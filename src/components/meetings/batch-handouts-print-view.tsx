@@ -30,7 +30,7 @@ export function BatchHandoutsPrintView({
   onBack,
 }: BatchHandoutsPrintViewProps) {
   const { subjectAssessments, traitAssessments, getStudentStars } = useAppStore();
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://gvcn-eta.vercel.app';
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.gvcn.pro.vn';
   const subjects = getSubjectsForGrade(classInfo.grade);
   const currentTerm: TermType =
     meeting.meetingType === 'DAU_NAM'

@@ -408,7 +408,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e) {}
     const origin = typeof window !== 'undefined' && window.location.origin
       ? window.location.origin
-      : 'https://gvcn-eta.vercel.app';
+      : 'https://www.gvcn.pro.vn';
     const redirectTo = `${origin}/login`;
 
     const res = await supabase.auth.signInWithOAuth({
@@ -431,7 +431,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e) {}
     const origin = typeof window !== 'undefined' && window.location.origin
       ? window.location.origin
-      : 'https://gvcn-eta.vercel.app';
+      : 'https://www.gvcn.pro.vn';
     const redirectTo = `${origin}/lesson-plans?gdrive=connected`;
 
     const res = await supabase.auth.signInWithOAuth({
@@ -492,7 +492,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e) {}
     const origin = typeof window !== 'undefined' && window.location.origin
       ? window.location.origin
-      : 'https://gvcn-eta.vercel.app';
+      : 'https://www.gvcn.pro.vn';
     const res = await supabase.auth.signInWithOtp({
       email,
       options: {

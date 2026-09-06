@@ -331,7 +331,7 @@ export default function ParentMeetingsPage() {
 
   // 1-Click Send Zalo to Parent
   const handleSendZaloSingle = (student: Student) => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://gvcn-eta.vercel.app';
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.gvcn.pro.vn';
     const token = student.shareToken || student.id;
     const studentUrl = `${origin}/student/${token}`;
     const defPin = getDefaultPinForStudent(student);

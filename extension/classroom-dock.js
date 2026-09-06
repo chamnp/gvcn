@@ -8,6 +8,7 @@
   // Prevent duplicate injection or running on GVCN Pro main web app
   if (document.getElementById('gvcn-classroom-dock-host')) return;
   if (
+    window.location.hostname.includes('gvcn.pro.vn') ||
     window.location.hostname.includes('gvcn-eta.vercel.app') ||
     window.location.hostname === 'localhost' ||
     window.location.hostname === '127.0.0.1'

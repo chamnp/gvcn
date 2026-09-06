@@ -29,7 +29,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## 4. Vercel Deployment & Workflow
 - Team ID: `team_2yh3CpurkFhBq4AK3croKlxd` | Project ID: `prj_WRY7j9gepdqOFQPN3ygnmwD60Mz2`
-- Production URL: `https://gvcn-eta.vercel.app`
+- Production URL: `https://www.gvcn.pro.vn` (Alias: `https://gvcn-eta.vercel.app`)
 - GitHub Repo: `https://github.com/chamnp/gvcn` (Branch `main`)
 - **Required Workflow for every change**:
   1. `npm run build` (Must pass with 0 errors).

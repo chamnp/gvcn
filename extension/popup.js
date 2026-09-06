@@ -101,7 +101,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 2. Event Listeners for Login Flow
   btnLoginGoogle.addEventListener('click', () => {
-    chrome.tabs.create({ url: 'https://gvcn-eta.vercel.app/login?source=chrome_extension' });
+    chrome.tabs.create({ url: 'https://www.gvcn.pro.vn/login?source=chrome_extension' });
   });
 
   btnLoginWebSync.addEventListener('click', () => {
@@ -180,7 +180,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   btnUpdateExtension.addEventListener('click', async () => {
     const { extensionUpdateInfo } = await chrome.storage.local.get('extensionUpdateInfo');
-    const downloadUrl = extensionUpdateInfo?.downloadUrl || 'https://gvcn-eta.vercel.app/downloads/gvcn-pro-extension.zip';
+    const downloadUrl = extensionUpdateInfo?.downloadUrl || 'https://www.gvcn.pro.vn/downloads/gvcn-pro-extension.zip';
     chrome.tabs.create({ url: downloadUrl });
   });
 

@@ -101,7 +101,7 @@ export function getRemotePairingUrl(sessionCode: string): string {
   if (typeof window !== 'undefined') {
     return `${window.location.origin}/remote?s=${encodeURIComponent(sessionCode)}`;
   }
-  return `https://gvcn-eta.vercel.app/remote?s=${encodeURIComponent(sessionCode)}`;
+  return `https://www.gvcn.pro.vn/remote?s=${encodeURIComponent(sessionCode)}`;
 }
 
 // Local Haptic Feedback on Phone

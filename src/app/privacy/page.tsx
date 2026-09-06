@@ -55,8 +55,8 @@ export default function PrivacyPolicyPage() {
             </h2>
             <p>
               Chào mừng bạn đến với <strong>GVCN Pro</strong> (gọi tắt là &quot;Ứng dụng&quot;, &quot;Hệ thống&quot; hoặc &quot;chúng tôi&quot;), tại địa chỉ trang web chính thức:{' '}
-              <a href="https://gvcn-eta.vercel.app" className="text-blue-600 font-bold underline" target="_blank" rel="noopener noreferrer">
-                https://gvcn-eta.vercel.app
+              <a href="https://www.gvcn.pro.vn" className="text-blue-600 font-bold underline" target="_blank" rel="noopener noreferrer">
+                https://www.gvcn.pro.vn
               </a>.
             </p>
             <p>
@@ -231,8 +231,8 @@ export default function PrivacyPolicyPage() {
                 </a>
               </p>
               <p>• <strong>Trang web ứng dụng:</strong>{' '}
-                <a href="https://gvcn-eta.vercel.app" className="text-blue-600 font-bold underline" target="_blank" rel="noopener noreferrer">
-                  https://gvcn-eta.vercel.app
+                <a href="https://www.gvcn.pro.vn" className="text-blue-600 font-bold underline" target="_blank" rel="noopener noreferrer">
+                  https://www.gvcn.pro.vn
                 </a>
               </p>
               <p>• <strong>Địa chỉ:</strong> Hà Nội, Việt Nam</p>

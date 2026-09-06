@@ -290,7 +290,7 @@ export default function StudentsPage() {
 
   // Export Excel for Parent Links & PINs
   const handleExportShareLinksExcel = () => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://gvcn-eta.vercel.app';
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.gvcn.pro.vn';
     const headers = ['STT', 'Mã HS', 'Họ và Tên', 'Ngày Sinh', 'Mật Khẩu Mặc Định (DDMM)', 'Trạng Thái', 'SĐT Phụ Huynh', 'Liên Kết Bí Mật Tra Cứu'];
     const rows = students.map((s, i) => {
       const defPin = getDefaultPinForStudent(s);
@@ -324,7 +324,7 @@ export default function StudentsPage() {
 
   // Copy Group Zalo Broadcast Message
   const handleCopyZaloGroupMessage = () => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://gvcn-eta.vercel.app';
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.gvcn.pro.vn';
     const lookupUrl = `${origin}/lookup`;
 
     const text = `📢 [THÔNG BÁO TRA CỨU PHIẾU BÁO ĐIỂM & NHẬN XÉT HỌC SINH - LỚP ${classInfo.name}]\n` +
@@ -345,7 +345,7 @@ export default function StudentsPage() {
 
   // 1-Click Send Zalo to Individual Parent
   const handleSendZaloSingle = (student: Student) => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://gvcn-eta.vercel.app';
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.gvcn.pro.vn';
     const token = student.shareToken || student.id;
     const studentUrl = `${origin}/student/${token}`;
     const defPin = getDefaultPinForStudent(student);
@@ -1076,7 +1076,7 @@ export default function StudentsPage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {students.map((st) => {
-                  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://gvcn-eta.vercel.app';
+                  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.gvcn.pro.vn';
                   const token = st.shareToken || st.id;
                   const link = `${origin}/student/${token}`;
                   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(link)}`;

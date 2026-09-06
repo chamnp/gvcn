@@ -18,9 +18,9 @@ export async function GET() {
       '👥 Chia nhóm ngẫu nhiên thần tốc (nhóm 4, nhóm 6, 2 đội thi đua).',
       '🔄 Cơ chế tự động kiểm tra và cập nhật phiên bản mới.'
     ],
-    downloadUrl: 'https://gvcn-eta.vercel.app/downloads/gvcn-pro-extension.zip',
-    updateXmlUrl: 'https://gvcn-eta.vercel.app/api/extension/updates.xml',
-    docsUrl: 'https://gvcn-eta.vercel.app/settings'
+    downloadUrl: 'https://www.gvcn.pro.vn/downloads/gvcn-pro-extension.zip',
+    updateXmlUrl: 'https://www.gvcn.pro.vn/api/extension/updates.xml',
+    docsUrl: 'https://www.gvcn.pro.vn/settings'
   };
 
   return NextResponse.json(versionData, {

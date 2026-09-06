@@ -7,7 +7,7 @@
   },
   "servers": [
     {
-      "url": "https://gvcn-eta.vercel.app",
+      "url": "https://www.gvcn.pro.vn",
       "description": "GVCN Pro Production Server"
     }
   ],

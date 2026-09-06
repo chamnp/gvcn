@@ -402,7 +402,7 @@ export default function TimetablePage() {
 
   // Secure Parent Link Helpers
   const shareToken = classInfo.shareToken || 'c4a1-8f92a4';
-  const parentPublicUrl = typeof window !== 'undefined' ? `${window.location.origin}/hw/${shareToken}` : `https://gvcn-eta.vercel.app/hw/${shareToken}`;
+  const parentPublicUrl = typeof window !== 'undefined' ? `${window.location.origin}/hw/${shareToken}` : `https://www.gvcn.pro.vn/hw/${shareToken}`;
 
   const handleCopyParentLink = () => {
     const text = `Kính gửi quý phụ huynh Lớp ${classInfo.name},\nĐây là liên kết tra cứu thời khóa biểu và bài tập về nhà của các con:\n🔗 ${parentPublicUrl}\n(Liên kết bảo mật riêng của lớp, không cần đăng nhập).`;

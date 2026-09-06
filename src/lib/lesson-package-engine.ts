@@ -103,7 +103,7 @@ export function encodeLessonPlanToShareUrl(plan: LessonPlan, baseUrl?: string): 
   const jsonStr = JSON.stringify(pkg);
   const compressed = LZString.compressToEncodedURIComponent(jsonStr);
 
-  const origin = baseUrl || (typeof window !== 'undefined' ? window.location.origin : 'https://gvcn-eta.vercel.app');
+  const origin = baseUrl || (typeof window !== 'undefined' ? window.location.origin : 'https://www.gvcn.pro.vn');
   return `${origin}/lesson-plans?pkg=${compressed}`;
 }
 

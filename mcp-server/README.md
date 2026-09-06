@@ -21,7 +21,7 @@ Thêm cấu hình `mcpServers` sau:
       "args": ["/Users/chamnp/workspace/selfprod/gvcn/mcp-server/index.mjs"],
       "env": {
         "GVCN_API_KEY": "gvcn_pat_demo_teacher_2026_pro",
-        "GVCN_API_URL": "https://gvcn-eta.vercel.app/api/mcp"
+        "GVCN_API_URL": "https://www.gvcn.pro.vn/api/mcp"
       }
     }
   }
@@ -37,7 +37,7 @@ Thêm cấu hình `mcpServers` sau:
       "args": [
         "-y",
         "mcp-remote",
-        "https://gvcn-eta.vercel.app/api/mcp?key=gvcn_pat_demo_teacher_2026_pro"
+        "https://www.gvcn.pro.vn/api/mcp?key=gvcn_pat_demo_teacher_2026_pro"
       ]
     }
   }
@@ -61,7 +61,7 @@ Khởi động lại Claude Desktop. Bạn sẽ thấy biểu tượng chiếc b
    - Bấm **Import from URL**.
    - Dán URL sau:
      ```
-     https://gvcn-eta.vercel.app/api/v1/openapi.json
+     https://www.gvcn.pro.vn/api/v1/openapi.json
      ```
    - ChatGPT sẽ tự động nạp toàn bộ danh sách 10 API endpoints sư phạm.
 5. Tại mục **Authentication**:
@@ -93,7 +93,7 @@ Trong dự án của bạn, tạo hoặc chỉnh sửa file `.cursor/mcp.json`:
       "args": ["/Users/chamnp/workspace/selfprod/gvcn/mcp-server/index.mjs"],
       "env": {
         "GVCN_API_KEY": "gvcn_pat_demo_teacher_2026_pro",
-        "GVCN_API_URL": "https://gvcn-eta.vercel.app/api/mcp"
+        "GVCN_API_URL": "https://www.gvcn.pro.vn/api/mcp"
       }
     }
   }

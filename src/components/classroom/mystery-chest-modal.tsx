@@ -37,6 +37,7 @@ import {
 } from '@/lib/mystery-chest-bank';
 import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
+import { loadClassroomToolConfig, saveClassroomToolConfig } from '@/lib/classroom-tool-config';
 
 interface MysteryChestModalProps {
   isOpen: boolean;
@@ -53,19 +54,15 @@ export function MysteryChestModal({
   className = '4A1',
   students,
 }: MysteryChestModalProps) {
-  const { addStarLog } = useAppStore();
+  const { addStarLog, classInfo } = useAppStore();
   const { user } = useAuth();
   const containerRef = useRef<HTMLDivElement>(null);
-
-  // Storage key based on teacher's email for profile isolation
-  const teacherEmail = user?.email?.toLowerCase().trim() || 'default';
-  const STORAGE_KEY_CUSTOM_PACKS = `gvcn_chest_custom_packs_${teacherEmail}`;
-  const STORAGE_KEY_SETTINGS = `gvcn_chest_settings_${teacherEmail}`;
 
   // Game Settings State
   const [boxCount, setBoxCount] = useState<number>(6);
   const [selectedPackId, setSelectedPackId] = useState<string>(DEFAULT_CHEST_PACKS[0].id);
   const [customPacks, setCustomPacks] = useState<MysteryChestPack[]>([]);
+  const [configLoaded, setConfigLoaded] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -99,37 +96,55 @@ export function MysteryChestModal({
     [allPacks, selectedPackId]
   );
 
-  // Load custom packs and saved settings from localStorage
+  // Load custom packs and settings from Supabase.
   useEffect(() => {
-    try {
-      const savedPacks = localStorage.getItem(STORAGE_KEY_CUSTOM_PACKS);
-      if (savedPacks) {
-        setCustomPacks(JSON.parse(savedPacks));
-      }
-      const savedSettings = localStorage.getItem(STORAGE_KEY_SETTINGS);
-      if (savedSettings) {
-        const parsed = JSON.parse(savedSettings);
-        if (parsed.boxCount) setBoxCount(parsed.boxCount);
-        if (parsed.selectedPackId) setSelectedPackId(parsed.selectedPackId);
-        if (parsed.soundEnabled !== undefined) setSoundEnabled(parsed.soundEnabled);
-      }
-    } catch (e) {
-      console.warn('Failed to load mystery chest settings from localStorage', e);
-    }
-  }, [STORAGE_KEY_CUSTOM_PACKS, STORAGE_KEY_SETTINGS]);
+    if (!isOpen || !user?.email || !classInfo.id) return;
+    let active = true;
+    setConfigLoaded(false);
+    void loadClassroomToolConfig<{
+      customPacks: MysteryChestPack[];
+      settings?: { boxCount?: number; selectedPackId?: string; soundEnabled?: boolean };
+    }>(user.email, classInfo.id, 'MYSTERY_CHEST')
+      .then((config) => {
+        if (!active) return;
+        setCustomPacks(config?.customPacks || []);
+        if (config?.settings?.boxCount) setBoxCount(config.settings.boxCount);
+        if (config?.settings?.selectedPackId) setSelectedPackId(config.settings.selectedPackId);
+        if (config?.settings?.soundEnabled !== undefined) setSoundEnabled(config.settings.soundEnabled);
+      })
+      .catch((error) => {
+        console.error('Không thể tải cấu hình hộp quà:', error);
+        toast.error('Không thể tải cấu hình hộp quà từ máy chủ.');
+      })
+      .finally(() => {
+        if (active) setConfigLoaded(true);
+      });
+    return () => {
+      active = false;
+    };
+  }, [isOpen, user?.email, classInfo.id]);
+
+  useEffect(() => {
+    if (!configLoaded || !user?.email || !classInfo.id) return;
+    void saveClassroomToolConfig(user.email, classInfo.id, 'MYSTERY_CHEST', {
+      customPacks,
+      settings: { boxCount, selectedPackId, soundEnabled },
+    }).catch((error) => {
+      console.error('Không thể lưu cấu hình hộp quà:', error);
+      toast.error('Không thể lưu cấu hình hộp quà lên máy chủ.');
+    });
+  }, [configLoaded, customPacks, boxCount, selectedPackId, soundEnabled, user?.email, classInfo.id]);
 
   // Persist settings changes
   const saveSettings = (newCount: number, newPackId: string, newSound: boolean) => {
-    try {
-      localStorage.setItem(
-        STORAGE_KEY_SETTINGS,
-        JSON.stringify({
-          boxCount: newCount,
-          selectedPackId: newPackId,
-          soundEnabled: newSound,
-        })
-      );
-    } catch (e) {}
+    if (!user?.email || !classInfo.id) return;
+    void saveClassroomToolConfig(user.email, classInfo.id, 'MYSTERY_CHEST', {
+      customPacks,
+      settings: { boxCount: newCount, selectedPackId: newPackId, soundEnabled: newSound },
+    }).catch((error) => {
+      console.error('Không thể lưu cài đặt hộp quà:', error);
+      toast.error('Không thể lưu cài đặt hộp quà lên máy chủ.');
+    });
   };
 
   // Re-generate board items when pack or count changes
@@ -402,7 +417,6 @@ export function MysteryChestModal({
     const updated = [...customPacks, newPack];
     setCustomPacks(updated);
     setSelectedPackId(newPack.id);
-    localStorage.setItem(STORAGE_KEY_CUSTOM_PACKS, JSON.stringify(updated));
     toast.success('Đã tạo bộ hộp quà mới! Cô có thể chỉnh sửa nội dung bên dưới.');
     setConfigTab('EDITOR');
   };
@@ -411,7 +425,6 @@ export function MysteryChestModal({
     if (!activePack.isCustom) return;
     const updated = customPacks.map((p) => (p.id === activePack.id ? { ...p, [field]: val } : p));
     setCustomPacks(updated);
-    localStorage.setItem(STORAGE_KEY_CUSTOM_PACKS, JSON.stringify(updated));
   };
 
   const handleSaveItemEdit = (item: MysteryChestItem) => {
@@ -428,7 +441,6 @@ export function MysteryChestModal({
       p.id === activePack.id ? { ...p, items: updatedItems } : p
     );
     setCustomPacks(updatedPacks);
-    localStorage.setItem(STORAGE_KEY_CUSTOM_PACKS, JSON.stringify(updatedPacks));
 
     // Also update board
     setChestItems(getItemsForChestCount({ ...activePack, items: updatedItems }, boxCount));
@@ -447,7 +459,6 @@ export function MysteryChestModal({
       p.id === activePack.id ? { ...p, items: updatedItems } : p
     );
     setCustomPacks(updatedPacks);
-    localStorage.setItem(STORAGE_KEY_CUSTOM_PACKS, JSON.stringify(updatedPacks));
     setChestItems(getItemsForChestCount({ ...activePack, items: updatedItems }, boxCount));
     setIsNewItemModalOpen(false);
     toast.success('Đã thêm hộp quà mới vào bộ!');
@@ -464,7 +475,6 @@ export function MysteryChestModal({
       p.id === activePack.id ? { ...p, items: updatedItems } : p
     );
     setCustomPacks(updatedPacks);
-    localStorage.setItem(STORAGE_KEY_CUSTOM_PACKS, JSON.stringify(updatedPacks));
     setChestItems(getItemsForChestCount({ ...activePack, items: updatedItems }, boxCount));
     toast.info('Đã xoá hộp quà khỏi bộ.');
   };
@@ -493,7 +503,6 @@ export function MysteryChestModal({
           const importedCustom = parsed.filter((p: any) => p.isCustom);
           const combined = [...customPacks, ...importedCustom];
           setCustomPacks(combined);
-          localStorage.setItem(STORAGE_KEY_CUSTOM_PACKS, JSON.stringify(combined));
           toast.success(`Đã nạp thành công ${importedCustom.length} bộ hộp quà tuỳ chỉnh!`);
         } else {
           toast.error('File không đúng định dạng mẫu hộp quà!');

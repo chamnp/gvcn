@@ -7,10 +7,10 @@
   "author": {
     "name": "GVCN Pro Team",
     "email": "anhnnh4@gmail.com",
-    "url": "https://gvcn-eta.vercel.app"
+    "url": "https://www.gvcn.pro.vn"
   },
-  "icon": "https://gvcn-eta.vercel.app/app-icon.jpg",
-  "homepage": "https://gvcn-eta.vercel.app",
+  "icon": "https://www.gvcn.pro.vn/app-icon.jpg",
+  "homepage": "https://www.gvcn.pro.vn",
   "license": "MIT",
   "components": {
     "skill": {
@@ -32,20 +32,20 @@
         "command": "node",
         "args": ["mcp/index.mjs"],
         "env": {
-          "GVCN_API_URL": "https://gvcn-eta.vercel.app/api/mcp",
+          "GVCN_API_URL": "https://www.gvcn.pro.vn/api/mcp",
           "GVCN_API_KEY": "${GVCN_API_KEY}"
         }
       },
       "remote": {
-        "url": "https://gvcn-eta.vercel.app/api/mcp",
+        "url": "https://www.gvcn.pro.vn/api/mcp",
         "transport": "http-post"
       },
       "toolsCount": 16
     },
     "chatgpt": {
       "type": "custom-action",
-      "openapi": "https://gvcn-eta.vercel.app/api/v1/openapi.json",
-      "manifest": "https://gvcn-eta.vercel.app/.well-known/ai-plugin.json",
+      "openapi": "https://www.gvcn.pro.vn/api/v1/openapi.json",
+      "manifest": "https://www.gvcn.pro.vn/.well-known/ai-plugin.json",
       "instructions": "chatgpt/instructions.md"
     }
   },

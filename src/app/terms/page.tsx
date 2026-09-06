@@ -55,8 +55,8 @@ export default function TermsOfServicePage() {
             </h2>
             <p>
               Bằng việc đăng ký tài khoản, đăng nhập hoặc sử dụng bất kỳ tính năng nào của hệ thống <strong>GVCN Pro</strong> tại địa chỉ{' '}
-              <a href="https://gvcn-eta.vercel.app" className="text-blue-600 font-bold underline" target="_blank" rel="noopener noreferrer">
-                https://gvcn-eta.vercel.app
+              <a href="https://www.gvcn.pro.vn" className="text-blue-600 font-bold underline" target="_blank" rel="noopener noreferrer">
+                https://www.gvcn.pro.vn
               </a>
               , bạn đồng ý tuân theo và chịu sự ràng buộc bởi các Điều khoản dịch vụ này cùng Chính sách quyền riêng tư của chúng tôi.
             </p>
@@ -119,8 +119,8 @@ export default function TermsOfServicePage() {
                 </a>
               </p>
               <p>• <strong>Website:</strong>{' '}
-                <a href="https://gvcn-eta.vercel.app" className="text-blue-600 font-bold underline" target="_blank" rel="noopener noreferrer">
-                  https://gvcn-eta.vercel.app
+                <a href="https://www.gvcn.pro.vn" className="text-blue-600 font-bold underline" target="_blank" rel="noopener noreferrer">
+                  https://www.gvcn.pro.vn
                 </a>
               </p>
             </div>

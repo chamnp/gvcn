@@ -3,7 +3,7 @@
  * Manages Authentication, Data Synchronization, Cross-Context Messaging & Automatic Updates
  */
 
-const DEFAULT_API_URL = 'https://gvcn-eta.vercel.app';
+const DEFAULT_API_URL = 'https://www.gvcn.pro.vn';
 const DEMO_API_KEY = 'gvcn_pat_demo_teacher_2026_pro';
 
 // 1. Install & Initialize
@@ -307,7 +307,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'loginWebSync') {
     (async () => {
       const tabs = await chrome.tabs.query({
-        url: ['https://gvcn-eta.vercel.app/*', 'http://localhost:3000/*']
+        url: ['https://www.gvcn.pro.vn/*', 'https://gvcn.pro.vn/*', 'https://gvcn-eta.vercel.app/*', 'http://localhost:3000/*']
       });
 
       if (tabs.length > 0) {
@@ -318,7 +318,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         const syncRes = await syncClassData('4A1');
         sendResponse({ success: true, message: 'Đã đồng bộ thành công từ phiên GVCN Pro Web!', data: syncRes.data });
       } else {
-        const newTab = await chrome.tabs.create({ url: 'https://gvcn-eta.vercel.app/login?source=chrome_extension' });
+        const newTab = await chrome.tabs.create({ url: 'https://www.gvcn.pro.vn/login?source=chrome_extension' });
         sendResponse({ success: true, pendingTabId: newTab.id, message: 'Đang mở trang đăng nhập GVCN Pro...' });
       }
     })();
