@@ -2,11 +2,40 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  getCompletedAttendanceDates,
   getIsoDateRange,
+  getUnrecordedStudentIds,
   mergeAttendanceByDay,
   paginate,
   summarizeAttendance,
 } from '../src/lib/attendance-utils.ts';
+
+test('closing a day only selects students without an existing attendance record', () => {
+  const existing = [
+    { studentId: 'leave-1', date: '2026-09-07' },
+    { studentId: 'leave-2', date: '2026-09-07' },
+  ];
+
+  assert.deepEqual(
+    getUnrecordedStudentIds(existing, ['present-1', 'leave-1', 'present-2', 'leave-2'], '2026-09-07'),
+    ['present-1', 'present-2']
+  );
+});
+
+test('monthly attendance only includes dates closed for the whole class', () => {
+  const records = [
+    { studentId: 's1', date: '2026-09-07', status: 'CO_MAT', hasBoardingMeal: true },
+    { studentId: 's2', date: '2026-09-07', status: 'VANG_CO_PHEP', hasBoardingMeal: false },
+    { studentId: 's1', date: '2026-09-08', status: 'CO_MAT', hasBoardingMeal: true },
+  ];
+  const completedDates = getCompletedAttendanceDates(records, ['s1', 's2'], '2026-09');
+
+  assert.deepEqual(completedDates, ['2026-09-07']);
+  assert.equal(
+    summarizeAttendance(records.filter((record) => record.studentId === 's1'), '2026-09', new Set(completedDates)).tracked,
+    1
+  );
+});
 
 test('approved leave expands to every calendar date in its range', () => {
   assert.deepEqual(getIsoDateRange('2026-09-29', '2026-10-02'), [

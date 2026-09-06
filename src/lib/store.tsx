@@ -93,7 +93,12 @@ import {
 } from './feature-flags';
 import { useAuth } from './auth-context';
 import { supabase } from './supabase';
-import { getIsoDateRange, isSameAttendanceDay, mergeAttendanceByDay } from './attendance-utils';
+import {
+  getIsoDateRange,
+  getUnrecordedStudentIds,
+  isSameAttendanceDay,
+  mergeAttendanceByDay,
+} from './attendance-utils';
 import { toast } from 'sonner';
 
 export function getDefaultPinForStudent(student?: { dateOfBirth?: string }): string {
@@ -255,6 +260,7 @@ interface AppContextType {
     reason?: string
   ) => void;
   batchSetAttendance: (date: string, status: AttendanceStatus) => void;
+  clearAttendanceDate: (date: string) => void;
 
   // Star / Reward & Daily Assessment Actions
   addStarLog: (
@@ -3186,15 +3192,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const previousRecords = attendances.filter(
       (record) => record.date === date && studentIds.has(record.studentId)
     );
-    const previousByStudent = new Map(previousRecords.map((record) => [record.studentId, record]));
-    const optimisticRecords: DailyAttendance[] = students.map((student) => ({
-      id: previousByStudent.get(student.id)?.id || `att-${student.id}-${date}`,
-      studentId: student.id,
-      date,
-      status,
-      hasBoardingMeal: student.isBoarding && status === 'CO_MAT',
-      reason: '',
-    }));
+    const unrecordedStudentIds = new Set(
+      getUnrecordedStudentIds(previousRecords, [...studentIds], date)
+    );
+    const optimisticRecords: DailyAttendance[] = students
+      .filter((student) => unrecordedStudentIds.has(student.id))
+      .map((student) => ({
+        id: `att-${student.id}-${date}`,
+        studentId: student.id,
+        date,
+        status,
+        hasBoardingMeal: student.isBoarding && status === 'CO_MAT',
+        reason: '',
+      }));
+    if (optimisticRecords.length === 0) return;
 
     setAttendances((current) => optimisticRecords.reduce(
       (next, record) => mergeAttendanceByDay(next, record),
@@ -3210,6 +3221,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return [...withoutBatch, ...previousRecords];
       }),
       'Không thể lưu điểm danh cả lớp'
+    );
+  };
+
+  const clearAttendanceDate = (date: string) => {
+    const studentIds = new Set(students.map((student) => student.id));
+    if (studentIds.size === 0) return;
+    const previousRecords = attendances.filter(
+      (record) => record.date === date && studentIds.has(record.studentId)
+    );
+    if (previousRecords.length === 0) return;
+
+    setAttendances((current) => current.filter(
+      (record) => record.date !== date || !studentIds.has(record.studentId)
+    ));
+
+    void handleDbMutation(
+      supabase
+        .from('DailyAttendance')
+        .delete()
+        .eq('date', date)
+        .in('studentId', [...studentIds]),
+      () => setAttendances((current) => previousRecords.reduce(
+        (next, record) => mergeAttendanceByDay(next, record),
+        current
+      )),
+      'Không thể đặt ngày này là ngày nghỉ'
     );
   };
 
@@ -4658,6 +4695,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         recalculateAllAwards,
         updateAttendance,
         batchSetAttendance,
+        clearAttendanceDate,
         addStarLog,
         deleteStarLog,
         getStudentStars,

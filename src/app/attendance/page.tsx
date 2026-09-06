@@ -16,7 +16,7 @@ import {
 import { useAppStore } from '@/lib/store';
 import { AttendanceStatus } from '@/types';
 import { getLocalDateString } from '@/lib/tt27-engine';
-import { paginate, summarizeAttendance } from '@/lib/attendance-utils';
+import { getCompletedAttendanceDates, paginate, summarizeAttendance } from '@/lib/attendance-utils';
 import { toast } from 'sonner';
 
 const PAGE_SIZE_STORAGE_KEY = 'gvcn_pro_attendance_page_size';
@@ -99,6 +99,7 @@ export default function AttendancePage() {
     attendances,
     updateAttendance,
     batchSetAttendance,
+    clearAttendanceDate,
     classInfo,
     leaveRequests,
     approveLeaveRequest,
@@ -159,6 +160,20 @@ export default function AttendancePage() {
   }, [dailySearch, dailyStatusFilter, dayAttendances, mealFilter]);
   const dailyPagination = paginate(filteredDayAttendances, dailyPage, pageSize);
 
+  const monthlyCoverage = useMemo(() => {
+    const studentIds = students.map((student) => student.id);
+    const studentIdSet = new Set(studentIds);
+    const monthRecords = attendances.filter(
+      (record) => studentIdSet.has(record.studentId) && record.date.startsWith(`${selectedMonth}-`)
+    );
+    const completedDates = getCompletedAttendanceDates(monthRecords, studentIds, selectedMonth);
+    const completedDateSet = new Set(completedDates);
+    const partialDates = [...new Set(monthRecords.map((record) => record.date))]
+      .filter((date) => !completedDateSet.has(date))
+      .sort();
+    return { completedDates, completedDateSet, partialDates };
+  }, [attendances, selectedMonth, students]);
+
   const monthlyRows = useMemo(() => {
     const query = monthlySearch.trim().toLocaleLowerCase('vi');
     return students
@@ -169,10 +184,11 @@ export default function AttendancePage() {
         student,
         summary: summarizeAttendance(
           attendances.filter((record) => record.studentId === student.id),
-          selectedMonth
+          selectedMonth,
+          monthlyCoverage.completedDateSet
         ),
       }));
-  }, [attendances, monthlySearch, selectedMonth, students]);
+  }, [attendances, monthlyCoverage.completedDateSet, monthlySearch, selectedMonth, students]);
   const monthlyPagination = paginate(monthlyRows, monthlyPage, pageSize);
 
   const handleStatusChange = (studentId: string, status: AttendanceStatus) => {
@@ -192,8 +208,21 @@ export default function AttendancePage() {
   };
 
   const handleBatchPresent = () => {
+    const unrecordedCount = students.length - recordedCount;
+    if (unrecordedCount === 0) {
+      toast.info('Ngày này đã được chốt đầy đủ.');
+      return;
+    }
     batchSetAttendance(selectedDate, 'CO_MAT');
-    toast.success('Đã điểm danh tất cả học sinh CÓ MẶT!');
+    toast.success(`Đã chốt Có mặt cho ${unrecordedCount} học sinh chưa có dữ liệu; các trạng thái đã nhập được giữ nguyên.`);
+  };
+
+  const handleMarkDayOff = () => {
+    if (recordedCount === 0) return;
+    const displayDate = selectedDate.split('-').reverse().join('/');
+    if (!window.confirm(`Đặt ngày ${displayDate} là ngày nghỉ và xóa ${recordedCount} bản ghi điểm danh của lớp?`)) return;
+    clearAttendanceDate(selectedDate);
+    toast.success(`Đã đặt ngày ${displayDate} là ngày nghỉ; ngày này sẽ không tính chuyên cần.`);
   };
 
   // Sao chép báo cáo bán trú gửi Zalo Nhà bếp / Ban Giám Hiệu
@@ -253,7 +282,13 @@ ${absentList ? `\nDanh sách học sinh vắng:\n${absentList}` : '\n(Cả lớp
                 <span>📊 Bảng Tổng Hợp Chuyên Cần & Bán Trú Theo Tháng</span>
               </h3>
               <p className="text-xs text-slate-500">
-                Chỉ thống kê các ngày đã lưu trong tháng được chọn, không tự tạo số liệu mặc định.
+                Chỉ tính các ngày học đã chốt đủ cả lớp; ngày nghỉ và dữ liệu mặc định chưa lưu không tính chuyên cần.
+              </p>
+              <p className="mt-1 text-[11px] font-bold text-emerald-700">
+                Đã chốt {monthlyCoverage.completedDates.length} ngày học
+                {monthlyCoverage.partialDates.length > 0 && (
+                  <span className="ml-2 text-amber-700">· {monthlyCoverage.partialDates.length} ngày chưa chốt đủ</span>
+                )}
               </p>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">
@@ -375,10 +410,21 @@ ${absentList ? `\nDanh sách học sinh vắng:\n${absentList}` : '\n(Cả lớp
 
               <button
                 onClick={handleBatchPresent}
+                disabled={recordedCount === students.length}
                 className="w-full sm:w-auto inline-flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer"
               >
                 <CheckCircle2 className="w-4 h-4" />
-                <span>Có mặt tất cả</span>
+                <span>Chốt ngày học ({students.length - recordedCount} chưa lưu)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleMarkDayOff}
+                disabled={recordedCount === 0}
+                className="w-full sm:w-auto inline-flex items-center space-x-1.5 rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-xs transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <XCircle className="w-4 h-4" />
+                <span>Đặt là ngày nghỉ</span>
               </button>
 
               <button

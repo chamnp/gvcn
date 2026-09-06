@@ -35,9 +35,12 @@ export function mergeAttendanceByDay<T extends AttendanceRecordLike>(records: T[
 
 export function summarizeAttendance(
   records: Array<Pick<AttendanceRecordLike, 'date' | 'status' | 'hasBoardingMeal'>>,
-  selectedMonth: string
+  selectedMonth: string,
+  includedDates?: ReadonlySet<string>
 ): AttendanceSummary {
-  const monthRecords = records.filter((record) => record.date.startsWith(`${selectedMonth}-`));
+  const monthRecords = records.filter(
+    (record) => record.date.startsWith(`${selectedMonth}-`) && (!includedDates || includedDates.has(record.date))
+  );
   const present = monthRecords.filter((record) => record.status === 'CO_MAT').length;
   const excused = monthRecords.filter((record) => record.status === 'VANG_CO_PHEP').length;
   const unexcused = monthRecords.filter((record) => record.status === 'VANG_KHONG_PHEP').length;
@@ -56,6 +59,42 @@ export function summarizeAttendance(
     tracked,
     attendanceRate: tracked > 0 ? Math.round(((present + late) / tracked) * 100) : null,
   };
+}
+
+export function getCompletedAttendanceDates(
+  records: Array<Pick<AttendanceRecordLike, 'studentId' | 'date'>>,
+  studentIds: string[],
+  selectedMonth: string
+): string[] {
+  const expectedStudents = new Set(studentIds);
+  if (expectedStudents.size === 0) return [];
+
+  const studentsByDate = new Map<string, Set<string>>();
+  records.forEach((record) => {
+    if (!record.date.startsWith(`${selectedMonth}-`) || !record.studentId || !expectedStudents.has(record.studentId)) return;
+    const studentsForDate = studentsByDate.get(record.date) || new Set<string>();
+    studentsForDate.add(record.studentId);
+    studentsByDate.set(record.date, studentsForDate);
+  });
+
+  return [...studentsByDate.entries()]
+    .filter(([, recordedStudents]) => recordedStudents.size === expectedStudents.size)
+    .map(([date]) => date)
+    .sort();
+}
+
+export function getUnrecordedStudentIds(
+  records: Array<Pick<AttendanceRecordLike, 'studentId' | 'date'>>,
+  studentIds: string[],
+  date: string
+): string[] {
+  const recordedStudentIds = new Set(
+    records
+      .filter((record) => record.date === date)
+      .map((record) => record.studentId)
+      .filter((studentId): studentId is string => Boolean(studentId))
+  );
+  return studentIds.filter((studentId) => !recordedStudentIds.has(studentId));
 }
 
 export function paginate<T>(items: T[], requestedPage: number, pageSize: number) {
