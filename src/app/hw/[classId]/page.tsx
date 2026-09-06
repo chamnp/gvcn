@@ -34,7 +34,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
-import { getSubjectTheme, DAYS_OF_WEEK, PERIODS } from '@/lib/timetable-data';
+import { getSubjectTheme, DAYS_OF_WEEK } from '@/lib/timetable-data';
 import { getLocalDateString } from '@/lib/tt27-engine';
 import { DayOfWeek, ClassEvent, ClassEventType, Student } from '@/types';
 import { LeaveRequestModal } from '@/components/parent/leave-request-modal';
@@ -94,6 +94,7 @@ export default function PublicClassHomeworkPortal({
     allClassEvents,
     allStudents,
     starLogs,
+    periods,
   } = useAppStore();
 
   // Find class strictly matching shareToken or classId
@@ -824,7 +825,7 @@ export default function PublicClassHomeworkPortal({
 
                 {/* Day Schedule List */}
                 <div className="space-y-2">
-                  {PERIODS.map((p) => {
+                  {periods.map((p) => {
                     const slot = timetable.find(
                       (s) => s.day === selectedTimetableDay && s.period === p.period && (s.classId) === currentClass.id
                     );

@@ -46,7 +46,7 @@ import {
   calculateEvaluationProgress,
   validateTT27Assessments,
 } from '@/lib/tt27-engine';
-import { DAYS_OF_WEEK, PERIODS, getSubjectTheme } from '@/lib/timetable-data';
+import { DAYS_OF_WEEK, getSubjectTheme } from '@/lib/timetable-data';
 import { DayOfWeek, ClassEvent, ClassEventType } from '@/types';
 import { ProgressMeterWidget } from '@/components/assessment/progress-meter-widget';
 import { EarlyInterventionWidget } from '@/components/dashboard/early-intervention-widget';
@@ -106,6 +106,7 @@ export default function DashboardPage() {
     attendances,
     starLogs,
     timetable,
+    periods,
     classEvents,
     addClassEvent,
     deleteClassEvent,
@@ -932,7 +933,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="space-y-2 text-xs">
-              {PERIODS.slice(0, 5).map((p) => {
+              {periods.slice(0, 5).map((p) => {
                 const slot = timetable.find((s) => s.day === todayDayOfWeek && s.period === p.period);
                 const theme = slot ? getSubjectTheme(slot.subjectCode) : null;
 

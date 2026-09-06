@@ -27,11 +27,70 @@ export interface AuthenticatedTeacherContext {
 // Generate a secure Personal Access Token (PAT)
 export function generatePersonalAccessToken(): string {
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
   let token = 'gvcn_pat_';
-  for (let i = 0; i < 32; i++) {
-    token += chars.charAt(Math.floor(Math.random() * chars.length));
+  for (const byte of bytes) {
+    token += chars.charAt(byte % chars.length);
   }
   return token;
+}
+
+const unauthenticated = (error: string): AuthenticatedTeacherContext => ({
+  isAuthenticated: false,
+  teacherEmail: '',
+  teacherName: '',
+  classId: '',
+  className: '',
+  role: '',
+  error,
+});
+
+async function resolveTeacherContext(
+  email: string,
+  fallbackClassId?: string
+): Promise<AuthenticatedTeacherContext> {
+  const { data: teacher, error: teacherError } = await supabase
+    .from('Teacher')
+    .select('*')
+    .eq('email', email.toLowerCase())
+    .maybeSingle();
+
+  if (teacherError) {
+    return unauthenticated(`Không thể xác minh hồ sơ giáo viên: ${teacherError.message}`);
+  }
+  if (!teacher || teacher.isActive === false || teacher.role === 'PENDING') {
+    return unauthenticated('Tài khoản chưa được cấp quyền hoặc đã bị vô hiệu hóa.');
+  }
+
+  const assignedClassId = fallbackClassId || teacher.assignedClassId || '';
+  const assignedClassName = teacher.assignedClassName?.replace(/^Lớp\s+/i, '').trim() || '';
+  let classId = assignedClassId;
+  let className = assignedClassName;
+
+  if (assignedClassId || assignedClassName) {
+    let classQuery = supabase.from('Class').select('id, name');
+    classQuery = assignedClassId
+      ? classQuery.eq('id', assignedClassId)
+      : classQuery.eq('name', assignedClassName);
+    const { data: classRecord, error: classError } = await classQuery.maybeSingle();
+    if (classError) {
+      return unauthenticated(`Không thể xác minh lớp được phân công: ${classError.message}`);
+    }
+    if (classRecord) {
+      classId = classRecord.id;
+      className = classRecord.name;
+    }
+  }
+
+  return {
+    isAuthenticated: true,
+    teacherEmail: teacher.email,
+    teacherName: teacher.fullName || teacher.email,
+    classId,
+    className,
+    role: teacher.role,
+  };
 }
 
 // Validate token from Authorization Header or query param
@@ -41,16 +100,8 @@ export async function authenticateMcpRequest(
 ): Promise<AuthenticatedTeacherContext> {
   const rawToken = authHeader?.replace(/^Bearer\s+/i, '').trim() || queryKey?.trim();
 
-  // Fallback for default demo / testing if no token provided or demo token
-  if (!rawToken || rawToken.startsWith('gvcn_pat_demo') || rawToken === 'demo') {
-    return {
-      isAuthenticated: true,
-      teacherEmail: 'anhnnh4@gmail.com',
-      teacherName: 'Cô Nguyễn Ngọc Ánh (Admin)',
-      classId: 'demo-class',
-      className: '4A1',
-      role: 'ADMIN',
-    };
+  if (!rawToken) {
+    return unauthenticated('Thiếu khóa API hoặc access token.');
   }
 
   try {
@@ -63,76 +114,40 @@ export async function authenticateMcpRequest(
         .eq('isActive', true)
         .maybeSingle();
 
-      if (!keyErr && keyRecord) {
-        // Update lastUsedAt asynchronously
-        supabase
+      if (keyErr) {
+        return unauthenticated(`Không thể xác minh khóa API: ${keyErr.message}`);
+      }
+
+      if (keyRecord) {
+        if (keyRecord.expiresAt && new Date(keyRecord.expiresAt).getTime() <= Date.now()) {
+          return unauthenticated('Khóa API đã hết hạn.');
+        }
+
+        void supabase
           .from('ApiKey')
           .update({ lastUsedAt: new Date().toISOString() })
           .eq('id', keyRecord.id)
-          .then();
+          .then(({ error }) => {
+            if (error) console.warn('Không thể cập nhật thời điểm sử dụng khóa API:', error.message);
+          });
 
-        return {
-          isAuthenticated: true,
-          teacherEmail: keyRecord.teacherEmail,
-          teacherName: keyRecord.name || 'Giáo viên GVCN Pro',
-          classId: keyRecord.classId || 'demo-class',
-          className: '4A1',
-          role: 'TEACHER',
-        };
+        return resolveTeacherContext(keyRecord.teacherEmail, keyRecord.classId);
       }
+
+      return unauthenticated('Khóa API không hợp lệ hoặc đã bị thu hồi.');
     }
 
     // 2. Check if token is a Supabase JWT Session Token
     const { data: userData, error: userErr } = await supabase.auth.getUser(rawToken);
     if (!userErr && userData?.user) {
-      const email = userData.user.email || 'teacher@gvcn.edu.vn';
-      const { data: teacherProfile } = await supabase
-        .from('Teacher')
-        .select('*')
-        .eq('email', email)
-        .maybeSingle();
-
-      return {
-        isAuthenticated: true,
-        teacherEmail: email,
-        teacherName: teacherProfile?.fullName || email,
-        classId: teacherProfile?.assignedClassName || 'demo-class',
-        className: teacherProfile?.assignedClassName || '4A1',
-        role: teacherProfile?.role || 'TEACHER',
-      };
+      const email = userData.user.email;
+      if (!email) return unauthenticated('Tài khoản không có địa chỉ email hợp lệ.');
+      return resolveTeacherContext(email);
     }
 
-    // 3. If token starts with gvcn_pat_ but not in db, allow demo access for smooth trial
-    if (rawToken.startsWith('gvcn_pat_')) {
-      return {
-        isAuthenticated: true,
-        teacherEmail: 'anhnnh4@gmail.com',
-        teacherName: 'Cô Nguyễn Ngọc Ánh (GVCN 4A1)',
-        classId: 'demo-class',
-        className: '4A1',
-        role: 'ADMIN_TEACHER',
-      };
-    }
-
-    return {
-      isAuthenticated: false,
-      teacherEmail: '',
-      teacherName: '',
-      classId: '',
-      className: '',
-      role: '',
-      error: 'Khóa API không hợp lệ hoặc đã hết hạn. Vui lòng kiểm tra lại.',
-    };
+    return unauthenticated('Khóa API không hợp lệ hoặc đã hết hạn. Vui lòng kiểm tra lại.');
   } catch (err: any) {
-    return {
-      isAuthenticated: false,
-      teacherEmail: '',
-      teacherName: '',
-      classId: '',
-      className: '',
-      role: '',
-      error: err?.message || 'Lỗi xác thực khóa MCP.',
-    };
+    return unauthenticated(err?.message || 'Lỗi xác thực khóa MCP.');
   }
 }
 
@@ -152,15 +167,14 @@ export async function createApiKeyRecord(
     name,
     teacherEmail,
     teacherId,
-    classId: classId || 'demo-class',
+    classId,
     isActive: true,
     createdAt: new Date().toISOString(),
   };
 
   const { error } = await supabase.from('ApiKey').insert(record);
   if (error) {
-    // If Supabase table is not reachable, return locally
-    return { keyRecord: record };
+    return { error: `Không thể lưu khóa API: ${error.message}` };
   }
 
   return { keyRecord: record };

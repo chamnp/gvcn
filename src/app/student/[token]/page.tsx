@@ -46,7 +46,7 @@ import {
 } from 'lucide-react';
 import { useAppStore, getDefaultPinForStudent } from '@/lib/store';
 import { TERMS, PRIMARY_SUBJECTS, TRAIT_DEFINITIONS, getLocalDateString } from '@/lib/tt27-engine';
-import { getSubjectTheme, DAYS_OF_WEEK, PERIODS } from '@/lib/timetable-data';
+import { getSubjectTheme, DAYS_OF_WEEK } from '@/lib/timetable-data';
 import { TermType, DayOfWeek, ClassEvent, RewardProduct, RedemptionItem } from '@/types';
 import { supabase } from '@/lib/supabase';
 import { LeaveRequestModal } from '@/components/parent/leave-request-modal';
@@ -117,6 +117,7 @@ export default function StudentPrivateReportPage({
     updateStudentSecurity,
     leaveRequests,
     conferenceSlots,
+    periods,
   } = useAppStore();
 
   // Find student strictly by shareToken, id, or studentCode (Mã định danh)
@@ -1356,7 +1357,7 @@ export default function StudentPrivateReportPage({
             </div>
 
             <div className="space-y-2">
-              {PERIODS.map((p) => {
+              {periods.map((p) => {
                 const slot = timetable.find(
                   (s) => s.day === selectedTimetableDay && s.period === p.period && s.classId === studentClass.id
                 );

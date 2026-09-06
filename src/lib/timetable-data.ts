@@ -21,18 +21,92 @@ export interface PeriodInfo {
   name: string;
 }
 
-export const PERIODS: PeriodInfo[] = [
-  // Buổi Sáng
-  { period: 1, session: 'MORNING', time: '07:45 - 08:20', name: 'Tiết 1' },
-  { period: 2, session: 'MORNING', time: '08:25 - 09:00', name: 'Tiết 2' },
-  { period: 3, session: 'MORNING', time: '09:20 - 09:55', name: 'Tiết 3' },
-  { period: 4, session: 'MORNING', time: '10:00 - 10:35', name: 'Tiết 4' },
+export interface TimetableScheduleConfig {
+  morningStartTime: string;        // e.g. "07:45" hoặc "07:15", "07:30"
+  afternoonStartTime: string;      // e.g. "14:00" hoặc "13:30"
+  periodDuration: number;          // Thời lượng mỗi tiết (phút), mặc định: 35
+  shortBreakDuration: number;      // Nghỉ giải lao giữa 2 tiết liền kề (phút), mặc định: 5
+  morningBigBreakDuration: number; // Ra chơi lớn sáng sau tiết 2 (phút), mặc định: 20
+  afternoonBigBreakDuration: number; // Ra chơi chiều sau tiết 6 (phút), mặc định: 15
+}
 
-  // Buổi Chiều
-  { period: 5, session: 'AFTERNOON', time: '14:00 - 14:35', name: 'Tiết 5' },
-  { period: 6, session: 'AFTERNOON', time: '14:40 - 15:15', name: 'Tiết 6' },
-  { period: 7, session: 'AFTERNOON', time: '15:30 - 16:05', name: 'Tiết 7' },
-];
+export const DEFAULT_SCHEDULE_CONFIG: TimetableScheduleConfig = {
+  morningStartTime: '07:45',
+  afternoonStartTime: '14:00',
+  periodDuration: 35,
+  shortBreakDuration: 5,
+  morningBigBreakDuration: 20,
+  afternoonBigBreakDuration: 15,
+};
+
+function parseTimeToMinutes(timeStr: string): number {
+  const [h, m] = (timeStr || '00:00').split(':').map(Number);
+  return (h || 0) * 60 + (m || 0);
+}
+
+function formatMinutesToTime(totalMinutes: number): string {
+  const h = Math.floor(totalMinutes / 60) % 24;
+  const m = totalMinutes % 60;
+  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+}
+
+export function calculatePeriods(config?: Partial<TimetableScheduleConfig>): PeriodInfo[] {
+  const cfg: TimetableScheduleConfig = {
+    ...DEFAULT_SCHEDULE_CONFIG,
+    ...(config || {}),
+  };
+
+  const periodDuration = Number(cfg.periodDuration) || 35;
+  const shortBreak = Number(cfg.shortBreakDuration) || 5;
+  const morningBigBreak = Number(cfg.morningBigBreakDuration) || 20;
+  const afternoonBigBreak = Number(cfg.afternoonBigBreakDuration) || 15;
+
+  // Buổi sáng: Tiết 1 - 4
+  let currentMins = parseTimeToMinutes(cfg.morningStartTime || '07:45');
+  const morningPeriods: PeriodInfo[] = [];
+
+  for (let p = 1; p <= 4; p++) {
+    const startMins = currentMins;
+    const endMins = startMins + periodDuration;
+    morningPeriods.push({
+      period: p,
+      session: 'MORNING',
+      name: `Tiết ${p}`,
+      time: `${formatMinutesToTime(startMins)} - ${formatMinutesToTime(endMins)}`,
+    });
+
+    if (p === 2) {
+      currentMins = endMins + morningBigBreak;
+    } else {
+      currentMins = endMins + shortBreak;
+    }
+  }
+
+  // Buổi chiều: Tiết 5 - 7
+  currentMins = parseTimeToMinutes(cfg.afternoonStartTime || '14:00');
+  const afternoonPeriods: PeriodInfo[] = [];
+
+  for (let p = 5; p <= 7; p++) {
+    const startMins = currentMins;
+    const endMins = startMins + periodDuration;
+    afternoonPeriods.push({
+      period: p,
+      session: 'AFTERNOON',
+      name: `Tiết ${p}`,
+      time: `${formatMinutesToTime(startMins)} - ${formatMinutesToTime(endMins)}`,
+    });
+
+    if (p === 6) {
+      currentMins = endMins + afternoonBigBreak;
+    } else {
+      currentMins = endMins + shortBreak;
+    }
+  }
+
+  return [...morningPeriods, ...afternoonPeriods];
+}
+
+export const PERIODS: PeriodInfo[] = calculatePeriods();
 
 export interface SubjectTheme {
   code: string;

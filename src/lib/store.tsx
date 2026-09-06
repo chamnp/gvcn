@@ -79,7 +79,14 @@ import {
   getCurrentTermByDate,
   getAcademicYearByDate,
 } from './tt27-engine';
-import { INITIAL_TIMETABLE, INITIAL_CUSTOM_SUBJECTS } from './timetable-data';
+import {
+  INITIAL_TIMETABLE,
+  INITIAL_CUSTOM_SUBJECTS,
+  PeriodInfo,
+  TimetableScheduleConfig,
+  DEFAULT_SCHEDULE_CONFIG,
+  calculatePeriods,
+} from './timetable-data';
 import { useAuth } from './auth-context';
 import { supabase } from './supabase';
 import { toast } from 'sonner';
@@ -138,6 +145,9 @@ interface AppContextType {
 
   // Timetable
   timetable: TimetableSlot[];
+  periods: PeriodInfo[];
+  timetableScheduleConfig: TimetableScheduleConfig;
+  updateTimetableScheduleConfig: (partial: Partial<TimetableScheduleConfig>) => void;
   updateTimetableSlot: (
     day: DayOfWeek,
     period: number,
@@ -714,6 +724,68 @@ export const INITIAL_BORROW_LOGS: BookBorrowLog[] = [
   },
 ];
 
+export function mergeWithTimestamp<T extends { id?: string; updatedAt?: string }>(
+  localItems: T[],
+  serverItems: T[],
+  keyFn?: (item: T) => string
+): { merged: T[]; itemsToSyncUp: T[] } {
+  const getKey = keyFn || ((item: T) => item.id || '');
+  const serverMap = new Map<string, T>();
+  for (const item of serverItems) {
+    const k = getKey(item);
+    if (k) serverMap.set(k, item);
+  }
+
+  const localMap = new Map<string, T>();
+  for (const item of localItems) {
+    const k = getKey(item);
+    if (k) localMap.set(k, item);
+  }
+
+  const itemsToSyncUp: T[] = [];
+  const merged: T[] = [];
+
+  for (const serverItem of serverItems) {
+    const key = getKey(serverItem);
+    const localItem = key ? localMap.get(key) : undefined;
+    if (!localItem) {
+      merged.push(serverItem);
+    } else {
+      const localTime = localItem.updatedAt ? new Date(localItem.updatedAt).getTime() : 0;
+      const serverTime = serverItem.updatedAt ? new Date(serverItem.updatedAt).getTime() : 0;
+      // Nếu local mới hơn server (ví dụ vừa nhập điểm offline), giữ local và xếp lịch sync bù lên server
+      if (localTime > serverTime) {
+        merged.push(localItem);
+        itemsToSyncUp.push(localItem);
+      } else {
+        merged.push(serverItem);
+      }
+    }
+  }
+
+  // Các bản ghi chỉ có ở local (được tạo lúc offline)
+  for (const localItem of localItems) {
+    const key = getKey(localItem);
+    if (key && !serverMap.has(key)) {
+      merged.push(localItem);
+      itemsToSyncUp.push(localItem);
+    }
+  }
+
+  return { merged, itemsToSyncUp };
+}
+
+export async function safeSupabaseUpsert(table: string, payload: any) {
+  try {
+    const { error } = await supabase.from(table).upsert(payload);
+    if (error) {
+      console.warn(`[Supabase Sync] Upsert ${table} failed:`, error.message);
+    }
+  } catch (err: any) {
+    console.warn(`[Supabase Sync] Network exception on ${table}:`, err?.message);
+  }
+}
+
 const STORAGE_PREFIX = 'gvcn_pro_';
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -743,6 +815,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [allTimetables, setAllTimetables] = useState<TimetableSlot[]>(
     INITIAL_TIMETABLE.map((t) => ({ ...t, classId: 'class-4a1' }))
   );
+  const [timetableScheduleConfig, setTimetableScheduleConfig] = useState<TimetableScheduleConfig>(DEFAULT_SCHEDULE_CONFIG);
+  const periods = useMemo(() => calculatePeriods(timetableScheduleConfig), [timetableScheduleConfig]);
   const [apiKey, setApiKeyState] = useState<string>('');
   const [aiConfig, setAiConfigState] = useState<AIConfig>(DEFAULT_AI_CONFIG);
   const [aiGenSettings, setAiGenSettingsState] = useState<AIGenerationSettings>(DEFAULT_AI_GEN_SETTINGS);
@@ -1093,6 +1167,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (savedTt) {
         try { const p = JSON.parse(savedTt); if (Array.isArray(p)) setAllTimetables(p); } catch (e) {}
       }
+      const savedScheduleConfig = localStorage.getItem(STORAGE_PREFIX + 'timetableScheduleConfig');
+      if (savedScheduleConfig) {
+        try {
+          const parsed = JSON.parse(savedScheduleConfig);
+          if (parsed && typeof parsed === 'object') {
+            setTimetableScheduleConfig((prev) => ({ ...prev, ...parsed }));
+          }
+        } catch (e) {}
+      }
       if (savedCs) {
         try { const p = JSON.parse(savedCs); if (Array.isArray(p)) setCustomSubjects(p); } catch (e) {}
       }
@@ -1284,6 +1367,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           if (dbSchool.aiGenSettings && typeof dbSchool.aiGenSettings === 'object') {
             setAiGenSettingsState(dbSchool.aiGenSettings);
           }
+
+          if (dbSchool.timetableConfig && typeof dbSchool.timetableConfig === 'object') {
+            setTimetableScheduleConfig((prev) => ({ ...prev, ...dbSchool.timetableConfig }));
+          }
         }
 
         if (dbTeacherConfigs && dbTeacherConfigs.length > 0) {
@@ -1324,28 +1411,59 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             customPin: st.customPin,
             isActivated: Boolean(st.isActivated),
             createdAt: st.createdAt,
+            updatedAt: st.updatedAt,
           }));
           setAllStudents((prev) => {
-            const dbIds = new Set(mappedStudents.map((s) => s.id));
-            const localOnly = prev.filter((s) => !dbIds.has(s.id));
-            return [...mappedStudents, ...localOnly];
+            const { merged, itemsToSyncUp } = mergeWithTimestamp(prev, mappedStudents);
+            if (itemsToSyncUp.length > 0) {
+              safeSupabaseUpsert('Student', itemsToSyncUp);
+            }
+            return merged;
           });
         }
 
         if (dbAssessments && dbAssessments.length > 0) {
-          setSubjectAssessments(dbAssessments);
+          setSubjectAssessments((prev) => {
+            const { merged, itemsToSyncUp } = mergeWithTimestamp(prev, dbAssessments);
+            if (itemsToSyncUp.length > 0) {
+              safeSupabaseUpsert('SubjectAssessment', itemsToSyncUp);
+            }
+            return merged;
+          });
         }
 
         if (dbTraits && dbTraits.length > 0) {
-          setTraitAssessments(dbTraits);
+          setTraitAssessments((prev) => {
+            const { merged, itemsToSyncUp } = mergeWithTimestamp(prev, dbTraits);
+            if (itemsToSyncUp.length > 0) {
+              safeSupabaseUpsert('TraitAssessment', itemsToSyncUp);
+            }
+            return merged;
+          });
         }
 
         if (dbSummaries && dbSummaries.length > 0) {
-          setTermSummaries(dbSummaries);
+          setTermSummaries((prev) => {
+            const { merged, itemsToSyncUp } = mergeWithTimestamp(
+              prev,
+              dbSummaries,
+              (s) => `${s.studentId}-${s.term}`
+            );
+            if (itemsToSyncUp.length > 0) {
+              safeSupabaseUpsert('TermSummary', itemsToSyncUp);
+            }
+            return merged;
+          });
         }
 
         if (dbAttendances && dbAttendances.length > 0) {
-          setAttendances(dbAttendances);
+          setAttendances((prev) => {
+            const { merged, itemsToSyncUp } = mergeWithTimestamp(prev, dbAttendances);
+            if (itemsToSyncUp.length > 0) {
+              safeSupabaseUpsert('DailyAttendance', itemsToSyncUp);
+            }
+            return merged;
+          });
         }
 
         if (dbStars && dbStars.length > 0) {
@@ -1381,21 +1499,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
         if (dbHomeworks && dbHomeworks.length > 0) {
           setAllHomeworks((prev) => {
-            const dbIds = new Set(dbHomeworks.map((h: any) => h.id));
-            const localOnly = prev.filter((h) => !dbIds.has(h.id));
-            return [...dbHomeworks, ...localOnly];
+            const { merged, itemsToSyncUp } = mergeWithTimestamp(prev, dbHomeworks);
+            if (itemsToSyncUp.length > 0) {
+              safeSupabaseUpsert('HomeworkAssignment', itemsToSyncUp);
+            }
+            return merged;
           });
         }
 
         if (dbTimetable && dbTimetable.length > 0) {
-          setAllTimetables(dbTimetable);
+          setAllTimetables((prev) => {
+            const { merged, itemsToSyncUp } = mergeWithTimestamp(
+              prev,
+              dbTimetable,
+              (item) => item.id || `slot-${item.classId}-${item.day}-${item.period}`
+            );
+            if (itemsToSyncUp.length > 0) {
+              safeSupabaseUpsert('TimetableSlot', itemsToSyncUp);
+            }
+            return merged;
+          });
         }
 
         if (dbEvents && dbEvents.length > 0) {
           setAllClassEvents((prev) => {
-            const dbIds = new Set(dbEvents.map((e: any) => e.id));
-            const localOnly = prev.filter((e) => !dbIds.has(e.id));
-            return [...dbEvents, ...localOnly];
+            const { merged, itemsToSyncUp } = mergeWithTimestamp(prev, dbEvents);
+            if (itemsToSyncUp.length > 0) {
+              safeSupabaseUpsert('ClassEvent', itemsToSyncUp);
+            }
+            return merged;
           });
         }
 
@@ -1906,6 +2038,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     safeSet(STORAGE_PREFIX + 'leaveRequests', JSON.stringify(leaveRequests));
     safeSet(STORAGE_PREFIX + 'classMoments', JSON.stringify(classMoments));
     safeSet(STORAGE_PREFIX + 'conferenceSlots', JSON.stringify(conferenceSlots));
+    safeSet(STORAGE_PREFIX + 'classEvents', JSON.stringify(allClassEvents));
+    safeSet(STORAGE_PREFIX + 'timetableScheduleConfig', JSON.stringify(timetableScheduleConfig));
     safeSet(STORAGE_PREFIX + 'apiKey', apiKey);
   }, [
     isLoaded,
@@ -1923,8 +2057,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     rewardProducts,
     rewardRedemptions,
     allTimetables,
+    timetableScheduleConfig,
     customSubjects,
     allHomeworks,
+    allClassEvents,
     formativeNotes,
     leaveRequests,
     classMoments,
@@ -2259,6 +2395,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const resetTimetableToStandard = () => {
     setTimetable(INITIAL_TIMETABLE.map((t) => ({ ...t, classId: activeClassId })));
+  };
+
+  const updateTimetableScheduleConfig = (partial: Partial<TimetableScheduleConfig>) => {
+    setTimetableScheduleConfig((prev) => {
+      const updated = { ...prev, ...partial };
+      try {
+        localStorage.setItem(STORAGE_PREFIX + 'timetableScheduleConfig', JSON.stringify(updated));
+      } catch (e) {}
+
+      supabase
+        .from('SchoolInfo')
+        .update({
+          timetableConfig: updated,
+          updatedAt: new Date().toISOString(),
+        })
+        .eq('id', schoolInfo.id || 'default')
+        .then(({ error }) => {
+          if (error) console.warn('[Supabase Sync] timetableConfig update error:', error.message);
+        });
+
+      return updated;
+    });
   };
 
   // STUDENT ACTIONS
@@ -3479,7 +3637,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const resetData = () => {
-    localStorage.clear();
+    try {
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith(STORAGE_PREFIX) || key.startsWith('gvcn_'))) {
+          if (!key.includes('auth-token') && !key.includes('gdrive') && !key.includes('google') && !key.includes('mock_email')) {
+            keysToRemove.push(key);
+          }
+        }
+      }
+      keysToRemove.forEach((k) => localStorage.removeItem(k));
+    } catch (e) {}
+
     setSchoolClasses(INITIAL_SCHOOL_CLASSES);
     setActiveClassId('class-4a1');
     setAllStudents(INITIAL_STUDENTS);
@@ -3491,6 +3661,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCustomSubjects(INITIAL_CUSTOM_SUBJECTS);
     setAllHomeworks(INITIAL_HOMEWORKS);
     setAllTimetables(INITIAL_TIMETABLE.map((t) => ({ ...t, classId: 'class-4a1' })));
+    setTimetableScheduleConfig(DEFAULT_SCHEDULE_CONFIG);
     window.location.reload();
   };
 
@@ -4201,6 +4372,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateClassEvent,
         deleteClassEvent,
         timetable,
+        periods,
+        timetableScheduleConfig,
+        updateTimetableScheduleConfig,
         updateTimetableSlot,
         setTimetable,
         resetTimetableToStandard,

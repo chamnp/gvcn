@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import * as XLSX from 'xlsx';
 import {
@@ -35,16 +35,19 @@ import {
   RefreshCw,
   Eye,
   ShieldCheck,
+  Settings2,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useAuth } from '@/lib/auth-context';
 import {
   DAYS_OF_WEEK,
-  PERIODS,
   DEFAULT_SUBJECT_THEMES,
   getSubjectTheme,
   PeriodInfo,
   SubjectTheme,
+  calculatePeriods,
+  DEFAULT_SCHEDULE_CONFIG,
+  TimetableScheduleConfig,
 } from '@/lib/timetable-data';
 import { DayOfWeek, TimetableSlot } from '@/types';
 import { toast } from 'sonner';
@@ -161,6 +164,9 @@ export default function TimetablePage() {
   const {
     classInfo,
     timetable,
+    periods,
+    timetableScheduleConfig,
+    updateTimetableScheduleConfig,
     updateTimetableSlot,
     setTimetable,
     resetTimetableToStandard,
@@ -209,6 +215,19 @@ export default function TimetablePage() {
     note: string;
     teacherName: string;
   } | null>(null);
+
+  // Schedule Settings Modal State
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [scheduleForm, setScheduleForm] = useState<TimetableScheduleConfig>(timetableScheduleConfig || DEFAULT_SCHEDULE_CONFIG);
+
+  useEffect(() => {
+    if (timetableScheduleConfig) {
+      setScheduleForm(timetableScheduleConfig);
+    }
+  }, [timetableScheduleConfig]);
+
+  const morningPeriods = useMemo(() => periods.filter((p) => p.session === 'MORNING'), [periods]);
+  const afternoonPeriods = useMemo(() => periods.filter((p) => p.session === 'AFTERNOON'), [periods]);
 
   // Excel Import Modal State
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -364,7 +383,7 @@ export default function TimetablePage() {
     if (confirm(`Bạn có chắc chắn muốn xóa trống toàn bộ 35 tiết của Lớp ${classInfo.name} để tự xếp mới từ đầu?`)) {
       const emptySlots: TimetableSlot[] = [];
       DAYS_OF_WEEK.forEach((d) => {
-        PERIODS.forEach((p) => {
+        periods.forEach((p) => {
           emptySlots.push({
             id: `${classInfo.id}-${d.id.toLowerCase()}-p${p.period}`,
             classId: classInfo.id,
@@ -409,7 +428,7 @@ export default function TimetablePage() {
         ['Buổi', 'Tiết', 'Khung Giờ', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu'],
       ];
 
-      PERIODS.forEach((p) => {
+      periods.forEach((p) => {
         const row = [
           p.session === 'MORNING' ? 'Sáng' : 'Chiều',
           `Tiết ${p.period}`,
@@ -581,7 +600,7 @@ export default function TimetablePage() {
 
     DAYS_OF_WEEK.forEach((d) => {
       text += `🌟 ${d.name.toUpperCase()}:\n`;
-      PERIODS.forEach((p) => {
+      periods.forEach((p) => {
         const slot = getSlot(d.id, p.period);
         const theme = slot ? getSubjectTheme(slot.subjectCode, customSubjects) : null;
         text += `  • ${p.name} (${p.time}): ${theme ? `${theme.icon} ${slot?.subjectName}` : 'Nghỉ'}${slot?.note ? ` (Dặn: ${slot.note})` : ''}\n`;
@@ -670,6 +689,19 @@ export default function TimetablePage() {
             >
               <Copy className="w-4 h-4 text-purple-600" />
               <span>Gửi Zalo</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setScheduleForm(timetableScheduleConfig || DEFAULT_SCHEDULE_CONFIG);
+                setIsScheduleModalOpen(true);
+              }}
+              className="inline-flex w-full sm:w-auto justify-center items-center space-x-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 px-3.5 py-2 rounded-2xl text-xs font-bold shadow-xs transition-all cursor-pointer"
+              title="Cài đặt thời gian bắt đầu tiết 1 và thời lượng mỗi tiết học"
+            >
+              <Clock className="w-4 h-4 text-amber-700" />
+              <span>Khung Giờ Học</span>
             </button>
 
             <button
@@ -908,11 +940,13 @@ export default function TimetablePage() {
               <tr className="bg-gradient-to-r from-amber-50 to-orange-50 border-b border-amber-200/60">
                 <td colSpan={7} className="py-1.5 px-4 font-black text-amber-900 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
                   <Sun className="w-3.5 h-3.5 text-amber-600" />
-                  <span>Buổi Sáng: 4 Tiết (07:45 - 10:35)</span>
+                  <span>
+                    Buổi Sáng: 4 Tiết ({morningPeriods[0]?.time.split(' - ')[0] || '07:45'} - {morningPeriods[morningPeriods.length - 1]?.time.split(' - ')[1] || '10:35'})
+                  </span>
                 </td>
               </tr>
 
-              {PERIODS.filter((p) => p.session === 'MORNING').map((p) => (
+              {morningPeriods.map((p) => (
                 <tr key={p.period} className="hover:bg-slate-50/50 transition-colors">
                   <td className="py-2.5 px-2 text-center font-black text-slate-600 bg-slate-50/80 border-r border-slate-200">
                     {p.name}
@@ -999,11 +1033,13 @@ export default function TimetablePage() {
               <tr className="bg-gradient-to-r from-indigo-50 to-purple-50 border-y border-indigo-200/60">
                 <td colSpan={7} className="py-1.5 px-4 font-black text-indigo-900 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
                   <Sunset className="w-3.5 h-3.5 text-indigo-600" />
-                  <span>Buổi Chiều: 3 Tiết (14:00 - 16:05)</span>
+                  <span>
+                    Buổi Chiều: 3 Tiết ({afternoonPeriods[0]?.time.split(' - ')[0] || '14:00'} - {afternoonPeriods[afternoonPeriods.length - 1]?.time.split(' - ')[1] || '16:05'})
+                  </span>
                 </td>
               </tr>
 
-              {PERIODS.filter((p) => p.session === 'AFTERNOON').map((p) => (
+              {afternoonPeriods.map((p) => (
                 <tr key={p.period} className="hover:bg-slate-50/50 transition-colors">
                   <td className="py-2.5 px-2 text-center font-black text-slate-600 bg-slate-50/80 border-r border-slate-200">
                     {p.name}
@@ -1104,7 +1140,7 @@ export default function TimetablePage() {
                     Sửa Tiết {editingSlot.period} - {DAYS_OF_WEEK.find((d) => d.id === editingSlot.day)?.name}
                   </h3>
                   <p className="text-xs text-slate-500">
-                    {PERIODS.find((p) => p.period === editingSlot.period)?.time}
+                    {periods.find((p) => p.period === editingSlot.period)?.time}
                   </p>
                 </div>
               </div>
@@ -1241,7 +1277,7 @@ export default function TimetablePage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {PERIODS.map((p) => (
+                    {periods.map((p) => (
                       <tr key={p.period} className="hover:bg-slate-50">
                         <td className="p-2 font-bold bg-slate-50 border-r">{p.name}</td>
                         {DAYS_OF_WEEK.map((d) => {
@@ -1276,6 +1312,286 @@ export default function TimetablePage() {
                 className="px-5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-md cursor-pointer"
               >
                 Áp Dụng Thời Khóa Biểu
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 7. SCHEDULE SETTINGS MODAL */}
+      {isScheduleModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 max-w-2xl w-full max-h-[90vh] overflow-y-auto overflow-x-hidden flex flex-col">
+            {/* Modal Header */}
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-amber-50 to-orange-50 sticky top-0 z-10">
+              <div className="flex items-center space-x-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-amber-600 text-white flex items-center justify-center font-bold shadow-xs">
+                  <Clock className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">
+                    Cài Đặt Khung Giờ Tiết Học & Thời Lượng
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Tùy biến giờ bắt đầu Tiết 1, thời lượng mỗi tiết và thời gian ra chơi
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsScheduleModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-white hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer shadow-xs"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-6 text-xs flex-1">
+              {/* Presets */}
+              <div>
+                <label className="block font-bold text-slate-700 mb-2 uppercase tracking-wider">
+                  Mẫu Khung Giờ Phổ Biến (Chọn Nhanh)
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {[
+                    {
+                      name: '🏫 Chuẩn Thông tư 27 (7h45 - 35p)',
+                      desc: 'Vào học 07:45 • Tiết 35p • Chiều 14:00',
+                      config: {
+                        morningStartTime: '07:45',
+                        afternoonStartTime: '14:00',
+                        periodDuration: 35,
+                        shortBreakDuration: 5,
+                        morningBigBreakDuration: 20,
+                        afternoonBigBreakDuration: 15,
+                      },
+                    },
+                    {
+                      name: '🌅 Vào học sớm (7h15 - 35p)',
+                      desc: 'Vào học 07:15 • Tiết 35p • Chiều 13:30',
+                      config: {
+                        morningStartTime: '07:15',
+                        afternoonStartTime: '13:30',
+                        periodDuration: 35,
+                        shortBreakDuration: 5,
+                        morningBigBreakDuration: 20,
+                        afternoonBigBreakDuration: 15,
+                      },
+                    },
+                    {
+                      name: '⏰ Vào học 7h30 (7h30 - 35p)',
+                      desc: 'Vào học 07:30 • Tiết 35p • Chiều 13:45',
+                      config: {
+                        morningStartTime: '07:30',
+                        afternoonStartTime: '13:45',
+                        periodDuration: 35,
+                        shortBreakDuration: 5,
+                        morningBigBreakDuration: 20,
+                        afternoonBigBreakDuration: 15,
+                      },
+                    },
+                    {
+                      name: '⏳ Tiết học 40 phút (7h30 - 40p)',
+                      desc: 'Vào học 07:30 • Tiết 40p • Chiều 14:00',
+                      config: {
+                        morningStartTime: '07:30',
+                        afternoonStartTime: '14:00',
+                        periodDuration: 40,
+                        shortBreakDuration: 5,
+                        morningBigBreakDuration: 20,
+                        afternoonBigBreakDuration: 15,
+                      },
+                    },
+                  ].map((preset, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setScheduleForm({ ...preset.config })}
+                      className={`p-3 rounded-2xl border text-left transition-all cursor-pointer ${
+                        scheduleForm.morningStartTime === preset.config.morningStartTime &&
+                        scheduleForm.periodDuration === preset.config.periodDuration &&
+                        scheduleForm.afternoonStartTime === preset.config.afternoonStartTime
+                          ? 'border-amber-500 bg-amber-50/80 ring-2 ring-amber-400'
+                          : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+                      }`}
+                    >
+                      <div className="font-bold text-slate-900">{preset.name}</div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">{preset.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Detailed Configuration Inputs */}
+              <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-4">
+                <div className="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+                  <Settings2 className="w-4 h-4 text-slate-600" />
+                  <span>Tùy chỉnh thông số chi tiết</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Giờ bắt đầu Tiết 1 (Buổi Sáng) *
+                    </label>
+                    <input
+                      type="time"
+                      value={scheduleForm.morningStartTime}
+                      onChange={(e) => setScheduleForm({ ...scheduleForm, morningStartTime: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-slate-300 font-bold text-slate-900 bg-white focus:ring-2 focus:ring-amber-500"
+                    />
+                    <span className="text-[10px] text-slate-500 mt-0.5 block">Ví dụ: 07:15, 07:30, 07:45</span>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Thời lượng mỗi tiết học (Phút) *
+                    </label>
+                    <select
+                      value={scheduleForm.periodDuration}
+                      onChange={(e) => setScheduleForm({ ...scheduleForm, periodDuration: Number(e.target.value) })}
+                      className="w-full p-2.5 rounded-xl border border-slate-300 font-bold text-slate-900 bg-white focus:ring-2 focus:ring-amber-500"
+                    >
+                      <option value={30}>30 phút / tiết</option>
+                      <option value={35}>35 phút / tiết (Chuẩn Tiểu học TT27)</option>
+                      <option value={40}>40 phút / tiết</option>
+                      <option value={45}>45 phút / tiết</option>
+                    </select>
+                    <span className="text-[10px] text-slate-500 mt-0.5 block">Tiêu chuẩn quy định Thông tư 27 là 35 phút/tiết</span>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Giờ bắt đầu Tiết 5 (Buổi Chiều) *
+                    </label>
+                    <input
+                      type="time"
+                      value={scheduleForm.afternoonStartTime}
+                      onChange={(e) => setScheduleForm({ ...scheduleForm, afternoonStartTime: e.target.value })}
+                      className="w-full p-2.5 rounded-xl border border-slate-300 font-bold text-slate-900 bg-white focus:ring-2 focus:ring-amber-500"
+                    />
+                    <span className="text-[10px] text-slate-500 mt-0.5 block">Ví dụ: 13:30, 13:45, 14:00</span>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Nghỉ giải lao giữa 2 tiết liền kề (Phút)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={15}
+                      value={scheduleForm.shortBreakDuration}
+                      onChange={(e) => setScheduleForm({ ...scheduleForm, shortBreakDuration: Number(e.target.value) })}
+                      className="w-full p-2.5 rounded-xl border border-slate-300 font-bold text-slate-900 bg-white focus:ring-2 focus:ring-amber-500"
+                    />
+                    <span className="text-[10px] text-slate-500 mt-0.5 block">Mặc định 5 phút chuyển tiết</span>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Ra chơi lớn buổi Sáng (sau Tiết 2)
+                    </label>
+                    <input
+                      type="number"
+                      min={10}
+                      max={40}
+                      value={scheduleForm.morningBigBreakDuration}
+                      onChange={(e) => setScheduleForm({ ...scheduleForm, morningBigBreakDuration: Number(e.target.value) })}
+                      className="w-full p-2.5 rounded-xl border border-slate-300 font-bold text-slate-900 bg-white focus:ring-2 focus:ring-amber-500"
+                    />
+                    <span className="text-[10px] text-slate-500 mt-0.5 block">Mặc định 20 phút (thể dục/uống sữa)</span>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Ra chơi lớn buổi Chiều (sau Tiết 6)
+                    </label>
+                    <input
+                      type="number"
+                      min={5}
+                      max={30}
+                      value={scheduleForm.afternoonBigBreakDuration}
+                      onChange={(e) => setScheduleForm({ ...scheduleForm, afternoonBigBreakDuration: Number(e.target.value) })}
+                      className="w-full p-2.5 rounded-xl border border-slate-300 font-bold text-slate-900 bg-white focus:ring-2 focus:ring-amber-500"
+                    />
+                    <span className="text-[10px] text-slate-500 mt-0.5 block">Mặc định 15 phút</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Live Preview of Calculated Periods */}
+              <div>
+                <label className="block font-bold text-slate-700 mb-2 uppercase tracking-wider flex items-center justify-between">
+                  <span>Bảng Xem Trước Khung Giờ Sau Khi Tính Toán</span>
+                  <span className="text-[10px] font-normal text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    Tự động tính thời gian kết thúc
+                  </span>
+                </label>
+
+                <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
+                  <table className="w-full text-xs text-left">
+                    <thead className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+                      <tr>
+                        <th className="p-2.5">Buổi</th>
+                        <th className="p-2.5">Tiết Học</th>
+                        <th className="p-2.5 text-right font-mono">Khung Giờ Dự Kiến</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-semibold text-slate-800">
+                      {calculatePeriods(scheduleForm).map((p) => (
+                        <tr
+                          key={p.period}
+                          className={p.session === 'MORNING' ? 'hover:bg-amber-50/40' : 'hover:bg-indigo-50/40'}
+                        >
+                          <td className="p-2.5 text-slate-500 text-[11px]">
+                            {p.session === 'MORNING' ? 'Sáng' : 'Chiều'}
+                          </td>
+                          <td className="p-2.5 font-bold">
+                            {p.name}
+                            {p.period === 2 && (
+                              <span className="ml-2 text-[10px] text-amber-700 font-normal">
+                                (sau tiết này ra chơi {scheduleForm.morningBigBreakDuration}p)
+                              </span>
+                            )}
+                            {p.period === 6 && (
+                              <span className="ml-2 text-[10px] text-indigo-700 font-normal">
+                                (sau tiết này ra chơi {scheduleForm.afternoonBigBreakDuration}p)
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-2.5 text-right font-mono font-bold text-blue-700">
+                            {p.time}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-slate-100 flex items-center justify-end space-x-2 bg-slate-50 sticky bottom-0 z-10">
+              <button
+                type="button"
+                onClick={() => setIsScheduleModalOpen(false)}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-200 cursor-pointer"
+              >
+                Hủy Bỏ
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  updateTimetableScheduleConfig(scheduleForm);
+                  toast.success('Đã cập nhật khung giờ học và thời lượng tiết học thành công!');
+                  setIsScheduleModalOpen(false);
+                }}
+                className="px-5 py-2 rounded-xl text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-md cursor-pointer flex items-center gap-1.5"
+              >
+                <Check className="w-4 h-4" />
+                <span>Lưu & Áp Dụng Khung Giờ</span>
               </button>
             </div>
           </div>

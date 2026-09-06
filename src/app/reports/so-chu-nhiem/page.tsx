@@ -22,7 +22,7 @@ import {
   evaluateStudentTT27,
   getAwardBadgeClass,
 } from '@/lib/tt27-engine';
-import { DAYS_OF_WEEK, PERIODS } from '@/lib/timetable-data';
+import { DAYS_OF_WEEK } from '@/lib/timetable-data';
 
 export default function SoChuNhiemReportPage() {
   const {
@@ -31,6 +31,7 @@ export default function SoChuNhiemReportPage() {
     students,
     attendances,
     timetable,
+    periods,
     subjectAssessments,
     traitAssessments,
     termSummaries,
@@ -180,7 +181,7 @@ export default function SoChuNhiemReportPage() {
               </tr>
             </thead>
             <tbody>
-              {PERIODS.map((period) => (
+              {periods.map((period) => (
                 <tr key={period.period}>
                   {period.period === 1 && (
                     <td rowSpan={4} className="p-2 border border-slate-400 text-center font-bold bg-slate-50 rotate-0">
