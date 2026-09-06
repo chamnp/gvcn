@@ -2057,7 +2057,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         totalStudents: updated.totalStudents || 0,
         seatingGridRows: updated.seatingGridRows || 5,
         seatingGridCols: updated.seatingGridCols || 8,
-        starResetDay: Math.min(28, Math.max(1, updated.starResetDay || 1)),
+        starResetDay: Math.min(31, Math.max(1, updated.starResetDay || 1)),
+        starResetDate: updated.starResetDate || null,
+        starAutoReset: updated.starAutoReset ?? true,
         shareToken: updated.shareToken,
         updatedAt: new Date().toISOString(),
       })
@@ -3660,20 +3662,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // CHỐT SỐ DƯ THÁNG (RESET REMAINING STARS)
   // BẢO TỒN NGUYÊN VẸN 100% LỊCH SỬ STARLOG ĐỂ PHỤC VỤ ĐÁNH GIÁ THÔNG TƯ 27 VÀ BÁO CÁO TOÀN NĂM
-  const resetMonthStars = async (monthStr?: string) => {
+  const resetMonthStars = async (monthStr?: string, options?: { skipConfirm?: boolean; silent?: boolean }) => {
     const targetMonth = monthStr || new Date().toISOString().substring(0, 7);
     const targetStudents = allStudents.filter((s) => s.classId === activeClassId);
 
     if (targetStudents.length === 0) {
-      toast.warning('Không có học sinh nào trong lớp hiện tại để chốt số dư.');
+      if (!options?.silent) toast.warning('Không có học sinh nào trong lớp hiện tại để chốt số dư.');
       return;
     }
 
-    if (
-      confirm(
-        `Bạn có chắc chắn muốn CHỐT SỐ DƯ khả dụng Tháng ${targetMonth.replace('-', '/')} của lớp về 0 để mở đợt mới?\n\n⭐ Lưu ý: Toàn bộ Lịch sử điểm sao (StarLog) và thành tích thi đua vẫn được BẢO TỒN NGUYÊN VẸN 100% để phục vụ đánh giá rèn luyện Thông tư 27 và thống kê tổng kết.`
-      )
-    ) {
+    const monthLabel = formatMonthVN(targetMonth);
+
+    const shouldProceed = options?.skipConfirm || confirm(
+      `Bạn có chắc chắn muốn CHỐT SỐ DƯ khả dụng ${monthLabel} của lớp về 0 để mở đợt mới?\n\n⭐ Lưu ý: Toàn bộ Lịch sử điểm sao (StarLog) và thành tích thi đua vẫn được BẢO TỒN NGUYÊN VẸN 100% để phục vụ đánh giá rèn luyện Thông tư 27 và thống kê tổng kết.`
+    );
+
+    if (shouldProceed) {
       // Find students with remaining available stars in this month
       const studentsToClose: Array<{ student: typeof targetStudents[0]; available: number }> = [];
 
@@ -3685,7 +3689,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
 
       if (studentsToClose.length === 0) {
-        toast.info(`Tất cả học sinh lớp trong tháng ${targetMonth.replace('-', '/')} đã có số dư sao khả dụng là 0!`);
+        if (!options?.silent) toast.info(`Tất cả học sinh lớp trong ${monthLabel} đã có số dư sao khả dụng là 0!`);
         return;
       }
 
@@ -3700,7 +3704,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } | null;
 
       if (error || !result?.success) {
-        toast.error('Không thể chốt số dư tháng: ' + (result?.error || error?.message || 'Lỗi máy chủ'));
+        toast.error(`Không thể chốt số dư ${monthLabel}: ` + (result?.error || error?.message || 'Lỗi máy chủ'));
         return;
       }
 
@@ -3708,7 +3712,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setRewardRedemptions((prev) => [...closeRedemptions, ...prev]);
 
       toast.success(
-        `Đã chốt số dư tháng ${targetMonth.replace('-', '/')} cho ${closeRedemptions.length} học sinh thành công! Lịch sử điểm sao được giữ nguyên.`
+        `Đã chốt số dư ${monthLabel} cho ${closeRedemptions.length} học sinh thành công! Lịch sử điểm sao được giữ nguyên.`
       );
     }
   };

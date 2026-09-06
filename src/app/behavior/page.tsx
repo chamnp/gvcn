@@ -40,6 +40,7 @@ import {
   ExternalLink,
   Crown,
   Medal,
+  ChevronLeft,
   ChevronRight,
   TrendingUp,
   LayoutGrid,
@@ -67,7 +68,12 @@ import {
 import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
-import { getLocalDateString } from '@/lib/tt27-engine';
+import {
+  getLocalDateString,
+  getLastDateOfMonth,
+  formatMonthVN,
+  formatDateVN,
+} from '@/lib/tt27-engine';
 import { rankMonthlyStarLeaderboard } from '@/lib/star-leaderboard';
 
 const COMMENT_SUGGESTIONS = [
@@ -148,21 +154,95 @@ export default function BehaviorPage() {
   // Month selector for Leaderboard (default: current month 'YYYY-MM')
   const currentMonthKey = getLocalDateString().substring(0, 7);
   const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthKey);
-  const [starResetDay, setStarResetDay] = useState<number>(classInfo.starResetDay || 1);
-  const [isSavingResetDay, setIsSavingResetDay] = useState(false);
 
+  // Parse current year & month numbers
+  const [currentYear, currentMonthNum] = useMemo(() => {
+    const [y, m] = currentMonthKey.split('-').map(Number);
+    return [y, m];
+  }, [currentMonthKey]);
+
+  // Parse selected year & month numbers
+  const [selectedYear, selectedMonthNum] = useMemo(() => {
+    const [y, m] = (selectedMonth || currentMonthKey).split('-').map(Number);
+    return [y || currentYear, m || currentMonthNum];
+  }, [selectedMonth, currentMonthKey, currentYear, currentMonthNum]);
+
+  const isCurrentMonth = selectedMonth === currentMonthKey;
+
+  // Handlers for Pure Vietnamese month picker
+  const handleMonthNumChange = (newMonthNum: number) => {
+    const padded = String(newMonthNum).padStart(2, '0');
+    const newKey = `${selectedYear}-${padded}`;
+    if (newKey <= currentMonthKey) {
+      setSelectedMonth(newKey);
+    }
+  };
+
+  const handleYearChange = (newYear: number) => {
+    let targetMonthNum = selectedMonthNum;
+    if (newYear === currentYear && selectedMonthNum > currentMonthNum) {
+      targetMonthNum = currentMonthNum;
+    }
+    setSelectedMonth(`${newYear}-${String(targetMonthNum).padStart(2, '0')}`);
+  };
+
+  const handlePrevMonth = () => {
+    let newMonth = selectedMonthNum - 1;
+    let newYear = selectedYear;
+    if (newMonth < 1) {
+      newMonth = 12;
+      newYear -= 1;
+    }
+    setSelectedMonth(`${newYear}-${String(newMonth).padStart(2, '0')}`);
+  };
+
+  const handleNextMonth = () => {
+    let newMonth = selectedMonthNum + 1;
+    let newYear = selectedYear;
+    if (newMonth > 12) {
+      newMonth = 1;
+      newYear += 1;
+    }
+    const newKey = `${newYear}-${String(newMonth).padStart(2, '0')}`;
+    if (newKey <= currentMonthKey) {
+      setSelectedMonth(newKey);
+    }
+  };
+
+  // Star Balance Reset Date Picker (defaults automatically to the exact last day of selectedMonth)
+  const defaultResetDateForMonth = useMemo(() => {
+    return getLastDateOfMonth(selectedMonth);
+  }, [selectedMonth]);
+
+  const [starResetDate, setStarResetDate] = useState<string>(() => {
+    if (classInfo.starResetDate && classInfo.starResetDate.startsWith(currentMonthKey)) {
+      return classInfo.starResetDate;
+    }
+    return getLastDateOfMonth(currentMonthKey);
+  });
+  const [isSavingResetDate, setIsSavingResetDate] = useState(false);
+
+  // Automatically default to the last day of that month when selectedMonth changes
   useEffect(() => {
-    setStarResetDay(classInfo.starResetDay || 1);
-  }, [classInfo.id, classInfo.starResetDay]);
+    if (classInfo.starResetDate && classInfo.starResetDate.startsWith(selectedMonth)) {
+      setStarResetDate(classInfo.starResetDate);
+    } else {
+      setStarResetDate(getLastDateOfMonth(selectedMonth));
+    }
+  }, [selectedMonth, classInfo.starResetDate]);
 
-  const handleSaveStarResetDay = async () => {
-    const normalizedDay = Math.min(28, Math.max(1, Number(starResetDay) || 1));
-    setStarResetDay(normalizedDay);
-    setIsSavingResetDay(true);
-    const result = await updateClass({ ...classInfo, starResetDay: normalizedDay });
-    setIsSavingResetDay(false);
+  const handleSaveStarResetDate = async () => {
+    if (!starResetDate) return;
+    const day = Math.min(31, Math.max(1, Number(starResetDate.split('-')[2]) || 1));
+    setIsSavingResetDate(true);
+    const result = await updateClass({
+      ...classInfo,
+      starResetDay: day,
+      starResetDate: starResetDate,
+    });
+    setIsSavingResetDate(false);
     if (result.success) {
-      toast.success(`Đã đặt ngày chốt sao hằng tháng là ngày ${normalizedDay}.`);
+      toast.success(`Đã đặt ngày chốt sao ${formatMonthVN(selectedMonth)} là ngày ${formatDateVN(starResetDate)}.`);
     }
   };
 
@@ -411,6 +491,18 @@ export default function BehaviorPage() {
     && rankedLeaderboard[0].rank === 1
     && rankedLeaderboard[1].rank === 2
     && rankedLeaderboard[2].rank === 3;
+
+  const remainingAvailableCount = useMemo(() => {
+    return leaderboard.reduce((sum, item) => sum + (item.monthlyAvailable > 0 ? 1 : 0), 0);
+  }, [leaderboard]);
+
+  const totalMonthlyEarned = useMemo(() => {
+    return leaderboard.reduce((sum, item) => sum + item.monthlyEarned, 0);
+  }, [leaderboard]);
+
+  const isMonthClosed = totalMonthlyEarned > 0 && remainingAvailableCount === 0;
+  const todayDateStr = getLocalDateString();
+  const isPastOrDueResetDate = Boolean(starResetDate && todayDateStr >= starResetDate);
 
   // Criteria Handlers
   const handleOpenAddCriterion = () => {
@@ -685,7 +777,7 @@ export default function BehaviorPage() {
             </div>
 
             <div className="pt-2 border-t border-slate-200/50 flex items-center justify-between">
-              <span className="text-[10px] text-slate-500 font-medium">Tháng {selectedMonth}</span>
+              <span className="text-[10px] text-slate-500 font-medium">{formatMonthVN(selectedMonth)}</span>
               <button
                 onClick={() => handleAwardTeam(team.id, team.name)}
                 className="px-2.5 py-1 rounded-xl text-[11px] font-bold bg-white hover:bg-amber-50 text-amber-900 border border-amber-300 shadow-2xs transition-all cursor-pointer flex items-center gap-1"
@@ -701,7 +793,7 @@ export default function BehaviorPage() {
       {/* 3. Navigation Tabs */}
       <div className="flex items-center space-x-1.5 border-b border-slate-200 pb-2 overflow-x-auto no-scrollbar scroll-smooth">
         {[
-          { id: 'LEADERBOARD', label: 'Đua Top Tích Sao', icon: Trophy, badge: `Tháng ${selectedMonth.split('-')[1]}` },
+          { id: 'LEADERBOARD', label: 'Đua Top Tích Sao', icon: Trophy, badge: formatMonthVN(selectedMonth) },
           { id: 'TABLE', label: 'Bảng Đánh Giá & Nhận Xét', icon: FileSpreadsheet },
           { id: 'CRITERIA', label: `Tiêu Chí Sao (${classCriteria.length})`, icon: Star },
           { id: 'SHOP', label: `Shop Đồ Dùng (${classProducts.length})`, icon: ShoppingBag },
@@ -1059,45 +1151,121 @@ export default function BehaviorPage() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <label className="text-xs font-bold text-slate-600">Tháng:</label>
-              <input
-                type="month"
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                max={currentMonthKey}
-                className="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 bg-slate-50 focus:ring-2 focus:ring-amber-500"
-              />
-              <label className="text-xs font-bold text-slate-600 ml-1" htmlFor="star-reset-day">Ngày chốt:</label>
-              <input
-                id="star-reset-day"
-                type="number"
-                min={1}
-                max={28}
-                value={starResetDay}
-                onChange={(e) => setStarResetDay(Number(e.target.value))}
-                className="w-16 px-2 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 bg-slate-50 focus:ring-2 focus:ring-amber-500"
-                aria-label="Ngày chốt số dư sao hằng tháng"
-              />
+              {/* BỘ CHỌN THÁNG THUẦN VIỆT */}
+              <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-xl px-2 py-1 text-xs font-bold text-slate-800 shadow-2xs">
+                <button
+                  type="button"
+                  onClick={handlePrevMonth}
+                  className="p-1 hover:bg-slate-200 rounded-lg text-slate-600 transition-colors cursor-pointer"
+                  title="Tháng trước"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+
+                <Calendar className="w-3.5 h-3.5 text-amber-500 shrink-0 ml-0.5" />
+                <span className="text-slate-500 font-semibold text-[11px]">Tháng:</span>
+                <select
+                  value={selectedMonthNum}
+                  onChange={(e) => handleMonthNumChange(Number(e.target.value))}
+                  className="bg-transparent font-bold text-xs text-slate-800 focus:outline-none cursor-pointer"
+                  aria-label="Chọn tháng"
+                >
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => {
+                    const monthKeyToCheck = `${selectedYear}-${String(m).padStart(2, '0')}`;
+                    const isFuture = monthKeyToCheck > currentMonthKey;
+                    return (
+                      <option key={m} value={m} disabled={isFuture}>
+                        Tháng {m} {m === currentMonthNum && selectedYear === currentYear ? '(Hiện tại)' : ''}
+                      </option>
+                    );
+                  })}
+                </select>
+                <span className="text-slate-300">/</span>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => handleYearChange(Number(e.target.value))}
+                  className="bg-transparent font-bold text-xs text-slate-800 focus:outline-none cursor-pointer"
+                  aria-label="Chọn năm"
+                >
+                  {[currentYear - 2, currentYear - 1, currentYear].map((y) => (
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
+                  ))}
+                </select>
+
+                <button
+                  type="button"
+                  onClick={handleNextMonth}
+                  disabled={isCurrentMonth}
+                  className="p-1 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg text-slate-600 transition-colors cursor-pointer"
+                  title="Tháng sau"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* BỘ CHỌN NGÀY CHỐT (PICK DATE - MẶC ĐỊNH NGÀY CUỐI THÁNG) */}
+              <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1 text-xs font-bold text-slate-800 shadow-2xs">
+                <label htmlFor="star-reset-date" className="text-[11px] font-semibold text-slate-500 shrink-0 cursor-pointer">
+                  Ngày chốt:
+                </label>
+                <input
+                  id="star-reset-date"
+                  type="date"
+                  value={starResetDate}
+                  onChange={(e) => setStarResetDate(e.target.value)}
+                  min={`${selectedMonth}-01`}
+                  max={getLastDateOfMonth(selectedMonth)}
+                  className="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer font-mono"
+                  aria-label="Ngày chốt số dư sao của tháng"
+                />
+                <button
+                  type="button"
+                  onClick={() => setStarResetDate(getLastDateOfMonth(selectedMonth))}
+                  title="Đặt lại đúng ngày cuối cùng của tháng này"
+                  className="px-1.5 py-0.5 text-[10px] bg-white hover:bg-slate-200 text-slate-600 rounded-md border border-slate-200 transition-colors cursor-pointer shrink-0 font-medium"
+                >
+                  Cuối tháng
+                </button>
+              </div>
+
               <button
                 type="button"
-                onClick={handleSaveStarResetDay}
-                disabled={isSavingResetDay || starResetDay === (classInfo.starResetDay || 1)}
-                className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition-colors cursor-pointer"
+                onClick={handleSaveStarResetDate}
+                disabled={isSavingResetDate || starResetDate === (classInfo.starResetDate || getLastDateOfMonth(selectedMonth))}
+                className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition-colors cursor-pointer"
               >
-                {isSavingResetDay ? 'Đang lưu...' : 'Lưu ngày'}
+                {isSavingResetDate ? 'Đang lưu...' : 'Lưu ngày'}
               </button>
-              <button
-                onClick={() => resetMonthStars(selectedMonth)}
-                disabled={!selectedMonth || selectedMonth > currentMonthKey}
-                className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-xs rounded-xl border border-amber-200 transition-colors cursor-pointer"
-                title={`Chốt số dư khả dụng tháng ${selectedMonth} về 0. Lịch sử điểm sao vẫn được bảo tồn.`}
-              >
-                Chốt Tháng {selectedMonth.split('-')[1] || '--'}
-              </button>
+
+              {isMonthClosed ? (
+                <span
+                  className="px-3 py-1.5 bg-emerald-50 text-emerald-700 font-bold text-xs rounded-xl border border-emerald-200 flex items-center gap-1 shadow-2xs"
+                  title={`Số dư khả dụng ${formatMonthVN(selectedMonth)} của tất cả học sinh đã về 0.`}
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>Đã chốt {formatMonthVN(selectedMonth)}</span>
+                </span>
+              ) : (
+                <button
+                  onClick={() => resetMonthStars(selectedMonth)}
+                  disabled={!selectedMonth || selectedMonth > currentMonthKey}
+                  className={`px-3 py-1.5 font-bold text-xs rounded-xl border transition-colors cursor-pointer flex items-center gap-1 shadow-2xs ${
+                    isPastOrDueResetDate
+                      ? 'bg-amber-600 hover:bg-amber-700 text-white border-amber-600 animate-pulse'
+                      : 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-200'
+                  }`}
+                  title={`Chốt số dư khả dụng ${formatMonthVN(selectedMonth)} về 0. Lịch sử điểm sao vẫn được bảo tồn.`}
+                >
+                  <Clock className="w-3.5 h-3.5 shrink-0" />
+                  <span>Chốt {formatMonthVN(selectedMonth)}</span>
+                </button>
+              )}
             </div>
           </div>
           <p className="px-1 text-[11px] text-slate-500">
-            Lớp được nhắc chốt vào ngày {classInfo.starResetDay || 1} hằng tháng. Nút chốt luôn áp dụng cho đúng tháng đang chọn và không xóa lịch sử tích sao.
+            Lớp được đặt ngày chốt số dư vào ngày {formatDateVN(starResetDate || getLastDateOfMonth(selectedMonth))} ({starResetDate === getLastDateOfMonth(selectedMonth) ? 'tự động là ngày cuối tháng' : 'ngày giáo viên tự chọn'}). Nút chốt luôn áp dụng cho đúng tháng đang chọn và không xóa lịch sử tích sao thi đua Thông tư 27.
           </p>
 
           {/* PODIUM TOP 1, TOP 2, TOP 3 */}

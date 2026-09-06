@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Calendar,
@@ -27,12 +27,18 @@ import {
   Check,
   Send,
   Loader2,
+  LayoutList,
+  LayoutGrid,
+  Edit2,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { Student, FormativeNote, FormativeNoteCategory, NoteVisibility } from '@/types';
 import { VoiceInputButton } from '@/components/ui/voice-input-button';
 import { getLocalDateString } from '@/lib/tt27-engine';
 import { toast } from 'sonner';
+
+const PAGE_SIZE_STORAGE_KEY = 'gvcn_pro_daily_notes_page_size';
+const PAGE_SIZE_OPTIONS = [10, 20, 30, 50, 100];
 
 const CATEGORY_CONFIG: Record<
   FormativeNoteCategory,
@@ -83,66 +89,123 @@ const PRESET_OBSERVATIONS: {
   defaultText: string;
 }[] = [
   {
-    tag: '🌟 Hăng hái phát biểu',
+    tag: '🌟 Hăng hái',
     category: 'TIEN_BO',
     title: 'Hăng hái phát biểu',
     defaultText: 'Hôm nay con rất tích cực giơ tay phát biểu, tự tin chia sẻ ý kiến trước lớp.',
   },
   {
-    tag: '✍️ Chữ viết tiến bộ',
+    tag: '✍️ Chữ đẹp',
     category: 'TIEN_BO',
     title: 'Chữ viết tiến bộ',
     defaultText: 'Chữ viết hôm nay sạch đẹp, trình bày bài cẩn thận, tiến bộ rõ rệt.',
   },
   {
-    tag: '💡 Tiếp thu bài nhanh',
+    tag: '💡 Hiểu bài nhanh',
     category: 'TIEN_BO',
     title: 'Hiểu bài nhanh',
     defaultText: 'Con nắm chắc kiến thức bài học mới, hoàn thành bài tập nhanh và chính xác.',
   },
   {
-    tag: '🤝 Giúp đỡ bạn bè',
+    tag: '🤝 Giúp bạn',
     category: 'TIEN_BO',
     title: 'Biết chia sẻ, giúp bạn',
     defaultText: 'Có tinh thần tương thân tương ái, vui vẻ chia sẻ đồ dùng và hướng dẫn bạn trong giờ học.',
   },
   {
-    tag: '🍱 Ăn trưa ngoan',
+    tag: '🍱 Ăn ngoan',
     category: 'BAN_TRU',
     title: 'Ăn bán trú tốt',
     defaultText: 'Con ăn trưa nhanh, ăn hết suất cơm, có ý thức giữ gìn vệ sinh khay ăn sạch sẽ.',
   },
   {
-    tag: '⚠️ Quên vở bài tập',
+    tag: '⚠️ Quên vở',
     category: 'CAN_CO_GANG',
     title: 'Quên vở bài tập',
     defaultText: 'Hôm nay con quên mang vở bài tập về nhà. Nhờ bố mẹ nhắc con kiểm tra cặp trước khi đi ngủ nhé.',
   },
   {
-    tag: '⚠️ Mất tập trung',
+    tag: '⚠️ Nói chuyện',
     category: 'CAN_CO_GANG',
     title: 'Còn nói chuyện trong giờ',
     defaultText: 'Con còn nói chuyện riêng trong tiết học. Cô đã nhắc nhở và con đã chú ý nghe giảng hơn.',
   },
   {
-    tag: '⚠️ Quên đồ dùng học tập',
+    tag: '⚠️ Thiếu đồ dùng',
     category: 'CAN_CO_GANG',
     title: 'Thiếu đồ dùng học tập',
     defaultText: 'Con chưa mang đủ đồ dùng (thước kẻ/bút chì). Bố mẹ hỗ trợ chuẩn bị thêm cho con nhé.',
   },
   {
-    tag: '🏥 Kêu mệt / Sốt nhẹ',
+    tag: '🏥 Kêu mệt',
     category: 'SUC_KHOE',
     title: 'Sức khỏe cần theo dõi',
     defaultText: 'Con có biểu hiện mệt, hơi ấm đầu sau giờ chơi. Cô đã cho con uống nước ấm và nghỉ ngơi, bố mẹ để ý thêm tối nay nhé.',
   },
   {
-    tag: '💬 Nhắc kiểm tra bài',
+    tag: '💬 Dặn ôn bài',
     category: 'TRAO_DOI_PH',
     title: 'Nhắc nhở ôn bài tối',
     defaultText: 'Tối nay bố mẹ dành 15 phút cùng con ôn lại bài học và đọc trước bài mới ngày mai nhé.',
   },
 ];
+
+function TablePagination({
+  page,
+  totalPages,
+  totalItems,
+  pageSize,
+  onPageChange,
+  onPageSizeChange,
+}: {
+  page: number;
+  totalPages: number;
+  totalItems: number;
+  pageSize: number;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
+}) {
+  const firstItem = totalItems === 0 ? 0 : (page - 1) * pageSize + 1;
+  const lastItem = Math.min(page * pageSize, totalItems);
+
+  return (
+    <div className="flex flex-col gap-3 border-t border-slate-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between bg-slate-50/50 rounded-b-2xl">
+      <div className="flex items-center gap-2 text-xs text-slate-600">
+        <span>Hiển thị</span>
+        <select
+          value={pageSize}
+          onChange={(event) => onPageSizeChange(Number(event.target.value))}
+          className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 font-bold text-slate-800 focus:outline-none"
+          aria-label="Số dòng trên mỗi trang"
+        >
+          {PAGE_SIZE_OPTIONS.map((option) => (
+            <option key={option} value={option}>{option}</option>
+          ))}
+        </select>
+        <span>dòng/trang • {firstItem}-{lastItem} / {totalItems} học sinh</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => onPageChange(page - 1)}
+          disabled={page <= 1}
+          className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 transition-colors"
+        >
+          <ChevronLeft className="h-3.5 w-3.5" /> Trước
+        </button>
+        <span className="min-w-20 text-center text-xs font-bold text-slate-700">Trang {page}/{totalPages || 1}</span>
+        <button
+          type="button"
+          onClick={() => onPageChange(page + 1)}
+          disabled={page >= totalPages}
+          className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 transition-colors"
+        >
+          Sau <ChevronRight className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function DailyNotesPage() {
   const {
@@ -158,7 +221,31 @@ export default function DailyNotesPage() {
   const [selectedDate, setSelectedDate] = useState<string>(() => getLocalDateString());
   const [searchTerm, setSearchTerm] = useState('');
   const [teamFilter, setTeamFilter] = useState<'ALL' | number>('ALL');
-  const [statusFilter, setStatusFilter] = useState<'ALL' | 'HAS_NOTE' | 'NO_NOTE' | 'ALERT' | 'ACKED'>('ALL');
+  const [statusFilter, setStatusFilter] = useState<'ALL' | 'NO_NOTE' | 'HAS_NOTE' | 'ALERT' | 'ACKED' | 'NOT_ACKED'>('ALL');
+  const [categoryFilter, setCategoryFilter] = useState<'ALL' | FormativeNoteCategory>('ALL');
+  const [viewMode, setViewMode] = useState<'TABLE' | 'CARDS'>('TABLE');
+
+  // Pagination State
+  const [pageSize, setPageSize] = useState<number>(20);
+  const [currentPage, setCurrentPage] = useState<number>(1);
+
+  // Load saved page size
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = Number(localStorage.getItem(PAGE_SIZE_STORAGE_KEY));
+      if (PAGE_SIZE_OPTIONS.includes(saved)) {
+        setPageSize(saved);
+      }
+    }
+  }, []);
+
+  const handlePageSizeChange = (newSize: number) => {
+    setPageSize(newSize);
+    setCurrentPage(1);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(PAGE_SIZE_STORAGE_KEY, String(newSize));
+    }
+  };
 
   // Modal State for Single Student Note
   const [selectedStudentForNote, setSelectedStudentForNote] = useState<Student | null>(null);
@@ -220,9 +307,10 @@ export default function DailyNotesPage() {
 
   // Filtered list
   const filteredRows = useMemo(() => {
-    return studentRows.filter(({ student, teamId, hasNote, hasAlert, hasAcked }) => {
-      const q = searchTerm.toLowerCase();
+    return studentRows.filter(({ student, teamId, studentDayNotes, hasNote, hasAlert, hasAcked }) => {
+      const q = searchTerm.toLowerCase().trim();
       const matchSearch =
+        !q ||
         student.fullName.toLowerCase().includes(q) ||
         student.studentCode.toLowerCase().includes(q) ||
         (student.parentPhone && student.parentPhone.includes(q));
@@ -230,14 +318,32 @@ export default function DailyNotesPage() {
       const matchTeam = teamFilter === 'ALL' || teamId === teamFilter;
 
       let matchStatus = true;
-      if (statusFilter === 'HAS_NOTE') matchStatus = hasNote;
       if (statusFilter === 'NO_NOTE') matchStatus = !hasNote;
+      if (statusFilter === 'HAS_NOTE') matchStatus = hasNote;
       if (statusFilter === 'ALERT') matchStatus = hasAlert;
       if (statusFilter === 'ACKED') matchStatus = hasAcked;
+      if (statusFilter === 'NOT_ACKED') matchStatus = hasNote && !hasAcked;
 
-      return matchSearch && matchTeam && matchStatus;
+      let matchCategory = true;
+      if (categoryFilter !== 'ALL') {
+        matchCategory = studentDayNotes.some((n) => n.category === categoryFilter);
+      }
+
+      return matchSearch && matchTeam && matchStatus && matchCategory;
     });
-  }, [studentRows, searchTerm, teamFilter, statusFilter]);
+  }, [studentRows, searchTerm, teamFilter, statusFilter, categoryFilter]);
+
+  // Reset page to 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, teamFilter, statusFilter, categoryFilter]);
+
+  // Paginated Rows
+  const totalPages = Math.ceil(filteredRows.length / pageSize) || 1;
+  const paginatedRows = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredRows.slice(start, start + pageSize);
+  }, [filteredRows, currentPage, pageSize]);
 
   // Date Navigation
   const changeDateBy = (days: number) => {
@@ -397,9 +503,9 @@ export default function DailyNotesPage() {
   const ackedCount = dateNotes.filter((n) => n.parentAcknowledged).length;
 
   return (
-    <div className="space-y-6 pb-12">
+    <div className="space-y-5 pb-12">
       {/* 1. HEADER & DATE SELECTOR */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-800 p-6 rounded-3xl text-white shadow-xl">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-800 p-5 sm:p-6 rounded-3xl text-white shadow-xl">
         <div className="space-y-1.5">
           <div className="flex items-center space-x-2">
             <span className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider text-white">
@@ -413,7 +519,7 @@ export default function DailyNotesPage() {
             Sổ Nhật Ký & Nhận Xét Hàng Ngày
           </h1>
           <p className="text-xs sm:text-sm text-blue-100 max-w-2xl leading-relaxed">
-            Ghi nhận biểu hiện học tập, nề nếp, sức khỏe, ăn ngủ bán trú và dặn dò phụ huynh tức thời qua Sổ liên lạc số 4.0.
+            Theo dõi biểu hiện học tập, nề nếp, sức khỏe, ăn ngủ bán trú và dặn dò phụ huynh tức thời qua Sổ liên lạc số 4.0.
           </p>
         </div>
 
@@ -472,112 +578,400 @@ export default function DailyNotesPage() {
 
       {/* 2. STATS BANNER */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
-          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Hôm Nay Ghi Nhận</span>
+        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Hôm Nay Ghi Nhận</span>
           <div className="flex items-baseline gap-1.5">
-            <span className="text-2xl font-black text-slate-900">{totalNotesCount}</span>
+            <span className="text-xl sm:text-2xl font-black text-slate-900">{totalNotesCount}</span>
             <span className="text-xs text-slate-400">ghi chú</span>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
-          <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider flex items-center gap-1">
+        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
+          <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider flex items-center gap-1">
             <span>🌟 Khen Ngợi</span>
           </span>
           <div className="flex items-baseline gap-1.5">
-            <span className="text-2xl font-black text-emerald-700">{praiseCount}</span>
+            <span className="text-xl sm:text-2xl font-black text-emerald-700">{praiseCount}</span>
             <span className="text-xs text-slate-400">lượt</span>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
-          <span className="text-[11px] font-bold text-amber-600 uppercase tracking-wider flex items-center gap-1">
+        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
+          <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider flex items-center gap-1">
             <span>⚠️ Cần Lưu Ý</span>
           </span>
           <div className="flex items-baseline gap-1.5">
-            <span className="text-2xl font-black text-amber-700">{alertCount}</span>
+            <span className="text-xl sm:text-2xl font-black text-amber-700">{alertCount}</span>
             <span className="text-xs text-slate-400">nhắc nhở</span>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
-          <span className="text-[11px] font-bold text-purple-600 uppercase tracking-wider flex items-center gap-1">
+        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-1">
+          <span className="text-[10px] font-bold text-purple-600 uppercase tracking-wider flex items-center gap-1">
             <span>💬 Dặn Phụ Huynh</span>
           </span>
           <div className="flex items-baseline gap-1.5">
-            <span className="text-2xl font-black text-purple-700">{parentDandocCount}</span>
+            <span className="text-xl sm:text-2xl font-black text-purple-700">{parentDandocCount}</span>
             <span className="text-xs text-slate-400">tin nhắn</span>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-1 col-span-2 sm:col-span-1">
-          <span className="text-[11px] font-bold text-rose-600 uppercase tracking-wider flex items-center gap-1">
+        <div className="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-1 col-span-2 sm:col-span-1">
+          <span className="text-[10px] font-bold text-rose-600 uppercase tracking-wider flex items-center gap-1">
             <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500" />
             <span>PH Đã Đọc</span>
           </span>
           <div className="flex items-baseline gap-1.5">
-            <span className="text-2xl font-black text-rose-700">{ackedCount}</span>
+            <span className="text-xl sm:text-2xl font-black text-rose-700">{ackedCount}</span>
             <span className="text-xs text-slate-400">xác nhận</span>
           </div>
         </div>
       </div>
 
-      {/* 3. FILTER & SEARCH TOOLBAR */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-        {/* Search */}
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            placeholder="Tìm theo tên học sinh, mã định danh, số điện thoại..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
-          />
+      {/* 3. MULTI-CRITERIA FILTERS & VIEW MODE TOOLBAR */}
+      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs space-y-3">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+          {/* Search */}
+          <div className="relative flex-1 min-w-[240px]">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Tìm theo tên học sinh, mã định danh, số điện thoại..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          {/* Filters & View Toggle */}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Team Filter */}
+            <select
+              value={teamFilter}
+              onChange={(e) => setTeamFilter(e.target.value === 'ALL' ? 'ALL' : Number(e.target.value))}
+              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none"
+            >
+              <option value="ALL">Tất cả Tổ</option>
+              {Array.from({ length: numTeams }, (_, i) => (
+                <option key={i + 1} value={i + 1}>
+                  Tổ {i + 1}
+                </option>
+              ))}
+            </select>
+
+            {/* Status Filter */}
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as any)}
+              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none"
+            >
+              <option value="ALL">Tất cả trạng thái</option>
+              <option value="NO_NOTE">⚠️ Chưa có nhận xét hôm nay</option>
+              <option value="HAS_NOTE">✅ Đã có nhận xét hôm nay</option>
+              <option value="ALERT">🚨 Có nhắc nhở / sức khỏe</option>
+              <option value="ACKED">❤️ Phụ huynh đã đọc</option>
+              <option value="NOT_ACKED">⏳ Phụ huynh chưa đọc</option>
+            </select>
+
+            {/* Category Filter */}
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value as any)}
+              className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none"
+            >
+              <option value="ALL">Mọi danh mục</option>
+              <option value="TIEN_BO">🌟 Tiến bộ & Khen ngợi</option>
+              <option value="CAN_CO_GANG">⚠️ Cần cố gắng</option>
+              <option value="BAN_TRU">🍱 Ăn ngủ bán trú</option>
+              <option value="SUC_KHOE">🏥 Sức khỏe</option>
+              <option value="TRAO_DOI_PH">💬 Dặn dò Phụ huynh</option>
+            </select>
+
+            {/* Layout Toggle: Table vs Cards */}
+            <div className="flex items-center p-1 bg-slate-100 rounded-xl border border-slate-200">
+              <button
+                type="button"
+                onClick={() => setViewMode('TABLE')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 transition-all cursor-pointer ${
+                  viewMode === 'TABLE'
+                    ? 'bg-white text-blue-700 shadow-2xs font-black'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+                title="Xem dạng Bảng"
+              >
+                <LayoutList className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Bảng</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('CARDS')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1 transition-all cursor-pointer ${
+                  viewMode === 'CARDS'
+                    ? 'bg-white text-blue-700 shadow-2xs font-black'
+                    : 'text-slate-500 hover:text-slate-800'
+                }`}
+                title="Xem dạng Thẻ"
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Thẻ</span>
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Filters */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Team Filter */}
-          <select
-            value={teamFilter}
-            onChange={(e) => setTeamFilter(e.target.value === 'ALL' ? 'ALL' : Number(e.target.value))}
-            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none"
-          >
-            <option value="ALL">Toàn Bộ Lớp (Tất cả tổ)</option>
-            {Array.from({ length: numTeams }, (_, i) => (
-              <option key={i + 1} value={i + 1}>
-                Tổ {i + 1}
-              </option>
-            ))}
-          </select>
-
-          {/* Status Filter */}
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as any)}
-            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:outline-none"
-          >
-            <option value="ALL">Mọi trạng thái</option>
-            <option value="HAS_NOTE">Đã có nhận xét hôm nay</option>
-            <option value="NO_NOTE">Chưa có nhận xét hôm nay</option>
-            <option value="ALERT">Có nhắc nhở / sức khỏe</option>
-            <option value="ACKED">Phụ huynh đã bấm xác nhận</option>
-          </select>
+        {/* Quick Filter Tag Summary */}
+        <div className="flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-100 pt-2">
+          <div className="flex items-center gap-2">
+            <span>Tìm thấy: <strong className="text-slate-900">{filteredRows.length}</strong> học sinh</span>
+            {(searchTerm || teamFilter !== 'ALL' || statusFilter !== 'ALL' || categoryFilter !== 'ALL') && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchTerm('');
+                  setTeamFilter('ALL');
+                  setStatusFilter('ALL');
+                  setCategoryFilter('ALL');
+                }}
+                className="text-blue-600 hover:underline font-bold ml-2 cursor-pointer"
+              >
+                Xóa tất cả bộ lọc
+              </button>
+            )}
+          </div>
+          <span className="hidden sm:inline text-slate-400">
+            Chạm vào các thẻ gợi ý nhanh để nhận xét ngay trong 2 giây
+          </span>
         </div>
       </div>
 
-      {/* 4. STUDENT MATRIX LIST */}
-      <div className="space-y-3">
-        {filteredRows.length === 0 ? (
-          <div className="bg-white p-12 text-center rounded-3xl border border-dashed border-slate-200 space-y-3">
-            <Smile className="w-10 h-10 text-slate-300 mx-auto" />
-            <h3 className="font-black text-slate-700 text-sm">Không tìm thấy học sinh phù hợp</h3>
-            <p className="text-xs text-slate-400">Hãy thử đổi từ khóa tìm kiếm hoặc bỏ bớt bộ lọc.</p>
+      {/* 4. MAIN CONTENT: TABLE OR CARDS VIEW */}
+      {filteredRows.length === 0 ? (
+        <div className="bg-white p-12 text-center rounded-3xl border border-dashed border-slate-200 space-y-3">
+          <Smile className="w-10 h-10 text-slate-300 mx-auto" />
+          <h3 className="font-black text-slate-700 text-sm">Không tìm thấy học sinh phù hợp</h3>
+          <p className="text-xs text-slate-400">Hãy thử đổi từ khóa tìm kiếm hoặc bấm &ldquo;Xóa tất cả bộ lọc&rdquo; ở trên.</p>
+        </div>
+      ) : viewMode === 'TABLE' ? (
+        /* ==================== A. TABLE VIEW ==================== */
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-black text-[11px] uppercase tracking-wider">
+                  <th className="py-3 px-3 w-12 text-center">STT</th>
+                  <th className="py-3 px-4 min-w-[220px]">Học Sinh</th>
+                  <th className="py-3 px-3 w-16 text-center">Tổ</th>
+                  <th className="py-3 px-4 min-w-[320px]">Nhận Xét Hôm Nay ({selectedDate})</th>
+                  <th className="py-3 px-3 w-28 text-center">Quyền Xem</th>
+                  <th className="py-3 px-3 w-36 text-center">Phụ Huynh</th>
+                  <th className="py-3 px-4 w-32 text-right">Thao Tác</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {paginatedRows.map(({ student, teamId, studentDayNotes, allStudentNotes, hasNote, hasAlert, hasAcked }, idx) => {
+                  const globalIdx = (currentPage - 1) * pageSize + idx + 1;
+                  return (
+                    <tr
+                      key={student.id}
+                      className={`hover:bg-slate-50/80 transition-colors ${
+                        hasAlert
+                          ? 'bg-amber-50/20'
+                          : hasNote
+                          ? 'bg-blue-50/10'
+                          : ''
+                      }`}
+                    >
+                      {/* STT */}
+                      <td className="py-3 px-3 text-center font-mono text-slate-400 font-bold">
+                        {globalIdx}
+                      </td>
+
+                      {/* Student Info */}
+                      <td className="py-3 px-4">
+                        <div className="flex items-center space-x-2.5">
+                          <div className="w-8 h-8 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-sm font-black shrink-0">
+                            {student.gender === 'Nữ' ? '👧' : '👦'}
+                          </div>
+                          <div className="min-w-0">
+                            <h4 className="font-bold text-slate-900 text-xs truncate">
+                              {student.fullName}
+                            </h4>
+                            <p className="text-[10px] text-slate-400 font-mono truncate">
+                              {student.studentCode} • {student.isBoarding ? 'Bán trú' : 'Không bán trú'}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Team */}
+                      <td className="py-3 px-3 text-center">
+                        <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">
+                          Tổ {teamId}
+                        </span>
+                      </td>
+
+                      {/* Today's Remark or Quick Chips */}
+                      <td className="py-3 px-4">
+                        {studentDayNotes.length > 0 ? (
+                          <div className="space-y-1.5">
+                            {studentDayNotes.map((note) => {
+                              const conf = CATEGORY_CONFIG[note.category] || CATEGORY_CONFIG.KHAC;
+                              return (
+                                <div
+                                  key={note.id}
+                                  className="p-2 rounded-xl bg-slate-50/80 border border-slate-200/80 space-y-1"
+                                >
+                                  <div className="flex items-center justify-between gap-1">
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${conf.bgBadge}`}>
+                                      {conf.icon} {note.title}
+                                    </span>
+                                    <div className="flex items-center space-x-1">
+                                      <button
+                                        type="button"
+                                        onClick={() => deleteFormativeNote(note.id)}
+                                        className="text-slate-300 hover:text-rose-600 p-0.5 transition-colors"
+                                        title="Xóa nhận xét này"
+                                      >
+                                        <Trash2 className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <p className="text-slate-700 leading-relaxed text-[11px] line-clamp-2">
+                                    {note.content}
+                                  </p>
+                                  {note.tags && note.tags.length > 0 && (
+                                    <div className="flex flex-wrap gap-1 pt-0.5">
+                                      {note.tags.map((t, tidx) => (
+                                        <span key={tidx} className="text-[9px] bg-white text-slate-500 border border-slate-200 px-1.5 py-0.2 rounded">
+                                          #{t}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          /* Quick Inline 1-Tap Chips */
+                          <div className="flex flex-wrap items-center gap-1">
+                            {PRESET_OBSERVATIONS.slice(0, 5).map((preset, pidx) => (
+                              <button
+                                key={pidx}
+                                type="button"
+                                onClick={() => openNoteModal(student, preset)}
+                                className="text-[10px] px-2 py-1 rounded-lg border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-300 text-slate-700 font-semibold transition-all cursor-pointer whitespace-nowrap"
+                                title={preset.defaultText}
+                              >
+                                {preset.tag}
+                              </button>
+                            ))}
+                            <button
+                              type="button"
+                              onClick={() => openNoteModal(student)}
+                              className="text-[10px] px-2 py-1 rounded-lg border border-dashed border-slate-300 text-blue-600 hover:bg-blue-50 font-bold transition-all cursor-pointer"
+                            >
+                              + Khác
+                            </button>
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Visibility */}
+                      <td className="py-3 px-3 text-center">
+                        {studentDayNotes.length > 0 ? (
+                          studentDayNotes[0].visibility === 'PRIVATE_TEACHER' ? (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full" title="Chỉ GVCN xem">
+                              <Lock className="w-2.5 h-2.5" /> Nội bộ
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full" title="Gửi lên cổng phụ huynh">
+                              <Globe className="w-2.5 h-2.5" /> Gửi PH
+                            </span>
+                          )
+                        ) : (
+                          <span className="text-slate-300">─</span>
+                        )}
+                      </td>
+
+                      {/* Parent Status */}
+                      <td className="py-3 px-3 text-center">
+                        {hasAcked ? (
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-full">
+                            <Heart className="w-3 h-3 fill-rose-600 text-rose-600" />
+                            <span>Đã đọc</span>
+                          </span>
+                        ) : hasNote ? (
+                          <span className="text-[10px] text-slate-400 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-full">
+                            ⏳ Chờ đọc
+                          </span>
+                        ) : (
+                          <span className="text-slate-300">─</span>
+                        )}
+                      </td>
+
+                      {/* Actions */}
+                      <td className="py-3 px-4 text-right">
+                        <div className="inline-flex items-center space-x-1">
+                          <button
+                            type="button"
+                            onClick={() => openNoteModal(student)}
+                            className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer"
+                            title="Thêm / Sửa nhận xét"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => copyZaloMessage(student, studentDayNotes)}
+                            className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors cursor-pointer"
+                            title="Sao chép tin nhắn Zalo gửi phụ huynh"
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setViewHistoryStudent(student)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                            title={`Xem lịch sử (${allStudentNotes.length} nhận xét)`}
+                          >
+                            <Clock className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-        ) : (
+
+          {/* Table Pagination */}
+          <TablePagination
+            page={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredRows.length}
+            pageSize={pageSize}
+            onPageChange={(p) => setCurrentPage(p)}
+            onPageSizeChange={handlePageSizeChange}
+          />
+        </div>
+      ) : (
+        /* ==================== B. CARDS GRID VIEW ==================== */
+        <div className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-            {filteredRows.map(({ student, teamId, studentDayNotes, allStudentNotes, hasNote, hasAlert, hasAcked }) => {
+            {paginatedRows.map(({ student, teamId, studentDayNotes, allStudentNotes, hasNote, hasAlert, hasAcked }) => {
               return (
                 <div
                   key={student.id}
@@ -739,8 +1133,20 @@ export default function DailyNotesPage() {
               );
             })}
           </div>
-        )}
-      </div>
+
+          {/* Cards View Pagination */}
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs overflow-hidden">
+            <TablePagination
+              page={currentPage}
+              totalPages={totalPages}
+              totalItems={filteredRows.length}
+              pageSize={pageSize}
+              onPageChange={(p) => setCurrentPage(p)}
+              onPageSizeChange={handlePageSizeChange}
+            />
+          </div>
+        </div>
+      )}
 
       {/* 5. MODAL: THÊM NHẬN XÉT CHO HỌC SINH */}
       {selectedStudentForNote && (

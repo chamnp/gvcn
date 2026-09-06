@@ -1,4 +1,4 @@
-import { GradeLevel, SubjectInfo, SubjectAssessment, TraitAssessment, StudentTermSummary, TermType, AwardTitle, SubjectLevel, TraitLevel } from '@/types';
+import type { GradeLevel, SubjectInfo, SubjectAssessment, TraitAssessment, StudentTermSummary, TermType, AwardTitle, SubjectLevel, TraitLevel } from '@/types';
 
 export const TERMS: {
   id: TermType;

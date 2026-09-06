@@ -14,6 +14,7 @@ import {
   Calendar,
   Share2,
   Copy,
+  ChevronLeft,
   ChevronRight,
   TrendingUp,
   Search,
@@ -27,6 +28,7 @@ import type { ClassInfo, RewardProduct, RewardRedemption, SchoolInfo, StarCriter
 import { toast } from 'sonner';
 import { rankMonthlyStarLeaderboard } from '@/lib/star-leaderboard';
 import { DEFAULT_FALLBACK_PRODUCT_IMAGE } from '@/lib/image-utils';
+import { formatMonthVN } from '@/lib/tt27-engine';
 
 export default function PublicClassRewardsPage({
   params,
@@ -105,6 +107,57 @@ export default function PublicClassRewardsPage({
   const [activeTab, setActiveTab] = useState<'LEADERBOARD' | 'SHOP' | 'CRITERIA'>('LEADERBOARD');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
+
+  const [currentYear, currentMonthNum] = useMemo(() => {
+    const [y, m] = currentMonthKey.split('-').map(Number);
+    return [y, m];
+  }, [currentMonthKey]);
+
+  const [selectedYear, selectedMonthNum] = useMemo(() => {
+    const [y, m] = (selectedMonth || currentMonthKey).split('-').map(Number);
+    return [y || currentYear, m || currentMonthNum];
+  }, [selectedMonth, currentMonthKey, currentYear, currentMonthNum]);
+
+  const isCurrentMonth = selectedMonth === currentMonthKey;
+
+  const handleMonthNumChange = (newMonthNum: number) => {
+    const padded = String(newMonthNum).padStart(2, '0');
+    const newKey = `${selectedYear}-${padded}`;
+    if (newKey <= currentMonthKey) {
+      setSelectedMonth(newKey);
+    }
+  };
+
+  const handleYearChange = (newYear: number) => {
+    let targetMonthNum = selectedMonthNum;
+    if (newYear === currentYear && selectedMonthNum > currentMonthNum) {
+      targetMonthNum = currentMonthNum;
+    }
+    setSelectedMonth(`${newYear}-${String(targetMonthNum).padStart(2, '0')}`);
+  };
+
+  const handlePrevMonth = () => {
+    let newMonth = selectedMonthNum - 1;
+    let newYear = selectedYear;
+    if (newMonth < 1) {
+      newMonth = 12;
+      newYear -= 1;
+    }
+    setSelectedMonth(`${newYear}-${String(newMonth).padStart(2, '0')}`);
+  };
+
+  const handleNextMonth = () => {
+    let newMonth = selectedMonthNum + 1;
+    let newYear = selectedYear;
+    if (newMonth > 12) {
+      newMonth = 1;
+      newYear += 1;
+    }
+    const newKey = `${newYear}-${String(newMonth).padStart(2, '0')}`;
+    if (newKey <= currentMonthKey) {
+      setSelectedMonth(newKey);
+    }
+  };
 
   // Students in this class
   const classStudents = useMemo(() => {
@@ -257,17 +310,59 @@ export default function PublicClassRewardsPage({
               </p>
             </div>
 
-            <div className="flex items-center justify-between sm:justify-start gap-2 w-full sm:w-auto shrink-0 bg-white/20 backdrop-blur-md p-2 rounded-2xl border border-white/20">
-              <label className="text-xs font-bold text-white flex items-center gap-1">
-                <Calendar className="w-3.5 h-3.5" />
-                <span>Tháng:</span>
-              </label>
-              <input
-                type="month"
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(e.target.value)}
-                className="px-2.5 py-1 bg-white text-slate-900 rounded-xl text-xs font-bold focus:outline-none w-full sm:w-auto cursor-pointer"
-              />
+            <div className="flex items-center gap-1.5 bg-white/20 backdrop-blur-md p-1.5 rounded-2xl border border-white/20 text-white">
+              <button
+                type="button"
+                onClick={handlePrevMonth}
+                className="p-1 hover:bg-white/20 rounded-lg transition-colors cursor-pointer text-white"
+                title="Tháng trước"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              <div className="flex items-center gap-1 font-bold text-xs">
+                <Calendar className="w-3.5 h-3.5 text-yellow-200 shrink-0" />
+                <span className="text-white/80 font-medium text-[11px]">Tháng:</span>
+                <select
+                  value={selectedMonthNum}
+                  onChange={(e) => handleMonthNumChange(Number(e.target.value))}
+                  className="bg-white/90 text-slate-900 rounded-lg px-1.5 py-0.5 font-bold text-xs focus:outline-none cursor-pointer"
+                  aria-label="Chọn tháng"
+                >
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => {
+                    const monthKeyToCheck = `${selectedYear}-${String(m).padStart(2, '0')}`;
+                    const isFuture = monthKeyToCheck > currentMonthKey;
+                    return (
+                      <option key={m} value={m} disabled={isFuture}>
+                        Tháng {m} {m === currentMonthNum && selectedYear === currentYear ? '(Hiện tại)' : ''}
+                      </option>
+                    );
+                  })}
+                </select>
+                <span className="text-white/60">/</span>
+                <select
+                  value={selectedYear}
+                  onChange={(e) => handleYearChange(Number(e.target.value))}
+                  className="bg-white/90 text-slate-900 rounded-lg px-1.5 py-0.5 font-bold text-xs focus:outline-none cursor-pointer"
+                  aria-label="Chọn năm"
+                >
+                  {[currentYear - 2, currentYear - 1, currentYear].map((y) => (
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleNextMonth}
+                disabled={isCurrentMonth}
+                className="p-1 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed rounded-lg transition-colors cursor-pointer text-white"
+                title="Tháng sau"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
           </div>
         </div>
