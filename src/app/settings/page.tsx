@@ -583,11 +583,11 @@ export default function SettingsPage() {
   const handleResetDefault = () => {
     if (
       confirm(
-        'CẢNH BÁO: Thao tác này sẽ đặt lại toàn bộ dữ liệu (học sinh, điểm đánh giá, tích sao) về trạng thái mặc định ban đầu. Bạn có chắc chắn không?'
+        'Thao tác này chỉ xóa tùy chọn lưu trên trình duyệt và tải lại dữ liệu từ máy chủ. Dữ liệu học sinh, đánh giá và sao trên Supabase sẽ không bị xóa. Tiếp tục?'
       )
     ) {
       resetData();
-      toast.info('Đã đặt lại dữ liệu mặc định.');
+      toast.info('Đã xóa tùy chọn cục bộ. Đang tải lại dữ liệu từ máy chủ.');
     }
   };
 
@@ -1715,14 +1715,14 @@ export default function SettingsPage() {
               </div>
 
               <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-                <span className="text-[11px] text-slate-400">Khôi phục cài đặt gốc:</span>
+                <span className="text-[11px] text-slate-400">Xóa tùy chọn trình duyệt:</span>
                 <button
                   type="button"
                   onClick={handleResetDefault}
                   className="text-slate-500 hover:text-slate-900 font-bold text-xs flex items-center gap-1 cursor-pointer"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Đặt lại toàn bộ</span>
+                  <span>Tải lại từ máy chủ</span>
                 </button>
               </div>
             </div>

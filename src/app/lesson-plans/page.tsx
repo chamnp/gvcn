@@ -40,7 +40,6 @@ import {
   GradeLevel,
 } from '@/types';
 import {
-  SAMPLE_GRADE_4_LESSON_PLANS,
   GRADE_4_CURRICULUM_TOPICS,
   GRADE_4_SUBJECTS,
   TEXTBOOK_OPTIONS,
@@ -63,31 +62,68 @@ import { GoogleDrivePickerModal } from '@/components/lesson-plans/google-drive-p
 import { GoogleDriveFile } from '@/lib/google-drive-client';
 import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
 
 export default function LessonPlansPage() {
   const { classInfo, schoolInfo, students, addStarLog } = useAppStore();
 
-  // Store state for lesson plans (initialized with sample Grade 4 lesson plans)
-  const [plans, setPlans] = useState<LessonPlan[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('gvcn_lesson_plans_v1');
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch (e) {
-          console.error(e);
-        }
-      }
-    }
-    return SAMPLE_GRADE_4_LESSON_PLANS;
-  });
+  const [plans, setPlans] = useState<LessonPlan[]>([]);
 
-  // Save to local storage
-  const savePlans = (newPlans: LessonPlan[]) => {
-    setPlans(newPlans);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('gvcn_lesson_plans_v1', JSON.stringify(newPlans));
+  useEffect(() => {
+    if (!classInfo.id) return;
+    let active = true;
+    void supabase
+      .from('LessonPlan')
+      .select('data')
+      .eq('classId', classInfo.id)
+      .order('updatedAt', { ascending: false })
+      .then(({ data, error }) => {
+        if (!active) return;
+        if (error) {
+          console.error('Không thể tải kế hoạch bài dạy:', error.message);
+          toast.error('Không thể tải thư viện kế hoạch bài dạy từ máy chủ.');
+          setPlans([]);
+          return;
+        }
+        setPlans((data || []).map((row) => row.data as LessonPlan));
+      });
+    return () => {
+      active = false;
+    };
+  }, [classInfo.id]);
+
+  const savePlans = async (newPlans: LessonPlan[]): Promise<boolean> => {
+    if (!classInfo.id) {
+      toast.error('Chưa xác định lớp để lưu kế hoạch bài dạy.');
+      return false;
     }
+    const normalized = newPlans.map((plan) => ({ ...plan, classId: classInfo.id }));
+    const nextIds = new Set(normalized.map((plan) => plan.id));
+    const deletedIds = plans.filter((plan) => !nextIds.has(plan.id)).map((plan) => plan.id);
+    const now = new Date().toISOString();
+    const rows = normalized.map((plan) => ({
+      id: plan.id,
+      classId: classInfo.id,
+      week: plan.week,
+      subjectCode: plan.subjectCode,
+      data: { ...plan, classId: classInfo.id, updatedAt: now },
+      createdAt: plan.createdAt || now,
+      updatedAt: now,
+    }));
+    const [upsertResult, deleteResult] = await Promise.all([
+      rows.length ? supabase.from('LessonPlan').upsert(rows) : Promise.resolve({ error: null }),
+      deletedIds.length
+        ? supabase.from('LessonPlan').delete().eq('classId', classInfo.id).in('id', deletedIds)
+        : Promise.resolve({ error: null }),
+    ]);
+    const error = upsertResult.error || deleteResult.error;
+    if (error) {
+      console.error('Không thể lưu kế hoạch bài dạy:', error.message);
+      toast.error('Không thể lưu kế hoạch bài dạy lên máy chủ.');
+      return false;
+    }
+    setPlans(normalized);
+    return true;
   };
 
   // Tabs
@@ -149,9 +185,10 @@ export default function LessonPlansPage() {
     if (!file) return;
     try {
       const imported = await parseLessonPackageFile(file);
-      savePlans([imported, ...plans]);
-      toast.success(`Đã nhập thành công bài dạy "${imported.title}" vào thư viện!`);
-      confetti({ particleCount: 80, spread: 70 });
+      if (await savePlans([imported, ...plans])) {
+        toast.success(`Đã nhập thành công bài dạy "${imported.title}" vào thư viện!`);
+        confetti({ particleCount: 80, spread: 70 });
+      }
     } catch (err: any) {
       toast.error(err.message || 'Lỗi khi nhập gói giáo án');
     } finally {
@@ -160,7 +197,7 @@ export default function LessonPlansPage() {
   };
 
   // Handle import from shared string or URL
-  const handleImportShareLink = () => {
+  const handleImportShareLink = async () => {
     if (!shareLinkInput.trim()) return;
     let pkgString = shareLinkInput.trim();
     if (pkgString.includes('pkg=')) {
@@ -168,10 +205,11 @@ export default function LessonPlansPage() {
     }
     const plan = decodeLessonPlanFromShareString(pkgString);
     if (plan) {
-      savePlans([plan, ...plans]);
-      toast.success(`Đã bung và lưu thành công bài dạy "${plan.title}"!`);
-      setShareLinkInput('');
-      confetti({ particleCount: 80, spread: 70 });
+      if (await savePlans([plan, ...plans])) {
+        toast.success(`Đã bung và lưu thành công bài dạy "${plan.title}"!`);
+        setShareLinkInput('');
+        confetti({ particleCount: 80, spread: 70 });
+      }
     } else {
       toast.error('Đường link hoặc chuỗi chia sẻ không hợp lệ hoặc đã bị chỉnh sửa.');
     }
@@ -208,7 +246,7 @@ export default function LessonPlansPage() {
   }, [plans, selectedWeek]);
 
   // Handle Save from Editor
-  const handleSavePlan = (plan: LessonPlan) => {
+  const handleSavePlan = async (plan: LessonPlan) => {
     const exists = plans.some((p) => p.id === plan.id);
     let updated: LessonPlan[];
     if (exists) {
@@ -216,27 +254,25 @@ export default function LessonPlansPage() {
     } else {
       updated = [plan, ...plans];
     }
-    savePlans(updated);
+    await savePlans(updated);
   };
 
   // Handle Delete
-  const handleDeletePlan = (id: string) => {
+  const handleDeletePlan = async (id: string) => {
     if (confirm('Bạn có chắc chắn muốn xóa kế hoạch bài dạy này?')) {
       const updated = plans.filter((p) => p.id !== id);
-      savePlans(updated);
-      toast.success('Đã xóa kế hoạch bài dạy!');
+      if (await savePlans(updated)) toast.success('Đã xóa kế hoạch bài dạy!');
     }
   };
 
   // Handle Toggle Completed
-  const handleToggleCompleted = (id: string) => {
+  const handleToggleCompleted = async (id: string) => {
     const updated = plans.map((p) => (p.id === id ? { ...p, isCompleted: !p.isCompleted } : p));
-    savePlans(updated);
-    toast.success('Đã cập nhật trạng thái tiết dạy!');
+    if (await savePlans(updated)) toast.success('Đã cập nhật trạng thái tiết dạy!');
   };
 
   // Handle Generate with AI
-  const handleGenerateAI = () => {
+  const handleGenerateAI = async () => {
     if (!aiTitle.trim()) {
       toast.error('Vui lòng nhập tên bài học!');
       return;
@@ -251,15 +287,16 @@ export default function LessonPlansPage() {
       aiPeriod
     );
 
-    savePlans([generated, ...plans]);
-    confetti({ particleCount: 100, spread: 70 });
-    toast.success(`✨ Đã tự động tạo trọn gói Kế hoạch bài dạy & Slide TV cho: "${aiTitle}"!`);
-    setAiTitle('');
-    setActiveLessonPlan(generated);
+    if (await savePlans([generated, ...plans])) {
+      confetti({ particleCount: 100, spread: 70 });
+      toast.success(`Đã tạo và lưu mẫu Kế hoạch bài dạy & Slide TV cho: "${aiTitle}"!`);
+      setAiTitle('');
+      setActiveLessonPlan(generated);
+    }
   };
 
   // Handle Import Text
-  const handleImportText = () => {
+  const handleImportText = async () => {
     if (!importText.trim()) {
       toast.error('Vui lòng dán nội dung văn bản giáo án!');
       return;
@@ -272,11 +309,12 @@ export default function LessonPlansPage() {
       selectedTextbook
     );
 
-    savePlans([parsed, ...plans]);
-    confetti({ particleCount: 80, spread: 60 });
-    toast.success('Đã nhập và chuyển đổi giáo án thành công! 🎉');
-    setImportText('');
-    setActiveLessonPlan(parsed);
+    if (await savePlans([parsed, ...plans])) {
+      confetti({ particleCount: 80, spread: 60 });
+      toast.success('Đã nhập và chuyển đổi giáo án thành công! 🎉');
+      setImportText('');
+      setActiveLessonPlan(parsed);
+    }
   };
 
   // Printable View Mode
@@ -419,11 +457,12 @@ export default function LessonPlansPage() {
           <div className="flex flex-wrap items-center gap-2 pt-1">
             <button
               type="button"
-              onClick={() => {
-                savePlans([importedSharedPlan, ...plans]);
-                setImportedSharedPlan(null);
-                toast.success(`Đã lưu "${importedSharedPlan.title}" vào thư viện giáo án thành công!`);
-                confetti({ particleCount: 70, spread: 60 });
+              onClick={async () => {
+                if (await savePlans([importedSharedPlan, ...plans])) {
+                  setImportedSharedPlan(null);
+                  toast.success(`Đã lưu "${importedSharedPlan.title}" vào thư viện giáo án thành công!`);
+                  confetti({ particleCount: 70, spread: 60 });
+                }
               }}
               className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
             >

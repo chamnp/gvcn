@@ -52,10 +52,9 @@ export const DEFAULT_AI_GEN_SETTINGS: AIGenerationSettings = {
 };
 
 export const DEFAULT_AI_CONFIG: AIConfig = {
-  provider: 'CUSTOM_OPENAI',
-  apiKey: 'sk-sjozamgxafx93e1ut7zizxetbf653tx3amguacizr6c40jby',
-  baseUrl: 'https://api.xiaomimimo.com/v1',
-  modelName: 'mimo-v2.5',
+  provider: 'GEMINI',
+  apiKey: '',
+  modelName: 'gemini-2.5-flash',
   temperature: 0.7,
   generationSettings: DEFAULT_AI_GEN_SETTINGS,
 };
@@ -788,163 +787,65 @@ export async function safeSupabaseUpsert(table: string, payload: any) {
 
 const STORAGE_PREFIX = 'gvcn_pro_';
 
+const EMPTY_SCHOOL_INFO: SchoolInfo = {
+  id: '',
+  name: '',
+  departmentName: '',
+  schoolYear: getAcademicYearByDate(),
+  principalName: '',
+};
+
+const EMPTY_CLASS: ClassInfo = {
+  id: '',
+  name: '',
+  grade: 1,
+  schoolYear: getAcademicYearByDate(),
+  schoolName: '',
+  teacherName: '',
+  totalStudents: 0,
+  seatingGridRows: 5,
+  seatingGridCols: 8,
+};
+
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const autoCalendarTerm = useMemo(() => getCurrentTermByDate(), []);
-  const [schoolInfo, setSchoolInfo] = useState<SchoolInfo>(INITIAL_SCHOOL_INFO);
-  const [schoolClasses, setSchoolClasses] = useState<ClassInfo[]>(INITIAL_SCHOOL_CLASSES);
-  const [activeClassId, setActiveClassId] = useState<string>('class-4a1');
-  const [allStudents, setAllStudents] = useState<Student[]>(INITIAL_STUDENTS);
+  const [schoolInfo, setSchoolInfo] = useState<SchoolInfo>(EMPTY_SCHOOL_INFO);
+  const [schoolClasses, setSchoolClasses] = useState<ClassInfo[]>([]);
+  const [activeClassId, setActiveClassId] = useState<string>('');
+  const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [currentTerm, setCurrentTerm] = useState<TermType>(() => getCurrentTermByDate());
   const [subjectAssessments, setSubjectAssessments] = useState<SubjectAssessment[]>([]);
   const [traitAssessments, setTraitAssessments] = useState<TraitAssessment[]>([]);
   const [termSummaries, setTermSummaries] = useState<StudentTermSummary[]>([]);
-  const [attendances, setAttendances] = useState<DailyAttendance[]>(INITIAL_DAILY_ATTENDANCE);
-  const [starLogs, setStarLogs] = useState<StarLog[]>(INITIAL_STAR_LOGS);
-  const [starCriteria, setStarCriteria] = useState<StarCriterion[]>(INITIAL_STAR_CRITERIA);
-  const [rewardProducts, setRewardProducts] = useState<RewardProduct[]>(INITIAL_REWARD_PRODUCTS);
-  const [rewardRedemptions, setRewardRedemptions] = useState<RewardRedemption[]>(INITIAL_REDEMPTIONS);
-  const [customSubjects, setCustomSubjects] = useState<CustomSubject[]>(INITIAL_CUSTOM_SUBJECTS);
-  const [allHomeworks, setAllHomeworks] = useState<HomeworkAssignment[]>(INITIAL_HOMEWORKS);
+  const [attendances, setAttendances] = useState<DailyAttendance[]>([]);
+  const [starLogs, setStarLogs] = useState<StarLog[]>([]);
+  const [starCriteria, setStarCriteria] = useState<StarCriterion[]>([]);
+  const [rewardProducts, setRewardProducts] = useState<RewardProduct[]>([]);
+  const [rewardRedemptions, setRewardRedemptions] = useState<RewardRedemption[]>([]);
+  const [customSubjects, setCustomSubjects] = useState<CustomSubject[]>([]);
+  const [allHomeworks, setAllHomeworks] = useState<HomeworkAssignment[]>([]);
   const [allQuizSubmissions, setAllQuizSubmissions] = useState<QuizSubmission[]>([]);
-  const [allIEPPlans, setAllIEPPlans] = useState<IEPPlan[]>(INITIAL_IEP_PLANS);
-  const [allParentMeetings, setAllParentMeetings] = useState<ParentMeetingDoc[]>(INITIAL_PARENT_MEETINGS);
-  const [allHealthRecords, setAllHealthRecords] = useState<HealthRecord[]>(INITIAL_HEALTH_RECORDS);
-  const [allClassroomBooks, setAllClassroomBooks] = useState<ClassroomBook[]>(INITIAL_CLASSROOM_BOOKS);
-  const [allBookBorrowLogs, setAllBookBorrowLogs] = useState<BookBorrowLog[]>(INITIAL_BORROW_LOGS);
-  const [allClassEvents, setAllClassEvents] = useState<ClassEvent[]>(INITIAL_CLASS_EVENTS);
-  const [allTimetables, setAllTimetables] = useState<TimetableSlot[]>(
-    INITIAL_TIMETABLE.map((t) => ({ ...t, classId: 'class-4a1' }))
-  );
+  const [allIEPPlans, setAllIEPPlans] = useState<IEPPlan[]>([]);
+  const [allParentMeetings, setAllParentMeetings] = useState<ParentMeetingDoc[]>([]);
+  const [allHealthRecords, setAllHealthRecords] = useState<HealthRecord[]>([]);
+  const [allClassroomBooks, setAllClassroomBooks] = useState<ClassroomBook[]>([]);
+  const [allBookBorrowLogs, setAllBookBorrowLogs] = useState<BookBorrowLog[]>([]);
+  const [allClassEvents, setAllClassEvents] = useState<ClassEvent[]>([]);
+  const [allTimetables, setAllTimetables] = useState<TimetableSlot[]>([]);
   const [timetableScheduleConfig, setTimetableScheduleConfig] = useState<TimetableScheduleConfig>(DEFAULT_SCHEDULE_CONFIG);
   const periods = useMemo(() => calculatePeriods(timetableScheduleConfig), [timetableScheduleConfig]);
   const [apiKey, setApiKeyState] = useState<string>('');
   const [aiConfig, setAiConfigState] = useState<AIConfig>(DEFAULT_AI_CONFIG);
   const [aiGenSettings, setAiGenSettingsState] = useState<AIGenerationSettings>(DEFAULT_AI_GEN_SETTINGS);
-  const [formativeNotes, setFormativeNotes] = useState<FormativeNote[]>([
-    {
-      id: 'fn-1',
-      studentId: 'st-01',
-      studentName: 'Nguyễn Văn An',
-      date: '2026-08-25',
-      category: 'TIEN_BO',
-      title: 'Hăng hái phát biểu và chữ viết tiến bộ',
-      content: 'Em An tuần này rất tự tin phát biểu xây dựng bài môn Toán, bài viết chính tả sạch đẹp không tẩy xóa.',
-      tags: ['Toán', 'Tiếng Việt', 'Tiến bộ'],
-      isImportant: true,
-      createdAt: '2026-08-25T08:30:00Z',
-    },
-    {
-      id: 'fn-2',
-      studentId: 'st-02',
-      studentName: 'Trần Thị Bảo',
-      date: '2026-08-26',
-      category: 'TIEN_BO',
-      title: 'Giúp đỡ bạn trong giờ thực hành',
-      content: 'Biết chủ động hướng dẫn bạn cùng bàn hoàn thành bài vẽ Mỹ thuật, tính tình chan hòa.',
-      tags: ['Mỹ thuật', 'Giúp bạn'],
-      isImportant: false,
-      createdAt: '2026-08-26T09:15:00Z',
-    },
-  ]);
-  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([
-    {
-      id: 'lr-1',
-      classId: 'class-4a1',
-      studentId: 'st-04',
-      studentName: 'Phạm Thị Dung',
-      parentName: 'Mẹ Hoàng Thị Mai',
-      parentPhone: '0912345678',
-      startDate: new Date().toISOString().split('T')[0],
-      endDate: new Date().toISOString().split('T')[0],
-      reasonType: 'OM_DAU',
-      reasonDetail: 'Cháu bị sốt nhẹ và đau họng từ tối qua, gia đình xin phép cô cho cháu nghỉ học 1 ngày để đi khám bệnh.',
-      hasBoardingMealCancel: true,
-      medicationNotes: 'Nếu chiều cháu đỡ sốt và đi học, nhờ cô cho cháu uống gói Hapacol 250mg lúc 14h.',
-      status: 'PENDING',
-      createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-    },
-  ]);
-  const [classMoments, setClassMoments] = useState<ClassMoment[]>([
-    {
-      id: 'mom-1',
-      classId: 'class-4a1',
-      teacherName: 'Cô Nguyễn Thị Hoa',
-      category: 'ACADEMIC',
-      title: 'Tiết học thực hành STEM: Chế tạo chong chóng gió và đo năng lượng sạch 🌪️',
-      content: 'Hôm nay các con lớp 4A1 đã có một buổi trải nghiệm Khoa học cực kỳ sôi nổi! Cả lớp tự tay tính toán, cắt dán cánh quạt và thử nghiệm đo lực gió. Tinh thần làm việc nhóm và tính sáng tạo của các con rất tuyệt vời!',
-      imageUrls: [
-        'https://images.unsplash.com/photo-1577896851231-70ef18881754?w=800&auto=format&fit=crop&q=80',
-        'https://images.unsplash.com/photo-1509062522246-3755977927d7?w=800&auto=format&fit=crop&q=80',
-      ],
-      taggedStudentIds: ['st-01', 'st-02', 'st-03'],
-      likesCount: 18,
-      likedBy: [],
-      createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-    },
-    {
-      id: 'mom-2',
-      classId: 'class-4a1',
-      teacherName: 'Cô Nguyễn Thị Hoa',
-      category: 'PRAISE',
-      title: 'Chúc mừng đội tuyển kéo co Lớp 4A1 xuất sắc giành giải Nhất cấp trường! 🏆',
-      content: 'Sau 3 vòng thi đấu kiên cường và đoàn kết, đội kéo co lớp 4A1 đã mang về cúp vô địch cho lớp chúng ta. Cảm ơn sự cổ vũ hết mình của tất cả các bạn và phụ huynh!',
-      imageUrls: [
-        'https://images.unsplash.com/photo-1571260899304-425eee4c7efc?w=800&auto=format&fit=crop&q=80',
-      ],
-      taggedStudentIds: ['st-04', 'st-05', 'st-06', 'st-07'],
-      likesCount: 29,
-      likedBy: [],
-      createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
-    },
-  ]);
-  const [conferenceSlots, setConferenceSlots] = useState<ConferenceSlot[]>([
-    {
-      id: 'conf-1',
-      classId: 'class-4a1',
-      title: 'Trao đổi riêng kết quả học tập & rèn luyện Giữa HK1',
-      date: '2026-09-05',
-      startTime: '08:00',
-      endTime: '08:20',
-      type: 'IN_PERSON',
-      location: 'Phòng học 4A1 (Tầng 2, Nhà B)',
-      isBooked: true,
-      bookedStudentId: 'st-01',
-      bookedStudentName: 'Nguyễn Văn An',
-      bookedParentName: 'Nguyễn Văn Bình',
-      bookedParentPhone: '0901234567',
-      parentDiscussionTopics: 'Muốn trao đổi với cô về phương pháp rèn thêm môn Toán tư duy ở nhà cho con.',
-      createdAt: '2026-08-25T08:00:00Z',
-    },
-    {
-      id: 'conf-2',
-      classId: 'class-4a1',
-      title: 'Trao đổi riêng kết quả học tập & rèn luyện Giữa HK1',
-      date: '2026-09-05',
-      startTime: '08:25',
-      endTime: '08:45',
-      type: 'IN_PERSON',
-      location: 'Phòng học 4A1 (Tầng 2, Nhà B)',
-      isBooked: false,
-      createdAt: '2026-08-25T08:00:00Z',
-    },
-    {
-      id: 'conf-3',
-      classId: 'class-4a1',
-      title: 'Trao đổi riêng kết quả học tập & rèn luyện Giữa HK1',
-      date: '2026-09-05',
-      startTime: '08:50',
-      endTime: '09:10',
-      type: 'ONLINE_MEET',
-      location: 'Google Meet (Link sẽ gửi qua Zalo trước 15p)',
-      isBooked: false,
-      createdAt: '2026-08-25T08:00:00Z',
-    },
-  ]);
+  const [formativeNotes, setFormativeNotes] = useState<FormativeNote[]>([]);
+  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
+  const [classMoments, setClassMoments] = useState<ClassMoment[]>([]);
+  const [conferenceSlots, setConferenceSlots] = useState<ConferenceSlot[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Active Class Info
   const classInfo = useMemo(() => {
-    return schoolClasses.find((c) => c.id === activeClassId) || schoolClasses[0] || INITIAL_CLASS;
+    return schoolClasses.find((c) => c.id === activeClassId) || schoolClasses[0] || EMPTY_CLASS;
   }, [schoolClasses, activeClassId]);
 
   // Scoped Students for active class
@@ -961,8 +862,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Scoped Timetable for active class
   const timetable = useMemo(() => {
     const list = allTimetables.filter((t) => t.classId === activeClassId);
-    if (list.length > 0) return list;
-    return INITIAL_TIMETABLE.map((t) => ({ ...t, classId: activeClassId }));
+    return list;
   }, [allTimetables, activeClassId]);
 
   // Scoped Homework for active class
@@ -1037,244 +937,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [profile, activeClassId, classInfo.name, classInfo.teacherName]);
 
-  // Khởi tạo và load từ LocalStorage
+  // Chỉ nạp tùy chọn giao diện từ localStorage. Dữ liệu nghiệp vụ luôn lấy từ Supabase.
   useEffect(() => {
     try {
-      const savedSchool = localStorage.getItem(STORAGE_PREFIX + 'schoolInfo');
-      const savedClasses = localStorage.getItem(STORAGE_PREFIX + 'schoolClasses');
       const savedActiveId = localStorage.getItem(STORAGE_PREFIX + 'activeClassId');
-      const savedStudents = localStorage.getItem(STORAGE_PREFIX + 'students');
       const savedTerm = localStorage.getItem(STORAGE_PREFIX + 'currentTerm');
-      const savedSubAss = localStorage.getItem(STORAGE_PREFIX + 'subjectAssessments');
-      const savedTraitAss = localStorage.getItem(STORAGE_PREFIX + 'traitAssessments');
-      const savedSummaries = localStorage.getItem(STORAGE_PREFIX + 'termSummaries');
-      const savedAtt = localStorage.getItem(STORAGE_PREFIX + 'attendances');
-      const savedStars = localStorage.getItem(STORAGE_PREFIX + 'starLogs');
-      const savedTt = localStorage.getItem(STORAGE_PREFIX + 'timetable');
-      const savedCs = localStorage.getItem(STORAGE_PREFIX + 'customSubjects');
-      const savedHw = localStorage.getItem(STORAGE_PREFIX + 'homeworks');
-      const savedKey = localStorage.getItem(STORAGE_PREFIX + 'apiKey');
-
-      if (savedSchool) {
-        try {
-          const parsedSchool = JSON.parse(savedSchool);
-          if (parsedSchool && parsedSchool.name) {
-            setSchoolInfo(parsedSchool);
-          } else {
-            setSchoolInfo(INITIAL_SCHOOL_INFO);
-          }
-        } catch (e) {
-          setSchoolInfo(INITIAL_SCHOOL_INFO);
-        }
-      } else {
-        setSchoolInfo(INITIAL_SCHOOL_INFO);
-      }
-
-      if (savedClasses) {
-        try {
-          const parsedClasses = JSON.parse(savedClasses);
-          if (Array.isArray(parsedClasses)) {
-            const upgradedClasses = parsedClasses.map((c: any) => {
-              const cleanName = (c.name || 'lop').toLowerCase().replace(/[^a-z0-9]/g, '');
-              const initialMatch = INITIAL_SCHOOL_CLASSES.find((ic) => ic.id === c.id || ic.name === c.name);
-              return {
-                ...c,
-                totalStudents: c.totalStudents || initialMatch?.totalStudents || 35,
-                teacherName: c.teacherName || initialMatch?.teacherName || 'Giáo viên',
-                schoolName: c.schoolName || INITIAL_SCHOOL_INFO.name,
-                schoolYear: c.schoolYear || INITIAL_SCHOOL_INFO.schoolYear || '2026-2027',
-                shareToken: c.shareToken || initialMatch?.shareToken || `c${cleanName}-${Math.random().toString(36).substring(2, 8)}`,
-              };
-            });
-            setSchoolClasses(upgradedClasses);
-          } else {
-            setSchoolClasses(INITIAL_SCHOOL_CLASSES);
-          }
-        } catch (e) {
-          setSchoolClasses(INITIAL_SCHOOL_CLASSES);
-        }
-      } else {
-        setSchoolClasses(INITIAL_SCHOOL_CLASSES);
-      }
+      const savedScheduleConfig = localStorage.getItem(STORAGE_PREFIX + 'timetableScheduleConfig');
+      const savedAiConfig = localStorage.getItem(STORAGE_PREFIX + 'aiConfig');
+      const savedGenSettings = localStorage.getItem(STORAGE_PREFIX + 'aiGenSettings');
 
       if (savedActiveId) setActiveClassId(savedActiveId);
-      if (savedStudents) {
-        try {
-          const parsedStudents = JSON.parse(savedStudents);
-          if (Array.isArray(parsedStudents)) {
-            const upgradedStudents = parsedStudents.map((st: any) => ({
-              ...st,
-              shareToken: st.shareToken || `s-${(st.id || 'hs').toLowerCase().replace(/[^a-z0-9]/g, '')}-${Math.random().toString(36).substring(2, 8)}`,
-            }));
-            setAllStudents(upgradedStudents);
-          } else {
-            setAllStudents(INITIAL_STUDENTS);
-          }
-        } catch (e) {
-          setAllStudents(INITIAL_STUDENTS);
-        }
-      } else {
-        setAllStudents(INITIAL_STUDENTS);
-      }
-
-      const realCalendarTerm = getCurrentTermByDate();
-      if (savedTerm) {
-        // If old cached term was CUOI_NAM from previous bug while currently in GIUA_HK1, auto-sync to real calendar term
-        if (savedTerm === 'CUOI_NAM' && realCalendarTerm === 'GIUA_HK1') {
-          setCurrentTerm('GIUA_HK1');
-          localStorage.setItem(STORAGE_PREFIX + 'currentTerm', 'GIUA_HK1');
-        } else {
-          setCurrentTerm(savedTerm as TermType);
-        }
-      } else {
-        setCurrentTerm(realCalendarTerm);
-      }
-
-      if (savedAtt) {
-        try {
-          const parsed = JSON.parse(savedAtt);
-          if (Array.isArray(parsed)) setAttendances(parsed);
-        } catch (e) {}
-      }
-      if (savedStars) {
-        try {
-          const parsed = JSON.parse(savedStars);
-          if (Array.isArray(parsed)) setStarLogs(parsed);
-        } catch (e) {}
-      }
-      
-      const savedCriteria = localStorage.getItem(STORAGE_PREFIX + 'starCriteria');
-      if (savedCriteria) {
-        try { setStarCriteria(JSON.parse(savedCriteria)); } catch (e) {}
-      } else {
-        setStarCriteria(INITIAL_STAR_CRITERIA);
-      }
-
-      const savedProducts = localStorage.getItem(STORAGE_PREFIX + 'rewardProducts');
-      if (savedProducts) {
-        try { setRewardProducts(JSON.parse(savedProducts)); } catch (e) {}
-      } else {
-        setRewardProducts(INITIAL_REWARD_PRODUCTS);
-      }
-
-      const savedRedemptions = localStorage.getItem(STORAGE_PREFIX + 'rewardRedemptions');
-      if (savedRedemptions) {
-        try { setRewardRedemptions(JSON.parse(savedRedemptions)); } catch (e) {}
-      } else {
-        setRewardRedemptions(INITIAL_REDEMPTIONS);
-      }
-
-      if (savedTt) {
-        try { const p = JSON.parse(savedTt); if (Array.isArray(p)) setAllTimetables(p); } catch (e) {}
-      }
-      const savedScheduleConfig = localStorage.getItem(STORAGE_PREFIX + 'timetableScheduleConfig');
+      if (savedTerm) setCurrentTerm(savedTerm as TermType);
       if (savedScheduleConfig) {
-        try {
-          const parsed = JSON.parse(savedScheduleConfig);
-          if (parsed && typeof parsed === 'object') {
-            setTimetableScheduleConfig((prev) => ({ ...prev, ...parsed }));
-          }
-        } catch (e) {}
+        const parsed = JSON.parse(savedScheduleConfig);
+        if (parsed && typeof parsed === 'object') {
+          setTimetableScheduleConfig((prev) => ({ ...prev, ...parsed }));
+        }
       }
-      if (savedCs) {
-        try { const p = JSON.parse(savedCs); if (Array.isArray(p)) setCustomSubjects(p); } catch (e) {}
-      }
-      if (savedHw) {
-        try { const p = JSON.parse(savedHw); if (Array.isArray(p)) setAllHomeworks(p); } catch (e) {}
-      }
-      const savedEvents = localStorage.getItem(STORAGE_PREFIX + 'classEvents');
-      if (savedEvents) {
-        try { const p = JSON.parse(savedEvents); if (Array.isArray(p)) setAllClassEvents(p); } catch (e) {}
-      }
-
-      const savedAiConfig = localStorage.getItem(STORAGE_PREFIX + 'aiConfig');
       if (savedAiConfig) {
-        try {
-          const parsed = JSON.parse(savedAiConfig);
-          if (parsed.modelName === 'mimo-v1' || parsed.modelName === 'mimo' || !parsed.modelName) {
-            parsed.modelName = 'mimo-v2.5';
-          }
-          if (!parsed.baseUrl && parsed.provider === 'CUSTOM_OPENAI') {
-            parsed.baseUrl = 'https://api.xiaomimimo.com/v1';
-          }
-          setAiConfigState(parsed);
-          if (parsed.apiKey) setApiKeyState(parsed.apiKey);
-        } catch (e) {}
-      } else if (savedKey) {
-        setApiKeyState(savedKey);
-        setAiConfigState({ ...DEFAULT_AI_CONFIG, apiKey: savedKey });
+        const parsed = JSON.parse(savedAiConfig);
+        setAiConfigState({ ...DEFAULT_AI_CONFIG, ...parsed, apiKey: parsed.apiKey || '' });
+        if (parsed.apiKey) setApiKeyState(parsed.apiKey);
       }
-
-      const savedGenSettings = localStorage.getItem(STORAGE_PREFIX + 'aiGenSettings');
       if (savedGenSettings) {
-        try {
-          const parsed = JSON.parse(savedGenSettings);
-          setAiGenSettingsState({ ...DEFAULT_AI_GEN_SETTINGS, ...parsed });
-        } catch (e) {}
+        setAiGenSettingsState({ ...DEFAULT_AI_GEN_SETTINGS, ...JSON.parse(savedGenSettings) });
       }
-
-      if (savedSubAss) {
-        try { const p = JSON.parse(savedSubAss); if (Array.isArray(p)) setSubjectAssessments(p); } catch (e) {}
-      }
-
-      if (savedTraitAss) {
-        try { const p = JSON.parse(savedTraitAss); if (Array.isArray(p)) setTraitAssessments(p); } catch (e) {}
-      }
-
-      if (savedSummaries) {
-        try { const p = JSON.parse(savedSummaries); if (Array.isArray(p)) setTermSummaries(p); } catch (e) {}
-      }
-
-      const savedNotes = localStorage.getItem(STORAGE_PREFIX + 'formativeNotes');
-      if (savedNotes) {
-        try { setFormativeNotes(JSON.parse(savedNotes)); } catch (e) {}
-      }
-
-      const savedLeave = localStorage.getItem(STORAGE_PREFIX + 'leaveRequests');
-      if (savedLeave) {
-        try { setLeaveRequests(JSON.parse(savedLeave)); } catch (e) {}
-      }
-
-      const savedMoments = localStorage.getItem(STORAGE_PREFIX + 'classMoments');
-      if (savedMoments) {
-        try { setClassMoments(JSON.parse(savedMoments)); } catch (e) {}
-      }
-
-      const savedConf = localStorage.getItem(STORAGE_PREFIX + 'conferenceSlots');
-      if (savedConf) {
-        try { setConferenceSlots(JSON.parse(savedConf)); } catch (e) {}
-      }
-
-      const savedQuizSubs = localStorage.getItem(STORAGE_PREFIX + 'quizSubmissions');
-      if (savedQuizSubs) {
-        try { setAllQuizSubmissions(JSON.parse(savedQuizSubs)); } catch (e) {}
-      }
-
-      const savedIEP = localStorage.getItem(STORAGE_PREFIX + 'iepPlans');
-      if (savedIEP) {
-        try { setAllIEPPlans(JSON.parse(savedIEP)); } catch (e) {}
-      }
-      const savedPM = localStorage.getItem(STORAGE_PREFIX + 'parentMeetings');
-      if (savedPM) {
-        try { setAllParentMeetings(JSON.parse(savedPM)); } catch (e) {}
-      }
-
-      const savedHR = localStorage.getItem(STORAGE_PREFIX + 'healthRecords');
-      if (savedHR) {
-        try { setAllHealthRecords(JSON.parse(savedHR)); } catch (e) {}
-      }
-
-      const savedBooks = localStorage.getItem(STORAGE_PREFIX + 'classroomBooks');
-      if (savedBooks) {
-        try { setAllClassroomBooks(JSON.parse(savedBooks)); } catch (e) {}
-      }
-
-      const savedBorrow = localStorage.getItem(STORAGE_PREFIX + 'bookBorrowLogs');
-      if (savedBorrow) {
-        try { setAllBookBorrowLogs(JSON.parse(savedBorrow)); } catch (e) {}
-      }
-    } catch (e) {
-      console.warn('Error reading from localStorage:', e);
+    } catch (error) {
+      console.warn('Không thể đọc tùy chọn cục bộ:', error);
     } finally {
       setIsLoaded(true);
     }
@@ -1287,31 +976,32 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     async function syncFromSupabase() {
       try {
         const [
-          { data: dbSchool },
-          { data: dbClasses },
-          { data: dbStudents },
-          { data: dbAssessments },
-          { data: dbTraits },
-          { data: dbSummaries },
-          { data: dbAttendances },
-          { data: dbStars },
-          { data: dbCriteria },
-          { data: dbProducts },
-          { data: dbRedemptions },
-          { data: dbHomeworks },
-          { data: dbTimetable },
-          { data: dbEvents },
-          { data: dbCustomSubjects },
-          { data: dbNotes },
-          { data: dbLeave },
-          { data: dbMoments },
-          { data: dbConferences },
-          { data: dbIEPPlans },
-          { data: dbParentMeetings },
-          { data: dbHealthRecords },
-          { data: dbClassroomBooks },
-          { data: dbBorrowLogs },
-          { data: dbTeacherConfigs },
+          { data: dbSchool, error: schoolError },
+          { data: dbClasses, error: classesError },
+          { data: dbStudents, error: studentsError },
+          { data: dbAssessments, error: assessmentsError },
+          { data: dbTraits, error: traitsError },
+          { data: dbSummaries, error: summariesError },
+          { data: dbAttendances, error: attendancesError },
+          { data: dbStars, error: starsError },
+          { data: dbCriteria, error: criteriaError },
+          { data: dbProducts, error: productsError },
+          { data: dbRedemptions, error: redemptionsError },
+          { data: dbHomeworks, error: homeworksError },
+          { data: dbQuizSubmissions, error: quizSubmissionsError },
+          { data: dbTimetable, error: timetableError },
+          { data: dbEvents, error: eventsError },
+          { data: dbCustomSubjects, error: customSubjectsError },
+          { data: dbNotes, error: notesError },
+          { data: dbLeave, error: leaveError },
+          { data: dbMoments, error: momentsError },
+          { data: dbConferences, error: conferencesError },
+          { data: dbIEPPlans, error: iepError },
+          { data: dbParentMeetings, error: meetingsError },
+          { data: dbHealthRecords, error: healthError },
+          { data: dbClassroomBooks, error: booksError },
+          { data: dbBorrowLogs, error: borrowLogsError },
+          { data: dbTeacherConfigs, error: teacherConfigsError },
         ] = await Promise.all([
           supabase.from('SchoolInfo').select('*').single(),
           supabase.from('Class').select('*').order('grade', { ascending: true }),
@@ -1325,6 +1015,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           supabase.from('RewardProduct').select('*').order('starPrice', { ascending: true }),
           supabase.from('RewardRedemption').select('*').order('requestedAt', { ascending: false }),
           supabase.from('HomeworkAssignment').select('*').order('createdAt', { ascending: false }),
+          supabase.from('QuizSubmission').select('*').order('submittedAt', { ascending: false }),
           supabase.from('TimetableSlot').select('*'),
           supabase.from('ClassEvent').select('*').order('date', { ascending: true }),
           supabase.from('CustomSubject').select('*'),
@@ -1337,24 +1028,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           supabase.from('HealthRecord').select('*'),
           supabase.from('ClassroomBook').select('*').order('title', { ascending: true }),
           supabase.from('BookBorrowLog').select('*').order('borrowDate', { ascending: false }),
-          supabase.from('TeacherConfig').select('*'),
+          profile?.email
+            ? supabase.from('TeacherConfig').select('*').eq('email', profile.email.toLowerCase()).limit(1)
+            : Promise.resolve({ data: [], error: null }),
         ]);
 
         if (!isMounted) return;
 
+        const syncErrors = [
+          schoolError, classesError, studentsError, assessmentsError, traitsError, summariesError,
+          attendancesError, starsError, criteriaError, productsError, redemptionsError, homeworksError,
+          quizSubmissionsError, timetableError, eventsError, customSubjectsError, notesError, leaveError,
+          momentsError, conferencesError, iepError, meetingsError, healthError, booksError, borrowLogsError,
+          teacherConfigsError,
+        ].filter(Boolean);
+        if (syncErrors.length > 0) {
+          console.error('Supabase initial fetch errors:', syncErrors.map((error) => error?.message));
+          toast.error(`Không thể đồng bộ ${syncErrors.length} nhóm dữ liệu từ máy chủ.`);
+        }
+
         if (dbSchool) {
           setSchoolInfo((prev) => ({
             ...prev,
-            id: dbSchool.id || prev.id || 'default',
-            name: dbSchool.name || prev.name || 'Trường Tiểu học Đại Mỗ',
-            departmentName: dbSchool.departmentName || prev.departmentName || 'Phòng GD&ĐT Quận Nam Từ Liêm',
-            address: dbSchool.address || prev.address || '',
-            phone: dbSchool.phone || prev.phone || '',
-            email: dbSchool.email || prev.email || '',
-            website: dbSchool.website || prev.website || '',
-            logoUrl: dbSchool.logoUrl || prev.logoUrl || '',
-            principalName: dbSchool.principalName || prev.principalName || '',
-            schoolYear: dbSchool.schoolYear || prev.schoolYear || '2026-2027',
+            id: dbSchool.id || prev.id,
+            name: dbSchool.name || '',
+            departmentName: dbSchool.departmentName || '',
+            address: dbSchool.address || '',
+            phone: dbSchool.phone || '',
+            email: dbSchool.email || '',
+            website: dbSchool.website || '',
+            logoUrl: dbSchool.logoUrl || '',
+            principalName: dbSchool.principalName || '',
+            schoolYear: dbSchool.schoolYear || getAcademicYearByDate(),
           }));
 
           if (dbSchool.aiConfig && typeof dbSchool.aiConfig === 'object') {
@@ -1384,11 +1089,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         }
 
-        if (dbClasses && dbClasses.length > 0) {
+        if (dbClasses) {
           setSchoolClasses(dbClasses);
+          setActiveClassId((current) =>
+            dbClasses.some((item) => item.id === current) ? current : dbClasses[0]?.id || ''
+          );
         }
 
-        if (dbStudents && dbStudents.length > 0) {
+        if (dbStudents) {
           const mappedStudents: Student[] = dbStudents.map((st: any) => ({
             id: st.id,
             classId: st.classId,
@@ -1413,72 +1121,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             createdAt: st.createdAt,
             updatedAt: st.updatedAt,
           }));
-          setAllStudents((prev) => {
-            const { merged, itemsToSyncUp } = mergeWithTimestamp(prev, mappedStudents);
-            if (itemsToSyncUp.length > 0) {
-              safeSupabaseUpsert('Student', itemsToSyncUp);
-            }
-            return merged;
-          });
+          setAllStudents(mappedStudents);
         }
 
-        if (dbAssessments && dbAssessments.length > 0) {
-          setSubjectAssessments((prev) => {
-            const { merged, itemsToSyncUp } = mergeWithTimestamp(prev, dbAssessments);
-            if (itemsToSyncUp.length > 0) {
-              safeSupabaseUpsert('SubjectAssessment', itemsToSyncUp);
-            }
-            return merged;
-          });
+        if (dbAssessments) {
+          setSubjectAssessments(dbAssessments);
         }
 
-        if (dbTraits && dbTraits.length > 0) {
-          setTraitAssessments((prev) => {
-            const { merged, itemsToSyncUp } = mergeWithTimestamp(prev, dbTraits);
-            if (itemsToSyncUp.length > 0) {
-              safeSupabaseUpsert('TraitAssessment', itemsToSyncUp);
-            }
-            return merged;
-          });
+        if (dbTraits) {
+          setTraitAssessments(dbTraits);
         }
 
-        if (dbSummaries && dbSummaries.length > 0) {
-          setTermSummaries((prev) => {
-            const { merged, itemsToSyncUp } = mergeWithTimestamp(
-              prev,
-              dbSummaries,
-              (s) => `${s.studentId}-${s.term}`
-            );
-            if (itemsToSyncUp.length > 0) {
-              safeSupabaseUpsert('TermSummary', itemsToSyncUp);
-            }
-            return merged;
-          });
+        if (dbSummaries) {
+          setTermSummaries(dbSummaries);
         }
 
-        if (dbAttendances && dbAttendances.length > 0) {
-          setAttendances((prev) => {
-            const { merged, itemsToSyncUp } = mergeWithTimestamp(prev, dbAttendances);
-            if (itemsToSyncUp.length > 0) {
-              safeSupabaseUpsert('DailyAttendance', itemsToSyncUp);
-            }
-            return merged;
-          });
+        if (dbAttendances) {
+          setAttendances(dbAttendances);
         }
 
-        if (dbStars && dbStars.length > 0) {
+        if (dbStars) {
           setStarLogs(dbStars);
         }
 
-        if (dbCriteria && dbCriteria.length > 0) {
+        if (dbCriteria) {
           setStarCriteria(dbCriteria);
         }
 
-        if (dbProducts && dbProducts.length > 0) {
+        if (dbProducts) {
           setRewardProducts(dbProducts);
         }
 
-        if (dbRedemptions && dbRedemptions.length > 0) {
+        if (dbRedemptions) {
           const mappedRedemptions: RewardRedemption[] = dbRedemptions.map((r: any) => ({
             id: r.id,
             classId: r.classId,
@@ -1497,77 +1171,59 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setRewardRedemptions(mappedRedemptions);
         }
 
-        if (dbHomeworks && dbHomeworks.length > 0) {
-          setAllHomeworks((prev) => {
-            const { merged, itemsToSyncUp } = mergeWithTimestamp(prev, dbHomeworks);
-            if (itemsToSyncUp.length > 0) {
-              safeSupabaseUpsert('HomeworkAssignment', itemsToSyncUp);
-            }
-            return merged;
-          });
+        if (dbHomeworks) {
+          setAllHomeworks(dbHomeworks);
         }
 
-        if (dbTimetable && dbTimetable.length > 0) {
-          setAllTimetables((prev) => {
-            const { merged, itemsToSyncUp } = mergeWithTimestamp(
-              prev,
-              dbTimetable,
-              (item) => item.id || `slot-${item.classId}-${item.day}-${item.period}`
-            );
-            if (itemsToSyncUp.length > 0) {
-              safeSupabaseUpsert('TimetableSlot', itemsToSyncUp);
-            }
-            return merged;
-          });
+        if (dbQuizSubmissions) {
+          setAllQuizSubmissions(dbQuizSubmissions);
         }
 
-        if (dbEvents && dbEvents.length > 0) {
-          setAllClassEvents((prev) => {
-            const { merged, itemsToSyncUp } = mergeWithTimestamp(prev, dbEvents);
-            if (itemsToSyncUp.length > 0) {
-              safeSupabaseUpsert('ClassEvent', itemsToSyncUp);
-            }
-            return merged;
-          });
+        if (dbTimetable) {
+          setAllTimetables(dbTimetable);
         }
 
-        if (dbCustomSubjects && dbCustomSubjects.length > 0) {
+        if (dbEvents) {
+          setAllClassEvents(dbEvents);
+        }
+
+        if (dbCustomSubjects) {
           setCustomSubjects(dbCustomSubjects);
         }
 
-        if (dbNotes && dbNotes.length > 0) {
+        if (dbNotes) {
           setFormativeNotes(dbNotes);
         }
 
-        if (dbLeave && dbLeave.length > 0) {
+        if (dbLeave) {
           setLeaveRequests(dbLeave);
         }
 
-        if (dbMoments && dbMoments.length > 0) {
+        if (dbMoments) {
           setClassMoments(dbMoments);
         }
 
-        if (dbConferences && dbConferences.length > 0) {
+        if (dbConferences) {
           setConferenceSlots(dbConferences);
         }
 
-        if (dbIEPPlans && dbIEPPlans.length > 0) {
+        if (dbIEPPlans) {
           setAllIEPPlans(dbIEPPlans);
         }
 
-        if (dbParentMeetings && dbParentMeetings.length > 0) {
+        if (dbParentMeetings) {
           setAllParentMeetings(dbParentMeetings);
         }
 
-        if (dbHealthRecords && dbHealthRecords.length > 0) {
+        if (dbHealthRecords) {
           setAllHealthRecords(dbHealthRecords);
         }
 
-        if (dbClassroomBooks && dbClassroomBooks.length > 0) {
+        if (dbClassroomBooks) {
           setAllClassroomBooks(dbClassroomBooks);
         }
 
-        if (dbBorrowLogs && dbBorrowLogs.length > 0) {
+        if (dbBorrowLogs) {
           setAllBookBorrowLogs(dbBorrowLogs);
         }
       } catch (err) {
@@ -2004,68 +1660,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         }
       )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'QuizSubmission' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newRow = payload.new as QuizSubmission;
+            setAllQuizSubmissions((prev) => {
+              const withoutPrevious = prev.filter(
+                (item) => !(item.homeworkId === newRow.homeworkId && item.studentId === newRow.studentId)
+              );
+              return [newRow, ...withoutPrevious];
+            });
+          } else if (payload.eventType === 'DELETE') {
+            const oldRow = payload.old as QuizSubmission;
+            setAllQuizSubmissions((prev) => prev.filter((item) => item.id !== oldRow.id));
+          } else if (payload.eventType === 'UPDATE') {
+            const newRow = payload.new as QuizSubmission;
+            setAllQuizSubmissions((prev) => prev.map((item) => (item.id === newRow.id ? newRow : item)));
+          }
+        }
+      )
       .subscribe();
 
     return () => {
       isMounted = false;
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [profile?.email]);
 
-  // Tự động lưu vào LocalStorage
+  // Chỉ lưu tùy chọn giao diện; dữ liệu nghiệp vụ không dùng localStorage làm nguồn dự phòng.
   useEffect(() => {
     if (!isLoaded) return;
     const safeSet = (key: string, value: string) => {
       try { localStorage.setItem(key, value); } catch (e) { console.warn(`localStorage quota exceeded for key: ${key}`, e); }
     };
-    safeSet(STORAGE_PREFIX + 'schoolInfo', JSON.stringify(schoolInfo));
-    safeSet(STORAGE_PREFIX + 'schoolClasses', JSON.stringify(schoolClasses));
     safeSet(STORAGE_PREFIX + 'activeClassId', activeClassId);
-    safeSet(STORAGE_PREFIX + 'students', JSON.stringify(allStudents));
     safeSet(STORAGE_PREFIX + 'currentTerm', currentTerm);
-    safeSet(STORAGE_PREFIX + 'subjectAssessments', JSON.stringify(subjectAssessments));
-    safeSet(STORAGE_PREFIX + 'traitAssessments', JSON.stringify(traitAssessments));
-    safeSet(STORAGE_PREFIX + 'termSummaries', JSON.stringify(termSummaries));
-    safeSet(STORAGE_PREFIX + 'attendances', JSON.stringify(attendances));
-    safeSet(STORAGE_PREFIX + 'starLogs', JSON.stringify(starLogs));
-    safeSet(STORAGE_PREFIX + 'starCriteria', JSON.stringify(starCriteria));
-    safeSet(STORAGE_PREFIX + 'rewardProducts', JSON.stringify(rewardProducts));
-    safeSet(STORAGE_PREFIX + 'rewardRedemptions', JSON.stringify(rewardRedemptions));
-    safeSet(STORAGE_PREFIX + 'timetable', JSON.stringify(allTimetables));
-    safeSet(STORAGE_PREFIX + 'customSubjects', JSON.stringify(customSubjects));
-    safeSet(STORAGE_PREFIX + 'homeworks', JSON.stringify(allHomeworks));
-    safeSet(STORAGE_PREFIX + 'formativeNotes', JSON.stringify(formativeNotes));
-    safeSet(STORAGE_PREFIX + 'leaveRequests', JSON.stringify(leaveRequests));
-    safeSet(STORAGE_PREFIX + 'classMoments', JSON.stringify(classMoments));
-    safeSet(STORAGE_PREFIX + 'conferenceSlots', JSON.stringify(conferenceSlots));
-    safeSet(STORAGE_PREFIX + 'classEvents', JSON.stringify(allClassEvents));
     safeSet(STORAGE_PREFIX + 'timetableScheduleConfig', JSON.stringify(timetableScheduleConfig));
-    safeSet(STORAGE_PREFIX + 'apiKey', apiKey);
   }, [
     isLoaded,
-    schoolInfo,
-    schoolClasses,
     activeClassId,
-    allStudents,
     currentTerm,
-    subjectAssessments,
-    traitAssessments,
-    termSummaries,
-    attendances,
-    starLogs,
-    starCriteria,
-    rewardProducts,
-    rewardRedemptions,
-    allTimetables,
     timetableScheduleConfig,
-    customSubjects,
-    allHomeworks,
-    allClassEvents,
-    formativeNotes,
-    leaveRequests,
-    classMoments,
-    conferenceSlots,
-    apiKey,
   ]);
 
   // SCHOOL PROFILE ACTIONS
@@ -3650,17 +3287,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       keysToRemove.forEach((k) => localStorage.removeItem(k));
     } catch (e) {}
 
-    setSchoolClasses(INITIAL_SCHOOL_CLASSES);
-    setActiveClassId('class-4a1');
-    setAllStudents(INITIAL_STUDENTS);
-    setAttendances(INITIAL_DAILY_ATTENDANCE);
-    setStarLogs(INITIAL_STAR_LOGS);
-    setStarCriteria(INITIAL_STAR_CRITERIA);
-    setRewardProducts(INITIAL_REWARD_PRODUCTS);
-    setRewardRedemptions(INITIAL_REDEMPTIONS);
-    setCustomSubjects(INITIAL_CUSTOM_SUBJECTS);
-    setAllHomeworks(INITIAL_HOMEWORKS);
-    setAllTimetables(INITIAL_TIMETABLE.map((t) => ({ ...t, classId: 'class-4a1' })));
+    setActiveClassId('');
+    setCurrentTerm(getCurrentTermByDate());
     setTimetableScheduleConfig(DEFAULT_SCHEDULE_CONFIG);
     window.location.reload();
   };
@@ -4012,7 +3640,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const quizSubmissions = useMemo(
-    () => allQuizSubmissions.filter((s) => (s.classId || 'class-4a1') === activeClassId),
+    () => allQuizSubmissions.filter((s) => s.classId === activeClassId),
     [allQuizSubmissions, activeClassId]
   );
 
@@ -4022,29 +3650,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: `sub-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
       submittedAt: new Date().toISOString(),
     };
-    setAllQuizSubmissions((prev) => {
-      const filtered = prev.filter(
+    const previous = allQuizSubmissions;
+    setAllQuizSubmissions((prev) => [
+      newSubmission,
+      ...prev.filter(
         (s) => !(s.homeworkId === newSubmission.homeworkId && s.studentId === newSubmission.studentId)
-      );
-      const next = [newSubmission, ...filtered];
-      try {
-        localStorage.setItem(STORAGE_PREFIX + 'quizSubmissions', JSON.stringify(next));
-      } catch (e) {}
-      return next;
-    });
-    supabase.from('QuizSubmission').insert(newSubmission).then();
+      ),
+    ]);
+    void supabase
+      .from('QuizSubmission')
+      .upsert(newSubmission, { onConflict: 'homeworkId,studentId' })
+      .then(({ error }) => {
+        if (error) {
+          setAllQuizSubmissions(previous);
+          console.error('Không thể lưu bài làm quiz:', error.message);
+          toast.error('Không thể lưu bài làm lên máy chủ. Vui lòng thử lại.');
+        }
+      });
     return newSubmission;
   };
 
   const deleteQuizSubmission = (id: string) => {
-    setAllQuizSubmissions((prev) => {
-      const next = prev.filter((s) => s.id !== id);
-      try {
-        localStorage.setItem(STORAGE_PREFIX + 'quizSubmissions', JSON.stringify(next));
-      } catch (e) {}
-      return next;
+    const previous = allQuizSubmissions;
+    setAllQuizSubmissions((prev) => prev.filter((s) => s.id !== id));
+    void supabase.from('QuizSubmission').delete().eq('id', id).then(({ error }) => {
+      if (error) {
+        setAllQuizSubmissions(previous);
+        console.error('Không thể xóa bài làm quiz:', error.message);
+        toast.error('Không thể xóa bài làm trên máy chủ.');
+      }
     });
-    supabase.from('QuizSubmission').delete().eq('id', id).then();
   };
 
   // Phase 7: IEP Plans Actions

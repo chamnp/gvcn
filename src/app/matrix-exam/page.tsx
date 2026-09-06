@@ -39,7 +39,6 @@ import { TERMS, PRIMARY_SUBJECTS } from '@/lib/tt27-engine';
 import { TermType, GradeLevel } from '@/types';
 import {
   ExamQuestion,
-  INITIAL_QUESTION_BANK,
   TT27Level,
   QuestionType,
 } from '@/lib/question-bank-data';
@@ -52,8 +51,6 @@ import { AssignQuizModal } from '@/components/quiz/assign-quiz-modal';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 
-const STORAGE_KEY = 'gvcn_pro_question_bank_v2';
-
 const SUBJECT_CONFIGS = [
   { code: 'TOAN', name: 'Môn Toán', icon: '📐', strands: ['Số và phép tính', 'Hình học và đo lường', 'Một số yếu tố Thống kê và Xác suất', 'Giải toán thực tế'] },
   { code: 'TIENG_VIET', name: 'Môn Tiếng Việt', icon: '📖', strands: ['Đọc hiểu văn bản', 'Luyện từ và câu', 'Chính tả & Quy tắc', 'Tập làm văn'] },
@@ -64,7 +61,7 @@ const SUBJECT_CONFIGS = [
 export default function MatrixExamPage() {
   const { classInfo, schoolInfo, currentTerm } = useAppStore();
 
-  const [questions, setQuestions] = useState<ExamQuestion[]>(INITIAL_QUESTION_BANK);
+  const [questions, setQuestions] = useState<ExamQuestion[]>([]);
   const [selectedGrade, setSelectedGrade] = useState<GradeLevel>(classInfo.grade || 4);
   const [selectedSubject, setSelectedSubject] = useState<string>('TOAN');
   const [selectedTerm, setSelectedTerm] = useState<TermType>(currentTerm || 'GIUA_HK1');
@@ -126,21 +123,19 @@ export default function MatrixExamPage() {
   const [aiTopicInput, setAiTopicInput] = useState('');
   const [isAIGenerating, setIsAIGenerating] = useState(false);
 
-  // Load saved questions & Live fetch from Supabase
+  // Supabase là nguồn dữ liệu chuẩn cho ngân hàng câu hỏi.
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        setQuestions(JSON.parse(saved));
-      }
-    } catch (e) {}
-
-    supabase
+    void supabase
       .from('MatrixQuestion')
       .select('*')
-      .then(({ data }) => {
-        if (data && data.length > 0) {
-          const mapped: ExamQuestion[] = data.map((q: any) => ({
+      .then(({ data, error }) => {
+        if (error) {
+          console.error('Không thể tải ngân hàng câu hỏi:', error.message);
+          toast.error('Không thể tải ngân hàng câu hỏi từ máy chủ.');
+          setQuestions([]);
+          return;
+        }
+        const mapped: ExamQuestion[] = (data || []).map((q: any) => ({
             id: q.id,
             subjectCode: q.subjectCode,
             grade: q.grade,
@@ -155,21 +150,13 @@ export default function MatrixExamPage() {
             explanation: q.explanation,
             createdAt: q.createdAt,
           }));
-          setQuestions((prev) => {
-            const dbIds = new Set(mapped.map((m) => m.id));
-            const localOnly = prev.filter((p) => !dbIds.has(p.id));
-            return [...mapped, ...localOnly];
-          });
-        }
+        setQuestions(mapped);
       });
   }, []);
 
-  const saveQuestions = (newQuestions: ExamQuestion[]) => {
-    setQuestions(newQuestions);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newQuestions));
-    } catch (e) {}
-
+  const saveQuestions = async (newQuestions: ExamQuestion[]): Promise<boolean> => {
+    const nextIds = new Set(newQuestions.map((question) => question.id));
+    const deletedIds = questions.filter((question) => !nextIds.has(question.id)).map((question) => question.id);
     const dbRows = newQuestions.map((q) => ({
       id: q.id,
       grade: q.grade,
@@ -185,7 +172,20 @@ export default function MatrixExamPage() {
       points: q.points,
       createdAt: q.createdAt,
     }));
-    supabase.from('MatrixQuestion').upsert(dbRows).then();
+    const [upsertResult, deleteResult] = await Promise.all([
+      dbRows.length ? supabase.from('MatrixQuestion').upsert(dbRows) : Promise.resolve({ error: null }),
+      deletedIds.length
+        ? supabase.from('MatrixQuestion').delete().in('id', deletedIds)
+        : Promise.resolve({ error: null }),
+    ]);
+    const error = upsertResult.error || deleteResult.error;
+    if (error) {
+      console.error('Không thể lưu ngân hàng câu hỏi:', error.message);
+      toast.error('Không thể lưu thay đổi ngân hàng câu hỏi lên máy chủ.');
+      return false;
+    }
+    setQuestions(newQuestions);
+    return true;
   };
 
   const termObj = TERMS.find((t) => t.id === selectedTerm);
@@ -263,13 +263,14 @@ export default function MatrixExamPage() {
     setSelectedQuestionIds(next);
   };
 
-  const handleBulkDelete = () => {
+  const handleBulkDelete = async () => {
     if (selectedQuestionIds.size === 0) return;
     if (confirm(`Thầy/Cô có chắc chắn muốn xóa ${selectedQuestionIds.size} câu hỏi đã chọn không?`)) {
       const updated = questions.filter((q) => !selectedQuestionIds.has(q.id));
-      saveQuestions(updated);
-      setSelectedQuestionIds(new Set());
-      toast.success('Đã xóa các câu hỏi đã chọn!');
+      if (await saveQuestions(updated)) {
+        setSelectedQuestionIds(new Set());
+        toast.success('Đã xóa các câu hỏi đã chọn!');
+      }
     }
   };
 
@@ -373,7 +374,7 @@ export default function MatrixExamPage() {
     setIsQuestionModalOpen(true);
   };
 
-  const handleSaveQuestion = (e: React.FormEvent) => {
+  const handleSaveQuestion = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!questionForm.content.trim()) {
       toast.error('Vui lòng nhập nội dung câu hỏi!');
@@ -414,7 +415,7 @@ export default function MatrixExamPage() {
             }
           : q
       );
-      saveQuestions(updated);
+      if (!(await saveQuestions(updated))) return;
       toast.success('Đã cập nhật câu hỏi!');
     } else {
       const newQ: ExamQuestion = {
@@ -432,15 +433,15 @@ export default function MatrixExamPage() {
         explanation: questionForm.explanation.trim(),
         createdAt: new Date().toISOString(),
       };
-      saveQuestions([newQ, ...questions]);
+      if (!(await saveQuestions([newQ, ...questions]))) return;
       toast.success('Đã thêm câu hỏi vào ngân hàng!');
     }
 
     setIsQuestionModalOpen(false);
   };
 
-  const handleImportSuccess = (newQuestions: ExamQuestion[]) => {
-    saveQuestions([...newQuestions, ...questions]);
+  const handleImportSuccess = async (newQuestions: ExamQuestion[]) => {
+    await saveQuestions([...newQuestions, ...questions]);
   };
 
   const handlePrint = () => {
@@ -844,10 +845,11 @@ export default function MatrixExamPage() {
                         </button>
                         <button
                           type="button"
-                          onClick={() => {
+                          onClick={async () => {
                             if (confirm('Xóa câu hỏi này?')) {
-                              saveQuestions(questions.filter((item) => item.id !== q.id));
-                              toast.success('Đã xóa câu hỏi!');
+                              if (await saveQuestions(questions.filter((item) => item.id !== q.id))) {
+                                toast.success('Đã xóa câu hỏi!');
+                              }
                             }
                           }}
                           className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-colors cursor-pointer"
