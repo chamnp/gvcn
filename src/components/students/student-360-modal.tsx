@@ -456,7 +456,17 @@ export function Student360Modal({ student, isOpen, onClose }: Student360ModalPro
                 studentNotes.map((note) => (
                   <div key={note.id} className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-slate-900 text-xs">{note.title}</span>
+                      <div className="flex items-center space-x-2">
+                        <span className="font-bold text-slate-900 text-xs">{note.title}</span>
+                        {note.isImportant && (
+                          <span className="text-[9px] bg-red-100 text-red-800 font-bold px-1.5 py-0.2 rounded">
+                            Quan trọng
+                          </span>
+                        )}
+                        <span className="text-[10px] text-slate-500">
+                          {note.visibility === 'PRIVATE_TEACHER' ? '🔒 Nội bộ' : '🌐 Gửi PH'}
+                        </span>
+                      </div>
                       <span className="text-[10px] text-slate-400 font-mono">{note.date}</span>
                     </div>
                     <p className="text-xs text-slate-700 leading-relaxed">{note.content}</p>
@@ -469,6 +479,19 @@ export function Student360Modal({ student, isOpen, onClose }: Student360ModalPro
                         ))}
                       </div>
                     )}
+                    <div className="pt-1.5 border-t border-slate-200/60 flex items-center justify-between text-[10px]">
+                      <span className="text-slate-400">
+                        {note.category === 'TIEN_BO' ? '🌟 Tiến bộ' : note.category === 'BAN_TRU' ? '🍱 Bán trú' : note.category === 'CAN_CO_GANG' ? '⚠️ Cần cố gắng' : '💬 Dặn dò'}
+                      </span>
+                      {note.parentAcknowledged ? (
+                        <span className="text-rose-600 font-bold flex items-center gap-1">
+                          <Heart className="w-3 h-3 fill-rose-500" />
+                          <span>Phụ huynh đã đọc</span>
+                        </span>
+                      ) : (
+                        <span className="text-slate-400">Chờ phụ huynh xác nhận</span>
+                      )}
+                    </div>
                   </div>
                 ))
               )}

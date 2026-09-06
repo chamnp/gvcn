@@ -219,7 +219,10 @@ interface AppContextType {
   // Formative Progress Notes
   formativeNotes: FormativeNote[];
   addFormativeNote: (note: Omit<FormativeNote, 'id' | 'createdAt'>) => void;
+  updateFormativeNote: (note: FormativeNote) => void;
   deleteFormativeNote: (id: string) => void;
+  acknowledgeFormativeNote: (id: string) => Promise<void>;
+  addBatchFormativeNotes: (notes: Omit<FormativeNote, 'id' | 'createdAt'>[]) => void;
 
   // Assessment Actions
   updateSubjectAssessment: (
@@ -4034,11 +4037,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createdAt: new Date().toISOString(),
     };
     setFormativeNotes((prev) => [newNote, ...prev]);
-    toast.success('Đã lưu ghi chú tiến bộ thường xuyên!');
+    toast.success('Đã lưu ghi chú tiến bộ!');
     void handleDbMutation(
       supabase.from('FormativeNote').upsert(newNote),
       undefined,
       'Không thể lưu ghi chú thường xuyên'
+    );
+  };
+
+  const updateFormativeNote = (note: FormativeNote) => {
+    setFormativeNotes((prev) => prev.map((n) => (n.id === note.id ? note : n)));
+    toast.success('Đã cập nhật ghi chú!');
+    void handleDbMutation(
+      supabase.from('FormativeNote').upsert(note),
+      undefined,
+      'Không thể cập nhật ghi chú thường xuyên'
     );
   };
 
@@ -4049,6 +4062,37 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       supabase.from('FormativeNote').delete().eq('id', id),
       undefined,
       'Không thể xóa ghi chú thường xuyên'
+    );
+  };
+
+  const acknowledgeFormativeNote = async (id: string) => {
+    const timestamp = new Date().toISOString();
+    setFormativeNotes((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, parentAcknowledged: true, parentAcknowledgedAt: timestamp } : n))
+    );
+    toast.success('Đã ghi nhận phản hồi từ phụ huynh!');
+    try {
+      await supabase
+        .from('FormativeNote')
+        .update({ parentAcknowledged: true, parentAcknowledgedAt: timestamp })
+        .eq('id', id);
+    } catch (e) {
+      console.error('Lỗi khi cập nhật xác nhận phụ huynh:', e);
+    }
+  };
+
+  const addBatchFormativeNotes = (notes: Omit<FormativeNote, 'id' | 'createdAt'>[]) => {
+    const newNotes: FormativeNote[] = notes.map((note, idx) => ({
+      ...note,
+      id: `fn-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 6)}`,
+      createdAt: new Date().toISOString(),
+    }));
+    setFormativeNotes((prev) => [...newNotes, ...prev]);
+    toast.success(`Đã lưu ${newNotes.length} ghi chú cho cả lớp!`);
+    void handleDbMutation(
+      supabase.from('FormativeNote').upsert(newNotes),
+      undefined,
+      'Không thể lưu ghi chú hàng loạt'
     );
   };
 
@@ -4757,7 +4801,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         regenerateStudentToken,
         formativeNotes,
         addFormativeNote,
+        updateFormativeNote,
         deleteFormativeNote,
+        acknowledgeFormativeNote,
+        addBatchFormativeNotes,
         leaveRequests,
         createLeaveRequest,
         approveLeaveRequest,

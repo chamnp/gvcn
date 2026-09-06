@@ -28,6 +28,7 @@ import {
   ChevronRight,
   Globe,
   ShieldCheck,
+  NotebookPen,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useAuth } from '@/lib/auth-context';
@@ -58,6 +59,7 @@ export const NAV_GROUPS: NavGroup[] = [
       { href: '/', label: 'Tổng quan Lớp', icon: LayoutDashboard, badge: null },
       { href: '/attendance', label: 'Điểm danh & Bán trú', icon: CalendarCheck, badge: null, feature: 'attendance' },
       { href: '/behavior', label: 'Nề nếp & Tích sao', icon: Award, badge: null, feature: 'behavior' },
+      { href: '/daily-notes', label: 'Nhật ký & Nhận xét ngày', icon: NotebookPen, badge: 'Mới', feature: 'dailyNotes' },
       { href: '/timetable', label: 'Thời khóa biểu', icon: Calendar, badge: '2 Buổi', feature: 'timetable' },
       { href: '/homework', label: 'Giao bài tập (QR)', icon: BookOpen, badge: null, feature: 'homework' },
     ],

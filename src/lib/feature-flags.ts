@@ -2,6 +2,7 @@ export interface FeatureFlags {
   // --- NHÓM 1: CÔNG CỤ HÀNG NGÀY CỐT LÕI (MẶC ĐỊNH: TRUE) ---
   attendance: boolean;      // Điểm danh & Bán trú
   behavior: boolean;        // Nề nếp & Tích sao
+  dailyNotes: boolean;      // Sổ nhật ký & Nhận xét hàng ngày
   timetable: boolean;       // Thời khóa biểu
   classroomTools: boolean;  // Công cụ Lớp học Smart TV (tích hợp cả Remote)
   homework: boolean;        // Giao bài tập & Cổng học sinh
@@ -27,6 +28,7 @@ export interface FeatureFlags {
 export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
   attendance: true,
   behavior: true,
+  dailyNotes: true,
   timetable: true,
   classroomTools: true,
   homework: true,

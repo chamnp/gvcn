@@ -380,7 +380,15 @@ export interface RewardRedemption {
 // ----------------------------------------------------
 // Formative Progress Notes & Early Intervention Types
 // ----------------------------------------------------
-export type FormativeNoteCategory = 'TIEN_BO' | 'CAN_CO_GANG' | 'SUC_KHOE' | 'TRAO_DOI_PH' | 'KHAC';
+export type FormativeNoteCategory = 
+  | 'TIEN_BO'       // 🌟 Tiến bộ & Khen ngợi
+  | 'CAN_CO_GANG'   // ⚠️ Cần cố gắng & Nhắc nhở
+  | 'SUC_KHOE'      // 🏥 Sức khỏe & Thể trạng
+  | 'BAN_TRU'       // 🍱 Ăn trưa & Ngủ bán trú
+  | 'TRAO_DOI_PH'   // 💬 Trao đổi & Dặn dò Phụ huynh
+  | 'KHAC';         // 📌 Khác
+
+export type NoteVisibility = 'PARENT' | 'PRIVATE_TEACHER';
 
 export interface FormativeNote {
   id: string;
@@ -392,6 +400,9 @@ export interface FormativeNote {
   content: string;
   tags?: string[];
   isImportant?: boolean;
+  visibility?: NoteVisibility; // 'PARENT' (gửi phụ huynh) hoặc 'PRIVATE_TEACHER' (chỉ GVCN)
+  parentAcknowledged?: boolean; // Phụ huynh đã xác nhận đã đọc
+  parentAcknowledgedAt?: string;
   createdAt: string;
 }
 

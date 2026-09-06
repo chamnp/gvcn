@@ -129,7 +129,8 @@ export function FormativeNotesModal({
                 {[
                   { id: 'TIEN_BO', label: '🌟 Tiến bộ', color: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
                   { id: 'CAN_CO_GANG', label: '⚠️ Cần cố gắng', color: 'text-amber-800 bg-amber-50 border-amber-200' },
-                  { id: 'SUC_KHOE', label: '🏥 Sức khỏe', color: 'text-blue-700 bg-blue-50 border-blue-200' },
+                  { id: 'SUC_KHOE', label: '🏥 Sức khỏe', color: 'text-rose-700 bg-rose-50 border-rose-200' },
+                  { id: 'BAN_TRU', label: '🍱 Bán trú', color: 'text-blue-700 bg-blue-50 border-blue-200' },
                   { id: 'TRAO_DOI_PH', label: '💬 Trao đổi PH', color: 'text-purple-700 bg-purple-50 border-purple-200' },
                 ].map((cat) => (
                   <button
@@ -246,6 +247,8 @@ export function FormativeNotesModal({
                               : item.category === 'CAN_CO_GANG'
                               ? 'bg-amber-100 text-amber-900'
                               : item.category === 'SUC_KHOE'
+                              ? 'bg-rose-100 text-rose-800'
+                              : item.category === 'BAN_TRU'
                               ? 'bg-blue-100 text-blue-800'
                               : 'bg-purple-100 text-purple-800'
                           }`}
@@ -256,6 +259,8 @@ export function FormativeNotesModal({
                             ? '⚠️ Cần cố gắng'
                             : item.category === 'SUC_KHOE'
                             ? '🏥 Sức khỏe'
+                            : item.category === 'BAN_TRU'
+                            ? '🍱 Bán trú'
                             : '💬 Trao đổi PH'}
                         </span>
 

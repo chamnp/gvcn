@@ -50,6 +50,7 @@ import {
   ClassInfo, SchoolInfo, SubjectAssessment, TraitAssessment, StudentTermSummary,
   DailyAttendance, StarLog, StarCriterion, RewardRedemption, HomeworkAssignment,
   CustomSubject, TimetableSlot, LeaveRequest, ConferenceSlot, CLASS_EVENT_TYPE_CONFIG,
+  FormativeNote,
 } from '@/types';
 import { supabase } from '@/lib/supabase';
 import { LeaveRequestModal } from '@/components/parent/leave-request-modal';
@@ -180,8 +181,72 @@ export default function StudentPrivateReportPage({
     return schoolClasses.find((c) => c.id === student.classId) || null;
   }, [student, schoolClasses]);
 
+  const [studentNotes, setStudentNotes] = useState<FormativeNote[]>([]);
+
+  useEffect(() => {
+    if (!student?.id) return;
+    const fetchNotes = async () => {
+      try {
+        const { data } = await supabase
+          .from('FormativeNote')
+          .select('*')
+          .eq('studentId', student.id)
+          .neq('visibility', 'PRIVATE_TEACHER')
+          .order('date', { ascending: false });
+        if (data) {
+          setStudentNotes(data as FormativeNote[]);
+        }
+      } catch (err) {
+        console.warn('Error fetching formative notes:', err);
+      }
+    };
+    fetchNotes();
+
+    const channel = supabase
+      .channel(`student_notes_${student.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'FormativeNote', filter: `studentId=eq.${student.id}` },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const newNote = payload.new as FormativeNote;
+            if (newNote.visibility !== 'PRIVATE_TEACHER') {
+              setStudentNotes((prev) => [newNote, ...prev]);
+            }
+          } else if (payload.eventType === 'UPDATE') {
+            const updated = payload.new as FormativeNote;
+            setStudentNotes((prev) => prev.map((n) => (n.id === updated.id ? updated : n)));
+          } else if (payload.eventType === 'DELETE') {
+            setStudentNotes((prev) => prev.filter((n) => n.id !== (payload.old as any).id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [student?.id]);
+
+  const handleAcknowledgeNote = async (noteId: string) => {
+    const timestamp = new Date().toISOString();
+    setStudentNotes((prev) =>
+      prev.map((n) => (n.id === noteId ? { ...n, parentAcknowledged: true, parentAcknowledgedAt: timestamp } : n))
+    );
+    confetti({ particleCount: 50, spread: 70, origin: { y: 0.7 } });
+    toast.success('Cô giáo đã nhận được lời cảm ơn từ Gia đình!');
+    try {
+      await supabase
+        .from('FormativeNote')
+        .update({ parentAcknowledged: true, parentAcknowledgedAt: timestamp })
+        .eq('id', noteId);
+    } catch (e) {
+      console.error('Error acknowledging note:', e);
+    }
+  };
+
   // Main Active Tab for Child Hub
-  const [activeTab, setActiveTab] = useState<'REPORT' | 'REWARDS' | 'HOMEWORK' | 'BACKPACK' | 'TIMETABLE' | 'EVENTS'>('REPORT');
+  const [activeTab, setActiveTab] = useState<'DAILY_LOG' | 'REPORT' | 'REWARDS' | 'HOMEWORK' | 'BACKPACK' | 'TIMETABLE' | 'EVENTS'>('DAILY_LOG');
 
   // Selected Term for Assessment Report
   const [selectedTerm, setSelectedTerm] = useState<TermType>(globalTerm || 'GIUA_HK1');
@@ -513,6 +578,10 @@ export default function StudentPrivateReportPage({
     (h) => h.classId === studentClass.id
   );
 
+  // Daily formative notes for this student
+  const todayNotes = studentNotes.filter((n) => n.date === todayStr);
+  const pastNotes = studentNotes.filter((n) => n.date !== todayStr);
+
   // Class Events
   const classEvents = allClassEvents.filter(
     (e) => e.classId === studentClass.id
@@ -813,6 +882,10 @@ export default function StudentPrivateReportPage({
         {/* 5. MAIN NAVIGATION TABS FOR THIS CHILD */}
         <div className="w-full max-w-full overflow-x-auto no-scrollbar flex items-center gap-1.5 bg-white p-1 rounded-2xl border border-slate-200 shadow-xs text-xs font-bold scroll-smooth">
           {[
+            {
+              id: 'DAILY_LOG',
+              label: `💌 Sổ Nhật Ký (${todayNotes.length > 0 ? `${todayNotes.length} mới` : 'Hôm nay'})`,
+            },
             { id: 'REPORT', label: '📊 Điểm & Nhận Xét TT27' },
             { id: 'REWARDS', label: `🎁 Shop Đổi Quà (${studentMonthlyStars.available} ⭐)` },
             { id: 'HOMEWORK', label: `📝 Bài Tập (${classHomeworks.length})` },
@@ -834,6 +907,189 @@ export default function StudentPrivateReportPage({
             </button>
           ))}
         </div>
+
+        {/* TAB: SỔ NHẬT KÝ & LỜI NHẮN HÀNG NGÀY CỦA CÔ GIÁO */}
+        {activeTab === 'DAILY_LOG' && (
+          <div className="space-y-4">
+            {/* Hero Teacher Banner */}
+            <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-3xl p-5 sm:p-6 text-white shadow-lg space-y-2">
+              <div className="flex items-center space-x-2">
+                <span className="bg-white/20 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                  💌 Sổ Liên Lạc Số 4.0
+                </span>
+                <span className="bg-emerald-400 text-emerald-950 text-[10px] font-black px-2 py-0.5 rounded-full">
+                  Lớp {studentClass?.name}
+                </span>
+              </div>
+              <h3 className="text-lg sm:text-xl font-black">
+                Nhật Ký & Lời Nhắn Của Cô Giáo Chủ Nhiệm
+              </h3>
+              <p className="text-xs text-white/80 max-w-xl">
+                Giáo viên: <span className="font-bold text-white">{studentClass?.teacherName || 'GVCN'}</span>. Cập nhật thường xuyên các biểu hiện học tập, nề nếp, sức khỏe và ăn ngủ bán trú của em {student.fullName}.
+              </p>
+            </div>
+
+            {/* Today's Section */}
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-4 sm:p-6 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center space-x-2">
+                  <span className="text-base">📅</span>
+                  <h4 className="font-black text-slate-900 text-sm">
+                    Ghi Nhận Hôm Nay ({todayStr})
+                  </h4>
+                </div>
+                {todayNotes.length > 0 && (
+                  <span className="text-[11px] font-bold bg-blue-50 text-blue-700 px-2.5 py-0.5 rounded-full border border-blue-200">
+                    {todayNotes.length} lời nhắn
+                  </span>
+                )}
+              </div>
+
+              {todayNotes.length > 0 ? (
+                <div className="space-y-3">
+                  {todayNotes.map((note) => {
+                    const isPraise = note.category === 'TIEN_BO';
+                    const isAlert = note.category === 'CAN_CO_GANG' || note.category === 'SUC_KHOE';
+                    const isBoarding = note.category === 'BAN_TRU';
+                    const isParent = note.category === 'TRAO_DOI_PH';
+
+                    const badgeStyle = isPraise
+                      ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                      : isAlert
+                      ? 'bg-amber-100 text-amber-800 border-amber-200'
+                      : isBoarding
+                      ? 'bg-blue-100 text-blue-800 border-blue-200'
+                      : 'bg-purple-100 text-purple-800 border-purple-200';
+
+                    const icon = isPraise ? '🌟' : isAlert ? '⚠️' : isBoarding ? '🍱' : isParent ? '💬' : '📌';
+
+                    return (
+                      <div
+                        key={note.id}
+                        className={`p-4 rounded-2xl border transition-all space-y-3 ${
+                          isAlert
+                            ? 'bg-amber-50/30 border-amber-200'
+                            : 'bg-slate-50/60 border-slate-200 hover:border-blue-200'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center space-x-2">
+                            <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-lg border ${badgeStyle}`}>
+                              {icon} {note.title}
+                            </span>
+                            {note.isImportant && (
+                              <span className="text-[9px] bg-red-100 text-red-700 font-bold px-1.5 py-0.2 rounded">
+                                Lưu ý quan trọng
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-slate-400 font-mono flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            <span>{note.createdAt ? new Date(note.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) : 'Hôm nay'}</span>
+                          </span>
+                        </div>
+
+                        <p className="text-slate-800 text-xs sm:text-sm leading-relaxed whitespace-pre-line font-medium">
+                          {note.content}
+                        </p>
+
+                        {note.tags && note.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 pt-1">
+                            {note.tags.map((t, idx) => (
+                              <span key={idx} className="text-[10px] bg-white border border-slate-200 text-slate-600 px-2 py-0.5 rounded-md font-semibold">
+                                #{t}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Acknowledgment Action */}
+                        <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between">
+                          {note.parentAcknowledged ? (
+                            <div className="flex items-center space-x-1.5 text-rose-600 font-bold text-xs bg-rose-50 px-3 py-1 rounded-xl border border-rose-200">
+                              <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500" />
+                              <span>Gia đình đã đọc & xác nhận</span>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleAcknowledgeNote(note.id)}
+                              className="inline-flex items-center space-x-1.5 px-3.5 py-1.5 bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
+                            >
+                              <Heart className="w-3.5 h-3.5 fill-white" />
+                              <span>Đã đọc & Cảm ơn cô</span>
+                            </button>
+                          )}
+                          <span className="text-[11px] text-slate-400 italic">
+                            {note.parentAcknowledged ? 'Đã gửi lời cảm ơn đến cô giáo' : 'Bấm để báo cho cô giáo biết bố mẹ đã nắm được'}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="p-6 text-center bg-slate-50/50 rounded-2xl border border-dashed border-slate-200 space-y-2">
+                  <span className="text-3xl">🌸</span>
+                  <h5 className="font-bold text-slate-800 text-xs sm:text-sm">
+                    Hôm nay con đi học ngoan và sinh hoạt bình thường
+                  </h5>
+                  <p className="text-xs text-slate-500 max-w-md mx-auto">
+                    Không có nhắc nhở hay lưu ý đặc biệt nào từ cô giáo trong ngày hôm nay. Bố mẹ hãy cùng trò chuyện và khen ngợi con sau giờ học nhé!
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Past Notes Timeline */}
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-4 sm:p-6 space-y-3">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center space-x-2">
+                  <span className="text-base">📜</span>
+                  <h4 className="font-black text-slate-900 text-sm">
+                    Lịch Sử Nhật Ký Các Ngày Trước ({pastNotes.length})
+                  </h4>
+                </div>
+                <span className="text-[11px] text-slate-400 font-medium">
+                  Lưu trữ quá trình tiến bộ của con
+                </span>
+              </div>
+
+              {pastNotes.length > 0 ? (
+                <div className="space-y-2.5">
+                  {pastNotes.map((note) => (
+                    <div
+                      key={note.id}
+                      className="p-3.5 rounded-2xl border border-slate-100 bg-slate-50/40 space-y-1.5 hover:bg-white hover:border-blue-200 transition-colors"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700">
+                            {note.title}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-mono font-bold">
+                            Ngày {note.date}
+                          </span>
+                        </div>
+                        {note.parentAcknowledged && (
+                          <span className="text-[10px] text-rose-600 font-bold flex items-center gap-1">
+                            <Heart className="w-3 h-3 fill-rose-500" />
+                            <span>Đã đọc</span>
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-slate-700 text-xs leading-relaxed">{note.content}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-slate-400 text-center py-6">
+                  Chưa có ghi chú lưu trữ từ các ngày trước.
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* 6. TAB 1: ACADEMIC & TT27 EVALUATION */}
         {activeTab === 'REPORT' && (
