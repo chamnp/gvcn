@@ -114,8 +114,14 @@ export default function DashboardPage() {
     approveLeaveRequest,
     rejectLeaveRequest,
     conferenceSlots,
+    featureFlags,
+    allHomeworks,
   } = useAppStore();
   const { profile } = useAuth();
+
+  const classHomeworks = useMemo(() => {
+    return (allHomeworks || []).filter((h) => !h.classId || h.classId === classInfo.id);
+  }, [allHomeworks, classInfo.id]);
 
   const [isFilterIncomplete, setIsFilterIncomplete] = useState(false);
   const [isAddEventModalOpen, setIsAddEventModalOpen] = useState(false);
@@ -137,9 +143,6 @@ export default function DashboardPage() {
 
   const termName = TERMS.find((t) => t.id === currentTerm)?.name || currentTerm;
   const teacherDisplayName = useMemo(() => {
-    if (profile?.role === 'ADMIN') {
-      return profile.fullName || 'Ban Giám Hiệu';
-    }
     return classInfo.teacherName || profile?.fullName || 'Thầy/Cô';
   }, [profile, classInfo.teacherName]);
 
@@ -357,7 +360,7 @@ export default function DashboardPage() {
                 <Sparkles className="w-3.5 h-3.5 text-amber-300" />
                 <span>Năm học {classInfo.schoolYear || '2026-2027'}</span>
                 <span className="text-white/40">•</span>
-                <span className="font-bold text-amber-300">{termName} (TT27)</span>
+                <span className="font-bold text-amber-300">Lớp {classInfo.name}</span>
               </div>
 
               <h1 className="text-2xl sm:text-4xl font-black tracking-tight leading-tight">
@@ -365,76 +368,67 @@ export default function DashboardPage() {
               </h1>
 
               <p className="text-sm sm:text-base text-blue-100 font-medium max-w-2xl leading-relaxed">
-                Trợ lý sư phạm & Quản lý toàn diện lớp <strong>{classInfo.name}</strong> ({classInfo.schoolName || schoolInfo?.name || 'Trường Tiểu học'}).
+                Trợ lý sư phạm & Quản trị lớp <strong>{classInfo.name}</strong> ({classInfo.schoolName || profile?.schoolName || 'Trường Tiểu học'}).
               </p>
             </div>
 
-            {/* AI Assistant Hub Quick Actions */}
+            {/* Quick Actions Hub */}
             <div className="flex flex-wrap items-center gap-2.5">
-              <button
-                type="button"
-                onClick={() => setIsDiagnosticOpen(true)}
+              <Link
+                href="/classroom-tools"
                 className="inline-flex items-center space-x-2 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-slate-950 font-black text-xs sm:text-sm px-4 py-2.5 rounded-2xl shadow-lg shadow-amber-500/20 hover:scale-105 transition-all cursor-pointer"
               >
-                <Sparkles className="w-4 h-4 fill-current" />
-                <span>Chẩn Đoán Lớp AI</span>
-              </button>
+                <Tv className="w-4 h-4" />
+                <span>Công Cụ Lớp Học (TV)</span>
+              </Link>
 
-              <button
-                type="button"
-                onClick={() => setIsPlannerModalOpen(true)}
+              <Link
+                href="/attendance"
                 className="inline-flex items-center space-x-1.5 bg-white/20 hover:bg-white/30 text-white font-bold text-xs sm:text-sm px-3.5 py-2.5 rounded-2xl backdrop-blur-md border border-white/30 hover:scale-105 transition-all cursor-pointer"
               >
-                <Compass className="w-4 h-4 text-cyan-300" />
-                <span>Kế Hoạch SHL</span>
-              </button>
+                <CalendarCheck className="w-4 h-4 text-emerald-300" />
+                <span>Điểm Danh Bán Trú</span>
+              </Link>
 
-              <button
-                type="button"
-                onClick={() => setIsZaloModalOpen(true)}
+              <Link
+                href="/behavior"
                 className="inline-flex items-center space-x-1.5 bg-white/20 hover:bg-white/30 text-white font-bold text-xs sm:text-sm px-3.5 py-2.5 rounded-2xl backdrop-blur-md border border-white/30 hover:scale-105 transition-all cursor-pointer"
               >
-                <HeartHandshake className="w-4 h-4 text-emerald-300" />
-                <span>Gửi Zalo PH</span>
-              </button>
+                <Award className="w-4 h-4 text-amber-300" />
+                <span>Tích Sao Nề Nếp</span>
+              </Link>
+
+              <Link
+                href="/homework"
+                className="inline-flex items-center space-x-1.5 bg-white/20 hover:bg-white/30 text-white font-bold text-xs sm:text-sm px-3.5 py-2.5 rounded-2xl backdrop-blur-md border border-white/30 hover:scale-105 transition-all cursor-pointer"
+              >
+                <BookOpen className="w-4 h-4 text-cyan-300" />
+                <span>Giao Bài Tập</span>
+              </Link>
             </div>
           </div>
 
           {/* Quick Nav Shortcuts Bar */}
           <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-white/15 text-xs">
             <Link
-              href="/community"
-              className="inline-flex items-center gap-1.5 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-3 py-1.5 rounded-xl font-bold backdrop-blur-md border border-white/20 transition-all shadow-xs"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              <span>Cộng Đồng Giáo Viên</span>
-            </Link>
-            <Link
-              href="/classroom-tools"
-              className="inline-flex items-center gap-1.5 bg-amber-400 text-slate-950 px-3 py-1.5 rounded-xl font-bold hover:bg-amber-300 transition-all shadow-xs"
-            >
-              <span>🎡 12 Công Cụ Chiếu TV</span>
-            </Link>
-            <Link
-              href="/attendance"
+              href="/timetable"
               className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-xl font-semibold backdrop-blur-md border border-white/20 transition-all"
             >
-              <CalendarCheck className="w-3.5 h-3.5 text-emerald-300" />
-              <span>Điểm Danh & Bán Trú</span>
+              <Clock className="w-3.5 h-3.5 text-blue-300" />
+              <span>Thời Khóa Biểu 2 Buổi</span>
             </Link>
             <Link
-              href="/behavior"
+              href="/students"
               className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-xl font-semibold backdrop-blur-md border border-white/20 transition-all"
             >
-              <Flame className="w-3.5 h-3.5 text-orange-300" />
-              <span>Tích Sao Nề Nếp</span>
+              <Users className="w-3.5 h-3.5 text-pink-300" />
+              <span>Hồ Sơ {totalStudents} Học Sinh</span>
             </Link>
             <Link
-              href="/parent-meetings"
+              href="/settings"
               className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-xl font-semibold backdrop-blur-md border border-white/20 transition-all"
             >
-              <Presentation className="w-3.5 h-3.5 text-purple-300" />
-              <span>Họp Phụ Huynh</span>
+              <span>⚙️ Cài Đặt Giờ Học & Tính Năng</span>
             </Link>
           </div>
         </div>
@@ -535,23 +529,44 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* KPI 3: Khen thưởng TT27 */}
-        <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs hover:shadow-md hover:border-amber-300 transition-all flex items-center justify-between">
-          <div className="min-w-0">
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Khen Thưởng TT27</p>
-            <h3 className="text-2xl sm:text-3xl font-black text-amber-600 mt-1">
-              {xuatSacCount + tieuBieuCount} <span className="text-xs font-normal text-slate-500">em</span>
-            </h3>
-            <div className="flex items-center gap-2 text-xs text-slate-500 mt-1.5 font-medium">
-              <span className="text-amber-600 font-bold">Xuất sắc: {xuatSacCount}</span>
-              <span>•</span>
-              <span className="text-blue-600 font-bold">Tiêu biểu: {tieuBieuCount}</span>
+        {/* KPI 3: Lịch dạy / Khen thưởng TT27 */}
+        {featureFlags?.assessment ? (
+          <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs hover:shadow-md hover:border-amber-300 transition-all flex items-center justify-between">
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Khen Thưởng TT27</p>
+              <h3 className="text-2xl sm:text-3xl font-black text-amber-600 mt-1">
+                {xuatSacCount + tieuBieuCount} <span className="text-xs font-normal text-slate-500">em</span>
+              </h3>
+              <div className="flex items-center gap-2 text-xs text-slate-500 mt-1.5 font-medium">
+                <span className="text-amber-600 font-bold">Xuất sắc: {xuatSacCount}</span>
+                <span>•</span>
+                <span className="text-blue-600 font-bold">Tiêu biểu: {tieuBieuCount}</span>
+              </div>
+            </div>
+            <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-amber-400 to-orange-500 text-slate-950 flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/20">
+              <Award className="w-6 h-6" />
             </div>
           </div>
-          <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-amber-400 to-orange-500 text-slate-950 flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/20">
-            <Award className="w-6 h-6" />
+        ) : (
+          <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs hover:shadow-md hover:border-blue-300 transition-all flex items-center justify-between">
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Lịch Dạy Hôm Nay</p>
+              <h3 className="text-2xl sm:text-3xl font-black text-blue-600 mt-1">
+                {todayPeriods.length} <span className="text-xs font-normal text-slate-500">tiết</span>
+              </h3>
+              <div className="flex items-center gap-2 text-xs text-slate-500 mt-1.5 font-medium">
+                <span className="text-blue-700 font-bold">{todayDayName}</span>
+                <span>•</span>
+                <Link href="/timetable" className="text-blue-600 hover:underline">
+                  Xem chi tiết →
+                </Link>
+              </div>
+            </div>
+            <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-blue-500 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/20">
+              <Clock className="w-6 h-6" />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* KPI 4: Sao nề nếp */}
         <div className="bg-white p-5 rounded-3xl border border-slate-200 shadow-xs hover:shadow-md hover:border-purple-300 transition-all flex items-center justify-between">
@@ -644,114 +659,235 @@ export default function DashboardPage() {
       {/* 5. MAIN SEAMLESS TWO-COLUMN EXECUTIVE DASHBOARD */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* ========================================================================= */}
-        {/* LEFT 2 COLUMNS: ACADEMIC PROGRESS, EVALUATION RADAR & CLASS EVENTS */}
+        {/* LEFT 2 COLUMNS: ACADEMIC PROGRESS OR DAILY OPERATIONS HUB */}
         {/* ========================================================================= */}
         <div className="lg:col-span-2 space-y-6">
-          {/* A. PROGRESS METER */}
-          <ProgressMeterWidget
-            progress={progress}
-            issues={issues}
-            isFilterIncomplete={isFilterIncomplete}
-            onToggleFilterIncomplete={() => setIsFilterIncomplete(!isFilterIncomplete)}
-          />
+          {featureFlags?.assessment ? (
+            <>
+              {/* A. PROGRESS METER */}
+              <ProgressMeterWidget
+                progress={progress}
+                issues={issues}
+                isFilterIncomplete={isFilterIncomplete}
+                onToggleFilterIncomplete={() => setIsFilterIncomplete(!isFilterIncomplete)}
+              />
 
-          {/* B. EARLY INTERVENTION RADAR */}
-          <EarlyInterventionWidget alerts={earlyAlerts} />
+              {/* B. EARLY INTERVENTION RADAR */}
+              <EarlyInterventionWidget alerts={earlyAlerts} />
 
-          {/* B. TT27 AWARD CLASSIFICATION & VISUAL BREAKDOWN */}
-          <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
-              <div>
-                <h2 className="font-black text-base sm:text-lg text-slate-900 flex items-center gap-2">
-                  <span>📊 Biểu Đồ Phân Loại Kết Quả Giáo Dục — {termName}</span>
-                </h2>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Đánh giá định kỳ {totalStudents} học sinh theo Thông tư 27/2020/TT-BGDĐT
-                </p>
+              {/* B. TT27 AWARD CLASSIFICATION & VISUAL BREAKDOWN */}
+              <div className="bg-white rounded-3xl p-6 border border-slate-200 shadow-xs space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+                  <div>
+                    <h2 className="font-black text-base sm:text-lg text-slate-900 flex items-center gap-2">
+                      <span>📊 Biểu Đồ Phân Loại Kết Quả Giáo Dục — {termName}</span>
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Đánh giá định kỳ {totalStudents} học sinh theo Thông tư 27/2020/TT-BGDĐT
+                    </p>
+                  </div>
+
+                  <Link
+                    href="/assessment"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all shrink-0"
+                  >
+                    <span>Mở Bảng Đánh Giá Chi Tiết</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+
+                {/* Visual Multi-Segment Bar Chart */}
+                <div className="space-y-3.5">
+                  <div className="h-6 w-full bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
+                    {totalStudents > 0 && (
+                      <>
+                        <div
+                          style={{ width: `${(xuatSacCount / totalStudents) * 100}%` }}
+                          className="bg-amber-400 h-full transition-all duration-500"
+                          title={`Xuất sắc: ${xuatSacCount} em`}
+                        />
+                        <div
+                          style={{ width: `${(tieuBieuCount / totalStudents) * 100}%` }}
+                          className="bg-blue-500 h-full transition-all duration-500"
+                          title={`Tiêu biểu: ${tieuBieuCount} em`}
+                        />
+                        <div
+                          style={{ width: `${(hoanThanhCount / totalStudents) * 100}%` }}
+                          className="bg-emerald-500 h-full transition-all duration-500"
+                          title={`Hoàn thành: ${hoanThanhCount} em`}
+                        />
+                        <div
+                          style={{ width: `${(canCoGangCount / totalStudents) * 100}%` }}
+                          className="bg-slate-400 h-full transition-all duration-500"
+                          title={`Chưa hoàn thành: ${canCoGangCount} em`}
+                        />
+                      </>
+                    )}
+                  </div>
+
+                  {/* Legend with percentages */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                    <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-amber-50 border border-amber-200/80">
+                      <div className="w-3.5 h-3.5 rounded-full bg-amber-400 shrink-0" />
+                      <div>
+                        <p className="font-bold text-amber-900">Xuất sắc</p>
+                        <p className="text-[11px] text-amber-700 font-semibold">
+                          {xuatSacCount} em ({totalStudents > 0 ? Math.round((xuatSacCount / totalStudents) * 100) : 0}%)
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-blue-50 border border-blue-200/80">
+                      <div className="w-3.5 h-3.5 rounded-full bg-blue-500 shrink-0" />
+                      <div>
+                        <p className="font-bold text-blue-900">Tiêu biểu</p>
+                        <p className="text-[11px] text-blue-700 font-semibold">
+                          {tieuBieuCount} em ({totalStudents > 0 ? Math.round((tieuBieuCount / totalStudents) * 100) : 0}%)
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-emerald-50 border border-emerald-200/80">
+                      <div className="w-3.5 h-3.5 rounded-full bg-emerald-500 shrink-0" />
+                      <div>
+                        <p className="font-bold text-emerald-900">Hoàn thành</p>
+                        <p className="text-[11px] text-emerald-700 font-semibold">
+                          {hoanThanhCount} em ({totalStudents > 0 ? Math.round((hoanThanhCount / totalStudents) * 100) : 0}%)
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-slate-50 border border-slate-200">
+                      <div className="w-3.5 h-3.5 rounded-full bg-slate-400 shrink-0" />
+                      <div>
+                        <p className="font-bold text-slate-800">Chưa hoàn thành</p>
+                        <p className="text-[11px] text-slate-600 font-semibold">
+                          {canCoGangCount} em ({totalStudents > 0 ? Math.round((canCoGangCount / totalStudents) * 100) : 0}%)
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* A. BÁN TRÚ & CHUYÊN CẦN HÔM NAY */}
+              <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
+                      <CalendarCheck className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <span>🍱 Tình Hình Bán Trú & Chuyên Cần Hôm Nay</span>
+                        <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                          {todayStr.split('-').reverse().join('/')}
+                        </span>
+                      </h2>
+                      <p className="text-xs text-slate-500">
+                        Theo dõi chuyên cần và số lượng suất ăn bán trú thực tế của lớp {classInfo.name}.
+                      </p>
+                    </div>
+                  </div>
+
+                  <Link
+                    href="/attendance"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all shrink-0"
+                  >
+                    <span>Mở Sổ Điểm Danh</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
+                    <p className="text-slate-500 font-medium">Sĩ số lớp</p>
+                    <p className="text-xl font-black text-slate-900 mt-1">{totalStudents} em</p>
+                  </div>
+                  <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200">
+                    <p className="text-emerald-700 font-medium">Có mặt hôm nay</p>
+                    <p className="text-xl font-black text-emerald-700 mt-1">
+                      {presentCount} <span className="text-xs font-bold">({totalStudents > 0 ? Math.round((presentCount / totalStudents) * 100) : 0}%)</span>
+                    </p>
+                  </div>
+                  <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200">
+                    <p className="text-amber-700 font-medium">Suất ăn bán trú</p>
+                    <p className="text-xl font-black text-amber-700 mt-1">{todayMeals} / {boardingCount}</p>
+                  </div>
+                  <div className={`p-3.5 rounded-2xl border ${absentCount > 0 ? 'bg-rose-50 border-rose-200 text-rose-700' : 'bg-slate-50 border-slate-200 text-slate-700'}`}>
+                    <p className="font-medium">Vắng mặt</p>
+                    <p className="text-xl font-black mt-1">{absentCount} em</p>
+                  </div>
+                </div>
               </div>
 
-              <Link
-                href="/assessment"
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all shrink-0"
-              >
-                <span>Mở Bảng Đánh Giá Chi Tiết</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
+              {/* B. BÀI TẬP VỀ NHÀ ĐANG GIAO & CỔNG HỌC SINH */}
+              <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
+                      <BookOpen className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h2 className="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <span>📝 Giao Bài Tập & Cổng Học Sinh Trực Tuyến</span>
+                        <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                          {classHomeworks.length} bài tập
+                        </span>
+                      </h2>
+                      <p className="text-xs text-slate-500">
+                        Phụ huynh và học sinh nộp bài, xem kết quả trực tiếp không cần đăng nhập.
+                      </p>
+                    </div>
+                  </div>
 
-            {/* Visual Multi-Segment Bar Chart */}
-            <div className="space-y-3.5">
-              <div className="h-6 w-full bg-slate-100 rounded-full overflow-hidden flex shadow-inner">
-                {totalStudents > 0 && (
-                  <>
-                    <div
-                      style={{ width: `${(xuatSacCount / totalStudents) * 100}%` }}
-                      className="bg-amber-400 h-full transition-all duration-500"
-                      title={`Xuất sắc: ${xuatSacCount} em`}
-                    />
-                    <div
-                      style={{ width: `${(tieuBieuCount / totalStudents) * 100}%` }}
-                      className="bg-blue-500 h-full transition-all duration-500"
-                      title={`Tiêu biểu: ${tieuBieuCount} em`}
-                    />
-                    <div
-                      style={{ width: `${(hoanThanhCount / totalStudents) * 100}%` }}
-                      className="bg-emerald-500 h-full transition-all duration-500"
-                      title={`Hoàn thành: ${hoanThanhCount} em`}
-                    />
-                    <div
-                      style={{ width: `${(canCoGangCount / totalStudents) * 100}%` }}
-                      className="bg-slate-400 h-full transition-all duration-500"
-                      title={`Chưa hoàn thành: ${canCoGangCount} em`}
-                    />
-                  </>
+                  <div className="flex items-center gap-2">
+                    <Link
+                      href={`/hw/${(classInfo.shareToken || classInfo.name).toLowerCase().replace(/\s+/g, '')}`}
+                      target="_blank"
+                      className="inline-flex items-center gap-1.5 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all shrink-0"
+                    >
+                      <span>Cổng Học Sinh</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                    <Link
+                      href="/homework"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition-all shrink-0"
+                    >
+                      <span>+ Giao Bài Mới</span>
+                    </Link>
+                  </div>
+                </div>
+
+                {classHomeworks.length > 0 ? (
+                  <div className="space-y-3 text-xs">
+                    {classHomeworks.slice(0, 3).map((hw) => (
+                      <div
+                        key={hw.id}
+                        className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between gap-3"
+                      >
+                        <div className="min-w-0">
+                          <p className="font-bold text-slate-900 text-sm truncate">{hw.title}</p>
+                          <p className="text-slate-500 text-[11px] mt-0.5">
+                            Môn: <strong className="text-slate-700">{hw.subjectName || hw.subjectCode}</strong> • Hạn nộp: {hw.dueDate}
+                          </p>
+                        </div>
+                        <span className="bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-1 rounded-full font-bold text-[11px] shrink-0">
+                          {hw.isQuiz ? 'Trắc nghiệm' : 'Tự luận'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-slate-400 text-xs">
+                    <p>Lớp chưa có bài tập nào đang giao. Bấm "+ Giao Bài Mới" để tạo bài tập hoặc trắc nghiệm online.</p>
+                  </div>
                 )}
               </div>
-
-              {/* Legend with percentages */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-amber-50 border border-amber-200/80">
-                  <div className="w-3.5 h-3.5 rounded-full bg-amber-400 shrink-0" />
-                  <div>
-                    <p className="font-bold text-amber-900">Xuất sắc</p>
-                    <p className="text-[11px] text-amber-700 font-semibold">
-                      {xuatSacCount} em ({totalStudents > 0 ? Math.round((xuatSacCount / totalStudents) * 100) : 0}%)
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-blue-50 border border-blue-200/80">
-                  <div className="w-3.5 h-3.5 rounded-full bg-blue-500 shrink-0" />
-                  <div>
-                    <p className="font-bold text-blue-900">Tiêu biểu</p>
-                    <p className="text-[11px] text-blue-700 font-semibold">
-                      {tieuBieuCount} em ({totalStudents > 0 ? Math.round((tieuBieuCount / totalStudents) * 100) : 0}%)
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-emerald-50 border border-emerald-200/80">
-                  <div className="w-3.5 h-3.5 rounded-full bg-emerald-500 shrink-0" />
-                  <div>
-                    <p className="font-bold text-emerald-900">Hoàn thành</p>
-                    <p className="text-[11px] text-emerald-700 font-semibold">
-                      {hoanThanhCount} em ({totalStudents > 0 ? Math.round((hoanThanhCount / totalStudents) * 100) : 0}%)
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-slate-50 border border-slate-200">
-                  <div className="w-3.5 h-3.5 rounded-full bg-slate-400 shrink-0" />
-                  <div>
-                    <p className="font-bold text-slate-800">Chưa hoàn thành</p>
-                    <p className="text-[11px] text-slate-600 font-semibold">
-                      {canCoGangCount} em ({totalStudents > 0 ? Math.round((canCoGangCount / totalStudents) * 100) : 0}%)
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+            </>
+          )}
 
           {/* C. CLASS EVENTS & TIMELINE WIDGET */}
           <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-5">

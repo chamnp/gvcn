@@ -50,7 +50,6 @@ export default function StudentsPage() {
     deleteStudent,
     importStudents,
     clearClassStudents,
-    loadDemoStudents,
     classInfo,
     schoolInfo,
     updateStudentSecurity,
@@ -462,14 +461,6 @@ export default function StudentsPage() {
             </div>
 
             <div className="flex items-center space-x-2">
-              <button
-                type="button"
-                onClick={loadDemoStudents}
-                className="text-xs text-blue-600 hover:underline font-semibold cursor-pointer"
-              >
-                Mẫu 12 HS
-              </button>
-              <span className="text-slate-300">|</span>
               <button
                 type="button"
                 onClick={() => {

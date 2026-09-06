@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { ClassroomBook, BookBorrowLog, BookCategory } from '@/types';
+import { FeatureGate } from '@/components/layout/feature-gate';
 import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
 
@@ -103,7 +104,8 @@ export default function ReadingCornerPage() {
   };
 
   return (
-    <div className="space-y-6 pb-12 animate-in fade-in duration-300">
+    <FeatureGate feature="readingCorner" featureName="Góc Đọc Sách & Văn Hóa Đọc">
+      <div className="space-y-6 pb-12 animate-in fade-in duration-300">
       <div className="bg-gradient-to-r from-amber-500 via-orange-600 to-rose-600 rounded-3xl p-6 sm:p-8 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="space-y-2 max-w-2xl">
           <div className="inline-flex items-center space-x-2 bg-white/15 backdrop-blur-md px-3 py-1 rounded-full text-xs font-bold border border-white/20">
@@ -443,5 +445,6 @@ export default function ReadingCornerPage() {
       )}
 
     </div>
+    </FeatureGate>
   );
 }

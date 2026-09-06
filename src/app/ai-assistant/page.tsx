@@ -44,6 +44,7 @@ import { generateStudentAICommentFull, GeneratedCommentResult } from '@/lib/ai-s
 import { AIToneType, AILengthPreset, AIGenerationSettings, AIGenerationMode } from '@/types';
 import { TERMS, evaluateStudentTT27, getAwardBadgeClass } from '@/lib/tt27-engine';
 import { VoiceInputButton } from '@/components/ui/voice-input-button';
+import { FeatureGate } from '@/components/layout/feature-gate';
 import { toast } from 'sonner';
 import Link from 'next/link';
 
@@ -342,7 +343,8 @@ export default function AIAssistantPage() {
       : 'Chuẩn Sư Phạm TT27';
 
   return (
-    <div className="space-y-6">
+    <FeatureGate feature="aiAssistant" featureName="Trợ Lý AI Giáo Dục">
+      <div className="space-y-6">
       {/* HEADER & MAIN ACTION BUTTONS */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-5 rounded-3xl border border-slate-200 shadow-xs">
         <div>
@@ -975,5 +977,6 @@ export default function AIAssistantPage() {
         </div>
       )}
     </div>
+    </FeatureGate>
   );
 }

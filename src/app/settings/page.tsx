@@ -153,7 +153,7 @@ import {
   revokeApiKey,
 } from '@/lib/mcp-auth';
 
-type SettingsTab = 'PROFILE' | 'CLASS' | 'SCHOOL' | 'DATA' | 'MCP_API';
+type SettingsTab = 'PROFILE' | 'CLASS' | 'FEATURES' | 'DATA' | 'MCP_API' | 'SCHOOL';
 
 export default function SettingsPage() {
   const {
@@ -171,19 +171,33 @@ export default function SettingsPage() {
     resetData,
     students,
     clearClassStudents,
-    loadDemoStudents,
     exportAllDataJSON,
     importAllDataJSON,
     regenerateClassShareToken,
     schoolClasses,
     switchClass,
     addClass,
+    updateClass,
     deleteClass,
+    featureFlags,
+    setFeatureFlag,
+    resetFeatureFlags,
   } = useAppStore();
   const { user, profile, isAdmin, updateProfile, teachers } = useAuth();
 
   // Active Tab
   const [activeTab, setActiveTab] = useState<SettingsTab>('PROFILE');
+
+  // Support direct URL query parameter tab
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get('tab');
+      if (tabParam === 'FEATURES' || tabParam === 'CLASS' || tabParam === 'DATA' || tabParam === 'MCP_API' || tabParam === 'PROFILE') {
+        setActiveTab(tabParam as SettingsTab);
+      }
+    }
+  }, []);
 
   // User Profile Form State
   const [profileFullName, setProfileFullName] = useState(profile?.fullName || '');
@@ -224,8 +238,21 @@ export default function SettingsPage() {
   const [className, setClassName] = useState(classInfo.name);
   const [grade, setGrade] = useState<GradeLevel>(classInfo.grade);
   const [teacherName, setTeacherName] = useState(classInfo.teacherName);
+  const [classSchoolName, setClassSchoolName] = useState(classInfo.schoolName || '');
   const [rows, setRows] = useState(classInfo.seatingGridRows || 5);
   const [cols, setCols] = useState(classInfo.seatingGridCols || 8);
+
+  // Sync Class form state when classInfo changes (e.g. admin switches class)
+  useEffect(() => {
+    if (classInfo) {
+      setClassName(classInfo.name || '');
+      setGrade(classInfo.grade || 1);
+      setTeacherName(classInfo.teacherName || '');
+      setClassSchoolName(classInfo.schoolName || '');
+      setRows(classInfo.seatingGridRows || 5);
+      setCols(classInfo.seatingGridCols || 8);
+    }
+  }, [classInfo.id, classInfo.name, classInfo.schoolName, classInfo.grade, classInfo.teacherName, classInfo.seatingGridRows, classInfo.seatingGridCols]);
 
   // New Class Form State
   const [isNewClassModalOpen, setIsNewClassModalOpen] = useState(false);
@@ -543,32 +570,47 @@ export default function SettingsPage() {
     toast.success(`Đã đồng bộ về ${TERMS.find((t) => t.id === realTerm)?.name} (${realYear})!`);
   };
 
-  const handleSaveClass = (e: React.FormEvent) => {
+  const handleSaveClass = async (e: React.FormEvent) => {
     e.preventDefault();
-    setClassInfo({
+    if (!className.trim()) {
+      toast.error('Vui lòng nhập tên lớp (ví dụ: 4A1)!');
+      return;
+    }
+    const finalSchoolName = classSchoolName.trim() || profileSchoolName.trim() || classInfo.schoolName || schoolInfo.name;
+    if (!finalSchoolName) {
+      toast.error('Vui lòng nhập tên trường tiểu học!');
+      return;
+    }
+
+    const updated = {
       ...classInfo,
-      name: className,
+      name: className.trim(),
       grade,
       schoolYear: classInfo.schoolYear || schoolInfo.schoolYear,
-      schoolName: profileSchoolName || classInfo.schoolName || schoolInfo.name,
+      schoolName: finalSchoolName,
       teacherName,
       teacherEmail: profile?.email || classInfo.teacherEmail,
       seatingGridRows: Number(rows),
       seatingGridCols: Number(cols),
-    });
-    toast.success(`Đã lưu cấu hình Lớp ${className}!`);
+    };
+
+    const res = await updateClass(updated);
+    if (res.success) {
+      toast.success(`Đã lưu cấu hình Lớp ${className.trim()}!`);
+    }
   };
 
-  const handleCreateNewClass = (e: React.FormEvent) => {
+  const handleCreateNewClass = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newClassForm.name.trim()) {
       toast.error('Vui lòng nhập tên lớp (ví dụ: 4A1)');
       return;
     }
-    addClass({
+    const finalSchoolName = newClassForm.schoolName.trim() || profileSchoolName.trim() || classInfo.schoolName || 'Trường Tiểu học';
+    const res = await addClass({
       name: newClassForm.name.trim(),
       grade: newClassForm.grade,
-      schoolName: newClassForm.schoolName.trim() || profileSchoolName.trim() || classInfo.schoolName || 'Trường Tiểu học',
+      schoolName: finalSchoolName,
       schoolYear: newClassForm.schoolYear,
       teacherName: profileFullName.trim() || 'Giáo viên',
       teacherEmail: profile?.email || '',
@@ -576,14 +618,16 @@ export default function SettingsPage() {
       seatingGridRows: 5,
       seatingGridCols: 8,
     });
-    toast.success(`Đã tạo mới Lớp ${newClassForm.name}!`);
-    setIsNewClassModalOpen(false);
-    setNewClassForm({
-      name: '',
-      grade: 1,
-      schoolName: profileSchoolName || classInfo.schoolName || '',
-      schoolYear: getAcademicYearByDate(),
-    });
+    if (res.success) {
+      toast.success(`Đã tạo mới Lớp ${newClassForm.name.trim()}!`);
+      setIsNewClassModalOpen(false);
+      setNewClassForm({
+        name: '',
+        grade: 1,
+        schoolName: profileSchoolName || classInfo.schoolName || '',
+        schoolYear: getAcademicYearByDate(),
+      });
+    }
   };
 
   const handleExportBackup = () => {
@@ -627,13 +671,6 @@ export default function SettingsPage() {
     if (confirm(`Bạn có chắc chắn muốn xóa toàn bộ danh sách học sinh của Lớp ${classInfo.name} để chuẩn bị nhập danh sách lớp học thật không?`)) {
       clearClassStudents();
       toast.success(`Đã làm sạch danh sách học sinh Lớp ${classInfo.name}. Bạn có thể nhập file Excel ngay bây giờ!`);
-    }
-  };
-
-  const handleLoadDemo = () => {
-    if (confirm(`Nạp lại 30 học sinh mẫu cho Lớp ${classInfo.name}?`)) {
-      loadDemoStudents();
-      toast.success(`Đã nạp 30 học sinh mẫu cho Lớp ${classInfo.name}!`);
     }
   };
 
@@ -698,15 +735,15 @@ export default function SettingsPage() {
         </button>
 
         <button
-          onClick={() => setActiveTab('SCHOOL')}
+          onClick={() => setActiveTab('FEATURES')}
           className={`flex shrink-0 whitespace-nowrap items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-            activeTab === 'SCHOOL'
-              ? 'bg-blue-600 text-white shadow-xs'
+            activeTab === 'FEATURES'
+              ? 'bg-indigo-600 text-white shadow-xs'
               : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
           }`}
         >
-          <Building className="w-4 h-4" />
-          <span>Thông Tin Trường Học</span>
+          <Sliders className="w-4 h-4" />
+          <span>Bật/Tắt Tính Năng</span>
         </button>
 
         <button
@@ -731,6 +768,18 @@ export default function SettingsPage() {
         >
           <Key className="w-4 h-4 text-emerald-400" />
           <span>Khóa Kết Nối AI & MCP</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('SCHOOL')}
+          className={`flex shrink-0 whitespace-nowrap items-center space-x-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'SCHOOL'
+              ? 'bg-slate-700 text-white shadow-xs'
+              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+          }`}
+        >
+          <Building className="w-4 h-4" />
+          <span>Thông Tin Trường Học</span>
         </button>
       </div>
 
@@ -1030,6 +1079,18 @@ export default function SettingsPage() {
               </div>
             </div>
 
+            <div>
+              <label className="block font-semibold text-slate-700 mb-1">Trường Tiểu Học (*)</label>
+              <input
+                type="text"
+                required
+                value={classSchoolName}
+                onChange={(e) => setClassSchoolName(e.target.value)}
+                placeholder="Ví dụ: Trường Tiểu học Dịch Vọng A"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              />
+            </div>
+
             {/* TEACHER SELECTION DROPDOWN (REFER USER PROFILE) */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
@@ -1051,7 +1112,7 @@ export default function SettingsPage() {
                 onChange={(e) => setTeacherName(e.target.value)}
                 className="w-full px-3 py-2.5 rounded-xl border border-slate-200 font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
               >
-                <option value="">-- Chọn Giáo viên Chủ nhiệm từ danh bạ toàn trường --</option>
+                <option value="">-- Chọn Giáo viên Chủ nhiệm --</option>
                 {profile && (
                   <option value={profile.fullName}>
                     ✨ [Tôi] {profile.fullName} ({profile.title || 'GV'} - {profile.department || 'Tổ'})
@@ -1171,112 +1232,516 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            {/* SECTION: MY CLASSES MANAGEMENT */}
-            <div className="pt-6 border-t border-slate-100 space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                    <span>Danh Sách Tất Cả Các Lớp Của Bạn</span>
-                    <span className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full font-bold">
-                      {schoolClasses.length} lớp
-                    </span>
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    Bạn có thể quản lý nhiều lớp học ở các trường khác nhau hoặc các năm học khác nhau một cách độc lập.
-                  </p>
+            {/* SECTION: CLASSES MANAGEMENT (ADMIN VS TEACHER) */}
+            {isAdmin ? (
+              <div className="pt-6 border-t border-slate-100 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <span>Danh Sách Tất Cả Các Lớp Trên Hệ Thống (Quản trị viên)</span>
+                      <span className="bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded-full font-bold">
+                        {schoolClasses.length} lớp
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Với tư cách Quản trị viên, bạn có quyền xem/chuyển đổi giữa bất kỳ lớp nào hoặc khởi tạo thêm lớp mới.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewClassForm({
+                        name: '',
+                        grade: (profile?.mainGrade as GradeLevel) || 1,
+                        schoolName: profile?.schoolName || classInfo.schoolName || '',
+                        schoolYear: getAcademicYearByDate(),
+                      });
+                      setIsNewClassModalOpen(true);
+                    }}
+                    className="inline-flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-xs transition-colors cursor-pointer shrink-0"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    <span>+ Thêm Lớp Học Mới</span>
+                  </button>
                 </div>
 
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                  {schoolClasses.map((c) => {
+                    const isActive = c.id === classInfo.id;
+                    return (
+                      <div
+                        key={c.id}
+                        className={`p-4 rounded-2xl border transition-all ${
+                          isActive
+                            ? 'border-purple-500 bg-purple-50/40 shadow-xs ring-2 ring-purple-100'
+                            : 'border-slate-200 bg-slate-50/50 hover:border-slate-300'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-1">
+                            <div className="flex items-center space-x-2">
+                              <span className="font-bold text-slate-900 text-sm">{c.name}</span>
+                              <span className="bg-slate-200 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                Khối {c.grade}
+                              </span>
+                              {isActive && (
+                                <span className="bg-purple-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                  Đang chọn
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-slate-600 font-medium">
+                              🏫 {c.schoolName || 'Chưa đặt trường'}
+                            </p>
+                            <p className="text-[11px] text-slate-500">
+                              GVCN: {c.teacherName || c.teacherEmail || 'Chưa gán'} • Năm học: {c.schoolYear || '2026-2027'}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center space-x-1 shrink-0">
+                            {!isActive ? (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  switchClass(c.id);
+                                  toast.success(`Đã chuyển sang ${c.name}`);
+                                }}
+                                className="bg-white hover:bg-purple-50 text-purple-600 border border-purple-200 text-xs font-bold px-3 py-1.5 rounded-xl cursor-pointer shadow-2xs"
+                              >
+                                Chọn lớp này
+                              </button>
+                            ) : (
+                              <span className="text-xs font-bold text-emerald-600 flex items-center gap-1 bg-emerald-50 px-2.5 py-1 rounded-xl">
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <span>Hiện hành</span>
+                              </span>
+                            )}
+
+                            {schoolClasses.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (confirm(`Bạn có chắc chắn muốn xóa lớp ${c.name}?`)) {
+                                    deleteClass(c.id);
+                                    toast.success(`Đã xóa lớp ${c.name}`);
+                                  }
+                                }}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                title="Xóa lớp học này"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <div className="pt-6 border-t border-slate-100">
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 flex items-start space-x-3">
+                  <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold shrink-0 mt-0.5">
+                    <GraduationCap className="w-4 h-4" />
+                  </div>
+                  <div className="space-y-1 text-xs">
+                    <div className="font-bold text-slate-900 flex items-center gap-2">
+                      <span>Lớp Chủ Nhiệm Duy Nhất Của Bạn:</span>
+                      <span className="bg-blue-600 text-white px-2 py-0.5 rounded-md font-bold">
+                        Lớp {classInfo.name} - {classInfo.schoolName || 'Chưa cập nhật trường'}
+                      </span>
+                    </div>
+                    <p className="text-slate-600 leading-relaxed">
+                      Theo quy chuẩn hệ thống GVCN Pro, mỗi giáo viên quản lý 1 lớp chủ nhiệm độc lập do mình đăng ký. Nếu quý thầy cô cần cập nhật tên lớp, tên trường hoặc số hàng cột chỗ ngồi, vui lòng chỉnh sửa và bấm <strong>&ldquo;Lưu Cấu Hình Lớp Học&rdquo;</strong> ở biểu mẫu phía trên.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* TAB: FEATURES MANAGEMENT (FEATURE FLAGS) */}
+      {activeTab === 'FEATURES' && (
+        <div className="space-y-6">
+          {/* Header Card */}
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
+                  <Sliders className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-slate-900">Bật / Tắt Phân Hệ & Tính Năng</h2>
+                  <p className="text-xs text-slate-500">
+                    Tùy biến thanh điều hướng và giao diện làm việc theo nhu cầu thực tế của lớp học.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => {
-                    setNewClassForm({
-                      name: '',
-                      grade: (profile?.mainGrade as GradeLevel) || 1,
-                      schoolName: profile?.schoolName || classInfo.schoolName || '',
-                      schoolYear: getAcademicYearByDate(),
-                    });
-                    setIsNewClassModalOpen(true);
+                    resetFeatureFlags();
+                    toast.success('Đã khôi phục thiết lập tối giản ban đầu (5 tính năng cốt lõi)!');
                   }}
-                  className="inline-flex items-center space-x-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-xs transition-colors cursor-pointer shrink-0"
+                  className="inline-flex items-center space-x-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-3.5 py-2 rounded-xl text-xs transition-colors cursor-pointer"
                 >
-                  <UserPlus className="w-4 h-4" />
-                  <span>+ Thêm Lớp Học Mới</span>
+                  <RotateCcw className="w-4 h-4 text-slate-500" />
+                  <span>Khôi Phục Bản Chuẩn Tối Giản</span>
                 </button>
               </div>
+            </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                {schoolClasses.map((c) => {
-                  const isActive = c.id === classInfo.id;
-                  return (
-                    <div
-                      key={c.id}
-                      className={`p-4 rounded-2xl border transition-all ${
-                        isActive
-                          ? 'border-blue-500 bg-blue-50/40 shadow-xs ring-2 ring-blue-100'
-                          : 'border-slate-200 bg-slate-50/50 hover:border-slate-300'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="space-y-1">
-                          <div className="flex items-center space-x-2">
-                            <span className="font-bold text-slate-900 text-sm">{c.name}</span>
-                            <span className="bg-slate-200 text-slate-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                              Khối {c.grade}
-                            </span>
-                            {isActive && (
-                              <span className="bg-blue-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                                Đang chọn
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-xs text-slate-600 font-medium">
-                            🏫 {c.schoolName || profile?.schoolName || 'Chưa đặt trường'}
-                          </p>
-                          <p className="text-[11px] text-slate-500">
-                            GVCN: {c.teacherName || 'Chưa gán'} • Năm học: {c.schoolYear || '2026-2027'}
-                          </p>
+            <div className="mt-4 p-4 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 flex items-center justify-between">
+              <div className="space-y-0.5">
+                <div className="flex items-center space-x-2">
+                  <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <p className="text-xs font-bold text-slate-800">
+                    Chế độ phát hành: 5 Nghiệp Vụ Tác Nghiệp Chuẩn (Production-Ready)
+                  </p>
+                </div>
+                <p className="text-[11px] text-slate-600">
+                  Giao diện tập trung tối đa vào công việc hằng ngày của giáo viên chủ nhiệm. Các module chuyên môn Thông tư 27 & tiện ích mở rộng có thể kích hoạt linh hoạt khi cần.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Group 1: Core Daily Operations */}
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-4">
+            <div className="border-b border-slate-100 pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <span className="w-2 h-5 bg-blue-600 rounded-full"></span>
+                  <h3 className="text-sm font-bold text-slate-900">1. Nghiệp Vụ Tác Nghiệp Hàng Ngày (Khuyên dùng)</h3>
+                </div>
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                  Đã kiểm thử ổn định
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-1 ml-4">
+                5 công cụ chính phục vụ quản lý sĩ số, nề nếp, thời khóa biểu và giao bài tập hằng ngày.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {[
+                {
+                  id: 'attendance' as const,
+                  name: 'Điểm Danh Bán Trú & Chuyên Cần',
+                  desc: 'Điểm danh có mặt/vắng, ghi chú lý do nghỉ, theo dõi suất ăn trưa và tổng hợp báo cáo bán trú.',
+                  icon: Calendar,
+                  badge: 'Cốt lõi',
+                },
+                {
+                  id: 'behavior' as const,
+                  name: 'Nề Nếp & Tích Sao Khen Thưởng',
+                  desc: 'Cộng điểm sao khen thưởng, trừ điểm vi phạm, xếp hạng thi đua tổ và tổng kết tuần.',
+                  icon: Crown,
+                  badge: 'Cốt lõi',
+                },
+                {
+                  id: 'timetable' as const,
+                  name: 'Thời Khóa Biểu & Lịch Báo Giảng',
+                  desc: 'Lịch dạy tuần, cấu hình giờ vào lớp (7h00 - 8h00) và thời lượng tiết học linh hoạt (35 - 45 phút).',
+                  icon: Clock,
+                  badge: 'Cốt lõi',
+                },
+                {
+                  id: 'classroomTools' as const,
+                  name: 'Công Cụ Lớp Học & Remote Trợ Giảng',
+                  desc: 'Đồng hồ đếm ngược, bốc thăm ngẫu nhiên, chia nhóm và tích hợp điều khiển Remote từ điện thoại.',
+                  icon: Zap,
+                  badge: 'Tương tác',
+                },
+                {
+                  id: 'homework' as const,
+                  name: 'Giao Bài Tập & Cổng Học Sinh',
+                  desc: 'Tạo bài tập tự luận/trắc nghiệm trực tuyến, cổng học sinh làm bài và phụ huynh nộp bài không cần tài khoản.',
+                  icon: Edit3,
+                  badge: 'Trực tuyến',
+                },
+              ].map((feat) => {
+                const IconComponent = feat.icon;
+                const isEnabled = featureFlags[feat.id];
+                return (
+                  <div
+                    key={feat.id}
+                    className={`p-4 rounded-2xl border transition-all flex items-start justify-between gap-3 ${
+                      isEnabled
+                        ? 'bg-slate-50/70 border-slate-200'
+                        : 'bg-slate-50/30 border-slate-100 opacity-60'
+                    }`}
+                  >
+                    <div className="flex items-start space-x-3">
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                        isEnabled ? 'bg-white shadow-xs text-blue-600 border border-slate-100' : 'bg-slate-100 text-slate-400'
+                      }`}>
+                        <IconComponent className="w-4 h-4" />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-xs font-bold text-slate-800">{feat.name}</span>
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-blue-50 text-blue-700">
+                            {feat.badge}
+                          </span>
                         </div>
-
-                        <div className="flex items-center space-x-1 shrink-0">
-                          {!isActive ? (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                switchClass(c.id);
-                                toast.success(`Đã chuyển sang ${c.name}`);
-                              }}
-                              className="bg-white hover:bg-blue-50 text-blue-600 border border-blue-200 text-xs font-bold px-3 py-1.5 rounded-xl cursor-pointer shadow-2xs"
-                            >
-                              Chọn lớp này
-                            </button>
-                          ) : (
-                            <span className="text-xs font-bold text-emerald-600 flex items-center gap-1 bg-emerald-50 px-2.5 py-1 rounded-xl">
-                              <CheckCircle2 className="w-3.5 h-3.5" />
-                              <span>Hiện hành</span>
-                            </span>
-                          )}
-
-                          {schoolClasses.length > 1 && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (confirm(`Bạn có chắc chắn muốn xóa lớp ${c.name}?`)) {
-                                  deleteClass(c.id);
-                                  toast.success(`Đã xóa lớp ${c.name}`);
-                                }
-                              }}
-                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                              title="Xóa lớp học này"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
+                        <p className="text-[11px] text-slate-500 leading-relaxed">{feat.desc}</p>
                       </div>
                     </div>
-                  );
-                })}
+
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={isEnabled}
+                      onClick={() => {
+                        setFeatureFlag(feat.id, !isEnabled);
+                        toast.success(
+                          !isEnabled
+                            ? `Đã kích hoạt module "${feat.name}" trên thanh điều hướng`
+                            : `Đã tạm ẩn module "${feat.name}"`
+                        );
+                      }}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        isEnabled ? 'bg-blue-600' : 'bg-slate-300'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+                          isEnabled ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Group 2: Academic & TT27 Assessment */}
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-4">
+            <div className="border-b border-slate-100 pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <span className="w-2 h-5 bg-purple-600 rounded-full"></span>
+                  <h3 className="text-sm font-bold text-slate-900">2. Chuyên Môn & Đánh Giá Học Sinh (Thông tư 27)</h3>
+                </div>
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                  Lộ trình tiếp theo / Bật khi cần
+                </span>
               </div>
+              <p className="text-xs text-slate-500 mt-1 ml-4">
+                Các nghiệp vụ đánh giá định kỳ, soạn giáo án và ngân hàng đề thi. Được bảo lưu toàn bộ dữ liệu khi tạm ẩn.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {[
+                {
+                  id: 'assessment' as const,
+                  name: 'Đánh Giá Học Sinh (Thông Tư 27)',
+                  desc: 'Đánh giá môn học (T/H/C), phẩm chất & năng lực (T/Đ/C), bảng tổng hợp kết quả giáo dục và học bạ.',
+                  icon: GraduationCap,
+                  badge: 'TT27',
+                },
+                {
+                  id: 'lessonPlans' as const,
+                  name: 'Soạn Kế Hoạch Bài Dạy (Công Văn 2345)',
+                  desc: 'Soạn giáo án 4 pha phát triển năng lực, tích hợp trợ lý AI gợi ý hoạt động dạy học theo khối lớp.',
+                  icon: Layers,
+                  badge: 'CV2345',
+                },
+                {
+                  id: 'matrixExam' as const,
+                  name: 'Ma Trận Đề Thi & Ngân Hàng Câu Hỏi',
+                  desc: 'Thiết kế ma trận đề kiểm tra 3 mức độ, sinh đề thi môn Toán & Tiếng Việt định kỳ.',
+                  icon: Cpu,
+                  badge: 'Khảo thí',
+                },
+                {
+                  id: 'iep' as const,
+                  name: 'Kế Hoạch Giáo Dục Cá Nhân (IEP)',
+                  desc: 'Hồ sơ theo dõi học sinh khuyết tật hòa nhập, mục tiêu điều chỉnh và nhật ký can thiệp sư phạm.',
+                  icon: ShieldCheck,
+                  badge: 'Hòa nhập',
+                },
+                {
+                  id: 'aiAssistant' as const,
+                  name: 'Trợ Lý AI Giáo Dục',
+                  desc: 'Trợ lý ảo hỗ trợ viết lời nhận xét học bạ, soạn thông báo và tư vấn sư phạm bằng AI.',
+                  icon: Bot,
+                  badge: 'AI',
+                },
+              ].map((feat) => {
+                const IconComponent = feat.icon;
+                const isEnabled = featureFlags[feat.id];
+                return (
+                  <div
+                    key={feat.id}
+                    className={`p-4 rounded-2xl border transition-all flex items-start justify-between gap-3 ${
+                      isEnabled
+                        ? 'bg-purple-50/30 border-purple-200'
+                        : 'bg-slate-50/40 border-slate-200/80 opacity-70'
+                    }`}
+                  >
+                    <div className="flex items-start space-x-3">
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                        isEnabled ? 'bg-white shadow-xs text-purple-600 border border-purple-100' : 'bg-slate-100 text-slate-400'
+                      }`}>
+                        <IconComponent className="w-4 h-4" />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-xs font-bold text-slate-800">{feat.name}</span>
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-purple-50 text-purple-700">
+                            {feat.badge}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 leading-relaxed">{feat.desc}</p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={isEnabled}
+                      onClick={() => {
+                        setFeatureFlag(feat.id, !isEnabled);
+                        toast.success(
+                          !isEnabled
+                            ? `Đã kích hoạt module "${feat.name}" trên thanh điều hướng`
+                            : `Đã tạm ẩn module "${feat.name}"`
+                        );
+                      }}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        isEnabled ? 'bg-purple-600' : 'bg-slate-300'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+                          isEnabled ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Group 3: Extended Utilities & Community */}
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-4">
+            <div className="border-b border-slate-100 pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <span className="w-2 h-5 bg-amber-500 rounded-full"></span>
+                  <h3 className="text-sm font-bold text-slate-900">3. Tiện Ích Mở Rộng & Hoạt Động Lớp</h3>
+                </div>
+                <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">
+                  Tùy chọn bổ sung
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-1 ml-4">
+                Các công cụ bổ trợ kết nối phụ huynh, văn hóa đọc và lưu giữ kỷ niệm học sinh.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {[
+                {
+                  id: 'parentMeetings' as const,
+                  name: 'Sổ Họp Phụ Huynh & Giao Tiếp',
+                  desc: 'Biên bản họp phụ huynh đầu/cuối kỳ, ghi chép thu chi quỹ ban đại diện và tin nhắn kết nối.',
+                  icon: Users,
+                  badge: 'Gia đình',
+                },
+                {
+                  id: 'readingCorner' as const,
+                  name: 'Góc Đọc Sách & Văn Hóa Đọc',
+                  desc: 'Theo dõi tủ sách lớp học, nhật ký đọc của từng học sinh và bảng vinh danh đọc sách.',
+                  icon: Layers,
+                  badge: 'Văn hóa',
+                },
+                {
+                  id: 'moments' as const,
+                  name: 'Khoảnh Khắc & Kỷ Yếu Lớp Học',
+                  desc: 'Lưu giữ những bức ảnh, hoạt động ngoại khóa, sự kiện đáng nhớ của tập thể lớp.',
+                  icon: ImageIcon,
+                  badge: 'Kỷ yếu',
+                },
+                {
+                  id: 'reports' as const,
+                  name: 'Báo Cáo & Thống Kê Tổng Hợp',
+                  desc: 'Thống kê tổng hợp số liệu học sinh, biểu đồ chuyên cần và xuất phiếu in ấn.',
+                  icon: Database,
+                  badge: 'Báo cáo',
+                },
+                {
+                  id: 'community' as const,
+                  name: 'Cộng Đồng Giáo Viên',
+                  desc: 'Không gian giao lưu, trao đổi giáo án và tư liệu giảng dạy giữa các giáo viên.',
+                  icon: Globe,
+                  badge: 'Cộng đồng',
+                },
+              ].map((feat) => {
+                const IconComponent = feat.icon;
+                const isEnabled = featureFlags[feat.id];
+                return (
+                  <div
+                    key={feat.id}
+                    className={`p-4 rounded-2xl border transition-all flex items-start justify-between gap-3 ${
+                      isEnabled
+                        ? 'bg-amber-50/30 border-amber-200'
+                        : 'bg-slate-50/40 border-slate-200/80 opacity-70'
+                    }`}
+                  >
+                    <div className="flex items-start space-x-3">
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                        isEnabled ? 'bg-white shadow-xs text-amber-600 border border-amber-100' : 'bg-slate-100 text-slate-400'
+                      }`}>
+                        <IconComponent className="w-4 h-4" />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-xs font-bold text-slate-800">{feat.name}</span>
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700">
+                            {feat.badge}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 leading-relaxed">{feat.desc}</p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={isEnabled}
+                      onClick={() => {
+                        setFeatureFlag(feat.id, !isEnabled);
+                        toast.success(
+                          !isEnabled
+                            ? `Đã kích hoạt module "${feat.name}" trên thanh điều hướng`
+                            : `Đã tạm ẩn module "${feat.name}"`
+                        );
+                      }}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        isEnabled ? 'bg-amber-600' : 'bg-slate-300'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+                          isEnabled ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -1864,7 +2329,7 @@ export default function SettingsPage() {
                   </div>
                   <div>
                     <h2 className="text-base font-bold text-slate-900">Quản Lý Danh Sách Học Sinh</h2>
-                    <p className="text-xs text-slate-500">Khởi tạo lớp mới hoặc nạp dữ liệu mẫu.</p>
+                    <p className="text-xs text-slate-500">Khởi tạo và làm sạch danh sách học sinh của lớp.</p>
                   </div>
                 </div>
 
@@ -1879,18 +2344,6 @@ export default function SettingsPage() {
                       <span>Xóa Học Sinh Lớp {classInfo.name}</span>
                     </div>
                     <span className="text-[10px] text-rose-600">Bắt đầu lớp mới →</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleLoadDemo}
-                    className="w-full p-2.5 rounded-xl border border-blue-200 bg-blue-50/60 hover:bg-blue-100 text-left transition-all cursor-pointer flex items-center justify-between"
-                  >
-                    <div className="flex items-center space-x-2 text-blue-700 font-bold text-xs">
-                      <Sparkles className="w-4 h-4 shrink-0" />
-                      <span>Nạp 30 Học Sinh Mẫu (Demo)</span>
-                    </div>
-                    <span className="text-[10px] text-blue-600">Dùng thử →</span>
                   </button>
                 </div>
               </div>

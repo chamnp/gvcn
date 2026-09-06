@@ -20,6 +20,7 @@ import {
 import { useAppStore } from '@/lib/store';
 import { MomentCategory } from '@/types';
 import { MomentsFeedCard } from '@/components/moments/moments-feed-card';
+import { FeatureGate } from '@/components/layout/feature-gate';
 import { toast } from 'sonner';
 
 const SAMPLE_IMAGE_PRESETS = [
@@ -113,7 +114,8 @@ export default function MomentsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pb-12">
+    <FeatureGate feature="moments" featureName="Khoảnh Khắc & Kỷ Yếu Lớp Học">
+      <div className="space-y-6 max-w-4xl mx-auto pb-12">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-3xl border border-slate-200 shadow-xs">
         <div className="flex items-center space-x-3.5">
@@ -347,6 +349,7 @@ export default function MomentsPage() {
           ))
         )}
       </div>
-    </div>
+      </div>
+    </FeatureGate>
   );
 }

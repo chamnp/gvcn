@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import {
   ClassInfo,
   Student,
@@ -59,8 +59,6 @@ export const DEFAULT_AI_CONFIG: AIConfig = {
   generationSettings: DEFAULT_AI_GEN_SETTINGS,
 };
 import {
-  INITIAL_CLASS,
-  INITIAL_SCHOOL_CLASSES,
   INITIAL_STUDENTS,
   INITIAL_DAILY_ATTENDANCE,
   INITIAL_STAR_LOGS,
@@ -86,6 +84,13 @@ import {
   DEFAULT_SCHEDULE_CONFIG,
   calculatePeriods,
 } from './timetable-data';
+import {
+  FeatureFlags,
+  DEFAULT_FEATURE_FLAGS,
+  getStoredFeatureFlags,
+  saveFeatureFlags,
+  resetStoredFeatureFlags,
+} from './feature-flags';
 import { useAuth } from './auth-context';
 import { supabase } from './supabase';
 import { toast } from 'sonner';
@@ -104,6 +109,7 @@ export function getDefaultPinForStudent(student?: { dateOfBirth?: string }): str
 }
 
 interface AppContextType {
+  isLoaded: boolean;
   // School Profile & Settings
   schoolInfo: SchoolInfo;
   updateSchoolInfo: (partial: Partial<SchoolInfo>) => void;
@@ -115,8 +121,8 @@ interface AppContextType {
   classInfo: ClassInfo;
   setClassInfo: (info: ClassInfo) => void;
   switchClass: (classId: string) => void;
-  addClass: (newClass: Omit<ClassInfo, 'id'>) => void;
-  updateClass: (updated: ClassInfo) => void;
+  addClass: (newClass: Omit<ClassInfo, 'id'>) => Promise<{ success: boolean; error?: string }>;
+  updateClass: (updated: ClassInfo) => Promise<{ success: boolean; error?: string }>;
   deleteClass: (classId: string) => void;
   regenerateClassShareToken: (classId?: string) => string;
 
@@ -286,11 +292,11 @@ interface AppContextType {
     totalStars: number;
     studentNote?: string;
     month?: string;
-  }) => { success: boolean; error?: string };
+  }) => Promise<{ success: boolean; error?: string }>;
   fulfillRewardRedemption: (redemptionId: string) => void;
-  cancelRewardRedemption: (redemptionId: string) => void;
+  cancelRewardRedemption: (redemptionId: string) => Promise<void>;
   getStudentMonthlyStars: (studentId: string, monthStr?: string) => { earned: number; spent: number; available: number };
-  resetMonthStars: (monthStr?: string) => void;
+  resetMonthStars: (monthStr?: string) => Promise<void>;
 
   // Full Database Backup & Restore
   exportAllDataJSON: () => string;
@@ -358,6 +364,11 @@ interface AppContextType {
   allBookBorrowLogs: BookBorrowLog[];
   borrowBook: (data: Omit<BookBorrowLog, 'id' | 'status'>) => BookBorrowLog;
   returnBook: (logId: string, review?: string, stars?: number) => void;
+
+  // Feature Flags Management
+  featureFlags: FeatureFlags;
+  setFeatureFlag: (key: keyof FeatureFlags, enabled: boolean) => void;
+  resetFeatureFlags: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -865,7 +876,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [classMoments, setClassMoments] = useState<ClassMoment[]>([]);
   const [conferenceSlots, setConferenceSlots] = useState<ConferenceSlot[]>([]);
+  const [featureFlags, setFeatureFlagsState] = useState<FeatureFlags>(getStoredFeatureFlags);
   const [isLoaded, setIsLoaded] = useState(false);
+
+  const setFeatureFlag = useCallback((key: keyof FeatureFlags, enabled: boolean) => {
+    setFeatureFlagsState((prev) => {
+      const next = { ...prev, [key]: enabled };
+      saveFeatureFlags(next);
+      return next;
+    });
+  }, []);
+
+  const resetFeatureFlags = useCallback(() => {
+    const next = resetStoredFeatureFlags();
+    setFeatureFlagsState(next);
+  }, []);
 
   // Active Class Info
   const classInfo = useMemo(() => {
@@ -896,7 +921,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   }, [allHomeworks, activeClassId, classInfo.name]);
 
-  const { profile, teachers } = useAuth();
+  const { profile, teachers, updateProfile } = useAuth();
 
   // Tự động chuyển lớp theo phân công của giáo viên khi đăng nhập
   useEffect(() => {
@@ -1797,80 +1822,196 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setActiveClassId(classId);
   };
 
-  const addClass = (newClassData: Omit<ClassInfo, 'id'>) => {
-    const cleanName = newClassData.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const addClass = async (newClassData: Omit<ClassInfo, 'id'>): Promise<{ success: boolean; error?: string }> => {
+    const userEmail = (profile?.email || '').toLowerCase().trim();
+    const isAdminUser = profile?.role === 'ADMIN' || userEmail === 'anhnnh4@gmail.com';
+
+    // 1. Regular teacher can only manage 1 homeroom class
+    if (!isAdminUser && schoolClasses.length >= 1) {
+      toast.error('Mỗi giáo viên chỉ quản lý chủ nhiệm 1 lớp học! Thầy/Cô có thể chỉnh sửa thông tin lớp hiện tại trong Cài đặt.');
+      return { success: false, error: 'ALREADY_HAS_CLASS' };
+    }
+
+    const trimmedName = newClassData.name.trim();
+    const trimmedSchool = (newClassData.schoolName || profile?.schoolName || '').trim();
+
+    if (!trimmedName) {
+      toast.error('Vui lòng nhập tên lớp (ví dụ: 4A1)!');
+      return { success: false, error: 'MISSING_NAME' };
+    }
+
+    if (!trimmedSchool) {
+      toast.error('Vui lòng nhập tên trường tiểu học!');
+      return { success: false, error: 'MISSING_SCHOOL' };
+    }
+
+    // 2. Check duplicate (schoolName + name) in Supabase
+    try {
+      const { data: existingClasses } = await supabase
+        .from('Class')
+        .select('id, name, schoolName, teacherName, teacherEmail');
+
+      if (existingClasses) {
+        const duplicate = existingClasses.find(
+          (c: any) =>
+            (c.name || '').trim().toLowerCase() === trimmedName.toLowerCase() &&
+            (c.schoolName || '').trim().toLowerCase() === trimmedSchool.toLowerCase()
+        );
+
+        if (duplicate) {
+          toast.error(
+            `Lớp ${trimmedName} tại trường "${trimmedSchool}" đã tồn tại trên hệ thống (GVCN: ${duplicate.teacherName || duplicate.teacherEmail || 'giáo viên khác'})! Không thể đăng ký trùng.`
+          );
+          return { success: false, error: 'DUPLICATE_CLASS' };
+        }
+      }
+    } catch (e) {
+      console.warn('Error checking duplicate class:', e);
+    }
+
+    // 3. Create class object
+    const cleanName = trimmedName.toLowerCase().replace(/[^a-z0-9]/g, '');
     const randomSuffix = Math.random().toString(36).substring(2, 8);
     const newClass: ClassInfo = {
       ...newClassData,
       id: `class-${Date.now()}`,
-      teacherEmail: newClassData.teacherEmail || profile?.email || '',
-      schoolName: newClassData.schoolName || profile?.schoolName || 'Trường Tiểu học',
+      name: trimmedName,
+      schoolName: trimmedSchool,
+      teacherEmail: newClassData.teacherEmail || userEmail,
       district: newClassData.district || profile?.district || '',
       province: newClassData.province || profile?.province || '',
       teacherName: newClassData.teacherName || profile?.fullName || 'Giáo viên',
       shareToken: newClassData.shareToken || `c${cleanName}-${randomSuffix}`,
     };
+
     setSchoolClasses((prev) => [...prev, newClass]);
     setActiveClassId(newClass.id);
 
-    // Live API Write to Supabase
-    const previousClasses = schoolClasses;
-    void handleDbMutation(
-      supabase
-        .from('Class')
-        .upsert({
-          id: newClass.id,
-          name: newClass.name,
-          grade: newClass.grade,
-          schoolYear: newClass.schoolYear,
+    // 4. Save to Supabase Class table
+    const { error: insertError } = await supabase.from('Class').insert({
+      id: newClass.id,
+      name: newClass.name,
+      grade: newClass.grade,
+      schoolYear: newClass.schoolYear,
+      schoolName: newClass.schoolName,
+      teacherName: newClass.teacherName,
+      teacherEmail: newClass.teacherEmail,
+      district: newClass.district,
+      province: newClass.province,
+      totalStudents: newClass.totalStudents || 0,
+      seatingGridRows: newClass.seatingGridRows || 5,
+      seatingGridCols: newClass.seatingGridCols || 8,
+      shareToken: newClass.shareToken,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+
+    if (insertError) {
+      console.error('Insert class error:', insertError);
+      setSchoolClasses((prev) => prev.filter((c) => c.id !== newClass.id));
+      toast.error('Không thể lưu lớp học lên máy chủ.');
+      return { success: false, error: insertError.message };
+    }
+
+    // 5. Update Teacher table in Supabase & local profile
+    if (userEmail) {
+      await supabase
+        .from('Teacher')
+        .update({
+          assignedClassId: newClass.id,
           schoolName: newClass.schoolName,
-          teacherName: newClass.teacherName,
-          teacherEmail: newClass.teacherEmail,
-          district: newClass.district,
-          province: newClass.province,
-          totalStudents: newClass.totalStudents || 0,
-          seatingGridRows: newClass.seatingGridRows || 5,
-          seatingGridCols: newClass.seatingGridCols || 8,
-          shareToken: newClass.shareToken,
-          createdAt: new Date().toISOString(),
+          mainGrade: newClass.grade,
           updatedAt: new Date().toISOString(),
-        }),
-      () => {
-        setSchoolClasses(previousClasses);
-        if (previousClasses.length > 0) setActiveClassId(previousClasses[0].id);
-      },
-      'Không thể thêm lớp học'
-    );
+        })
+        .eq('email', userEmail);
+
+      updateProfile({
+        assignedClassId: newClass.id,
+        schoolName: newClass.schoolName,
+        mainGrade: newClass.grade,
+      });
+    }
+
+    toast.success(`Đã khởi tạo thành công Lớp ${newClass.name}! 🎉`);
+    return { success: true };
   };
 
-  const updateClass = (updated: ClassInfo) => {
-    setSchoolClasses((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+  const updateClass = async (updated: ClassInfo): Promise<{ success: boolean; error?: string }> => {
+    const trimmedName = updated.name.trim();
+    const trimmedSchool = (updated.schoolName || '').trim();
+
+    // Check duplicate if name or schoolName changed
+    try {
+      const { data: existingClasses } = await supabase
+        .from('Class')
+        .select('id, name, schoolName, teacherName, teacherEmail');
+
+      if (existingClasses) {
+        const duplicate = existingClasses.find(
+          (c: any) =>
+            c.id !== updated.id &&
+            (c.name || '').trim().toLowerCase() === trimmedName.toLowerCase() &&
+            (c.schoolName || '').trim().toLowerCase() === trimmedSchool.toLowerCase()
+        );
+
+        if (duplicate) {
+          toast.error(
+            `Lớp ${trimmedName} tại trường "${trimmedSchool}" đã tồn tại trên hệ thống (GVCN: ${duplicate.teacherName || duplicate.teacherEmail})! Không thể đổi trùng.`
+          );
+          return { success: false, error: 'DUPLICATE_CLASS' };
+        }
+      }
+    } catch (e) {
+      console.warn('Error checking duplicate class:', e);
+    }
+
+    const previousClasses = schoolClasses;
+    setSchoolClasses((prev) =>
+      prev.map((c) => (c.id === updated.id ? { ...updated, name: trimmedName, schoolName: trimmedSchool } : c))
+    );
 
     // Live API Write to Supabase
-    const previousClasses = schoolClasses;
-    void handleDbMutation(
-      supabase
-        .from('Class')
-        .upsert({
-          id: updated.id,
-          name: updated.name,
-          grade: updated.grade,
-          schoolYear: updated.schoolYear,
-          schoolName: updated.schoolName,
-          teacherName: updated.teacherName,
-          teacherEmail: updated.teacherEmail || profile?.email || '',
-          district: updated.district || profile?.district || '',
-          province: updated.province || profile?.province || '',
-          isArchived: updated.isArchived || false,
-          totalStudents: updated.totalStudents || 0,
-          seatingGridRows: updated.seatingGridRows || 5,
-          seatingGridCols: updated.seatingGridCols || 8,
-          shareToken: updated.shareToken,
+    const { error } = await supabase
+      .from('Class')
+      .update({
+        name: trimmedName,
+        grade: updated.grade,
+        schoolYear: updated.schoolYear,
+        schoolName: trimmedSchool,
+        teacherName: updated.teacherName,
+        teacherEmail: updated.teacherEmail || profile?.email || '',
+        district: updated.district || profile?.district || '',
+        province: updated.province || profile?.province || '',
+        isArchived: updated.isArchived || false,
+        totalStudents: updated.totalStudents || 0,
+        seatingGridRows: updated.seatingGridRows || 5,
+        seatingGridCols: updated.seatingGridCols || 8,
+        shareToken: updated.shareToken,
+        updatedAt: new Date().toISOString(),
+      })
+      .eq('id', updated.id);
+
+    if (error) {
+      console.error('Update class error:', error);
+      setSchoolClasses(previousClasses);
+      toast.error('Không thể cập nhật lớp học');
+      return { success: false, error: error.message };
+    }
+
+    // Update teacher record
+    if (updated.teacherEmail) {
+      await supabase
+        .from('Teacher')
+        .update({
+          schoolName: trimmedSchool,
+          mainGrade: updated.grade,
           updatedAt: new Date().toISOString(),
-        }),
-      () => setSchoolClasses(previousClasses),
-      'Không thể cập nhật lớp học'
-    );
+        })
+        .eq('email', updated.teacherEmail.toLowerCase());
+    }
+
+    toast.success(`Đã cập nhật thông tin Lớp ${trimmedName}!`);
+    return { success: true };
   };
 
   const deleteClass = (classId: string) => {
@@ -3235,7 +3376,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return { earned, spent, available };
   };
 
-  const createRewardRedemption = (data: {
+  const createRewardRedemption = async (data: {
     studentId: string;
     studentName: string;
     studentCode: string;
@@ -3244,89 +3385,67 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     totalStars: number;
     studentNote?: string;
     month?: string;
-  }): { success: boolean; error?: string } => {
+  }): Promise<{ success: boolean; error?: string }> => {
     const currentMonth = data.month || new Date().toISOString().substring(0, 7);
-    const balance = getStudentMonthlyStars(data.studentId, currentMonth);
-
-    if (balance.available < data.totalStars) {
-      return {
-        success: false,
-        error: `Con đang có ${balance.available} sao khả dụng trong tháng, còn thiếu ${data.totalStars - balance.available} sao nữa để đổi quà!`,
-      };
-    }
-
-    // Check inventory stock
-    for (const item of data.items) {
-      const prod = rewardProducts.find((p) => p.id === item.productId);
-      if (!prod || prod.stock < item.quantity) {
-        return {
-          success: false,
-          error: `Món quà "${item.productName}" hiện chỉ còn ${prod?.stock || 0} món trong kho!`,
-        };
-      }
-    }
-
-    // Create redemption record
     const targetStudent = allStudents.find((s) => s.id === data.studentId);
     const resolvedClassId = targetStudent?.classId || activeClassId || 'class-4a1';
+    const newRedemptionId = `rd-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
 
-    const newRedemption: RewardRedemption = {
-      id: `rd-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-      classId: resolvedClassId,
-      studentId: data.studentId,
-      studentName: data.studentName,
-      studentCode: data.studentCode,
-      studentAvatar: data.studentAvatar,
-      items: data.items,
-      totalStars: data.totalStars,
-      month: currentMonth,
-      status: 'PENDING',
-      studentNote: data.studentNote?.trim() || undefined,
-      requestedAt: new Date().toISOString(),
-    };
+    // 1. Call atomic PostgreSQL RPC in Supabase (locks rows, validates server balance, decrements stock)
+    try {
+      const { data: rpcRes, error: rpcErr } = await (supabase.rpc as any)('redeem_reward_tx', {
+        p_redemption_id: newRedemptionId,
+        p_class_id: resolvedClassId,
+        p_student_id: data.studentId,
+        p_student_name: data.studentName,
+        p_student_code: data.studentCode,
+        p_student_avatar: data.studentAvatar || null,
+        p_items: data.items,
+        p_month: currentMonth,
+        p_student_note: data.studentNote?.trim() || null,
+      });
 
-    // Decrement stock in React state and in Supabase
-    setRewardProducts((prev) =>
-      prev.map((p) => {
-        const matchingItem = data.items.find((item) => item.productId === p.id);
-        if (matchingItem) {
-          const remainingStock = Math.max(0, p.stock - matchingItem.quantity);
-          void handleDbMutation(
-            supabase.from('RewardProduct').update({ stock: remainingStock, isAvailable: remainingStock > 0 }).eq('id', p.id),
-            undefined,
-            'Không thể cập nhật tồn kho quà'
-          );
-          return { ...p, stock: remainingStock, isAvailable: remainingStock > 0 };
-        }
-        return p;
-      })
-    );
+      if (rpcErr || (rpcRes && !rpcRes.success)) {
+        const errorMsg = rpcRes?.error || rpcErr?.message || 'Không thể thực hiện đổi quà';
+        return { success: false, error: errorMsg };
+      }
 
-    setRewardRedemptions((prev) => [newRedemption, ...prev]);
+      const calculatedTotalStars = rpcRes?.total_stars ?? data.totalStars;
 
-    // Live API Write to Supabase
-    void handleDbMutation(
-      supabase
-        .from('RewardRedemption')
-        .insert({
-          id: newRedemption.id,
-          classId: newRedemption.classId,
-          studentId: newRedemption.studentId,
-          studentName: newRedemption.studentName,
-          studentCode: newRedemption.studentCode,
-          studentAvatar: newRedemption.studentAvatar || null,
-          items: newRedemption.items,
-          totalStars: newRedemption.totalStars,
-          month: newRedemption.month,
-          status: newRedemption.status,
-          studentNote: newRedemption.studentNote || null,
-          requestedAt: newRedemption.requestedAt,
-        }),
-      undefined,
-      'Không thể lưu yêu cầu đổi thưởng'
-    );
+      const newRedemption: RewardRedemption = {
+        id: newRedemptionId,
+        classId: resolvedClassId,
+        studentId: data.studentId,
+        studentName: data.studentName,
+        studentCode: data.studentCode,
+        studentAvatar: data.studentAvatar,
+        items: data.items,
+        totalStars: calculatedTotalStars,
+        month: currentMonth,
+        status: 'PENDING',
+        studentNote: data.studentNote?.trim() || undefined,
+        requestedAt: new Date().toISOString(),
+      };
 
-    return { success: true };
+      // 2. Sync React local state
+      setRewardProducts((prev) =>
+        prev.map((p) => {
+          const matchingItem = data.items.find((item) => item.productId === p.id);
+          if (matchingItem) {
+            const remainingStock = Math.max(0, p.stock - matchingItem.quantity);
+            return { ...p, stock: remainingStock, isAvailable: remainingStock > 0 };
+          }
+          return p;
+        })
+      );
+
+      setRewardRedemptions((prev) => [newRedemption, ...prev]);
+
+      return { success: true };
+    } catch (err: any) {
+      console.error('Lỗi giao dịch đổi quà:', err);
+      return { success: false, error: err.message || 'Lỗi kết nối máy chủ' };
+    }
   };
 
   const fulfillRewardRedemption = (redemptionId: string) => {
@@ -3351,66 +3470,116 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     toast.success('Đã xác nhận trao quà cho học sinh thành công! 🎉');
   };
 
-  const cancelRewardRedemption = (redemptionId: string) => {
+  const cancelRewardRedemption = async (redemptionId: string) => {
     const target = rewardRedemptions.find((r) => r.id === redemptionId);
     if (!target) return;
 
-    if (target.status === 'PENDING') {
-      // Restore inventory stock in React state and in Supabase
-      setRewardProducts((prev) =>
-        prev.map((p) => {
-          const matched = target.items.find((item) => item.productId === p.id);
-          if (matched) {
-            const restoredStock = p.stock + matched.quantity;
-            void handleDbMutation(
-              supabase.from('RewardProduct').update({ stock: restoredStock, isAvailable: true }).eq('id', p.id),
-              undefined,
-              'Không thể hoàn trả tồn kho'
-            );
-            return { ...p, stock: restoredStock, isAvailable: true };
-          }
-          return p;
-        })
+    try {
+      // 1. Call atomic PostgreSQL RPC in Supabase (locks redemption, restores stock, sets CANCELLED)
+      const { data: rpcRes, error: rpcErr } = await (supabase.rpc as any)('cancel_reward_redemption_tx', {
+        p_redemption_id: redemptionId,
+      });
+
+      if (rpcErr || (rpcRes && !rpcRes.success)) {
+        toast.error(rpcRes?.error || rpcErr?.message || 'Không thể hủy đơn đổi quà');
+        return;
+      }
+
+      // 2. Restore inventory stock in React state
+      if (target.status === 'PENDING') {
+        setRewardProducts((prev) =>
+          prev.map((p) => {
+            const matched = target.items.find((item) => item.productId === p.id);
+            if (matched) {
+              const restoredStock = p.stock + matched.quantity;
+              return { ...p, stock: restoredStock, isAvailable: true };
+            }
+            return p;
+          })
+        );
+      }
+
+      setRewardRedemptions((prev) =>
+        prev.map((r) => (r.id === redemptionId ? { ...r, status: 'CANCELLED' } : r))
       );
+
+      toast.info('Đã hủy đơn đổi quà và hoàn lại sao/tồn kho!');
+    } catch (err: any) {
+      console.error('Lỗi khi hủy đơn đổi quà:', err);
+      toast.error('Không thể hủy đơn đổi quà');
     }
-
-    setRewardRedemptions((prev) =>
-      prev.map((r) => (r.id === redemptionId ? { ...r, status: 'CANCELLED' } : r))
-    );
-
-    void handleDbMutation(
-      supabase
-        .from('RewardRedemption')
-        .update({ status: 'CANCELLED' })
-        .eq('id', redemptionId),
-      undefined,
-      'Không thể hủy yêu cầu đổi quà'
-    );
-
-    toast.info('Đã hủy đơn đổi quà và hoàn lại sao/tồn kho!');
   };
 
-  const resetMonthStars = (monthStr?: string) => {
+  // CHỐT SỐ DƯ THÁNG (RESET REMAINING STARS)
+  // BẢO TỒN NGUYÊN VẸN 100% LỊCH SỬ STARLOG ĐỂ PHỤC VỤ ĐÁNH GIÁ THÔNG TƯ 27 VÀ BÁO CÁO TOÀN NĂM
+  const resetMonthStars = async (monthStr?: string) => {
     const targetMonth = monthStr || new Date().toISOString().substring(0, 7);
-    if (confirm(`Bạn có chắc chắn muốn reset điểm thi đua Tháng ${targetMonth.replace('-', '/')} về 0 để bắt đầu đợt mới?`)) {
-      setStarLogs((prev) =>
-        prev.filter((l) => !(l.date || l.createdAt.split('T')[0]).startsWith(targetMonth))
-      );
-      setRewardRedemptions((prev) =>
-        prev.filter((r) => r.month !== targetMonth)
-      );
+    const targetStudents = allStudents.filter((s) => s.classId === activeClassId);
 
-      // Delete in Supabase
-      void handleDbMutation(
-        (async () => {
-          await supabase.from('StarLog').delete().ilike('date', `${targetMonth}%`);
-          return supabase.from('RewardRedemption').delete().eq('month', targetMonth);
-        })(),
-        undefined,
-        'Không thể làm mới điểm thi đua tháng'
-      );
+    if (targetStudents.length === 0) {
+      toast.warning('Không có học sinh nào trong lớp hiện tại để chốt số dư.');
+      return;
+    }
 
-      toast.success(`Đã reset điểm thi đua tháng ${targetMonth.replace('-', '/')}!`);
+    if (
+      confirm(
+        `Bạn có chắc chắn muốn CHỐT SỐ DƯ khả dụng Tháng ${targetMonth.replace('-', '/')} của lớp về 0 để mở đợt mới?\n\n⭐ Lưu ý: Toàn bộ Lịch sử điểm sao (StarLog) và thành tích thi đua vẫn được BẢO TỒN NGUYÊN VẸN 100% để phục vụ đánh giá rèn luyện Thông tư 27 và thống kê tổng kết.`
+      )
+    ) {
+      // Find students with remaining available stars in this month
+      const studentsToClose: Array<{ student: typeof targetStudents[0]; available: number }> = [];
+
+      for (const st of targetStudents) {
+        const bal = getStudentMonthlyStars(st.id, targetMonth);
+        if (bal.available > 0) {
+          studentsToClose.push({ student: st, available: bal.available });
+        }
+      }
+
+      if (studentsToClose.length === 0) {
+        toast.info(`Tất cả học sinh lớp trong tháng ${targetMonth.replace('-', '/')} đã có số dư sao khả dụng là 0!`);
+        return;
+      }
+
+      const now = new Date().toISOString();
+      const closeRedemptions: RewardRedemption[] = studentsToClose.map(({ student, available }) => ({
+        id: `rd-close-${student.id}-${targetMonth}-${Date.now()}`,
+        classId: activeClassId,
+        studentId: student.id,
+        studentName: student.fullName,
+        studentCode: student.studentCode,
+        studentAvatar: student.avatarUrl,
+        items: [
+          {
+            productId: 'system-period-close',
+            productName: 'Chốt số dư thi đua tháng',
+            quantity: 1,
+            unitStarPrice: available,
+          },
+        ],
+        totalStars: available,
+        month: targetMonth,
+        status: 'DELIVERED' as const,
+        studentNote: 'Chốt số dư khả dụng cuối tháng mở chu kỳ thi đua mới',
+        requestedAt: now,
+        deliveredAt: now,
+      }));
+
+      const previous = rewardRedemptions;
+      setRewardRedemptions((prev) => [...closeRedemptions, ...prev]);
+
+      // Insert into Supabase with classId and proper rollback
+      const { error } = await supabase.from('RewardRedemption').insert(closeRedemptions);
+
+      if (error) {
+        setRewardRedemptions(previous);
+        toast.error('Không thể chốt số dư tháng: ' + error.message);
+        return;
+      }
+
+      toast.success(
+        `Đã chốt số dư tháng ${targetMonth.replace('-', '/')} cho ${studentsToClose.length} học sinh thành công! Lịch sử điểm sao được giữ nguyên.`
+      );
     }
   };
 
@@ -4477,6 +4646,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         exportAllDataJSON,
         importAllDataJSON,
         resetData,
+        featureFlags,
+        setFeatureFlag,
+        resetFeatureFlags,
+        isLoaded,
       }}
     >
       {children}

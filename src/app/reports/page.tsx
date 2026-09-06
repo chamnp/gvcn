@@ -22,6 +22,7 @@ import { AIClassDiagnosticModal } from '@/components/assessment/ai-class-diagnos
 import { ZaloMessageGeneratorModal } from '@/components/parent/zalo-message-generator-modal';
 import { IndividualReportCardModal } from '@/components/reports/individual-report-card-modal';
 import { GuardrailsAlertModal } from '@/components/assessment/guardrails-alert-modal';
+import { FeatureGate } from '@/components/layout/feature-gate';
 import {
   TERMS,
   PRIMARY_SUBJECTS,
@@ -60,7 +61,8 @@ export default function ReportsPage() {
   const errorCount = issues.filter((i) => i.type === 'ERROR').length;
 
   return (
-    <div className="space-y-5 pb-12 animate-in fade-in duration-300">
+    <FeatureGate feature="reports" featureName="Báo Cáo & Thống Kê Tổng Hợp">
+      <div className="space-y-5 pb-12 animate-in fade-in duration-300">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
@@ -347,5 +349,6 @@ export default function ReportsPage() {
         termSummaries={termSummaries}
       />
     </div>
+    </FeatureGate>
   );
 }

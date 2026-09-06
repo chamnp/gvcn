@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   CalendarCheck,
-  FileSpreadsheet,
+  Award,
   Calendar,
   Menu,
 } from 'lucide-react';
@@ -19,7 +19,7 @@ export const BottomNav: React.FC = () => {
   const NAV_TABS = [
     { href: '/', label: 'Tổng quan', icon: LayoutDashboard },
     { href: '/attendance', label: 'Điểm danh', icon: CalendarCheck },
-    { href: '/assessment', label: 'Đánh giá', icon: FileSpreadsheet },
+    { href: '/behavior', label: 'Tích sao', icon: Award },
     { href: '/timetable', label: 'TKB', icon: Calendar },
   ];
 

@@ -8,6 +8,7 @@ import { Header } from '@/components/layout/header';
 import { BottomNav } from '@/components/layout/bottom-nav';
 import { AuthGuard } from '@/components/layout/auth-guard';
 import { ActivePresentationDetector } from '@/components/classroom/active-presentation-detector';
+import { TeacherClassRegistrationModal } from '@/components/layout/teacher-class-registration-modal';
 
 const STANDALONE_PREFIXES = [
   '/login',
@@ -59,6 +60,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
         </main>
         <BottomNav />
         <ActivePresentationDetector />
+        <TeacherClassRegistrationModal />
       </div>
     </div>
   );

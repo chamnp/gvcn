@@ -63,6 +63,7 @@ import {
   generateClassStatistics,
 } from '@/lib/parent-meeting-engine';
 import { getCurrentTermByDate, PRIMARY_SUBJECTS } from '@/lib/tt27-engine';
+import { FeatureGate } from '@/components/layout/feature-gate';
 import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
 
@@ -423,7 +424,8 @@ export default function ParentMeetingsPage() {
   }
 
   return (
-    <div className="space-y-4 pb-16 animate-in fade-in duration-300">
+    <FeatureGate feature="parentMeetings" featureName="Sổ Họp Phụ Huynh">
+      <div className="space-y-4 pb-16 animate-in fade-in duration-300">
       {/* 1. TOP HEADER — Real Class Stats + Action Buttons */}
       <div className="bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 rounded-3xl p-5 sm:p-6 text-white shadow-lg space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

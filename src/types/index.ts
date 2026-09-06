@@ -153,6 +153,7 @@ export interface DailyAttendance {
 
 export interface StarLog {
   id: string;
+  classId?: string;
   studentId: string;
   points: number; // +1, +2, -1, 0 (chỉ nhận xét), v.v.
   category: string; // 'Học tập', 'Nề nếp & Kỷ luật', 'Phẩm chất & Tương tác', 'Trực nhật & Vệ sinh', 'Dặn dò phụ huynh', 'Khen thưởng', 'Khác'
@@ -271,7 +272,7 @@ export interface SchoolInfo {
 }
 
 // Gamification, Star Criteria & Reward Shop Types
-export type StarCriterionCategory = 'Học tập' | 'Nề nếp' | 'Phẩm chất' | 'Nhắc nhở' | 'Khác';
+export type StarCriterionCategory = 'Học tập' | 'Nề nếp' | 'Phẩm chất' | 'Nhắc nhở' | 'Phong trào' | 'Khác';
 
 export interface StarCriterion {
   id: string;

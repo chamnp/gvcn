@@ -51,6 +51,7 @@ import { SyncQuizScoresModal } from '@/components/assessment/sync-quiz-scores-mo
 import { ImportSubjectScoresModal } from '@/components/assessment/import-subject-scores-modal';
 import { ExportSubjectTemplateModal } from '@/components/assessment/export-subject-template-modal';
 import { VoiceInputButton } from '@/components/ui/voice-input-button';
+import { FeatureGate } from '@/components/layout/feature-gate';
 import { toast } from 'sonner';
 
 const SAMPLE_SUBJECT_COMMENTS: Record<string, string[]> = {
@@ -316,7 +317,8 @@ export default function AssessmentPage() {
   const selectedFocusSubject = subjects.find((s) => s.code === focusSubjectCode) || subjects[0];
 
   return (
-    <div className="space-y-4 pb-16 animate-in fade-in duration-300">
+    <FeatureGate feature="assessment" featureName="Đánh Giá Học Sinh (Thông Tư 27)">
+      <div className="space-y-4 pb-16 animate-in fade-in duration-300">
       {/* 1. Header Bar */}
       <div className="bg-white/95 backdrop-blur-md rounded-3xl p-4 border border-slate-200/90 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="flex items-center space-x-3">
@@ -1312,5 +1314,6 @@ export default function AssessmentPage() {
         onClose={() => setIsAIDiagnosticOpen(false)}
       />
     </div>
+    </FeatureGate>
   );
 }

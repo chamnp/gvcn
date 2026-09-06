@@ -118,22 +118,23 @@ export default function StudentPrivateReportPage({
     leaveRequests,
     conferenceSlots,
     periods,
+    isLoaded,
   } = useAppStore();
 
-  // Find student strictly by shareToken, id, or studentCode (Mã định danh)
+  // Find student strictly by shareToken (NEVER allow sequential id or studentCode)
   const student = useMemo(() => {
-    return allStudents.find(
-      (s) =>
-        (s.shareToken && s.shareToken.toLowerCase() === rawToken.toLowerCase()) ||
-        s.id.toLowerCase() === rawToken.toLowerCase() ||
-        (s.studentCode && s.studentCode.toLowerCase() === rawToken.toLowerCase())
+    if (!rawToken) return null;
+    return (
+      allStudents.find(
+        (s) => s.shareToken && s.shareToken.toLowerCase() === rawToken.toLowerCase()
+      ) || null
     );
   }, [allStudents, rawToken]);
 
   // Scoped class
   const studentClass = useMemo(() => {
     if (!student) return null;
-    return schoolClasses.find((c) => c.id === student.classId) || schoolClasses[0];
+    return schoolClasses.find((c) => c.id === student.classId) || null;
   }, [student, schoolClasses]);
 
   // Main Active Tab for Child Hub
@@ -278,9 +279,11 @@ export default function StudentPrivateReportPage({
     });
   };
 
-  const handleCheckout = (e: React.FormEvent) => {
+  const [isSubmittingRedemption, setIsSubmittingRedemption] = useState(false);
+
+  const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!student || cartItems.length === 0) return;
+    if (!student || cartItems.length === 0 || isSubmittingRedemption) return;
 
     if (studentMonthlyStars.available < totalCartStars) {
       toast.error(`Con chỉ có ${studentMonthlyStars.available} sao khả dụng, còn thiếu ${totalCartStars - studentMonthlyStars.available} sao nữa!`);
@@ -295,24 +298,29 @@ export default function StudentPrivateReportPage({
       imageUrl: c.product.imageUrl,
     }));
 
-    const result = createRewardRedemption({
-      studentId: student.id,
-      studentName: student.fullName,
-      studentCode: student.studentCode,
-      studentAvatar: student.avatarUrl,
-      items,
-      totalStars: totalCartStars,
-      studentNote: studentNoteInput,
-      month: currentMonthKey,
-    });
+    setIsSubmittingRedemption(true);
+    try {
+      const result = await createRewardRedemption({
+        studentId: student.id,
+        studentName: student.fullName,
+        studentCode: student.studentCode,
+        studentAvatar: student.avatarUrl,
+        items,
+        totalStars: totalCartStars,
+        studentNote: studentNoteInput,
+        month: currentMonthKey,
+      });
 
-    if (result.success) {
-      confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
-      toast.success('🎉 Chúc mừng con đã gửi yêu cầu đổi quà thành công! Cô giáo sẽ trao quà cho con sớm nhất nhé!');
-      setCartItems([]);
-      setStudentNoteInput('');
-    } else {
-      toast.error(result.error || 'Có lỗi xảy ra khi đổi quà!');
+      if (result.success) {
+        confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+        toast.success('🎉 Chúc mừng con đã gửi yêu cầu đổi quà thành công! Cô giáo sẽ trao quà cho con sớm nhất nhé!');
+        setCartItems([]);
+        setStudentNoteInput('');
+      } else {
+        toast.error(result.error || 'Có lỗi xảy ra khi đổi quà!');
+      }
+    } finally {
+      setIsSubmittingRedemption(false);
     }
   };
 
@@ -458,11 +466,44 @@ export default function StudentPrivateReportPage({
     toast.success('Đã sao chép liên kết riêng tư của con vào bộ nhớ tạm!');
   };
 
+  // Scoped shop products for student's class
+  const classShopProducts = useMemo(() => {
+    if (!studentClass) return [];
+    return rewardProducts.filter((p) => !p.classId || p.classId === studentClass.id);
+  }, [rewardProducts, studentClass]);
+
   // Filtered shop products
-  const filteredShopProducts = rewardProducts.filter((p) => {
-    if (shopCategoryFilter === 'ALL') return true;
-    return p.category === shopCategoryFilter;
-  });
+  const filteredShopProducts = useMemo(() => {
+    return classShopProducts.filter((p) => {
+      if (shopCategoryFilter === 'ALL') return true;
+      return p.category === shopCategoryFilter;
+    });
+  }, [classShopProducts, shopCategoryFilter]);
+
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl p-6 max-w-md w-full text-center space-y-3 border border-slate-200 shadow-xl">
+          <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
+          <h2 className="font-bold text-slate-800 text-sm">Đang tải hồ sơ học sinh...</h2>
+        </div>
+      </div>
+    );
+  }
+
+  if (!student || !studentClass) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl p-6 max-w-md w-full text-center space-y-3 border border-slate-200 shadow-xl">
+          <p className="text-4xl">⚠️</p>
+          <h2 className="font-black text-slate-900 text-lg">Không tìm thấy hồ sơ học sinh</h2>
+          <p className="text-xs text-slate-500 leading-relaxed">
+            Đường dẫn tra cứu không hợp lệ hoặc đã hết hạn. Vui lòng liên hệ Giáo viên chủ nhiệm để nhận liên kết cá nhân chính xác.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 pb-24 w-full max-w-full overflow-x-hidden">

@@ -43,16 +43,16 @@ export default function PublicClassRewardsPage({
     rewardRedemptions,
     getStudentMonthlyStars,
     getStudentStars,
+    isLoaded,
   } = useAppStore();
 
-  // Find class strictly by shareToken or id
+  // Find class strictly by shareToken (NEVER fallback to schoolClasses[0] and DO NOT accept raw id)
   const targetClass = useMemo(() => {
+    if (!rawToken) return null;
     return (
       schoolClasses.find(
-        (c) =>
-          (c.shareToken && c.shareToken.toLowerCase() === rawToken.toLowerCase()) ||
-          c.id.toLowerCase() === rawToken.toLowerCase()
-      ) || schoolClasses[0]
+        (c) => c.shareToken && c.shareToken.toLowerCase() === rawToken.toLowerCase()
+      ) || null
     );
   }, [schoolClasses, rawToken]);
 
@@ -106,13 +106,25 @@ export default function PublicClassRewardsPage({
     );
   }, [leaderboard, searchQuery]);
 
+  // Scoped shop products for this class
+  const classProducts = useMemo(() => {
+    if (!targetClass) return [];
+    return rewardProducts.filter((p) => !p.classId || p.classId === targetClass.id);
+  }, [rewardProducts, targetClass]);
+
   // Filtered shop products
   const filteredProducts = useMemo(() => {
-    return rewardProducts.filter((p) => {
+    return classProducts.filter((p) => {
       if (selectedCategory === 'ALL') return true;
       return p.category === selectedCategory;
     });
-  }, [rewardProducts, selectedCategory]);
+  }, [classProducts, selectedCategory]);
+
+  // Scoped star criteria for this class
+  const classCriteria = useMemo(() => {
+    if (!targetClass) return [];
+    return starCriteria.filter((c) => !c.classId || c.classId === targetClass.id);
+  }, [starCriteria, targetClass]);
 
   const handleCopyLink = () => {
     const url = typeof window !== 'undefined' ? window.location.href : '';
@@ -120,13 +132,24 @@ export default function PublicClassRewardsPage({
     toast.success('Đã sao chép link bảng thi đua vào bộ nhớ tạm!');
   };
 
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl p-6 max-w-md w-full text-center space-y-3 border border-slate-200 shadow-xl">
+          <div className="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto" />
+          <h2 className="font-bold text-slate-800 text-sm">Đang tải dữ liệu lớp học...</h2>
+        </div>
+      </div>
+    );
+  }
+
   if (!targetClass) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-3xl p-6 max-w-md w-full text-center space-y-3 border border-slate-200 shadow-xl">
           <p className="text-4xl">⚠️</p>
           <h2 className="font-black text-slate-900 text-lg">Không tìm thấy thông tin lớp học</h2>
-          <p className="text-xs text-slate-500">Vui lòng kiểm tra lại liên kết hoặc liên hệ giáo viên chủ nhiệm.</p>
+          <p className="text-xs text-slate-500">Đường dẫn không hợp lệ hoặc đã hết hạn. Vui lòng liên hệ Giáo viên chủ nhiệm để nhận liên kết chính xác.</p>
         </div>
       </div>
     );
@@ -212,8 +235,8 @@ export default function PublicClassRewardsPage({
         <div className="flex items-center space-x-1.5 bg-white p-1 rounded-2xl border border-slate-200 shadow-xs text-xs font-bold overflow-x-auto no-scrollbar scroll-smooth">
           {[
             { id: 'LEADERBOARD', label: '🏆 Bảng Đua Top', count: leaderboard.length },
-            { id: 'SHOP', label: '🎁 Shop Đổi Quà', count: rewardProducts.length },
-            { id: 'CRITERIA', label: '⭐ Tiêu Chí Kiếm Sao', count: starCriteria.length },
+            { id: 'SHOP', label: '🎁 Shop Đổi Quà', count: classProducts.length },
+            { id: 'CRITERIA', label: '⭐ Tiêu Chí Kiếm Sao', count: classCriteria.length },
           ].map((tab) => {
             const isActive = activeTab === tab.id;
             return (
@@ -556,7 +579,7 @@ export default function PublicClassRewardsPage({
             <div>
               <h3 className="font-black text-xs sm:text-base text-slate-900 flex items-center gap-2">
                 <Star className="w-4 h-4 sm:w-5 sm:h-5 text-amber-500" />
-                <span>Tiêu Chí Kiếm Sao & Nề Nếp Lớp Học ({starCriteria.length} Tiêu Chí)</span>
+                <span>Tiêu Chí Kiếm Sao & Nề Nếp Lớp Học ({classCriteria.length} Tiêu Chí)</span>
               </h3>
               <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">
                 Các việc làm tốt và gương mẫu giúp học sinh tích lũy sao mỗi ngày do GVCN quy định.
@@ -564,7 +587,7 @@ export default function PublicClassRewardsPage({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-              {starCriteria.map((c) => (
+              {classCriteria.map((c) => (
                 <div
                   key={c.id}
                   className="p-3.5 rounded-2xl bg-slate-50/70 border border-slate-200 flex items-start space-x-3"

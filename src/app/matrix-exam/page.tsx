@@ -48,6 +48,7 @@ import {
 } from '@/lib/question-bank-importer';
 import { ImportQuestionBankModal } from '@/components/matrix-exam/import-question-bank-modal';
 import { AssignQuizModal } from '@/components/quiz/assign-quiz-modal';
+import { FeatureGate } from '@/components/layout/feature-gate';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
 
@@ -466,7 +467,8 @@ export default function MatrixExamPage() {
   };
 
   return (
-    <div className="space-y-6 print:p-0 print:m-0">
+    <FeatureGate feature="matrixExam" featureName="Ma Trận Đề Thi & Đề Kiểm Tra">
+      <div className="space-y-6 print:p-0 print:m-0">
       {/* 1. TOP HEADER & CONTROLS (HIDDEN IN PRINT) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 print:hidden">
         <div>
@@ -1334,5 +1336,6 @@ export default function MatrixExamPage() {
         subjectName={currentSubjectObj.name}
       />
     </div>
+    </FeatureGate>
   );
 }

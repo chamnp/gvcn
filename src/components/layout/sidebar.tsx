@@ -13,34 +13,32 @@ import {
   Sparkles,
   FileDown,
   Settings,
-  GraduationCap,
   Sparkle,
   Calendar,
   X,
   LogIn,
   LogOut,
-  ShieldCheck,
   BookOpen,
   Camera,
   Tv,
   Target,
   Presentation,
-  HeartPulse,
   BookMarked,
   ChevronDown,
   ChevronRight,
-  Smartphone,
   Globe,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useAuth } from '@/lib/auth-context';
 import { useMobileNav } from './mobile-nav-context';
+import { FeatureFlags } from '@/lib/feature-flags';
 
 export interface NavItem {
   href: string;
   label: string;
   icon: React.ElementType;
   badge?: string | null;
+  feature?: keyof FeatureFlags;
 }
 
 export interface NavGroup {
@@ -52,23 +50,32 @@ export interface NavGroup {
 
 export const NAV_GROUPS: NavGroup[] = [
   {
-    id: 'overview',
-    title: 'TỔNG QUAN & LỚP HỌC',
-    icon: '🏠',
+    id: 'daily',
+    title: 'TÁC NGHIỆP HÀNG NGÀY',
+    icon: '⚡',
     items: [
       { href: '/', label: 'Tổng quan Lớp', icon: LayoutDashboard, badge: null },
-      { href: '/students', label: 'Hồ sơ Học sinh', icon: Users, badge: null },
-      { href: '/seating-chart', label: 'Sơ đồ Lớp học', icon: Grid3X3, badge: null },
+      { href: '/attendance', label: 'Điểm danh & Bán trú', icon: CalendarCheck, badge: null, feature: 'attendance' },
+      { href: '/behavior', label: 'Nề nếp & Tích sao', icon: Award, badge: null, feature: 'behavior' },
+      { href: '/timetable', label: 'Thời khóa biểu', icon: Calendar, badge: '2 Buổi', feature: 'timetable' },
+      { href: '/homework', label: 'Giao bài tập (QR)', icon: BookOpen, badge: null, feature: 'homework' },
     ],
   },
   {
-    id: 'daily',
-    title: 'ĐIỀU HÀNH HÀNG NGÀY',
-    icon: '⚡',
+    id: 'smart_classroom',
+    title: 'LỚP HỌC THÔNG MINH',
+    icon: '📺',
     items: [
-      { href: '/attendance', label: 'Điểm danh & Bán trú', icon: CalendarCheck, badge: null },
-      { href: '/behavior', label: 'Nề nếp & Tích sao', icon: Award, badge: null },
-      { href: '/timetable', label: 'Thời khóa biểu', icon: Calendar, badge: '2 Buổi' },
+      { href: '/classroom-tools', label: 'Công cụ Lớp học (TV & Remote)', icon: Tv, badge: 'Smart TV', feature: 'classroomTools' },
+    ],
+  },
+  {
+    id: 'class_mgmt',
+    title: 'QUẢN LÝ LỚP HỌC',
+    icon: '👥',
+    items: [
+      { href: '/students', label: 'Hồ sơ Học sinh', icon: Users, badge: null, feature: 'students' },
+      { href: '/settings', label: 'Cài đặt & Tính năng', icon: Settings, badge: null },
     ],
   },
   {
@@ -76,42 +83,24 @@ export const NAV_GROUPS: NavGroup[] = [
     title: 'CHUYÊN MÔN & ĐÁNH GIÁ',
     icon: '🎓',
     items: [
-      { href: '/lesson-plans', label: 'Giáo án điện tử', icon: Presentation, badge: 'CV 2345' },
-      { href: '/assessment', label: 'Đánh giá Học sinh', icon: FileSpreadsheet, badge: 'Cốt lõi' },
-      { href: '/iep', label: 'Kế hoạch IEP', icon: Target, badge: 'Phụ đạo' },
-      { href: '/matrix-exam', label: 'Ma trận Đề kiểm tra', icon: BookOpen, badge: 'Đề 10đ' },
-      { href: '/ai-assistant', label: 'Trợ lý Nhận xét AI', icon: Sparkles, badge: 'AI Pro' },
+      { href: '/assessment', label: 'Đánh giá Học sinh', icon: FileSpreadsheet, badge: 'Thử nghiệm', feature: 'assessment' },
+      { href: '/lesson-plans', label: 'Kế hoạch bài dạy', icon: Presentation, badge: 'CV 2345', feature: 'lessonPlans' },
+      { href: '/matrix-exam', label: 'Ma trận Đề kiểm tra', icon: BookOpen, badge: 'Đề 10đ', feature: 'matrixExam' },
+      { href: '/iep', label: 'Kế hoạch IEP', icon: Target, badge: 'Phụ đạo', feature: 'iep' },
+      { href: '/ai-assistant', label: 'Trợ lý Nhận xét AI', icon: Sparkles, badge: 'AI Pro', feature: 'aiAssistant' },
     ],
   },
   {
-    id: 'activities',
-    title: 'HOẠT ĐỘNG & TƯƠNG TÁC',
-    icon: '🤝',
+    id: 'extended_tools',
+    title: 'TIỆN ÍCH MỞ RỘNG',
+    icon: '✨',
     items: [
-      { href: '/classroom-tools', label: 'Công cụ Lớp học', icon: Tv, badge: 'Smart TV' },
-      { href: '/remote', label: 'Remote Giảng Dạy', icon: Smartphone, badge: 'Không dây' },
-      { href: '/parent-meetings', label: 'Họp Phụ Huynh', icon: Presentation, badge: 'Chiếu TV' },
-      { href: '/reading-corner', label: 'Tủ Sách Lớp Học', icon: BookMarked, badge: 'Đọc sách' },
-      { href: '/moments', label: 'Khoảnh khắc Lớp', icon: Camera, badge: 'Feed' },
-      { href: '/homework', label: 'Giao bài tập (QR)', icon: BookOpen, badge: 'Mới' },
-    ],
-  },
-  {
-    id: 'community',
-    title: 'CỘNG ĐỒNG & CHIA SẺ',
-    icon: '🌐',
-    items: [
-      { href: '/community', label: 'Cộng đồng GVCN', icon: Globe, badge: 'BETA' },
-    ],
-  },
-  {
-    id: 'system',
-    title: 'BÁO CÁO & HỆ THỐNG',
-    icon: '⚙️',
-    items: [
-      { href: '/reports', label: 'Báo cáo & Xuất Excel', icon: FileDown, badge: null },
-      { href: '/settings', label: 'Cài đặt Cá nhân & Lớp', icon: Settings, badge: null },
-      { href: '/admin', label: 'Quản Trị Nền Tảng', icon: ShieldCheck, badge: 'Admin' },
+      { href: '/seating-chart', label: 'Sơ đồ Lớp học', icon: Grid3X3, badge: null, feature: 'seatingChart' },
+      { href: '/parent-meetings', label: 'Họp Phụ Huynh', icon: Presentation, badge: 'Chiếu TV', feature: 'parentMeetings' },
+      { href: '/reading-corner', label: 'Tủ Sách Lớp Học', icon: BookMarked, badge: null, feature: 'readingCorner' },
+      { href: '/moments', label: 'Khoảnh khắc Lớp', icon: Camera, badge: null, feature: 'moments' },
+      { href: '/reports', label: 'Báo cáo & Sổ sách', icon: FileDown, badge: null, feature: 'reports' },
+      { href: '/community', label: 'Cộng đồng GVCN', icon: Globe, badge: 'BETA', feature: 'community' },
     ],
   },
 ];
@@ -121,8 +110,8 @@ export const NAV_ITEMS = NAV_GROUPS.flatMap((g) => g.items);
 
 const SidebarContent: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
   const pathname = usePathname();
-  const { schoolClasses, activeClassId, classInfo, switchClass, students, schoolInfo } = useAppStore();
-  const { user, profile, isAdmin, signOut } = useAuth();
+  const { schoolClasses, activeClassId, classInfo, switchClass, students, schoolInfo, featureFlags } = useAppStore();
+  const { user, profile, signOut, isAdmin } = useAuth();
 
   // Collapsible state for each section (default all open)
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
@@ -131,7 +120,7 @@ const SidebarContent: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
   useEffect(() => {
     NAV_GROUPS.forEach((group) => {
       const hasActive = group.items.some(
-        (item) => pathname === item.href || (item.href !== '/' && item.href !== '/admin' && pathname.startsWith(item.href))
+        (item) => pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))
       );
       if (hasActive && collapsedGroups[group.id]) {
         setCollapsedGroups((prev) => ({ ...prev, [group.id]: false }));
@@ -169,12 +158,12 @@ const SidebarContent: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
               <span className="font-bold text-white tracking-wide text-base group-hover:text-blue-400 transition-colors">
                 GVCN PRO
               </span>
-              <span className="px-1.5 py-0.5 text-[9px] font-black bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-md tracking-wider shadow-xs">
-                BETA
+              <span className="px-1.5 py-0.5 text-[9px] font-black bg-gradient-to-r from-blue-500 to-indigo-500 text-white rounded-md tracking-wider shadow-xs">
+                STABLE
               </span>
             </div>
-            <p className="text-[11px] text-slate-400 truncate max-w-[140px]" title={profile?.schoolName || classInfo.schoolName || 'Cộng đồng GVCN Tiểu học'}>
-              {profile?.schoolName || classInfo.schoolName || 'Cộng đồng GVCN'}
+            <p className="text-[11px] text-slate-400 truncate max-w-[140px]" title={classInfo.schoolName || profile?.schoolName || 'Trợ Lý Sư Phạm GVCN'}>
+              {classInfo.schoolName || profile?.schoolName || 'Trợ Lý Sư Phạm GVCN'}
             </p>
           </div>
         </Link>
@@ -190,35 +179,40 @@ const SidebarContent: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
         )}
       </div>
 
-      {/* Class Quick Switcher Card */}
+      {/* Teacher's Class Card */}
       <div className="mx-3 sm:mx-4 my-2.5 p-3 rounded-xl bg-slate-800/80 border border-slate-700/60 shadow-xs space-y-2 shrink-0">
         <div className="flex items-center justify-between">
           <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-            {schoolClasses.length > 1 ? 'Chọn Lớp Phụ Trách' : 'Lớp Phụ Trách'}
+            {isAdmin ? 'Đổi Lớp (Admin)' : 'Lớp Chủ Nhiệm'}
           </span>
-          {schoolClasses.length > 0 ? (
-            <select
-              value={activeClassId}
-              onChange={(e) => switchClass(e.target.value)}
-              className="bg-blue-600 hover:bg-blue-500 text-white text-xs px-2 py-0.5 rounded-lg font-bold border-none focus:ring-1 focus:ring-blue-400 cursor-pointer max-w-[130px] truncate"
-            >
-              {schoolClasses.map((c) => (
-                <option key={c.id} value={c.id}>
-                  Lớp {c.name} (K{c.grade})
-                </option>
-              ))}
-            </select>
+          {isAdmin ? (
+            schoolClasses.length > 0 ? (
+              <select
+                value={activeClassId}
+                onChange={(e) => switchClass(e.target.value)}
+                className="bg-blue-600 hover:bg-blue-500 text-white text-xs px-2 py-0.5 rounded-lg font-bold border-none focus:ring-1 focus:ring-blue-400 cursor-pointer max-w-[130px] truncate"
+              >
+                {schoolClasses.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    Lớp {c.name} ({c.schoolName ? c.schoolName.substring(0, 12) : `K${c.grade}`})
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <span className="text-xs text-slate-400">Chưa có lớp</span>
+            )
+          ) : classInfo.id ? (
+            <span className="bg-blue-600 text-white text-xs px-2.5 py-0.5 rounded-lg font-bold">
+              Lớp {classInfo.name} (K{classInfo.grade})
+            </span>
           ) : (
-            <Link
-              href="/settings"
-              className="bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] px-2 py-0.5 rounded-lg font-bold transition-colors"
-            >
-              + Tạo Lớp
-            </Link>
+            <span className="bg-amber-500/20 text-amber-400 text-[11px] px-2 py-0.5 rounded-lg font-bold">
+              Chưa đăng ký
+            </span>
           )}
         </div>
-        <p className="text-xs font-semibold text-white truncate" title={classInfo.schoolName || profile?.schoolName || 'Trường Tiểu học'}>
-          {classInfo.schoolName || profile?.schoolName || 'Chưa cập nhật trường'}
+        <p className="text-xs font-semibold text-white truncate" title={classInfo.schoolName || profile?.schoolName || 'Chưa cập nhật trường'}>
+          🏫 {classInfo.schoolName || profile?.schoolName || 'Chưa cập nhật trường'}
         </p>
         <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1.5 border-t border-slate-700/50">
           <span className="truncate">GV: {classInfo.teacherName || profile?.fullName || 'Giáo viên'}</span>
@@ -229,13 +223,16 @@ const SidebarContent: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
       {/* Grouped Nav Menu */}
       <nav className="flex-1 px-3 py-1 space-y-3 overflow-y-auto custom-scrollbar">
         {NAV_GROUPS.map((group) => {
-          // Filter out items like admin if not admin
-          const visibleItems = group.items.filter((item) => (item.href === '/admin' ? isAdmin : true));
+          // Filter out items disabled by feature flags
+          const visibleItems = group.items.filter((item) => {
+            if (!item.feature) return true;
+            return featureFlags ? featureFlags[item.feature] : true;
+          });
           if (visibleItems.length === 0) return null;
 
           const isCollapsed = !!collapsedGroups[group.id];
           const hasActiveItem = visibleItems.some(
-            (item) => pathname === item.href || (item.href !== '/' && item.href !== '/admin' && pathname.startsWith(item.href))
+            (item) => pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))
           );
 
           return (
@@ -265,7 +262,7 @@ const SidebarContent: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
                   {visibleItems.map((item) => {
                     const Icon = item.icon;
                     const isActive =
-                      pathname === item.href || (item.href !== '/' && item.href !== '/admin' && pathname.startsWith(item.href));
+                      pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
 
                     return (
                       <Link
@@ -274,11 +271,7 @@ const SidebarContent: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
                         onClick={onClose}
                         className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all duration-150 ${
                           isActive
-                            ? item.href === '/admin'
-                              ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30 font-bold'
-                              : 'bg-blue-600 text-white shadow-md shadow-blue-600/30 font-semibold'
-                            : item.href === '/admin'
-                            ? 'text-purple-300 hover:bg-purple-950/40 hover:text-purple-100 font-semibold'
+                            ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30 font-semibold'
                             : 'text-slate-300 hover:bg-slate-800/90 hover:text-white'
                         }`}
                       >
@@ -287,8 +280,6 @@ const SidebarContent: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
                             className={`w-4 h-4 shrink-0 ${
                               isActive
                                 ? 'text-white'
-                                : item.href === '/admin'
-                                ? 'text-purple-400'
                                 : 'text-slate-400'
                             }`}
                           />
@@ -297,13 +288,11 @@ const SidebarContent: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
                         {item.badge && (
                           <span
                             className={`text-[9px] px-1.5 py-0.2 rounded-full font-bold uppercase tracking-wider shrink-0 ml-1.5 ${
-                              item.badge === 'Admin'
-                                ? 'bg-purple-500/30 text-purple-200 border border-purple-400/40'
-                                : item.badge === 'AI Pro'
+                              item.badge === 'AI Pro'
                                 ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                                : item.badge === 'Cốt lõi'
+                                : item.badge === 'Thử nghiệm'
                                 ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                                : item.badge === 'Smart TV' || item.badge === 'Chiếu TV'
+                                : item.badge === 'Smart TV'
                                 ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30'
                                 : 'bg-emerald-500/20 text-emerald-300'
                             }`}
@@ -346,7 +335,7 @@ const SidebarContent: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
                 <p className="text-xs font-bold text-white truncate">
                   {profile?.fullName || user.user_metadata?.full_name || 'Giáo viên'}
                 </p>
-                <p className="text-[10px] text-slate-400 truncate">{profile?.title || user.email}</p>
+                <p className="text-[10px] text-slate-400 truncate">{profile?.schoolName || user.email}</p>
               </div>
             </Link>
             <button
@@ -364,7 +353,7 @@ const SidebarContent: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
             className="flex items-center justify-center space-x-2 bg-blue-600/30 hover:bg-blue-600 text-blue-300 hover:text-white py-2 px-3 rounded-lg text-xs font-bold transition-all border border-blue-500/30"
           >
             <LogIn className="w-3.5 h-3.5" />
-            <span>Đăng Nhập Email / Google</span>
+            <span>Đăng Nhập</span>
           </Link>
         )}
       </div>
@@ -373,9 +362,11 @@ const SidebarContent: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
       <div className="px-4 py-2 border-t border-slate-800 text-[10px] text-slate-500 flex items-center justify-between shrink-0">
         <span className="flex items-center gap-1">
           <Sparkle className="w-3 h-3 text-blue-400" />
-          <span>Vercel + Supabase</span>
+          <span>GVCN Pro</span>
         </span>
-        <span>v1.0.0</span>
+        <Link href="/settings?tab=FEATURES" className="text-blue-400 hover:underline">
+          Tính Năng
+        </Link>
       </div>
     </div>
   );

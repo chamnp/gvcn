@@ -27,75 +27,19 @@ export const INITIAL_SCHOOL_INFO: SchoolInfo = {
   logoUrl: 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=150&auto=format&fit=crop&q=80',
 };
 
-export const INITIAL_SCHOOL_CLASSES: ClassInfo[] = [
-  {
-    id: 'class-1a1',
-    name: '1A1',
-    grade: 1,
-    schoolYear: '2026-2027',
-    schoolName: 'Trường Tiểu học Chuẩn Quốc Gia',
-    teacherName: 'Cô Lê Thị Hà',
-    teacherEmail: 'leha@gmail.com',
-    totalStudents: 6,
-    seatingGridRows: 5,
-    seatingGridCols: 8,
-    shareToken: 'c1a1-9x4k2a',
-  },
-  {
-    id: 'class-2a1',
-    name: '2A1',
-    grade: 2,
-    schoolYear: '2026-2027',
-    schoolName: 'Trường Tiểu học Chuẩn Quốc Gia',
-    teacherName: 'Cô Trần Thu Cúc',
-    teacherEmail: 'thucuc@gmail.com',
-    totalStudents: 6,
-    seatingGridRows: 5,
-    seatingGridCols: 8,
-    shareToken: 'c2a1-7m3p8b',
-  },
-  {
-    id: 'class-3a1',
-    name: '3A1',
-    grade: 3,
-    schoolYear: '2026-2027',
-    schoolName: 'Trường Tiểu học Chuẩn Quốc Gia',
-    teacherName: 'Thầy Phạm Văn Nam',
-    teacherEmail: 'vannam@gmail.com',
-    totalStudents: 6,
-    seatingGridRows: 5,
-    seatingGridCols: 8,
-    shareToken: 'c3a1-4v9r1c',
-  },
-  {
-    id: 'class-4a1',
-    name: '4A1',
-    grade: 4,
-    schoolYear: '2026-2027',
-    schoolName: 'Trường Tiểu học Chuẩn Quốc Gia',
-    teacherName: 'Cô Nguyễn Thị Minh Hằng',
-    teacherEmail: 'hangnm47@gmail.com',
-    totalStudents: 55,
-    seatingGridRows: 5,
-    seatingGridCols: 8,
-    shareToken: 'c4a1-8f92a4',
-  },
-  {
-    id: 'class-5a1',
-    name: '5A1',
-    grade: 5,
-    schoolYear: '2026-2027',
-    schoolName: 'Trường Tiểu học Chuẩn Quốc Gia',
-    teacherName: 'Thầy Hoàng Minh Đức',
-    teacherEmail: 'minhduc@gmail.com',
-    totalStudents: 6,
-    seatingGridRows: 5,
-    seatingGridCols: 8,
-    shareToken: 'c5a1-5d2w6e',
-  },
-];
+export const INITIAL_SCHOOL_CLASSES: ClassInfo[] = [];
 
-export const INITIAL_CLASS: ClassInfo = INITIAL_SCHOOL_CLASSES[3];
+export const INITIAL_CLASS: ClassInfo = {
+  id: '',
+  name: '',
+  grade: 1,
+  schoolYear: '2026-2027',
+  schoolName: '',
+  teacherName: '',
+  totalStudents: 0,
+  seatingGridRows: 5,
+  seatingGridCols: 8,
+};
 
 export const INITIAL_STUDENTS: Student[] = [
   {

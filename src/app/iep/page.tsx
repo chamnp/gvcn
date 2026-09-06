@@ -22,6 +22,7 @@ import { IEPPlan } from '@/types';
 import { IEPEditorModal } from '@/components/iep/iep-editor-modal';
 import { IEPPrintView } from '@/components/iep/iep-print-view';
 import { DigitalPraiseModal } from '@/components/praise/digital-praise-modal';
+import { FeatureGate } from '@/components/layout/feature-gate';
 import { toast } from 'sonner';
 
 export default function IEPManagementPage() {
@@ -69,7 +70,8 @@ export default function IEPManagementPage() {
   }
 
   return (
-    <div className="space-y-6 pb-12 animate-in fade-in duration-300">
+    <FeatureGate feature="iep" featureName="Kế Hoạch Giáo Dục Cá Nhân (IEP)">
+      <div className="space-y-6 pb-12 animate-in fade-in duration-300">
       {/* Top Banner */}
       <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-800 rounded-3xl p-6 sm:p-8 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="space-y-2 max-w-2xl">
@@ -351,5 +353,6 @@ export default function IEPManagementPage() {
         teacherName={classInfo.teacherName}
       />
     </div>
+    </FeatureGate>
   );
 }

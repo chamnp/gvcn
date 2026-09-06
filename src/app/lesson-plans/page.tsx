@@ -60,6 +60,7 @@ import { LessonEditorModal } from '@/components/lesson-plans/lesson-editor-modal
 import { LessonPlanPrintView } from '@/components/lesson-plans/lesson-plan-print-view';
 import { GoogleDrivePickerModal } from '@/components/lesson-plans/google-drive-picker-modal';
 import { GoogleDriveFile } from '@/lib/google-drive-client';
+import { FeatureGate } from '@/components/layout/feature-gate';
 import confetti from 'canvas-confetti';
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabase';
@@ -330,7 +331,8 @@ export default function LessonPlansPage() {
   }
 
   return (
-    <div className="space-y-4 pb-16 animate-in fade-in duration-300">
+    <FeatureGate feature="lessonPlans" featureName="Kế Hoạch Bài Dạy (Giáo Án)">
+      <div className="space-y-4 pb-16 animate-in fade-in duration-300">
       {/* 1. TOP HEADER BANNER */}
       <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-950 rounded-3xl p-5 sm:p-7 text-white shadow-xl space-y-4 border border-white/10">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -1279,5 +1281,6 @@ export default function LessonPlansPage() {
         onSelectFile={handleSelectDriveFile}
       />
     </div>
+    </FeatureGate>
   );
 }

@@ -122,34 +122,7 @@ function resolveUserProfile(user: User | null, teachersList: TeacherProfile[]): 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const isSignedOut = localStorage.getItem('gvcn_signed_out') === 'true';
-        if (isSignedOut) return null;
-
-        // Development mock if explicitly set by developer in localStorage
-        if (process.env.NODE_ENV === 'development') {
-          const mockEmail = localStorage.getItem('gvcn_mock_email');
-          if (mockEmail) {
-            const isHang = mockEmail === 'hangnm47@gmail.com';
-            const isAdmin = mockEmail === 'anhnnh4@gmail.com';
-            const fullName = isHang ? 'Cô Nguyễn Thị Minh Hằng' : isAdmin ? 'Quản Trị Viên GVCN Pro' : 'Giáo viên';
-
-            return {
-              id: `user-${mockEmail.replace(/[^a-z0-9]/g, '')}`,
-              app_metadata: {},
-              user_metadata: { full_name: fullName },
-              aud: 'authenticated',
-              created_at: new Date().toISOString(),
-              email: mockEmail,
-            } as User;
-          }
-        }
-      } catch (e) {}
-    }
-    return null;
-  });
+  const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [teachers, setTeachers] = useState<TeacherProfile[]>(() => {
     if (typeof window !== 'undefined') {
@@ -256,22 +229,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               }
             } catch (e) {}
           }
-          let currentUser = session?.user ?? null;
-          if (!currentUser && typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-            const mockEmail = localStorage.getItem('gvcn_mock_email');
-            if (mockEmail) {
-              currentUser = {
-                id: 'mock-user-hang-4a1',
-                app_metadata: {},
-                user_metadata: { full_name: 'Cô Nguyễn Thị Minh Hằng' },
-                aud: 'authenticated',
-                created_at: new Date().toISOString(),
-                email: mockEmail,
-              } as User;
-            }
-          }
+          const currentUser = session?.user ?? null;
           setUser(currentUser);
           setLoading(false);
+
+          // Auto-sync authenticated user into Supabase Teacher table
+          if (currentUser?.email) {
+            const userEmail = currentUser.email.toLowerCase().trim();
+            const exists = teachersRef.current.some((t) => t.email.toLowerCase() === userEmail);
+            if (!exists) {
+              const fullName = currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || userEmail.split('@')[0];
+              const role = userEmail === 'anhnnh4@gmail.com' ? 'ADMIN' : 'TEACHER';
+              const avatarUrl = currentUser.user_metadata?.avatar_url;
+              void supabase.from('Teacher').upsert({
+                id: `t-${currentUser.id}`,
+                email: userEmail,
+                fullName,
+                role,
+                planTier: 'BETA_ALL_ACCESS',
+                avatarUrl,
+                isActive: true,
+                updatedAt: new Date().toISOString(),
+              }, { onConflict: 'email' }).then(() => {
+                refreshTeachers();
+              });
+            }
+          }
         }
       } catch (err) {
         if (isMounted) setLoading(false);
@@ -296,22 +279,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
           } catch (e) {}
         }
-        let currentUser = session?.user ?? null;
-        if (!currentUser && typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-          const mockEmail = localStorage.getItem('gvcn_mock_email');
-          if (mockEmail) {
-            currentUser = {
-              id: 'mock-user-hang-4a1',
-              app_metadata: {},
-              user_metadata: { full_name: 'Cô Nguyễn Thị Minh Hằng' },
-              aud: 'authenticated',
-              created_at: new Date().toISOString(),
-              email: mockEmail,
-            } as User;
-          }
-        }
+        const currentUser = session?.user ?? null;
         setUser(currentUser);
         setLoading(false);
+
+        // Auto-sync on auth state change
+        if (currentUser?.email) {
+          const userEmail = currentUser.email.toLowerCase().trim();
+          const exists = teachersRef.current.some((t) => t.email.toLowerCase() === userEmail);
+          if (!exists) {
+            const fullName = currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || userEmail.split('@')[0];
+            const role = userEmail === 'anhnnh4@gmail.com' ? 'ADMIN' : 'TEACHER';
+            const avatarUrl = currentUser.user_metadata?.avatar_url;
+            void supabase.from('Teacher').upsert({
+              id: `t-${currentUser.id}`,
+              email: userEmail,
+              fullName,
+              role,
+              planTier: 'BETA_ALL_ACCESS',
+              avatarUrl,
+              isActive: true,
+              updatedAt: new Date().toISOString(),
+            }, { onConflict: 'email' }).then(() => {
+              refreshTeachers();
+            });
+          }
+        }
       }
     });
 
@@ -443,7 +436,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     try {
       localStorage.setItem('gvcn_signed_out', 'true');
-      localStorage.removeItem('gvcn_mock_email');
       localStorage.removeItem('gvcn_google_access_token');
       localStorage.removeItem('gvcn_google_token_time');
       localStorage.removeItem('gvcn_google_refresh_token');

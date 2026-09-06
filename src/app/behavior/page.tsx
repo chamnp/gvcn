@@ -49,6 +49,7 @@ import {
   Mic,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
+import { QRCodeCanvas } from '@/components/ui/qr-code-canvas';
 import {
   Student,
   StarLog,
@@ -120,6 +121,7 @@ export default function BehaviorPage() {
     fulfillRewardRedemption,
     cancelRewardRedemption,
     classInfo,
+    activeClassId,
   } = useAppStore();
 
   const [activeTab, setActiveTab] = useState<'TABLE' | 'LEADERBOARD' | 'CRITERIA' | 'SHOP' | 'REDEMPTIONS' | 'HISTORY'>('TABLE');
@@ -208,15 +210,38 @@ export default function BehaviorPage() {
     });
   }, [students, starLogs, selectedMonth, activeTeams, numTeams, getStudentMonthlyStars]);
 
+  // Scoped class student IDs
+  const classStudentIds = useMemo(() => new Set(students.map((s) => s.id)), [students]);
+
+  // Scoped class StarLogs
+  const classStarLogs = useMemo(() => {
+    return starLogs.filter((l) => (l.classId ? l.classId === activeClassId : classStudentIds.has(l.studentId)));
+  }, [starLogs, activeClassId, classStudentIds]);
+
+  // Scoped class RewardRedemptions
+  const classRedemptions = useMemo(() => {
+    return rewardRedemptions.filter((r) => r.classId === activeClassId || classStudentIds.has(r.studentId));
+  }, [rewardRedemptions, activeClassId, classStudentIds]);
+
+  // Scoped class RewardProducts
+  const classProducts = useMemo(() => {
+    return rewardProducts.filter((p) => !p.classId || p.classId === activeClassId);
+  }, [rewardProducts, activeClassId]);
+
+  // Scoped class StarCriteria
+  const classCriteria = useMemo(() => {
+    return starCriteria.filter((c) => !c.classId || c.classId === activeClassId);
+  }, [starCriteria, activeClassId]);
+
   // Total Stars across whole class
   const totalClassStars = useMemo(() => {
-    return starLogs.reduce((acc, log) => acc + log.points, 0);
-  }, [starLogs]);
+    return classStarLogs.reduce((acc, log) => acc + log.points, 0);
+  }, [classStarLogs]);
 
   // Pending Redemptions count
   const pendingRedemptionsCount = useMemo(() => {
-    return rewardRedemptions.filter((r) => r.status === 'PENDING').length;
-  }, [rewardRedemptions]);
+    return classRedemptions.filter((r) => r.status === 'PENDING').length;
+  }, [classRedemptions]);
 
   // Quick Award Handler
   const handleQuickAward = (student: Student, points: number, category: string, reason: string) => {
@@ -584,16 +609,16 @@ export default function BehaviorPage() {
         {[
           { id: 'TABLE', label: 'Bảng Đánh Giá & Nhận Xét', icon: FileSpreadsheet },
           { id: 'LEADERBOARD', label: 'Đua Top Tích Sao', icon: Trophy, badge: `Tháng ${selectedMonth.split('-')[1]}` },
-          { id: 'CRITERIA', label: `Tiêu Chí Sao (${starCriteria.length})`, icon: Star },
-          { id: 'SHOP', label: `Shop Đồ Dùng (${rewardProducts.length})`, icon: ShoppingBag },
+          { id: 'CRITERIA', label: `Tiêu Chí Sao (${classCriteria.length})`, icon: Star },
+          { id: 'SHOP', label: `Shop Đồ Dùng (${classProducts.length})`, icon: ShoppingBag },
           {
             id: 'REDEMPTIONS',
-            label: `Duyệt Đổi Quà (${rewardRedemptions.length})`,
+            label: `Duyệt Đổi Quà (${classRedemptions.length})`,
             icon: Gift,
             badge: pendingRedemptionsCount > 0 ? `${pendingRedemptionsCount} Chờ` : undefined,
             badgeColor: 'bg-rose-500 text-white',
           },
-          { id: 'HISTORY', label: `Nhật Ký (${starLogs.length})`, icon: History },
+          { id: 'HISTORY', label: `Nhật Ký (${classStarLogs.length})`, icon: History },
         ].map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -949,10 +974,10 @@ export default function BehaviorPage() {
               />
               <button
                 onClick={() => resetMonthStars(selectedMonth)}
-                className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-xl border border-rose-200 transition-colors cursor-pointer"
-                title="Reset điểm tháng này về 0 để bắt đầu đợt mới"
+                className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-xs rounded-xl border border-amber-200 transition-colors cursor-pointer"
+                title="Chốt số dư khả dụng tháng này về 0 để mở đợt mới (Toàn bộ lịch sử điểm sao được bảo tồn 100% để phục vụ đánh giá rèn luyện Thông tư 27)"
               >
-                Reset Tháng
+                Chốt Số Dư Tháng
               </button>
             </div>
           </div>
@@ -1118,7 +1143,7 @@ export default function BehaviorPage() {
             <div>
               <h2 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
                 <Star className="w-5 h-5 text-amber-500 shrink-0" />
-                <span>Danh Mục Tiêu Chí & Thang Điểm Quy Đổi Sao ({starCriteria.length} Tiêu Chí)</span>
+                <span>Danh Mục Tiêu Chí & Thang Điểm Quy Đổi Sao ({classCriteria.length} Tiêu Chí)</span>
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
                 Giáo viên có thể tùy chỉnh thêm, sửa, xóa tiêu chí chuẩn Thông tư 27.
@@ -1146,7 +1171,7 @@ export default function BehaviorPage() {
 
           {/* Criteria Grid Grouped by Category */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {starCriteria.map((crit) => (
+            {classCriteria.map((crit) => (
               <div
                 key={crit.id}
                 className="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 hover:border-amber-300 transition-all flex items-start justify-between gap-2.5"
@@ -1207,7 +1232,7 @@ export default function BehaviorPage() {
             <div>
               <h2 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
                 <ShoppingBag className="w-5 h-5 text-emerald-600 shrink-0" />
-                <span>Shop Đồ Dùng Học Tập & Quản Lý Tồn Kho ({rewardProducts.length} Sản Phẩm)</span>
+                <span>Shop Đồ Dùng Học Tập & Quản Lý Tồn Kho ({classProducts.length} Sản Phẩm)</span>
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
                 Các món quà phù hợp học sinh tiểu học. Giáo viên có thể điều chỉnh giá sao và cập nhật tồn kho.
@@ -1225,7 +1250,7 @@ export default function BehaviorPage() {
 
           {/* Products Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-4">
-            {rewardProducts.map((prod) => (
+            {classProducts.map((prod) => (
               <div
                 key={prod.id}
                 className="rounded-3xl border border-slate-200 bg-white shadow-2xs hover:shadow-md transition-all overflow-hidden flex flex-col justify-between"
@@ -1305,7 +1330,7 @@ export default function BehaviorPage() {
             <div>
               <h2 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
                 <Gift className="w-5 h-5 text-purple-600 shrink-0" />
-                <span>Danh Sách Đơn Đổi Quà Của Học Sinh ({rewardRedemptions.length} Đơn)</span>
+                <span>Danh Sách Đơn Đổi Quà Của Học Sinh ({classRedemptions.length} Đơn)</span>
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
                 Theo dõi các món quà học sinh đã submit đổi, click nút &ldquo;Đã Trả Quà&rdquo; khi trao thưởng cho học sinh.
@@ -1338,13 +1363,13 @@ export default function BehaviorPage() {
 
           {/* Redemptions List */}
           <div className="space-y-3">
-            {rewardRedemptions.filter((r) => redemptionFilter === 'ALL' || r.status === redemptionFilter).length === 0 ? (
+            {classRedemptions.filter((r) => redemptionFilter === 'ALL' || r.status === redemptionFilter).length === 0 ? (
               <div className="py-12 text-center text-slate-400 space-y-2">
                 <Gift className="w-10 h-10 mx-auto text-slate-300" />
                 <p className="text-xs">Chưa có yêu cầu đổi quà nào trong danh mục này.</p>
               </div>
             ) : (
-              rewardRedemptions
+              classRedemptions
                 .filter((r) => redemptionFilter === 'ALL' || r.status === redemptionFilter)
                 .map((rd) => {
                   const firstItem = rd.items && rd.items[0];
@@ -1433,15 +1458,15 @@ export default function BehaviorPage() {
           <div className="flex items-center justify-between">
             <h2 className="text-sm sm:text-base font-bold text-slate-900 flex items-center gap-2">
               <History className="w-5 h-5 text-blue-600 shrink-0" />
-              <span>Nhật Ký Tích Sao Toàn Lớp ({starLogs.length} Lần)</span>
+              <span>Nhật Ký Tích Sao Toàn Lớp ({classStarLogs.length} Lần)</span>
             </h2>
           </div>
 
           <div className="divide-y divide-slate-100 border border-slate-200 rounded-2xl overflow-hidden">
-            {starLogs.length === 0 ? (
+            {classStarLogs.length === 0 ? (
               <div className="p-8 text-center text-slate-400 text-xs">Chưa có nhật ký tích sao nào.</div>
             ) : (
-              starLogs.map((log) => {
+              classStarLogs.map((log) => {
                 const st = students.find((s) => s.id === log.studentId);
                 return (
                   <div key={log.id} className="p-3.5 sm:p-4 hover:bg-slate-50 flex items-start justify-between gap-3">
@@ -1687,25 +1712,35 @@ export default function BehaviorPage() {
               </p>
             </div>
 
-            <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex items-center justify-center">
-              <div className="p-3 bg-white rounded-xl shadow-xs border border-slate-200">
-                <QrCode className="w-36 h-36 text-slate-800" />
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-2 bg-slate-100 p-2 rounded-xl border border-slate-200 text-xs text-slate-600 font-mono truncate">
-              <span className="truncate flex-1">{typeof window !== 'undefined' ? `${window.location.origin}/rewards/${classInfo.id || 'class-4a1'}` : ''}</span>
-              <button
-                onClick={() => {
-                  const url = `${window.location.origin}/rewards/${classInfo.id || 'class-4a1'}`;
-                  navigator.clipboard.writeText(url);
-                  toast.success('Đã sao chép link Cổng đổi quà!');
-                }}
-                className="p-1.5 bg-white text-purple-700 rounded-lg hover:bg-purple-50 cursor-pointer shrink-0"
-              >
-                <Copy className="w-3.5 h-3.5" />
-              </button>
-            </div>
+            {(() => {
+              const publicRewardUrl = typeof window !== 'undefined'
+                ? `${window.location.origin}/rewards/${classInfo.shareToken || classInfo.id}`
+                : '';
+              return (
+                <div className="space-y-3">
+                  <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex items-center justify-center">
+                    <QRCodeCanvas
+                      url={publicRewardUrl}
+                      size={180}
+                      title={`Cổng Đổi Quà Lớp ${classInfo.name}`}
+                      showActions={true}
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2 bg-slate-100 p-2 rounded-xl border border-slate-200 text-xs text-slate-600 font-mono truncate">
+                    <span className="truncate flex-1">{publicRewardUrl}</span>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(publicRewardUrl);
+                        toast.success('Đã sao chép link Cổng đổi quà!');
+                      }}
+                      className="p-1.5 bg-white text-purple-700 rounded-lg hover:bg-purple-50 cursor-pointer shrink-0"
+                    >
+                      <Copy className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
 
             <button
               onClick={() => setIsShareModalOpen(false)}
@@ -1742,7 +1777,7 @@ export default function BehaviorPage() {
                   <label className="block text-xs font-bold text-slate-700 mb-1">Nhóm</label>
                   <select
                     value={criterionCategory}
-                    onChange={(e) => setCriterionCategory(e.target.value as any)}
+                    onChange={(e) => setCriterionCategory(e.target.value as StarCriterionCategory)}
                     className="w-full px-3 py-1.5 border border-slate-200 rounded-xl text-xs"
                   >
                     <option value="Học tập">Học tập</option>
