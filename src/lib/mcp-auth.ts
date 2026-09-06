@@ -68,20 +68,8 @@ async function resolveTeacherContext(
   let classId = assignedClassId;
   let className = assignedClassName;
 
-  if (assignedClassId || assignedClassName) {
-    let classQuery = supabase.from('Class').select('id, name');
-    classQuery = assignedClassId
-      ? classQuery.eq('id', assignedClassId)
-      : classQuery.eq('name', assignedClassName);
-    const { data: classRecord, error: classError } = await classQuery.maybeSingle();
-    if (classError) {
-      return unauthenticated(`Không thể xác minh lớp được phân công: ${classError.message}`);
-    }
-    if (classRecord) {
-      classId = classRecord.id;
-      className = classRecord.name;
-    }
-  }
+  // Do not resolve Class through the anonymous server client. Production RLS
+  // intentionally denies that path; the downstream mutation validates ownership.
 
   return {
     isAuthenticated: true,

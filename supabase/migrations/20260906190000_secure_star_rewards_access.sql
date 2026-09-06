@@ -157,6 +157,70 @@ $$;
 revoke all on function public.add_star_log_tx(text, integer, text, text, text, date) from public, anon;
 grant execute on function public.add_star_log_tx(text, integer, text, text, text, date) to authenticated;
 
+create or replace function public.add_star_log_pat_tx(
+  p_api_key text,
+  p_student_id text,
+  p_points integer,
+  p_category text,
+  p_reason text,
+  p_comment text default null,
+  p_date date default null
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = pg_catalog, public
+as $$
+declare
+  v_key public."ApiKey";
+  v_teacher public."Teacher";
+  v_class_id text;
+  v_id text := 'star-' || gen_random_uuid()::text;
+  v_date date := coalesce(p_date, timezone('Asia/Ho_Chi_Minh', now())::date);
+begin
+  select key_record.* into v_key
+  from public."ApiKey" key_record
+  where key_record.key = p_api_key
+    and key_record."isActive" = true
+    and (key_record."expiresAt" is null or key_record."expiresAt" > now());
+  if not found then
+    return jsonb_build_object('success', false, 'error', 'Khóa API không hợp lệ hoặc đã hết hạn.');
+  end if;
+
+  select teacher.* into v_teacher
+  from public."Teacher" teacher
+  where lower(teacher.email) = lower(v_key."teacherEmail")
+    and teacher.role in ('ADMIN', 'ADMIN_TEACHER', 'TEACHER')
+    and teacher."isActive" is distinct from false;
+  if not found then
+    return jsonb_build_object('success', false, 'error', 'Tài khoản chưa được cấp quyền.');
+  end if;
+
+  select student."classId" into v_class_id from public."Student" student where student.id = p_student_id;
+  if not found or v_class_id is null
+     or (v_teacher.role <> 'ADMIN' and lower(v_teacher.email) <> 'anhnnh4@gmail.com'
+       and coalesce(v_key."classId", v_teacher."assignedClassId") <> v_class_id) then
+    return jsonb_build_object('success', false, 'error', 'Bạn không có quyền cộng sao cho học sinh này.');
+  end if;
+  if p_points is null or p_points = 0 or p_points < -10 or p_points > 10 then
+    return jsonb_build_object('success', false, 'error', 'Số sao phải là số nguyên khác 0 trong khoảng -10 đến 10.');
+  end if;
+  if p_reason is null or length(btrim(p_reason)) < 2 or length(btrim(p_reason)) > 200 then
+    return jsonb_build_object('success', false, 'error', 'Lý do cộng/trừ sao không hợp lệ.');
+  end if;
+
+  insert into public."StarLog" (id, "classId", "studentId", points, category, reason, comment, date, "createdAt")
+  values (v_id, v_class_id, p_student_id, p_points,
+    left(coalesce(nullif(btrim(p_category), ''), 'Khác'), 100), btrim(p_reason),
+    nullif(left(btrim(p_comment), 500), ''), v_date, now());
+  update public."ApiKey" set "lastUsedAt" = now() where id = v_key.id;
+  return jsonb_build_object('success', true, 'star_log_id', v_id);
+end;
+$$;
+
+revoke all on function public.add_star_log_pat_tx(text, text, integer, text, text, text, date) from public;
+grant execute on function public.add_star_log_pat_tx(text, text, integer, text, text, text, date) to anon, authenticated;
+
 create or replace function public.delete_star_log_tx(p_log_id text)
 returns jsonb
 language plpgsql
