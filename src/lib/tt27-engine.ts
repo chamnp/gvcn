@@ -61,6 +61,43 @@ export function getLocalDateString(date: Date = new Date()): string {
   return `${year}-${month}-${day}`;
 }
 
+/**
+ * Lấy ngày cuối cùng của tháng theo định dạng YYYY-MM-DD
+ * Ví dụ: '2026-09' -> '2026-09-30', '2026-10' -> '2026-10-31', '2024-02' -> '2024-02-29'
+ */
+export function getLastDateOfMonth(monthKey: string): string {
+  if (!monthKey || !monthKey.includes('-')) return '';
+  const [yearStr, monthStr] = monthKey.split('-');
+  const year = Number(yearStr);
+  const month = Number(monthStr);
+  if (isNaN(year) || isNaN(month)) return '';
+  // Ngày 0 của tháng m (khi m từ 1..12) chính là ngày cuối cùng của tháng m
+  const lastDay = new Date(year, month, 0).getDate();
+  return `${yearStr}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+}
+
+/**
+ * Định dạng tháng thuần Việt: '2026-09' -> 'Tháng 9/2026'
+ */
+export function formatMonthVN(monthKey: string, padded: boolean = false): string {
+  if (!monthKey || !monthKey.includes('-')) return monthKey || '';
+  const [yearStr, monthStr] = monthKey.split('-');
+  const monthNum = Number(monthStr);
+  return `Tháng ${padded ? String(monthNum).padStart(2, '0') : monthNum}/${yearStr}`;
+}
+
+/**
+ * Định dạng ngày thuần Việt: '2026-09-30' -> '30/09/2026'
+ */
+export function formatDateVN(dateStr: string): string {
+  if (!dateStr) return '';
+  const parts = dateStr.split('-');
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+  return dateStr;
+}
+
 export const PRIMARY_SUBJECTS: SubjectInfo[] = [
   { code: 'TIENG_VIET', name: 'Tiếng Việt', shortName: 'Tiếng Việt', hasPeriodicTest: true, applicableGrades: [1, 2, 3, 4, 5] },
   { code: 'TOAN', name: 'Toán', shortName: 'Toán', hasPeriodicTest: true, applicableGrades: [1, 2, 3, 4, 5] },

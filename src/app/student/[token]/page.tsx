@@ -137,6 +137,7 @@ export default function StudentPrivateReportPage({
       criteria?: StarCriterion[]; products?: RewardProduct[]; redemptions?: RewardRedemption[];
       homeworks?: HomeworkAssignment[]; customSubjects?: CustomSubject[]; timetable?: TimetableSlot[];
       events?: ClassEvent[]; leaveRequests?: LeaveRequest[]; conferenceSlots?: ConferenceSlot[];
+      formativeNotes?: FormativeNote[];
     } | null;
     if (error || !bundle?.success || !bundle.student || !bundle.class) {
       toast.error(bundle?.error || error?.message || 'Không thể xác thực hồ sơ học sinh.');
@@ -165,6 +166,7 @@ export default function StudentPrivateReportPage({
     );
     setLeaveRequests(bundle.leaveRequests || []);
     setConferenceSlots(bundle.conferenceSlots || []);
+    setStudentNotes(bundle.formativeNotes || []);
     setAccessPin(pin);
     setIsLoaded(true);
     setIsAuthenticating(false);

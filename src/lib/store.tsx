@@ -77,6 +77,7 @@ import {
   getCurrentTermByDate,
   getAcademicYearByDate,
   getLocalDateString,
+  formatMonthVN,
 } from './tt27-engine';
 import {
   INITIAL_TIMETABLE,
@@ -310,7 +311,7 @@ interface AppContextType {
   fulfillRewardRedemption: (redemptionId: string) => Promise<void>;
   cancelRewardRedemption: (redemptionId: string) => Promise<void>;
   getStudentMonthlyStars: (studentId: string, monthStr?: string) => { earned: number; spent: number; available: number };
-  resetMonthStars: (monthStr?: string) => Promise<void>;
+  resetMonthStars: (monthStr?: string, options?: { skipConfirm?: boolean; silent?: boolean }) => Promise<void>;
 
   // Full Database Backup & Restore
   exportAllDataJSON: () => string;

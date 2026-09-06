@@ -278,6 +278,7 @@ export default function DailyNotesPage() {
     addFormativeNote({
       studentId: selectedStudentForNote.id,
       studentName: selectedStudentForNote.fullName,
+      classId: selectedStudentForNote.classId || classInfo.id || 'class-4a1',
       date: selectedDate,
       category: noteCategory,
       title: noteTitle.trim() || CATEGORY_CONFIG[noteCategory].label,
@@ -345,6 +346,7 @@ export default function DailyNotesPage() {
     const batchNotes = targetStudents.map((st) => ({
       studentId: st.id,
       studentName: st.fullName,
+      classId: st.classId || classInfo.id || 'class-4a1',
       date: selectedDate,
       category: broadcastCategory,
       title: broadcastTitle.trim() || 'Dặn dò chung',
