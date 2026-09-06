@@ -197,6 +197,14 @@ export default function TimetablePage() {
   const [scope, setScope] = useState<TimetableScope>('FULL_YEAR');
   const [customStartWeek, setCustomStartWeek] = useState(1);
   const [customEndWeek, setCustomEndWeek] = useState(4);
+  const [mobileDay, setMobileDay] = useState<DayOfWeek>(() => {
+    const day = new Date().getDay();
+    if (day === 2) return 'T3';
+    if (day === 3) return 'T4';
+    if (day === 4) return 'T5';
+    if (day === 5) return 'T6';
+    return 'T2';
+  });
 
   // Palette Filter & Active Quick-Assign Tool
   const [activePaletteSubject, setActivePaletteSubject] = useState<SubjectTheme | null>(null);
@@ -650,7 +658,7 @@ export default function TimetablePage() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full sm:w-auto">
             <label className="inline-flex w-full sm:w-auto justify-center items-center space-x-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-2xl text-xs font-bold shadow-xs transition-all cursor-pointer">
               <Upload className="w-4 h-4" />
               <span>Nhập File Excel</span>
@@ -922,7 +930,185 @@ export default function TimetablePage() {
           </span>
         </div>
 
-        <div className="overflow-x-auto border border-slate-200 rounded-3xl shadow-xs">
+        {/* Mobile Day Selector Tabs */}
+        <div className="sm:hidden flex items-center gap-1.5 p-1 bg-slate-100 rounded-2xl">
+          {DAYS_OF_WEEK.map((d) => (
+            <button
+              key={d.id}
+              type="button"
+              onClick={() => setMobileDay(d.id)}
+              className={`flex-1 py-2 px-1 rounded-xl text-xs font-bold transition-all text-center cursor-pointer ${
+                mobileDay === d.id
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 bg-transparent'
+              }`}
+            >
+              {d.name}
+            </button>
+          ))}
+        </div>
+
+        {/* Mobile Daily Vertical Cards (sm:hidden) */}
+        <div className="sm:hidden space-y-4">
+          {/* Morning Session */}
+          <div className="space-y-2">
+            <div className="py-1.5 px-3 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/60 font-black text-amber-900 text-xs flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <Sun className="w-3.5 h-3.5 text-amber-600" />
+                <span>Buổi Sáng ({morningPeriods.length} Tiết)</span>
+              </span>
+              <span className="font-mono text-[10px] text-amber-700">
+                {morningPeriods[0]?.time.split(' - ')[0] || '07:45'} - {morningPeriods[morningPeriods.length - 1]?.time.split(' - ')[1] || '10:35'}
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              {morningPeriods.map((p) => {
+                const slot = getSlot(mobileDay, p.period);
+                const theme = slot ? getSubjectTheme(slot.subjectCode, customSubjects) : null;
+                return (
+                  <div
+                    key={`m-slot-${mobileDay}-${p.period}`}
+                    onClick={() => handleSlotClick(mobileDay, p.period)}
+                    className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-3 cursor-pointer ${
+                      theme ? `${theme.bgColor} ${theme.borderColor}` : 'bg-slate-50 border-dashed border-slate-200'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3 min-w-0">
+                      <div className="w-8 h-8 rounded-xl bg-white/80 border border-slate-200 flex flex-col items-center justify-center shrink-0">
+                        <span className="text-[9px] font-bold text-slate-400 leading-none">Tiết</span>
+                        <span className="text-xs font-black text-slate-700 leading-none mt-0.5">{p.period}</span>
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center space-x-1.5 truncate">
+                          <span className="text-base shrink-0">{theme?.icon || '✏️'}</span>
+                          <span className={`font-bold text-xs truncate ${theme?.textColor || 'text-slate-800'}`}>
+                            {slot?.subjectName || 'Tự học / Nghỉ'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-[10px] text-slate-500 mt-0.5">
+                          <span className="font-mono">{p.time}</span>
+                          {slot?.note && (
+                            <>
+                              <span>•</span>
+                              <span className="truncate">📝 {slot.note}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenEdit(mobileDay, p.period);
+                        }}
+                        className="p-1.5 rounded-lg bg-white/90 text-slate-600 hover:text-blue-600 shadow-2xs cursor-pointer"
+                        title="Sửa chi tiết"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleClearSingleSlot(mobileDay, p.period);
+                        }}
+                        className="p-1.5 rounded-lg bg-white/90 text-slate-600 hover:text-rose-600 shadow-2xs cursor-pointer"
+                        title="Xóa tiết"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Afternoon Session */}
+          <div className="space-y-2">
+            <div className="py-1.5 px-3 rounded-xl bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200/60 font-black text-indigo-900 text-xs flex items-center justify-between">
+              <span className="flex items-center gap-1.5">
+                <Sunset className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Buổi Chiều ({afternoonPeriods.length} Tiết)</span>
+              </span>
+              <span className="font-mono text-[10px] text-indigo-700">
+                {afternoonPeriods[0]?.time.split(' - ')[0] || '14:00'} - {afternoonPeriods[afternoonPeriods.length - 1]?.time.split(' - ')[1] || '16:05'}
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              {afternoonPeriods.map((p) => {
+                const slot = getSlot(mobileDay, p.period);
+                const theme = slot ? getSubjectTheme(slot.subjectCode, customSubjects) : null;
+                return (
+                  <div
+                    key={`m-slot-${mobileDay}-${p.period}`}
+                    onClick={() => handleSlotClick(mobileDay, p.period)}
+                    className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-3 cursor-pointer ${
+                      theme ? `${theme.bgColor} ${theme.borderColor}` : 'bg-slate-50 border-dashed border-slate-200'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-3 min-w-0">
+                      <div className="w-8 h-8 rounded-xl bg-white/80 border border-slate-200 flex flex-col items-center justify-center shrink-0">
+                        <span className="text-[9px] font-bold text-slate-400 leading-none">Tiết</span>
+                        <span className="text-xs font-black text-slate-700 leading-none mt-0.5">{p.period}</span>
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center space-x-1.5 truncate">
+                          <span className="text-base shrink-0">{theme?.icon || '✏️'}</span>
+                          <span className={`font-bold text-xs truncate ${theme?.textColor || 'text-slate-800'}`}>
+                            {slot?.subjectName || 'Tự học / Nghỉ'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-[10px] text-slate-500 mt-0.5">
+                          <span className="font-mono">{p.time}</span>
+                          {slot?.note && (
+                            <>
+                              <span>•</span>
+                              <span className="truncate">📝 {slot.note}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenEdit(mobileDay, p.period);
+                        }}
+                        className="p-1.5 rounded-lg bg-white/90 text-slate-600 hover:text-blue-600 shadow-2xs cursor-pointer"
+                        title="Sửa chi tiết"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleClearSingleSlot(mobileDay, p.period);
+                        }}
+                        className="p-1.5 rounded-lg bg-white/90 text-slate-600 hover:text-rose-600 shadow-2xs cursor-pointer"
+                        title="Xóa tiết"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop 5-Day Matrix Table View */}
+        <div className="hidden sm:block overflow-x-auto border border-slate-200 rounded-3xl shadow-xs">
           <table className="w-full min-w-[650px] text-xs border-collapse">
             <thead>
               <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">

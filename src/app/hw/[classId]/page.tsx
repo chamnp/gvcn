@@ -95,7 +95,20 @@ export default function PublicClassHomeworkPortal({
     allStudents,
     starLogs,
     periods,
+    isLoaded,
   } = useAppStore();
+
+  // Show loading skeleton while store is hydrating
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs font-bold text-slate-500">Đang tải thông tin lớp học...</p>
+        </div>
+      </div>
+    );
+  }
 
   // Find class strictly matching shareToken or classId
   const currentClass = schoolClasses.find(

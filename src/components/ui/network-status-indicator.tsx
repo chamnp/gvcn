@@ -108,7 +108,7 @@ export function NetworkStatusIndicator() {
       {/* Network Indicator Pill */}
       {isOnline ? (
         <div
-          className="inline-flex items-center space-x-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-full text-[11px] font-bold"
+          className="inline-flex items-center space-x-1 sm:space-x-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 sm:px-2.5 py-1 rounded-full text-[11px] font-bold"
           title="Đã kết nối trực tuyến và đồng bộ thời gian thực với Supabase"
         >
           {isSyncing ? (
@@ -120,11 +120,11 @@ export function NetworkStatusIndicator() {
         </div>
       ) : (
         <div
-          className="inline-flex items-center space-x-1.5 bg-amber-100 text-amber-900 border border-amber-300 px-2.5 py-1 rounded-full text-[11px] font-black animate-bounce"
+          className="inline-flex items-center space-x-1 sm:space-x-1.5 bg-amber-100 text-amber-900 border border-amber-300 px-2 sm:px-2.5 py-1 rounded-full text-[11px] font-black animate-bounce"
           title="Chế độ ngoại tuyến: Điểm danh và chấm điểm vẫn lưu an toàn trên máy"
         >
           <WifiOff className="w-3 h-3 text-amber-700" />
-          <span>Ngoại tuyến (Lưu an toàn)</span>
+          <span className="hidden sm:inline">Ngoại tuyến (Lưu an toàn)</span>
         </div>
       )}
     </div>

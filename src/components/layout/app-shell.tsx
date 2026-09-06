@@ -55,7 +55,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
       <MobileSidebar />
       <div className="flex-1 flex flex-col min-w-0 min-h-screen w-full max-w-full">
         <Header />
-        <main className="flex-1 p-3 sm:p-6 pb-20 lg:pb-6 max-w-7xl w-full mx-auto">
+        <main className="flex-1 min-w-0 p-3 sm:p-6 pb-24 lg:pb-6 max-w-7xl w-full mx-auto">
           <AuthGuard>{children}</AuthGuard>
         </main>
         <BottomNav />

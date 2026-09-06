@@ -393,62 +393,62 @@ export default function DashboardPage() {
             </div>
 
             {/* Quick Actions Hub */}
-            <div className="flex flex-wrap items-center gap-2.5">
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-2.5 w-full sm:w-auto">
               <Link
                 href="/classroom-tools"
-                className="inline-flex items-center space-x-2 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-slate-950 font-black text-xs sm:text-sm px-4 py-2.5 rounded-2xl shadow-lg shadow-amber-500/20 hover:scale-105 transition-all cursor-pointer"
+                className="inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-slate-950 font-black text-xs sm:text-sm px-3.5 sm:px-4 py-2.5 rounded-2xl shadow-lg shadow-amber-500/20 hover:scale-105 transition-all cursor-pointer text-center"
               >
-                <Tv className="w-4 h-4" />
-                <span>Công Cụ Lớp Học (TV)</span>
+                <Tv className="w-4 h-4 shrink-0" />
+                <span className="truncate">Công Cụ (TV)</span>
               </Link>
 
               <Link
                 href="/attendance"
-                className="inline-flex items-center space-x-1.5 bg-white/20 hover:bg-white/30 text-white font-bold text-xs sm:text-sm px-3.5 py-2.5 rounded-2xl backdrop-blur-md border border-white/30 hover:scale-105 transition-all cursor-pointer"
+                className="inline-flex items-center justify-center space-x-1.5 bg-white/20 hover:bg-white/30 text-white font-bold text-xs sm:text-sm px-3 sm:px-3.5 py-2.5 rounded-2xl backdrop-blur-md border border-white/30 hover:scale-105 transition-all cursor-pointer text-center"
               >
-                <CalendarCheck className="w-4 h-4 text-emerald-300" />
-                <span>Điểm Danh Bán Trú</span>
+                <CalendarCheck className="w-4 h-4 text-emerald-300 shrink-0" />
+                <span className="truncate">Điểm Danh</span>
               </Link>
 
               <Link
                 href="/behavior"
-                className="inline-flex items-center space-x-1.5 bg-white/20 hover:bg-white/30 text-white font-bold text-xs sm:text-sm px-3.5 py-2.5 rounded-2xl backdrop-blur-md border border-white/30 hover:scale-105 transition-all cursor-pointer"
+                className="inline-flex items-center justify-center space-x-1.5 bg-white/20 hover:bg-white/30 text-white font-bold text-xs sm:text-sm px-3 sm:px-3.5 py-2.5 rounded-2xl backdrop-blur-md border border-white/30 hover:scale-105 transition-all cursor-pointer text-center"
               >
-                <Award className="w-4 h-4 text-amber-300" />
-                <span>Tích Sao Nề Nếp</span>
+                <Award className="w-4 h-4 text-amber-300 shrink-0" />
+                <span className="truncate">Tích Sao Nề Nếp</span>
               </Link>
 
               <Link
                 href="/homework"
-                className="inline-flex items-center space-x-1.5 bg-white/20 hover:bg-white/30 text-white font-bold text-xs sm:text-sm px-3.5 py-2.5 rounded-2xl backdrop-blur-md border border-white/30 hover:scale-105 transition-all cursor-pointer"
+                className="inline-flex items-center justify-center space-x-1.5 bg-white/20 hover:bg-white/30 text-white font-bold text-xs sm:text-sm px-3 sm:px-3.5 py-2.5 rounded-2xl backdrop-blur-md border border-white/30 hover:scale-105 transition-all cursor-pointer text-center"
               >
-                <BookOpen className="w-4 h-4 text-cyan-300" />
-                <span>Giao Bài Tập</span>
+                <BookOpen className="w-4 h-4 text-cyan-300 shrink-0" />
+                <span className="truncate">Giao Bài Tập</span>
               </Link>
             </div>
           </div>
 
           {/* Quick Nav Shortcuts Bar */}
-          <div className="flex flex-wrap items-center gap-2 pt-3 border-t border-white/15 text-xs">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 pt-3 border-t border-white/15 text-xs">
             <Link
               href="/timetable"
-              className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-xl font-semibold backdrop-blur-md border border-white/20 transition-all"
+              className="inline-flex items-center justify-center gap-1.5 bg-white/10 hover:bg-white/20 text-white px-2.5 sm:px-3 py-1.5 rounded-xl font-semibold backdrop-blur-md border border-white/20 transition-all text-center"
             >
-              <Clock className="w-3.5 h-3.5 text-blue-300" />
-              <span>Thời Khóa Biểu 2 Buổi</span>
+              <Clock className="w-3.5 h-3.5 text-blue-300 shrink-0" />
+              <span className="truncate">Thời Khóa Biểu</span>
             </Link>
             <Link
               href="/students"
-              className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-xl font-semibold backdrop-blur-md border border-white/20 transition-all"
+              className="inline-flex items-center justify-center gap-1.5 bg-white/10 hover:bg-white/20 text-white px-2.5 sm:px-3 py-1.5 rounded-xl font-semibold backdrop-blur-md border border-white/20 transition-all text-center"
             >
-              <Users className="w-3.5 h-3.5 text-pink-300" />
-              <span>Hồ Sơ {totalStudents} Học Sinh</span>
+              <Users className="w-3.5 h-3.5 text-pink-300 shrink-0" />
+              <span className="truncate">{totalStudents} Học Sinh</span>
             </Link>
             <Link
               href="/settings"
-              className="inline-flex items-center gap-1.5 bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-xl font-semibold backdrop-blur-md border border-white/20 transition-all"
+              className="inline-flex items-center justify-center gap-1.5 bg-white/10 hover:bg-white/20 text-white px-2.5 sm:px-3 py-1.5 rounded-xl font-semibold backdrop-blur-md border border-white/20 transition-all col-span-2 sm:col-span-1 text-center"
             >
-              <span>⚙️ Cài Đặt Giờ Học & Tính Năng</span>
+              <span className="truncate">⚙️ Cài Đặt Giờ Học & Lớp</span>
             </Link>
           </div>
         </div>
@@ -463,7 +463,7 @@ export default function DashboardPage() {
 
           <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center space-x-3.5">
-              <div className="w-13 h-13 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-3xl shadow-inner shrink-0 animate-bounce">
+              <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-3xl shadow-inner shrink-0 animate-bounce">
                 🎂
               </div>
               <div className="space-y-0.5">
@@ -480,13 +480,13 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2 shrink-0">
+            <div className="flex flex-wrap gap-2 shrink-0 w-full sm:w-auto">
               {todayBirthdays.map((b) => (
                 <button
                   key={b.student.id}
                   type="button"
                   onClick={() => handleCopyWish(b.student.fullName, b.turningAge, b.student.id)}
-                  className="inline-flex items-center space-x-1.5 bg-white text-rose-700 hover:bg-rose-50 px-4 py-2.5 rounded-2xl text-xs font-bold shadow-md transition-all cursor-pointer"
+                  className="inline-flex items-center justify-center space-x-1.5 bg-white text-rose-700 hover:bg-rose-50 px-4 py-2.5 rounded-2xl text-xs font-bold shadow-md transition-all cursor-pointer w-full sm:w-auto"
                 >
                   {copiedWishId === b.student.id ? (
                     <>
@@ -521,7 +521,7 @@ export default function DashboardPage() {
               <span className="text-pink-600 font-bold">👧 Nữ: {femaleCount}</span>
             </div>
           </div>
-          <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-blue-500 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/20">
+          <div className="rounded-2xl bg-gradient-to-tr from-blue-500 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/20 w-12 h-12">
             <Users className="w-6 h-6" />
           </div>
         </div>
@@ -550,7 +550,7 @@ export default function DashboardPage() {
               )}
             </div>
           </div>
-          <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-emerald-500/20">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-emerald-500/20">
             <CalendarCheck className="w-6 h-6" />
           </div>
         </div>
@@ -569,7 +569,7 @@ export default function DashboardPage() {
                 <span className="text-blue-600 font-bold">Tiêu biểu: {tieuBieuCount}</span>
               </div>
             </div>
-            <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-amber-400 to-orange-500 text-slate-950 flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/20">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-400 to-orange-500 text-slate-950 flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/20">
               <Award className="w-6 h-6" />
             </div>
           </div>
@@ -588,7 +588,7 @@ export default function DashboardPage() {
                 </Link>
               </div>
             </div>
-            <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-blue-500 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/20">
+            <div className="rounded-2xl bg-gradient-to-tr from-blue-500 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/20 w-12 h-12">
               <Clock className="w-6 h-6" />
             </div>
           </div>
@@ -605,7 +605,7 @@ export default function DashboardPage() {
               <span>Đã ghi nhận: <strong className="text-purple-700 font-bold">{activeClassStarLogs.length}</strong> lượt</span>
             </div>
           </div>
-          <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-purple-500 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-purple-500/20">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-purple-500 to-indigo-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-purple-500/20">
             <Flame className="w-6 h-6" />
           </div>
         </div>
@@ -804,7 +804,7 @@ export default function DashboardPage() {
                     </div>
 
                     {chuaDanhGiaCount > 0 && (
-                      <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-slate-50 border border-slate-200">
+                      <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-slate-50 border border-slate-200 col-span-2 sm:col-span-1">
                         <div className="w-3.5 h-3.5 rounded-full bg-slate-400 shrink-0" />
                         <div>
                           <p className="font-bold text-slate-700">Chưa đánh giá</p>

@@ -17,6 +17,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
+  viewportFit: 'cover',
   themeColor: '#2563eb',
 };
 
@@ -48,12 +49,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi" className={inter.variable}>
-      <body className={`${inter.className} bg-slate-50 text-slate-900 min-h-screen antialiased flex w-full max-w-full overflow-x-hidden`}>
+      <body className={`${inter.className} bg-slate-50 text-slate-900 min-h-screen antialiased flex flex-col w-full max-w-full overflow-x-hidden`}>
         <AuthProvider>
           <AppProvider>
             <MobileNavProvider>
               <AppShell>{children}</AppShell>
-              <Toaster richColors position="top-right" />
+              <Toaster
+                richColors
+                position="top-center"
+                toastOptions={{
+                  className: 'max-w-[calc(100vw-1.5rem)] mx-auto text-xs',
+                }}
+              />
             </MobileNavProvider>
           </AppProvider>
         </AuthProvider>

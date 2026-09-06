@@ -74,7 +74,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="max-w-md mx-auto my-6 sm:my-8 space-y-6">
+    <div className="max-w-md w-full mx-auto px-4 my-6 sm:my-8 space-y-6">
       {/* Brand Header */}
       <div className="text-center space-y-2">
         <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-xl shadow-blue-500/20 mx-auto border-2 border-slate-100">
@@ -258,11 +258,11 @@ export default function LoginPage() {
 
       {/* Compliance & Policy Links for Google OAuth Verification */}
       <div className="pt-2 text-center text-[11px] text-slate-400 space-y-2">
-        <div className="flex items-center justify-center space-x-3 text-slate-500 font-semibold">
+        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-slate-500 font-semibold">
           <Link href="/privacy" className="hover:text-blue-600 hover:underline transition-colors">
             Chính Sách Quyền Riêng Tư (Privacy Policy)
           </Link>
-          <span>•</span>
+          <span className="hidden sm:inline">•</span>
           <Link href="/terms" className="hover:text-blue-600 hover:underline transition-colors">
             Điều Khoản Dịch Vụ (Terms)
           </Link>

@@ -542,7 +542,7 @@ ${absentList ? `\nDanh sách học sinh vắng:\n${absentList}` : '\n(Cả lớp
               </div>
             </div>
 
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between">
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center justify-between col-span-2 sm:col-span-1">
               <div className="min-w-0">
                 <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Suất Bán Trú</p>
                 <h3 className="text-2xl font-black text-indigo-600 mt-0.5">{totalMeals}</h3>
@@ -605,7 +605,8 @@ ${absentList ? `\nDanh sách học sinh vắng:\n${absentList}` : '\n(Cả lớp
                 </select>
               </div>
             </div>
-            <div className="overflow-x-auto">
+            {/* Desktop Table View */}
+            <div className="hidden sm:block overflow-x-auto">
               <table className="w-full text-left text-xs min-w-[700px]">
                 <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
                   <tr>
@@ -763,6 +764,158 @@ ${absentList ? `\nDanh sách học sinh vắng:\n${absentList}` : '\n(Cả lớp
                   )}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile Card List View */}
+            <div className="block sm:hidden divide-y divide-slate-100">
+              {dailyPagination.items.map((item, idx) => {
+                const approvedLeave = leaveRequests.find(
+                  (r) =>
+                    r.studentId === item.student.id &&
+                    r.status === 'APPROVED' &&
+                    r.startDate <= selectedDate &&
+                    r.endDate >= selectedDate
+                );
+                const pendingLeave = leaveRequests.find(
+                  (r) =>
+                    r.studentId === item.student.id &&
+                    r.status === 'PENDING' &&
+                    r.startDate <= selectedDate &&
+                    r.endDate >= selectedDate
+                );
+
+                return (
+                  <div
+                    key={`m-${item.student.id}`}
+                    className={`p-3.5 space-y-2.5 transition-colors ${
+                      !item.isRecorded ? 'bg-slate-50/70' : item.status !== 'CO_MAT' ? 'bg-amber-50/25' : ''
+                    }`}
+                  >
+                    {/* Header: STT, Name, Gender, Badges */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center space-x-2 min-w-0">
+                        <span className="w-6 h-6 rounded-lg bg-slate-100 text-slate-500 font-bold text-[11px] flex items-center justify-center shrink-0">
+                          {(dailyPagination.page - 1) * pageSize + idx + 1}
+                        </span>
+                        <div className="min-w-0">
+                          <div className="flex items-center space-x-1.5 truncate">
+                            <span className="font-bold text-slate-900 text-sm truncate">{item.student.fullName}</span>
+                            {item.student.gender === 'Nữ' && (
+                              <span className="text-xs text-pink-500 font-bold shrink-0">♀</span>
+                            )}
+                          </div>
+                          <span className="font-mono text-[10px] text-slate-500">{item.student.studentCode}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        {!item.isRecorded && (
+                          <span className="inline-flex rounded border border-slate-200 bg-white px-1.5 py-0.5 text-[9px] font-bold text-slate-500">
+                            Chưa lưu
+                          </span>
+                        )}
+                        {approvedLeave && (
+                          <span className="inline-flex items-center gap-1 text-[9px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                            ✓ Phép duyệt
+                          </span>
+                        )}
+                        {pendingLeave && !approvedLeave && (
+                          <span className="inline-flex items-center gap-1 text-[9px] font-bold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">
+                            ⏳ Chờ duyệt
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Status Buttons: Touch-friendly grid */}
+                    <div className="grid grid-cols-4 gap-1 bg-slate-100 p-1 rounded-xl">
+                      <button
+                        type="button"
+                        onClick={() => handleStatusChange(item.student.id, 'CO_MAT')}
+                        className={`py-1.5 px-1 rounded-lg text-xs font-bold transition-all text-center ${
+                          item.status === 'CO_MAT'
+                            ? 'bg-emerald-600 text-white shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        Có mặt
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleStatusChange(item.student.id, 'VANG_CO_PHEP')}
+                        className={`py-1.5 px-1 rounded-lg text-xs font-bold transition-all text-center ${
+                          item.status === 'VANG_CO_PHEP'
+                            ? 'bg-amber-500 text-white shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        Có phép
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleStatusChange(item.student.id, 'VANG_KHONG_PHEP')}
+                        className={`py-1.5 px-1 rounded-lg text-xs font-bold transition-all text-center ${
+                          item.status === 'VANG_KHONG_PHEP'
+                            ? 'bg-rose-600 text-white shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        K.Phép
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleStatusChange(item.student.id, 'MUON')}
+                        className={`py-1.5 px-1 rounded-lg text-xs font-bold transition-all text-center ${
+                          item.status === 'MUON'
+                            ? 'bg-blue-600 text-white shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        Muộn
+                      </button>
+                    </div>
+
+                    {/* Meal & Note Row */}
+                    <div className="flex items-center gap-2 pt-0.5">
+                      <label className="flex items-center gap-1.5 px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700 shrink-0 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={item.hasBoardingMeal}
+                          disabled={item.status === 'VANG_CO_PHEP' || item.status === 'VANG_KHONG_PHEP'}
+                          onChange={() => handleMealToggle(item.student.id, item.hasBoardingMeal, item.status, item.reason)}
+                          className="w-3.5 h-3.5 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 disabled:cursor-not-allowed"
+                        />
+                        <span className="flex items-center gap-1 text-[11px]">
+                          <Utensils className="w-3 h-3 text-amber-600" />
+                          <span>Ăn bán trú</span>
+                        </span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder={item.status !== 'CO_MAT' ? 'Lý do nghỉ...' : 'Ghi chú thêm...'}
+                        defaultValue={item.reason}
+                        key={`m-input-${item.student.id}-${selectedDate}-${item.reason}`}
+                        onBlur={(event) =>
+                          event.target.value !== item.reason
+                            ? handleReasonChange(
+                                item.student.id,
+                                item.status,
+                                item.hasBoardingMeal,
+                                event.target.value
+                              )
+                            : undefined
+                        }
+                        className="flex-1 px-2.5 py-1 rounded-lg border border-slate-200 text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none bg-white min-w-0"
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+              {dailyPagination.totalItems === 0 && (
+                <div className="p-8 text-center text-slate-500 text-xs">
+                  Không có học sinh phù hợp bộ lọc.
+                </div>
+              )}
             </div>
             <TablePagination
               page={dailyPagination.page}

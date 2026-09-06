@@ -84,7 +84,7 @@ export const Header: React.FC = () => {
                 <div className="w-5 h-5 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 text-xs">
                   🏫
                 </div>
-                <span className="truncate max-w-[85px] sm:max-w-[120px]">
+                <span className="truncate max-w-[65px] sm:max-w-[120px]">
                   Lớp {classInfo.name || profile?.assignedClassName || '...'}
                 </span>
                 <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
@@ -96,7 +96,7 @@ export const Header: React.FC = () => {
                     className="fixed inset-0 z-40"
                     onClick={() => setShowClassDropdown(false)}
                   />
-                  <div className="absolute left-0 mt-2 w-64 bg-white rounded-3xl shadow-2xl border border-slate-200 p-2.5 z-50 animate-in fade-in zoom-in-95 space-y-1.5">
+                  <div className="fixed sm:absolute left-3 right-3 sm:left-0 sm:right-auto top-16 sm:top-auto sm:mt-2 w-auto sm:w-64 bg-white rounded-3xl shadow-2xl border border-slate-200 p-2.5 z-50 animate-in fade-in zoom-in-95 space-y-1.5">
                     <div className="px-2 py-1 border-b border-slate-100">
                       <p className="text-[10px] font-black text-slate-400 uppercase">
                         Chọn Lớp Phụ Trách ({schoolClasses.length} lớp):
@@ -161,7 +161,7 @@ export const Header: React.FC = () => {
               title="Nhấn để đổi kỳ đánh giá Thông tư 27"
             >
               <Calendar className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-              <span className="truncate max-w-[85px] sm:max-w-[150px] font-semibold text-slate-800">
+              <span className="truncate max-w-[60px] sm:max-w-[150px] font-semibold text-slate-800">
                 {activeTermObj?.name}
               </span>
               {activeTermObj?.id === autoCalendarTerm && (
@@ -179,7 +179,7 @@ export const Header: React.FC = () => {
                   className="fixed inset-0 z-40"
                   onClick={() => setShowTermDropdown(false)}
                 />
-                <div className="absolute left-0 mt-2 w-64 bg-white rounded-3xl shadow-2xl border border-slate-200 p-2.5 z-50 animate-in fade-in zoom-in-95 space-y-1.5">
+                <div className="fixed sm:absolute left-3 right-3 sm:left-auto sm:right-0 top-16 sm:top-auto sm:mt-2 w-auto sm:w-64 bg-white rounded-3xl shadow-2xl border border-slate-200 p-2.5 z-50 animate-in fade-in zoom-in-95 space-y-1.5">
                   <div className="px-2 py-1 border-b border-slate-100">
                     <p className="text-[10px] font-black text-slate-400 uppercase">
                       Kỳ Đánh Giá ({schoolInfo.schoolYear}):
@@ -294,7 +294,7 @@ export const Header: React.FC = () => {
                   className="fixed inset-0 z-40"
                   onClick={() => setShowUserMenu(false)}
                 />
-                <div className="absolute right-0 mt-2 w-64 bg-white rounded-3xl shadow-2xl border border-slate-200 p-2.5 z-50 animate-in fade-in zoom-in-95 space-y-1.5">
+                <div className="absolute right-0 mt-2 w-64 max-w-[calc(100vw-1.5rem)] bg-white rounded-3xl shadow-2xl border border-slate-200 p-2.5 z-50 animate-in fade-in zoom-in-95 space-y-1.5">
                   {/* Account Header */}
                   <div className="p-2.5 rounded-2xl bg-gradient-to-r from-slate-50 to-blue-50/40 border border-slate-100 text-xs space-y-1">
                     <div className="flex items-center justify-between">
