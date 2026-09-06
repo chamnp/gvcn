@@ -1400,5 +1400,6 @@ export default function ParentMeetingsPage() {
         </>
       )}
     </div>
+    </FeatureGate>
   );
 }
