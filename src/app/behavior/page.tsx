@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
   Award,
@@ -121,11 +121,12 @@ export default function BehaviorPage() {
     fulfillRewardRedemption,
     cancelRewardRedemption,
     classInfo,
+    updateClass,
     activeClassId,
     regenerateClassShareToken,
   } = useAppStore();
 
-  const [activeTab, setActiveTab] = useState<'TABLE' | 'LEADERBOARD' | 'CRITERIA' | 'SHOP' | 'REDEMPTIONS' | 'HISTORY'>('TABLE');
+  const [activeTab, setActiveTab] = useState<'TABLE' | 'LEADERBOARD' | 'CRITERIA' | 'SHOP' | 'REDEMPTIONS' | 'HISTORY'>('LEADERBOARD');
   const [tableViewMode, setTableViewMode] = useState<'TABLE' | 'CARDS'>('TABLE');
   const [selectedTeamFilter, setSelectedTeamFilter] = useState<'ALL' | number | 'HIGH_STAR' | 'NEED_HELP'>('ALL');
 
@@ -141,6 +142,23 @@ export default function BehaviorPage() {
   // Month selector for Leaderboard (default: current month 'YYYY-MM')
   const currentMonthKey = getLocalDateString().substring(0, 7);
   const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthKey);
+  const [starResetDay, setStarResetDay] = useState<number>(classInfo.starResetDay || 1);
+  const [isSavingResetDay, setIsSavingResetDay] = useState(false);
+
+  useEffect(() => {
+    setStarResetDay(classInfo.starResetDay || 1);
+  }, [classInfo.id, classInfo.starResetDay]);
+
+  const handleSaveStarResetDay = async () => {
+    const normalizedDay = Math.min(28, Math.max(1, Number(starResetDay) || 1));
+    setStarResetDay(normalizedDay);
+    setIsSavingResetDay(true);
+    const result = await updateClass({ ...classInfo, starResetDay: normalizedDay });
+    setIsSavingResetDay(false);
+    if (result.success) {
+      toast.success(`Đã đặt ngày chốt sao hằng tháng là ngày ${normalizedDay}.`);
+    }
+  };
 
   // Search & Filter State
   const [searchQuery, setSearchQuery] = useState('');
@@ -617,8 +635,8 @@ export default function BehaviorPage() {
       {/* 3. Navigation Tabs */}
       <div className="flex items-center space-x-1.5 border-b border-slate-200 pb-2 overflow-x-auto no-scrollbar scroll-smooth">
         {[
-          { id: 'TABLE', label: 'Bảng Đánh Giá & Nhận Xét', icon: FileSpreadsheet },
           { id: 'LEADERBOARD', label: 'Đua Top Tích Sao', icon: Trophy, badge: `Tháng ${selectedMonth.split('-')[1]}` },
+          { id: 'TABLE', label: 'Bảng Đánh Giá & Nhận Xét', icon: FileSpreadsheet },
           { id: 'CRITERIA', label: `Tiêu Chí Sao (${classCriteria.length})`, icon: Star },
           { id: 'SHOP', label: `Shop Đồ Dùng (${classProducts.length})`, icon: ShoppingBag },
           {
@@ -980,17 +998,41 @@ export default function BehaviorPage() {
                 type="month"
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
+                max={currentMonthKey}
                 className="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 bg-slate-50 focus:ring-2 focus:ring-amber-500"
               />
+              <label className="text-xs font-bold text-slate-600 ml-1" htmlFor="star-reset-day">Ngày chốt:</label>
+              <input
+                id="star-reset-day"
+                type="number"
+                min={1}
+                max={28}
+                value={starResetDay}
+                onChange={(e) => setStarResetDay(Number(e.target.value))}
+                className="w-16 px-2 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 bg-slate-50 focus:ring-2 focus:ring-amber-500"
+                aria-label="Ngày chốt số dư sao hằng tháng"
+              />
+              <button
+                type="button"
+                onClick={handleSaveStarResetDay}
+                disabled={isSavingResetDay || starResetDay === (classInfo.starResetDay || 1)}
+                className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 disabled:cursor-not-allowed text-slate-700 font-bold text-xs rounded-xl border border-slate-200 transition-colors cursor-pointer"
+              >
+                {isSavingResetDay ? 'Đang lưu...' : 'Lưu ngày'}
+              </button>
               <button
                 onClick={() => resetMonthStars(selectedMonth)}
+                disabled={!selectedMonth || selectedMonth > currentMonthKey}
                 className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 font-bold text-xs rounded-xl border border-amber-200 transition-colors cursor-pointer"
-                title="Chốt số dư khả dụng tháng này về 0 để mở đợt mới (Toàn bộ lịch sử điểm sao được bảo tồn 100% để phục vụ đánh giá rèn luyện Thông tư 27)"
+                title={`Chốt số dư khả dụng tháng ${selectedMonth} về 0. Lịch sử điểm sao vẫn được bảo tồn.`}
               >
-                Chốt Số Dư Tháng
+                Chốt Tháng {selectedMonth.split('-')[1] || '--'}
               </button>
             </div>
           </div>
+          <p className="px-1 text-[11px] text-slate-500">
+            Lớp được nhắc chốt vào ngày {classInfo.starResetDay || 1} hằng tháng. Nút chốt luôn áp dụng cho đúng tháng đang chọn và không xóa lịch sử tích sao.
+          </p>
 
           {/* PODIUM TOP 1, TOP 2, TOP 3 */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 sm:gap-4 pt-2">

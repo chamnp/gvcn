@@ -1,5 +1,21 @@
 # Review Production Readiness — Nề nếp & Tích sao
 
+## Cập nhật 06/09/2026 — Chốt số dư sao theo tháng
+
+- Tab **Đua Top Tích Sao** được đưa lên đầu và là màn hình mặc định của phân hệ.
+- Thêm cấu hình `starResetDay` theo từng lớp, giới hạn ngày 1–28 để hợp lệ với mọi tháng.
+- Bộ chọn tháng không cho chọn tháng tương lai; nút chốt truyền chính xác tháng đang chọn xuống RPC `close_month_star_balance_tx`.
+- Chốt tháng chỉ tạo bút toán `system-period-close` cho phần sao còn khả dụng; không xóa `StarLog`, vì vậy bảng xếp hạng và lịch sử rèn luyện vẫn được bảo toàn.
+- Thao tác vẫn là thủ công có xác nhận. `starResetDay` là ngày nhắc/chốt nghiệp vụ, không tự chạy ngầm khi giáo viên chưa xác nhận.
+
+### Kế hoạch kiểm chứng phát hành
+
+1. Áp dụng migration cấu hình ngày chốt trên Supabase production.
+2. Chạy test hồi quy, lint và production build.
+3. Kiểm tra lớp A/B có ngày chốt độc lập; đổi lớp phải hiển thị đúng cấu hình.
+4. Chốt một tháng có số dư, xác minh số dư về 0, lịch sử sao giữ nguyên và bấm lại không phát sinh bút toán thừa.
+5. Deploy `main`, chờ Vercel `READY`, rồi smoke test `/behavior` trên production.
+
 ## 1. Thông tin tài liệu
 
 | Thuộc tính | Giá trị |

@@ -2039,6 +2039,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         totalStudents: updated.totalStudents || 0,
         seatingGridRows: updated.seatingGridRows || 5,
         seatingGridCols: updated.seatingGridCols || 8,
+        starResetDay: Math.min(28, Math.max(1, updated.starResetDay || 1)),
         shareToken: updated.shareToken,
         updatedAt: new Date().toISOString(),
       })
