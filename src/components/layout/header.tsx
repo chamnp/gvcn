@@ -302,7 +302,7 @@ export const Header: React.FC = () => {
                       <span className={`font-black text-[9px] px-2 py-0.5 rounded-full ${
                         isAdmin ? 'bg-indigo-100 text-indigo-800 border border-indigo-200' : 'bg-blue-100 text-blue-800'
                       }`}>
-                        {isAdmin ? 'QUẢN TRỊ BGH' : 'GVCN'}
+                        {isAdmin ? 'QUẢN TRỊ VIÊN' : 'GVCN'}
                       </span>
                     </div>
                     <p className="text-[10px] text-slate-500 font-mono truncate">{user?.email}</p>

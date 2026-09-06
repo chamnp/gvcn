@@ -233,7 +233,7 @@ const SidebarContent: React.FC<{ onClose?: () => void }> = ({ onClose }) => {
                 <span>QUẢN TRỊ NỀN TẢNG</span>
               </span>
               <span className="text-[9px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-1.5 py-0.2 rounded font-bold">
-                BGH
+                ADMIN
               </span>
             </div>
             <Link

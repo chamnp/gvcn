@@ -16,15 +16,15 @@ import {
 
 export const INITIAL_SCHOOL_INFO: SchoolInfo = {
   id: 'school-1',
-  name: 'Trường Tiểu học Chuẩn Quốc Gia',
+  name: '',
   departmentName: 'Phòng Giáo Dục & Đào Tạo',
   schoolYear: '2026-2027',
-  principalName: 'Ban Giám Hiệu',
-  address: 'Hà Nội, Việt Nam',
-  phone: '024 3839 0134',
-  email: 'lienhe@gvcn.pro.vn',
-  website: 'gvcn.pro.vn',
-  logoUrl: 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=150&auto=format&fit=crop&q=80',
+  principalName: '',
+  address: '',
+  phone: '',
+  email: '',
+  website: '',
+  logoUrl: '',
 };
 
 export const INITIAL_SCHOOL_CLASSES: ClassInfo[] = [];

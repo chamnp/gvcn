@@ -303,8 +303,8 @@ export function downloadTeacherTemplate() {
   ];
 
   const titleRows = [
-    ['MẪU DANH SÁCH & PHÂN CÔNG GIÁO VIÊN, CÁN BỘ TOÀN TRƯỜNG'],
-    ['Hướng dẫn: Vai trò nhập ADMIN (BGH), TEACHER (GVCN), hoặc ADMIN_TEACHER (BGH kiêm GVCN).'],
+    ['MẪU DANH SÁCH & PHÂN CÔNG GIÁO VIÊN'],
+    ['Hướng dẫn: Vai trò nhập ADMIN (Quản trị viên), TEACHER (GVCN), hoặc ADMIN_TEACHER (Admin kiêm GVCN).'],
     [],
   ];
 
@@ -340,7 +340,7 @@ export function exportTeacherList(teachers: any[]) {
     t.role === 'ADMIN'
       ? 'Quản Trị Viên (ADMIN)'
       : t.role === 'ADMIN_TEACHER'
-      ? 'BGH kiêm GVCN (ADMIN_TEACHER)'
+      ? 'Admin kiêm GVCN (ADMIN_TEACHER)'
       : t.role === 'PENDING'
       ? 'Chờ duyệt'
       : 'Giáo Viên Chủ Nhiệm (TEACHER)',
@@ -350,7 +350,7 @@ export function exportTeacherList(teachers: any[]) {
   ]);
 
   const titleRows = [
-    ['DANH SÁCH CÁN BỘ, GIÁO VIÊN & PHÂN CÔNG NHÀ TRƯỜNG'],
+    ['DANH SÁCH GIÁO VIÊN TOÀN HỆ THỐNG'],
     [`Thời gian xuất: ${new Date().toLocaleDateString('vi-VN')} - Tổng số: ${teachers.length} cán bộ giáo viên`],
     [],
   ];

@@ -80,10 +80,10 @@ export default function PrivacyPolicyPage() {
                   <strong>Thông tin tài khoản đăng nhập Google:</strong> Khi bạn chọn đăng nhập bằng Google OAuth, hệ thống nhận được thông tin cơ bản được công khai gồm: Địa chỉ Email (ví dụ: <code className="bg-slate-100 px-1 py-0.5 rounded text-blue-600">tên@gmail.com</code>), Họ và tên hiển thị và Ảnh đại diện (Avatar).
                 </li>
                 <li>
-                  <strong>Thông tin phân quyền nhà trường (RBAC):</strong> Chức danh giảng dạy (Giáo viên chủ nhiệm, Ban giám hiệu, Tổ trưởng chuyên môn) và Lớp học được phân công phụ trách.
+                  <strong>Thông tin phân quyền hệ thống (RBAC):</strong> Vai trò tài khoản (Giáo viên chủ nhiệm, Quản trị viên hệ thống), Trường tiểu học công tác và Lớp học chủ nhiệm do giáo viên đăng ký.
                 </li>
                 <li>
-                  <strong>Dữ liệu học tập & nề nếp lớp học:</strong> Danh sách học sinh trong lớp (họ tên, mã học sinh), điểm danh hàng ngày, nhật ký khen thưởng sao tích cực, đánh giá định kỳ theo Thông tư 27. Dữ liệu này chỉ lưu trữ trong phạm vi trường học của bạn.
+                  <strong>Dữ liệu học tập & nề nếp lớp học:</strong> Danh sách học sinh trong lớp (họ tên, mã học sinh), điểm danh hàng ngày, nhật ký khen thưởng sao tích cực, đánh giá định kỳ theo Thông tư 27. Dữ liệu này chỉ lưu trữ và phục vụ công tác quản lý lớp học của chính bạn.
                 </li>
                 <li>
                   <strong>Học liệu giảng dạy từ Google Drive:</strong> Khi bạn sử dụng chức năng nạp bài giảng, hệ thống chỉ đọc đường dẫn và ID của tập tin Google Slides/Docs/PDF mà bạn <strong>chủ động lựa chọn</strong> để hỗ trợ trình chiếu trên màn hình TV lớp học.
@@ -154,7 +154,7 @@ export default function PrivacyPolicyPage() {
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                   <span>Xác thực & Bảo mật tài khoản</span>
                 </div>
-                <p className="text-slate-500 text-xs">Đảm bảo chỉ các giáo viên được nhà trường phê duyệt mới có quyền truy cập hồ sơ học sinh.</p>
+                <p className="text-slate-500 text-xs">Đảm bảo chỉ giáo viên đã đăng nhập và được hệ thống phê duyệt mới có quyền truy cập hồ sơ lớp học.</p>
               </div>
 
               <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
@@ -162,7 +162,7 @@ export default function PrivacyPolicyPage() {
                   <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                   <span>Quản lý học sinh Thông tư 27</span>
                 </div>
-                <p className="text-slate-500 text-xs">Tự động tổng hợp kết quả học tập, năng lực, phẩm chất và xuất file Word chuẩn BGH duyệt.</p>
+                <p className="text-slate-500 text-xs">Tự động tổng hợp kết quả học tập, năng lực, phẩm chất và xuất báo cáo chuẩn Thông tư 27.</p>
               </div>
 
               <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">

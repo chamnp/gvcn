@@ -945,7 +945,7 @@ export default function PlatformAdminPage() {
                   >
                     <option value="TEACHER">Giáo viên (TEACHER)</option>
                     <option value="ADMIN_TEACHER">Admin kiêm GVCN (ADMIN_TEACHER)</option>
-                    <option value="ADMIN">Quản Trị BGH (ADMIN)</option>
+                    <option value="ADMIN">Quản Trị Hệ Thống (ADMIN)</option>
                     <option value="PENDING">Chờ duyệt (PENDING)</option>
                   </select>
                 </div>

@@ -67,7 +67,6 @@ const AVATAR_PRESETS = [
 ];
 
 const DEPARTMENTS = [
-  'Ban Giám Hiệu',
   'Tổ Khối 1',
   'Tổ Khối 2',
   'Tổ Khối 3',
@@ -75,6 +74,7 @@ const DEPARTMENTS = [
   'Tổ Khối 5',
   'Tổ Năng khiếu (Âm nhạc, Mỹ thuật, Thể dục, Tin học, Tiếng Anh)',
   'Tổ Văn phòng & Hành chính',
+  'Ban Quản Trị Hệ Thống',
 ];
 
 const AI_VENDOR_PRESETS = [
@@ -849,9 +849,9 @@ export default function SettingsPage() {
 
               <span className="bg-blue-100 text-blue-800 text-[11px] font-bold px-2.5 py-1 rounded-full">
                 {profile?.role === 'ADMIN_TEACHER'
-                  ? '👑 BGH kiêm GVCN'
+                  ? '👑 Admin kiêm GVCN'
                   : profile?.role === 'ADMIN'
-                  ? '👑 Ban Giám Hiệu'
+                  ? '👑 Quản Trị Hệ Thống'
                   : '👩‍🏫 Giáo Viên Chủ Nhiệm'}
               </span>
             </div>
@@ -1158,32 +1158,34 @@ export default function SettingsPage() {
                 )}
               </div>
 
-              <select
-                value={teacherName}
-                onChange={(e) => setTeacherName(e.target.value)}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
-              >
-                <option value="">-- Chọn Giáo viên Chủ nhiệm --</option>
-                {profile && (
-                  <option value={profile.fullName}>
-                    ✨ [Tôi] {profile.fullName} ({profile.title || 'GV'} - {profile.department || 'Tổ'})
-                  </option>
-                )}
-                {teachers
-                  .filter((t) => t.fullName !== profile?.fullName)
-                  .map((t) => (
-                    <option key={t.id} value={t.fullName}>
-                      {t.fullName} ({t.title || 'Giáo viên'} - {t.department || 'Tổ chuyên môn'})
+              {isAdmin && (
+                <select
+                  value={teacherName}
+                  onChange={(e) => setTeacherName(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 font-bold text-slate-900 focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
+                >
+                  <option value="">-- Chọn Giáo viên Chủ nhiệm --</option>
+                  {profile && (
+                    <option value={profile.fullName}>
+                      ✨ [Tôi] {profile.fullName} ({profile.title || 'GV'} - {profile.department || 'Tổ'})
                     </option>
-                  ))}
-              </select>
+                  )}
+                  {teachers
+                    .filter((t) => t.fullName !== profile?.fullName)
+                    .map((t) => (
+                      <option key={t.id} value={t.fullName}>
+                        {t.fullName} {t.schoolName ? `— ${t.schoolName}` : ''} ({t.title || 'Giáo viên'})
+                      </option>
+                    ))}
+                </select>
+              )}
 
               <input
                 type="text"
-                placeholder="Hoặc tự nhập tên giáo viên nếu chưa có trong danh sách..."
+                placeholder="Nhập họ và tên Giáo viên Chủ nhiệm..."
                 value={teacherName}
                 onChange={(e) => setTeacherName(e.target.value)}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-700"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-700 font-bold"
               />
             </div>
 
