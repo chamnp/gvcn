@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import {
   FileSpreadsheet,
@@ -113,6 +113,23 @@ export default function AssessmentPage() {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isAIDiagnosticOpen, setIsAIDiagnosticOpen] = useState(false);
+
+  // Auto-activate filter or student search from query params
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('filterIncomplete') === 'true') {
+        setIsFilterIncomplete(true);
+      }
+      const studentId = params.get('student');
+      if (studentId) {
+        const target = students.find((s) => s.id === studentId);
+        if (target) {
+          setSearchQuery(target.fullName);
+        }
+      }
+    }
+  }, [students]);
 
   const termName = TERMS.find((t) => t.id === currentTerm)?.name || currentTerm;
   const currentGrade = classInfo?.grade || 4;

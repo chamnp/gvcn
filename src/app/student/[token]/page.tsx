@@ -45,11 +45,11 @@ import {
 } from 'lucide-react';
 import { TERMS, PRIMARY_SUBJECTS, TRAIT_DEFINITIONS, getLocalDateString } from '@/lib/tt27-engine';
 import { getSubjectTheme, DAYS_OF_WEEK, calculatePeriods, DEFAULT_SCHEDULE_CONFIG } from '@/lib/timetable-data';
-import type {
+import {
   TermType, DayOfWeek, ClassEvent, RewardProduct, RedemptionItem, Student,
   ClassInfo, SchoolInfo, SubjectAssessment, TraitAssessment, StudentTermSummary,
   DailyAttendance, StarLog, StarCriterion, RewardRedemption, HomeworkAssignment,
-  CustomSubject, TimetableSlot, LeaveRequest, ConferenceSlot,
+  CustomSubject, TimetableSlot, LeaveRequest, ConferenceSlot, CLASS_EVENT_TYPE_CONFIG,
 } from '@/types';
 import { supabase } from '@/lib/supabase';
 import { LeaveRequestModal } from '@/components/parent/leave-request-modal';
@@ -156,7 +156,12 @@ export default function StudentPrivateReportPage({
     setAllHomeworks(bundle.homeworks || []);
     setCustomSubjects(bundle.customSubjects || []);
     setTimetable(bundle.timetable || []);
-    setAllClassEvents(bundle.events || []);
+    setAllClassEvents(
+      (bundle.events || []).map((e: any) => ({
+        ...e,
+        type: e.type || e.eventType || 'OTHER',
+      }))
+    );
     setLeaveRequests(bundle.leaveRequests || []);
     setConferenceSlots(bundle.conferenceSlots || []);
     setAccessPin(pin);
@@ -1553,19 +1558,34 @@ export default function StudentPrivateReportPage({
               {classEvents.length === 0 ? (
                 <p className="text-xs text-slate-400 py-6 text-center">Chưa có sự kiện nào được lên lịch trong thời gian tới.</p>
               ) : (
-                classEvents.map((evt) => (
-                  <div key={evt.id} className="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/60 space-y-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-bold text-xs text-slate-900 break-words flex-1">{evt.title}</span>
-                      <span className="text-[10px] sm:text-[11px] font-mono text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md font-bold shrink-0">
-                        {evt.date}
-                      </span>
+                classEvents.map((evt) => {
+                  const rawType = evt.type || (evt as any).eventType || 'OTHER';
+                  const conf = CLASS_EVENT_TYPE_CONFIG[rawType as keyof typeof CLASS_EVENT_TYPE_CONFIG] || CLASS_EVENT_TYPE_CONFIG.OTHER;
+                  return (
+                    <div key={evt.id} className="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/60 space-y-1.5">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                          <span className="font-bold text-xs text-slate-900 break-words">{evt.title}</span>
+                          <span className={`inline-flex items-center gap-1 text-[9px] font-bold px-1.5 py-0.5 rounded border shrink-0 ${conf.badgeColor}`}>
+                            <span>{conf.icon}</span>
+                            <span>{conf.shortLabel}</span>
+                          </span>
+                        </div>
+                        <span className="text-[10px] sm:text-[11px] font-mono text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md font-bold shrink-0">
+                          {evt.date}
+                        </span>
+                      </div>
+                      {evt.time && (
+                        <p className="text-[11px] text-slate-500 font-medium">
+                          ⏰ {evt.time}{evt.location ? ` • 📍 ${evt.location}` : ''}
+                        </p>
+                      )}
+                      {evt.description && (
+                        <p className="text-xs text-slate-600 leading-relaxed break-words">{evt.description}</p>
+                      )}
                     </div>
-                    {evt.description && (
-                      <p className="text-xs text-slate-600 leading-relaxed break-words">{evt.description}</p>
-                    )}
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>

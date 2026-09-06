@@ -251,9 +251,16 @@ export function calculateEvaluationProgress(
   const totalCompetencySlots = totalStudents * competencies.length;
   const totalCommentSlots = totalStudents;
 
-  const currentSubjectAssessments = subjectAssessments.filter((a) => a.term === currentTerm);
-  const currentTraitAssessments = traitAssessments.filter((a) => a.term === currentTerm);
-  const currentTermSummaries = termSummaries.filter((s) => s.term === currentTerm);
+  const studentIds = new Set(students.map((s) => s.id));
+  const currentSubjectAssessments = subjectAssessments.filter(
+    (a) => a.term === currentTerm && studentIds.has(a.studentId)
+  );
+  const currentTraitAssessments = traitAssessments.filter(
+    (a) => a.term === currentTerm && studentIds.has(a.studentId)
+  );
+  const currentTermSummaries = termSummaries.filter(
+    (s) => s.term === currentTerm && studentIds.has(s.studentId)
+  );
 
   // Count assessed
   const assessedSubjects = currentSubjectAssessments.length;

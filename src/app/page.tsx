@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Users,
   Award,
@@ -19,6 +20,7 @@ import {
   PartyPopper,
   Gift,
   Plus,
+  Pencil,
   Trash2,
   MapPin,
   Flame,
@@ -45,12 +47,15 @@ import {
   getAwardBadgeClass,
   calculateEvaluationProgress,
   validateTT27Assessments,
+  getLocalDateString,
 } from '@/lib/tt27-engine';
 import { DAYS_OF_WEEK, getSubjectTheme } from '@/lib/timetable-data';
-import { DayOfWeek, ClassEvent, ClassEventType } from '@/types';
+import { DayOfWeek, ClassEvent, ClassEventType, CLASS_EVENT_TYPE_CONFIG } from '@/types';
 import { ProgressMeterWidget } from '@/components/assessment/progress-meter-widget';
+import { GuardrailsAlertModal } from '@/components/assessment/guardrails-alert-modal';
 import { EarlyInterventionWidget } from '@/components/dashboard/early-intervention-widget';
 import { ConferenceSchedulerModal } from '@/components/conference/conference-scheduler-modal';
+import { ClassEventModal } from '@/components/events/class-event-modal';
 import { AIClassDiagnosticModal } from '@/components/assessment/ai-class-diagnostic-modal';
 import { ClassMeetingPlannerModal } from '@/components/planner/class-meeting-planner-modal';
 import { ZaloMessageGeneratorModal } from '@/components/parent/zalo-message-generator-modal';
@@ -109,6 +114,7 @@ export default function DashboardPage() {
     periods,
     classEvents,
     addClassEvent,
+    updateClassEvent,
     deleteClassEvent,
     leaveRequests,
     approveLeaveRequest,
@@ -123,23 +129,17 @@ export default function DashboardPage() {
     return (allHomeworks || []).filter((h) => !h.classId || h.classId === classInfo.id);
   }, [allHomeworks, classInfo.id]);
 
+  const router = useRouter();
   const [isFilterIncomplete, setIsFilterIncomplete] = useState(false);
-  const [isAddEventModalOpen, setIsAddEventModalOpen] = useState(false);
+  const [isGuardrailsModalOpen, setIsGuardrailsModalOpen] = useState(false);
+  const [isEventModalOpen, setIsEventModalOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<ClassEvent | null>(null);
   const [isConferenceModalOpen, setIsConferenceModalOpen] = useState(false);
   const [isDiagnosticOpen, setIsDiagnosticOpen] = useState(false);
   const [isPlannerModalOpen, setIsPlannerModalOpen] = useState(false);
   const [isZaloModalOpen, setIsZaloModalOpen] = useState(false);
   const [copiedWishId, setCopiedWishId] = useState<string | null>(null);
-  const [eventFilter, setEventFilter] = useState<'ALL' | 'UPCOMING' | 'EXAM' | 'MEETING' | 'FESTIVAL'>('ALL');
-
-  // Form state for adding new class event
-  const [newEventTitle, setNewEventTitle] = useState('');
-  const [newEventDate, setNewEventDate] = useState(new Date().toISOString().split('T')[0]);
-  const [newEventTime, setNewEventTime] = useState('08:00 - 10:30');
-  const [newEventType, setNewEventType] = useState<ClassEventType>('ACTIVITY');
-  const [newEventLocation, setNewEventLocation] = useState('Phòng học ' + classInfo.name);
-  const [newEventDesc, setNewEventDesc] = useState('');
-  const [newEventImportant, setNewEventImportant] = useState(false);
+  const [eventFilter, setEventFilter] = useState<'ALL' | 'UPCOMING' | 'EXAM' | 'MEETING' | 'ACTIVITY' | 'FESTIVAL'>('ALL');
 
   const termName = TERMS.find((t) => t.id === currentTerm)?.name || currentTerm;
   const teacherDisplayName = useMemo(() => {
@@ -152,12 +152,25 @@ export default function DashboardPage() {
   const femaleCount = students.filter((s) => s.gender === 'Nữ').length;
   const boardingCount = students.filter((s) => s.isBoarding).length;
 
-  // Điểm danh hôm nay
-  const todayStr = new Date().toISOString().split('T')[0];
-  const todayAtt = attendances.filter((a) => a.date === todayStr);
-  const presentCount = todayAtt.filter((a) => a.status === 'CO_MAT').length || (totalStudents > 0 ? totalStudents : 0);
-  const absentCount = todayAtt.filter((a) => a.status !== 'CO_MAT').length;
-  const todayMeals = todayAtt.filter((a) => a.hasBoardingMeal).length || (boardingCount > 0 ? boardingCount : 0);
+  // Tập hợp ID học sinh thuộc lớp hiện tại để scope an toàn
+  const classStudentIds = useMemo(() => new Set(students.map((s) => s.id)), [students]);
+
+  // Điểm danh hôm nay (giờ địa phương Việt Nam & lọc chính xác theo lớp)
+  const todayStr = getLocalDateString();
+  const todayAtt = useMemo(() => {
+    return attendances.filter((a) => a.date === todayStr && classStudentIds.has(a.studentId));
+  }, [attendances, todayStr, classStudentIds]);
+
+  const isAttendanceTakenToday = todayAtt.length > 0;
+  const presentDirectCount = todayAtt.filter((a) => a.status === 'CO_MAT').length;
+  const lateCount = todayAtt.filter((a) => a.status === 'MUON').length;
+  const excusedAbsentCount = todayAtt.filter((a) => a.status === 'VANG_CO_PHEP').length;
+  const unexcusedAbsentCount = todayAtt.filter((a) => a.status === 'VANG_KHONG_PHEP').length;
+  const absentCount = excusedAbsentCount + unexcusedAbsentCount;
+  const presentCount = isAttendanceTakenToday ? (presentDirectCount + lateCount) : totalStudents;
+  const todayMeals = isAttendanceTakenToday
+    ? todayAtt.filter((a) => a.hasBoardingMeal && (a.status === 'CO_MAT' || a.status === 'MUON')).length
+    : boardingCount;
 
   // Auto-open modals from notification links
   useEffect(() => {
@@ -174,11 +187,18 @@ export default function DashboardPage() {
   let tieuBieuCount = 0;
   let hoanThanhCount = 0;
   let canCoGangCount = 0;
+  let chuaDanhGiaCount = 0;
 
   students.forEach((st) => {
     const sAss = subjectAssessments.filter((a) => a.studentId === st.id && a.term === currentTerm);
     const tAss = traitAssessments.filter((a) => a.studentId === st.id && a.term === currentTerm);
     const summary = termSummaries.find((ts) => ts.studentId === st.id && ts.term === currentTerm);
+
+    if (!summary && sAss.length === 0 && tAss.length === 0) {
+      chuaDanhGiaCount++;
+      return;
+    }
+
     const award = summary?.awardTitle || evaluateStudentTT27(sAss, tAss, currentTerm).awardTitle;
 
     if (award === 'Học sinh Xuất sắc') xuatSacCount++;
@@ -188,7 +208,6 @@ export default function DashboardPage() {
   });
 
   // Sao thi đua nề nếp (chỉ tính cho học sinh thuộc lớp hiện tại)
-  const classStudentIds = useMemo(() => new Set(students.map((s) => s.id)), [students]);
   const activeClassStarLogs = useMemo(
     () => starLogs.filter((log) => classStudentIds.has(log.studentId)),
     [starLogs, classStudentIds]
@@ -267,11 +286,24 @@ export default function DashboardPage() {
     return [...classEvents]
       .sort((a, b) => a.date.localeCompare(b.date))
       .filter((ev) => {
+        const evType = ev.type || ev.eventType;
         if (eventFilter === 'ALL') return true;
         if (eventFilter === 'UPCOMING') return ev.date >= todayStr;
-        return ev.type === eventFilter;
+        return evType === eventFilter;
       });
   }, [classEvents, eventFilter, todayStr]);
+
+  // Đếm số lượng sự kiện theo từng bộ lọc
+  const eventCounts = useMemo(() => {
+    return {
+      ALL: classEvents.length,
+      UPCOMING: classEvents.filter((ev) => ev.date >= todayStr).length,
+      EXAM: classEvents.filter((ev) => (ev.type || ev.eventType) === 'EXAM').length,
+      MEETING: classEvents.filter((ev) => (ev.type || ev.eventType) === 'MEETING').length,
+      ACTIVITY: classEvents.filter((ev) => (ev.type || ev.eventType) === 'ACTIVITY').length,
+      FESTIVAL: classEvents.filter((ev) => (ev.type || ev.eventType) === 'FESTIVAL').length,
+    };
+  }, [classEvents, todayStr]);
 
   // Thời khóa biểu hôm nay
   const todayDayOfWeek = useMemo((): DayOfWeek => {
@@ -286,6 +318,11 @@ export default function DashboardPage() {
       0: 'T2',
     };
     return map[d] || 'T2';
+  }, []);
+
+  const isWeekend = useMemo(() => {
+    const d = new Date().getDay();
+    return d === 0 || d === 6;
   }, []);
 
   const todayDayName = useMemo(() => {
@@ -306,34 +343,17 @@ export default function DashboardPage() {
     return timetable.filter((item) => item.day === todayDayOfWeek);
   }, [timetable, todayDayOfWeek]);
 
-  // Đơn xin nghỉ phép chờ duyệt
+  // Đơn xin nghỉ phép chờ duyệt (chỉ cho học sinh thuộc lớp)
   const pendingLeaves = useMemo(() => {
-    return (leaveRequests || []).filter((r) => r.status === 'PENDING');
-  }, [leaveRequests]);
+    return (leaveRequests || []).filter(
+      (r) => r.status === 'PENDING' && (r.classId === classInfo.id || classStudentIds.has(r.studentId))
+    );
+  }, [leaveRequests, classInfo.id, classStudentIds]);
 
-  // Xử lý thêm sự kiện
-  const handleCreateEvent = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newEventTitle.trim()) {
-      toast.error('Vui lòng nhập tên sự kiện!');
-      return;
-    }
-
-    addClassEvent({
-      title: newEventTitle.trim(),
-      date: newEventDate,
-      time: newEventTime,
-      type: newEventType,
-      location: newEventLocation,
-      description: newEventDesc,
-      isImportant: newEventImportant,
-    });
-
-    toast.success('Đã thêm sự kiện mới thành công!');
-    setNewEventTitle('');
-    setNewEventDesc('');
-    setIsAddEventModalOpen(false);
-  };
+  // Khung giờ họp 1-1 thuộc lớp
+  const classConferenceSlots = useMemo(() => {
+    return (conferenceSlots || []).filter((s) => !s.classId || s.classId === classInfo.id);
+  }, [conferenceSlots, classInfo.id]);
 
   // Copy lời chúc mừng sinh nhật
   const handleCopyWish = (studentName: string, age: number, id: string) => {
@@ -513,7 +533,7 @@ export default function DashboardPage() {
             <h3 className="text-2xl sm:text-3xl font-black text-emerald-600 mt-1">
               {presentCount}/{totalStudents}
             </h3>
-            <div className="flex items-center gap-2 text-xs text-slate-500 mt-1.5 font-medium">
+            <div className="flex items-center gap-2 text-xs text-slate-500 mt-1.5 font-medium flex-wrap">
               <span className="flex items-center gap-1">
                 <Utensils className="w-3.5 h-3.5 text-amber-500" />
                 <span>Bán trú: <strong className="text-slate-800">{todayMeals}</strong></span>
@@ -522,6 +542,12 @@ export default function DashboardPage() {
               <span className={absentCount > 0 ? 'text-rose-600 font-bold' : 'text-slate-500'}>
                 Vắng: {absentCount}
               </span>
+              {lateCount > 0 && (
+                <>
+                  <span>•</span>
+                  <span className="text-amber-600 font-bold">Muộn: {lateCount}</span>
+                </>
+              )}
             </div>
           </div>
           <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-600 text-white flex items-center justify-center shrink-0 shadow-lg shadow-emerald-500/20">
@@ -669,7 +695,10 @@ export default function DashboardPage() {
                 progress={progress}
                 issues={issues}
                 isFilterIncomplete={isFilterIncomplete}
-                onToggleFilterIncomplete={() => setIsFilterIncomplete(!isFilterIncomplete)}
+                onToggleFilterIncomplete={() => {
+                  router.push('/assessment?filterIncomplete=true');
+                }}
+                onOpenGuardrailsModal={() => setIsGuardrailsModalOpen(true)}
               />
 
               {/* B. EARLY INTERVENTION RADAR */}
@@ -718,15 +747,22 @@ export default function DashboardPage() {
                         />
                         <div
                           style={{ width: `${(canCoGangCount / totalStudents) * 100}%` }}
-                          className="bg-slate-400 h-full transition-all duration-500"
+                          className="bg-rose-400 h-full transition-all duration-500"
                           title={`Chưa hoàn thành: ${canCoGangCount} em`}
                         />
+                        {chuaDanhGiaCount > 0 && (
+                          <div
+                            style={{ width: `${(chuaDanhGiaCount / totalStudents) * 100}%` }}
+                            className="bg-slate-300 h-full transition-all duration-500"
+                            title={`Chưa đánh giá: ${chuaDanhGiaCount} em`}
+                          />
+                        )}
                       </>
                     )}
                   </div>
 
                   {/* Legend with percentages */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                  <div className={`grid grid-cols-2 ${chuaDanhGiaCount > 0 ? 'sm:grid-cols-5' : 'sm:grid-cols-4'} gap-3 text-xs`}>
                     <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-amber-50 border border-amber-200/80">
                       <div className="w-3.5 h-3.5 rounded-full bg-amber-400 shrink-0" />
                       <div>
@@ -757,15 +793,27 @@ export default function DashboardPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-slate-50 border border-slate-200">
-                      <div className="w-3.5 h-3.5 rounded-full bg-slate-400 shrink-0" />
+                    <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-rose-50 border border-rose-200">
+                      <div className="w-3.5 h-3.5 rounded-full bg-rose-400 shrink-0" />
                       <div>
-                        <p className="font-bold text-slate-800">Chưa hoàn thành</p>
-                        <p className="text-[11px] text-slate-600 font-semibold">
+                        <p className="font-bold text-rose-800">Chưa hoàn thành</p>
+                        <p className="text-[11px] text-rose-600 font-semibold">
                           {canCoGangCount} em ({totalStudents > 0 ? Math.round((canCoGangCount / totalStudents) * 100) : 0}%)
                         </p>
                       </div>
                     </div>
+
+                    {chuaDanhGiaCount > 0 && (
+                      <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-slate-50 border border-slate-200">
+                        <div className="w-3.5 h-3.5 rounded-full bg-slate-400 shrink-0" />
+                        <div>
+                          <p className="font-bold text-slate-700">Chưa đánh giá</p>
+                          <p className="text-[11px] text-slate-500 font-semibold">
+                            {chuaDanhGiaCount} em ({totalStudents > 0 ? Math.round((chuaDanhGiaCount / totalStudents) * 100) : 0}%)
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -805,20 +853,34 @@ export default function DashboardPage() {
                   <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200">
                     <p className="text-slate-500 font-medium">Sĩ số lớp</p>
                     <p className="text-xl font-black text-slate-900 mt-1">{totalStudents} em</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">👦 {maleCount} Nam • 👧 {femaleCount} Nữ</p>
                   </div>
                   <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200">
                     <p className="text-emerald-700 font-medium">Có mặt hôm nay</p>
                     <p className="text-xl font-black text-emerald-700 mt-1">
                       {presentCount} <span className="text-xs font-bold">({totalStudents > 0 ? Math.round((presentCount / totalStudents) * 100) : 0}%)</span>
                     </p>
+                    <p className="text-[10px] text-emerald-600 mt-0.5">
+                      {isAttendanceTakenToday
+                        ? `${presentDirectCount} đúng giờ${lateCount > 0 ? ` • ${lateCount} muộn` : ''}`
+                        : 'Mặc định (Chưa điểm danh)'}
+                    </p>
                   </div>
                   <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200">
                     <p className="text-amber-700 font-medium">Suất ăn bán trú</p>
                     <p className="text-xl font-black text-amber-700 mt-1">{todayMeals} / {boardingCount}</p>
+                    <p className="text-[10px] text-amber-600 mt-0.5">
+                      {isAttendanceTakenToday ? 'Theo điểm danh thực tế' : 'Dự kiến toàn bộ bán trú'}
+                    </p>
                   </div>
                   <div className={`p-3.5 rounded-2xl border ${absentCount > 0 ? 'bg-rose-50 border-rose-200 text-rose-700' : 'bg-slate-50 border-slate-200 text-slate-700'}`}>
                     <p className="font-medium">Vắng mặt</p>
                     <p className="text-xl font-black mt-1">{absentCount} em</p>
+                    <p className="text-[10px] mt-0.5 opacity-80">
+                      {absentCount > 0
+                        ? `${excusedAbsentCount} có phép • ${unexcusedAbsentCount} không phép`
+                        : 'Không có em nào vắng'}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -916,16 +978,19 @@ export default function DashboardPage() {
                   className="inline-flex items-center space-x-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 px-3 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer"
                 >
                   <span>📅 Khung Giờ Họp 1-1</span>
-                  {conferenceSlots.filter((s) => s.isBooked).length > 0 && (
+                  {classConferenceSlots.filter((s) => s.isBooked).length > 0 && (
                     <span className="bg-purple-600 text-white text-[10px] px-1.5 py-0.2 rounded-full">
-                      {conferenceSlots.filter((s) => s.isBooked).length}
+                      {classConferenceSlots.filter((s) => s.isBooked).length}
                     </span>
                   )}
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => setIsAddEventModalOpen(true)}
+                  onClick={() => {
+                    setEditingEvent(null);
+                    setIsEventModalOpen(true);
+                  }}
                   className="inline-flex items-center space-x-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow-xs transition-colors cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
@@ -937,23 +1002,33 @@ export default function DashboardPage() {
             {/* Filter Tabs */}
             <div className="flex flex-wrap gap-1.5 text-xs">
               {[
-                { id: 'ALL', label: 'Tất cả' },
-                { id: 'UPCOMING', label: 'Sắp tới' },
-                { id: 'EXAM', label: '🏆 Kiểm tra & Khảo sát' },
-                { id: 'MEETING', label: '👥 Họp Phụ huynh' },
-                { id: 'FESTIVAL', label: '🎪 Lễ hội & Hoạt động' },
+                { id: 'ALL', label: 'Tất cả', count: eventCounts.ALL },
+                { id: 'UPCOMING', label: 'Sắp tới', count: eventCounts.UPCOMING },
+                { id: 'EXAM', label: '🏆 Kiểm tra', count: eventCounts.EXAM },
+                { id: 'MEETING', label: '👥 Họp PH', count: eventCounts.MEETING },
+                { id: 'ACTIVITY', label: '🎒 Trải nghiệm', count: eventCounts.ACTIVITY },
+                { id: 'FESTIVAL', label: '🎪 Lễ hội', count: eventCounts.FESTIVAL },
               ].map((tab) => (
                 <button
                   key={tab.id}
                   type="button"
                   onClick={() => setEventFilter(tab.id as any)}
-                  className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-xl font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                     eventFilter === tab.id
                       ? 'bg-indigo-600 text-white shadow-xs'
                       : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                   }`}
                 >
-                  {tab.label}
+                  <span>{tab.label}</span>
+                  <span
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                      eventFilter === tab.id
+                        ? 'bg-white/20 text-white'
+                        : 'bg-slate-200 text-slate-700'
+                    }`}
+                  >
+                    {tab.count}
+                  </span>
                 </button>
               ))}
             </div>
@@ -962,10 +1037,10 @@ export default function DashboardPage() {
             {sortedEvents.length > 0 ? (
               <div className="space-y-3">
                 {sortedEvents.map((ev) => {
-                  const evDate = new Date(ev.date);
-                  const dayNum = evDate.getDate();
-                  const monthNum = evDate.getMonth() + 1;
+                  const [evYear, evMonth, evDay] = ev.date.split('-').map(Number);
                   const isTodayEvent = ev.date === todayStr;
+                  const rawType = ev.type || ev.eventType || 'OTHER';
+                  const typeConf = CLASS_EVENT_TYPE_CONFIG[rawType] || CLASS_EVENT_TYPE_CONFIG.OTHER;
 
                   return (
                     <div
@@ -990,14 +1065,18 @@ export default function DashboardPage() {
                           }`}
                         >
                           <span className="text-[10px] uppercase tracking-wider opacity-80 leading-none">
-                            Thg {monthNum}
+                            Thg {evMonth || 1}
                           </span>
-                          <span className="text-base font-black leading-none mt-1">{dayNum}</span>
+                          <span className="text-base font-black leading-none mt-1">{evDay || 1}</span>
                         </div>
 
-                        <div className="space-y-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
+                        <div className="space-y-1.5 min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
                             <h4 className="font-bold text-slate-900 text-sm truncate">{ev.title}</h4>
+                            <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border ${typeConf.badgeColor}`}>
+                              <span>{typeConf.icon}</span>
+                              <span>{typeConf.shortLabel}</span>
+                            </span>
                             {isTodayEvent && (
                               <span className="bg-amber-500 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full">
                                 Hôm nay
@@ -1026,22 +1105,38 @@ export default function DashboardPage() {
                           </div>
 
                           {ev.description && (
-                            <p className="text-xs text-slate-600 italic mt-1">{ev.description}</p>
+                            <p className="text-xs text-slate-600 italic mt-0.5">{ev.description}</p>
                           )}
                         </div>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          deleteClassEvent(ev.id);
-                          toast.success('Đã xóa sự kiện thành công!');
-                        }}
-                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-white rounded-xl transition-colors self-end sm:self-center cursor-pointer shrink-0"
-                        title="Xóa sự kiện"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {/* Action buttons: Edit & Delete */}
+                      <div className="flex items-center space-x-1 self-end sm:self-center shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingEvent(ev);
+                            setIsEventModalOpen(true);
+                          }}
+                          className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-white rounded-xl transition-colors cursor-pointer"
+                          title="Chỉnh sửa sự kiện"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm(`Bạn có chắc chắn muốn xóa sự kiện "${ev.title}"?`)) {
+                              deleteClassEvent(ev.id);
+                              toast.success('Đã xóa sự kiện thành công!');
+                            }
+                          }}
+                          className="p-2 text-slate-400 hover:text-rose-600 hover:bg-white rounded-xl transition-colors cursor-pointer"
+                          title="Xóa sự kiện"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
@@ -1072,11 +1167,11 @@ export default function DashboardPage() {
             </div>
 
             <div className="text-xs text-slate-500 font-semibold px-1">
-              📅 {todayDayName} ({todayPeriods.length} tiết)
+              📅 {todayDayName} {isWeekend ? '(Nghỉ cuối tuần — Xem TKB Thứ Hai)' : `(${todayPeriods.length} tiết)`}
             </div>
 
             <div className="space-y-2 text-xs">
-              {periods.slice(0, 5).map((p) => {
+              {periods.slice(0, Math.max(5, todayPeriods.length)).map((p) => {
                 const slot = timetable.find((s) => s.day === todayDayOfWeek && s.period === p.period);
                 const theme = slot ? getSubjectTheme(slot.subjectCode) : null;
 
@@ -1238,141 +1333,17 @@ export default function DashboardPage() {
       </div>
 
       {/* ========================================================================= */}
-      {/* POP-UP MODAL: THÊM SỰ KIỆN MỚI CỦA LỚP */}
+      {/* MODAL: THÊM / CHỈNH SỬA SỰ KIỆN CỦA LỚP */}
       {/* ========================================================================= */}
-      {isAddEventModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-150">
-            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-5 text-white flex items-center justify-between">
-              <div className="flex items-center space-x-2.5">
-                <Calendar className="w-5 h-5" />
-                <h3 className="font-bold text-base">Thêm Sự Kiện Lớp Mới</h3>
-              </div>
-              <button
-                onClick={() => setIsAddEventModalOpen(false)}
-                className="p-1 rounded-full hover:bg-white/20 text-white/80 hover:text-white transition-colors cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateEvent} className="p-6 space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Tên Sự Kiện / Kế Hoạch *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ví dụ: Kiểm tra Giữa kỳ I môn Toán, Họp PHĐN..."
-                  value={newEventTitle}
-                  onChange={(e) => setNewEventTitle(e.target.value)}
-                  className="w-full text-xs font-medium px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    Ngày Diễn Ra *
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={newEventDate}
-                    onChange={(e) => setNewEventDate(e.target.value)}
-                    className="w-full text-xs font-medium px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    Thời Gian
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="08:00 - 10:30"
-                    value={newEventTime}
-                    onChange={(e) => setNewEventTime(e.target.value)}
-                    className="w-full text-xs font-medium px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    Loại Sự Kiện
-                  </label>
-                  <select
-                    value={newEventType}
-                    onChange={(e) => setNewEventType(e.target.value as ClassEventType)}
-                    className="w-full text-xs font-medium px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                  >
-                    <option value="EXAM">Kiểm tra định kỳ (TT27)</option>
-                    <option value="MEETING">Họp phụ huynh</option>
-                    <option value="ACTIVITY">Hoạt động trải nghiệm</option>
-                    <option value="FESTIVAL">Lễ hội / Thi đua</option>
-                    <option value="OTHER">Khác</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    Địa Điểm
-                  </label>
-                  <input
-                    type="text"
-                    value={newEventLocation}
-                    onChange={(e) => setNewEventLocation(e.target.value)}
-                    className="w-full text-xs font-medium px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Mô Tả / Lưu Ý Cho Học Sinh
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="Ghi chú về đồ dùng học tập cần mang, đồng phục..."
-                  value={newEventDesc}
-                  onChange={(e) => setNewEventDesc(e.target.value)}
-                  className="w-full text-xs font-medium p-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-
-              <div className="flex items-center space-x-2 pt-1">
-                <input
-                  type="checkbox"
-                  id="eventImportant"
-                  checked={newEventImportant}
-                  onChange={(e) => setNewEventImportant(e.target.checked)}
-                  className="w-4 h-4 text-blue-600 rounded-md border-slate-300 focus:ring-blue-500"
-                />
-                <label htmlFor="eventImportant" className="text-xs font-bold text-slate-700 cursor-pointer">
-                  Đánh dấu là Sự kiện quan trọng (Ưu tiên thông báo)
-                </label>
-              </div>
-
-              <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsAddEventModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors"
-                >
-                  Hủy Bỏ
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20 transition-all cursor-pointer"
-                >
-                  Lưu Sự Kiện
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <ClassEventModal
+        isOpen={isEventModalOpen}
+        onClose={() => {
+          setIsEventModalOpen(false);
+          setEditingEvent(null);
+        }}
+        editingEvent={editingEvent}
+        className={classInfo.name}
+      />
 
       {/* Conference Scheduler Modal */}
       <ConferenceSchedulerModal
@@ -1397,6 +1368,16 @@ export default function DashboardPage() {
       <ZaloMessageGeneratorModal
         isOpen={isZaloModalOpen}
         onClose={() => setIsZaloModalOpen(false)}
+      />
+
+      {/* TT27 Guardrails Alert Modal */}
+      <GuardrailsAlertModal
+        isOpen={isGuardrailsModalOpen}
+        onClose={() => setIsGuardrailsModalOpen(false)}
+        issues={issues}
+        onNavigateToStudent={(studentId) => {
+          router.push(`/assessment?student=${studentId}`);
+        }}
       />
     </div>
   );

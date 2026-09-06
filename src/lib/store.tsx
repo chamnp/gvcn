@@ -21,6 +21,7 @@ import {
   AIConfig,
   AIGenerationSettings,
   ClassEvent,
+  ClassEventType,
   StarCriterion,
   RewardProduct,
   RewardRedemption,
@@ -1286,7 +1287,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
 
         if (dbEvents) {
-          setAllClassEvents(dbEvents);
+          setAllClassEvents(
+            (dbEvents as any[]).map((e) => ({
+              ...e,
+              type: (e.type || e.eventType || 'OTHER') as ClassEventType,
+            }))
+          );
         }
 
         if (dbCustomSubjects) {
@@ -1599,7 +1605,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         { event: '*', schema: 'public', table: 'ClassEvent' },
         (payload) => {
           if (payload.eventType === 'INSERT') {
-            const newRow = payload.new as ClassEvent;
+            const rawRow = payload.new as any;
+            const newRow: ClassEvent = {
+              ...rawRow,
+              type: (rawRow.type || rawRow.eventType || 'OTHER') as ClassEventType,
+            };
             setAllClassEvents((prev) => {
               if (prev.some((e) => e.id === newRow.id)) return prev;
               return [newRow, ...prev];
@@ -1608,7 +1618,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             const oldRow = payload.old as any;
             setAllClassEvents((prev) => prev.filter((e) => e.id !== oldRow.id));
           } else if (payload.eventType === 'UPDATE') {
-            const newRow = payload.new as ClassEvent;
+            const rawRow = payload.new as any;
+            const newRow: ClassEvent = {
+              ...rawRow,
+              type: (rawRow.type || rawRow.eventType || 'OTHER') as ClassEventType,
+            };
             setAllClassEvents((prev) => prev.map((e) => (e.id === newRow.id ? newRow : e)));
           }
         }
@@ -3925,10 +3939,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addClassEvent = (event: Omit<ClassEvent, 'id'>) => {
+    const eventType = event.type || event.eventType || 'OTHER';
     const newEv: ClassEvent = {
       ...event,
       id: 'ev-' + Date.now(),
-      classId: activeClassId,
+      classId: event.classId || activeClassId,
+      type: eventType,
+      eventType: eventType,
+      createdAt: new Date().toISOString(),
     };
     setAllClassEvents((prev) => {
       const updated = [newEv, ...prev];
@@ -3945,13 +3963,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           id: newEv.id,
           classId: newEv.classId,
           title: newEv.title,
-          eventType: newEv.type || 'OTHER',
+          eventType: newEv.type,
           date: newEv.date,
-          time: newEv.time,
-          location: newEv.location,
-          description: newEv.description,
-          isImportant: newEv.isImportant,
-          createdAt: new Date().toISOString(),
+          time: newEv.time || null,
+          location: newEv.location || null,
+          description: newEv.description || null,
+          isImportant: !!newEv.isImportant,
+          createdAt: newEv.createdAt,
         }),
       undefined,
       'Không thể thêm sự kiện lớp'
@@ -3959,8 +3977,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateClassEvent = (event: ClassEvent) => {
+    const eventType = event.type || event.eventType || 'OTHER';
+    const updatedEv: ClassEvent = {
+      ...event,
+      classId: event.classId || activeClassId,
+      type: eventType,
+      eventType: eventType,
+    };
     setAllClassEvents((prev) => {
-      const updated = prev.map((e) => (e.id === event.id ? event : e));
+      const updated = prev.map((e) => (e.id === updatedEv.id ? updatedEv : e));
       try {
         localStorage.setItem(STORAGE_PREFIX + 'classEvents', JSON.stringify(updated));
       } catch (e) {}
@@ -3971,15 +3996,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       supabase
         .from('ClassEvent')
         .upsert({
-          id: event.id,
-          classId: event.classId,
-          title: event.title,
-          eventType: event.type || 'OTHER',
-          date: event.date,
-          time: event.time,
-          location: event.location,
-          description: event.description,
-          isImportant: event.isImportant,
+          id: updatedEv.id,
+          classId: updatedEv.classId,
+          title: updatedEv.title,
+          eventType: updatedEv.type,
+          date: updatedEv.date,
+          time: updatedEv.time || null,
+          location: updatedEv.location || null,
+          description: updatedEv.description || null,
+          isImportant: !!updatedEv.isImportant,
         }),
       undefined,
       'Không thể cập nhật sự kiện lớp'

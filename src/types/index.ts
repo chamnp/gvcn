@@ -207,10 +207,60 @@ export interface ClassEvent {
   date: string; // YYYY-MM-DD
   time?: string; // e.g. "08:00 - 10:30"
   type: ClassEventType;
+  eventType?: ClassEventType; // database column compatibility
   location?: string;
   description?: string;
   isImportant?: boolean;
+  createdAt?: string;
 }
+
+export const CLASS_EVENT_TYPE_CONFIG: Record<
+  ClassEventType,
+  { label: string; shortLabel: string; icon: string; color: string; badgeColor: string }
+> = {
+  EXAM: {
+    label: 'Kiểm tra & Khảo sát (TT27)',
+    shortLabel: 'Kiểm tra',
+    icon: '🏆',
+    color: 'border-amber-200 bg-amber-50 text-amber-800',
+    badgeColor: 'bg-amber-100 text-amber-800 border-amber-300',
+  },
+  MEETING: {
+    label: 'Họp Cha Mẹ Học Sinh',
+    shortLabel: 'Họp PH',
+    icon: '👥',
+    color: 'border-blue-200 bg-blue-50 text-blue-800',
+    badgeColor: 'bg-blue-100 text-blue-800 border-blue-300',
+  },
+  ACTIVITY: {
+    label: 'Hoạt động trải nghiệm / Ngoại khóa',
+    shortLabel: 'Trải nghiệm',
+    icon: '🎒',
+    color: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+    badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+  },
+  FESTIVAL: {
+    label: 'Lễ hội & Phong trào thi đua',
+    shortLabel: 'Lễ hội',
+    icon: '🎪',
+    color: 'border-purple-200 bg-purple-50 text-purple-800',
+    badgeColor: 'bg-purple-100 text-purple-800 border-purple-300',
+  },
+  HOLIDAY: {
+    label: 'Nghỉ lễ / Nghỉ định kỳ',
+    shortLabel: 'Nghỉ lễ',
+    icon: '🏖️',
+    color: 'border-rose-200 bg-rose-50 text-rose-800',
+    badgeColor: 'bg-rose-100 text-rose-800 border-rose-300',
+  },
+  OTHER: {
+    label: 'Sự kiện & Kế hoạch khác',
+    shortLabel: 'Khác',
+    icon: '📌',
+    color: 'border-slate-200 bg-slate-50 text-slate-800',
+    badgeColor: 'bg-slate-100 text-slate-800 border-slate-300',
+  },
+};
 
 export interface CustomSubject {
   id: string;

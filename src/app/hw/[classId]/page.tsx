@@ -36,7 +36,7 @@ import {
 import { useAppStore } from '@/lib/store';
 import { getSubjectTheme, DAYS_OF_WEEK } from '@/lib/timetable-data';
 import { getLocalDateString } from '@/lib/tt27-engine';
-import { DayOfWeek, ClassEvent, ClassEventType, Student } from '@/types';
+import { DayOfWeek, ClassEvent, ClassEventType, Student, CLASS_EVENT_TYPE_CONFIG } from '@/types';
 import { LeaveRequestModal } from '@/components/parent/leave-request-modal';
 import { MomentsFeedCard } from '@/components/moments/moments-feed-card';
 import { ConferenceSchedulerModal } from '@/components/conference/conference-scheduler-modal';
@@ -161,7 +161,7 @@ export default function PublicClassHomeworkPortal({
   const [activeTab, setActiveTab] = useState<'HOMEWORK' | 'MOMENTS' | 'CONFERENCE' | 'EVENTS' | 'BACKPACK' | 'TIMETABLE'>('HOMEWORK');
   const [selectedTimetableDay, setSelectedTimetableDay] = useState<DayOfWeek>('T2');
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
-  const [eventFilter, setEventFilter] = useState<'ALL' | 'EXAM' | 'MEETING' | 'FESTIVAL'>('ALL');
+  const [eventFilter, setEventFilter] = useState<'ALL' | 'EXAM' | 'MEETING' | 'ACTIVITY' | 'FESTIVAL'>('ALL');
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
   const [isConferenceModalOpen, setIsConferenceModalOpen] = useState(false);
   const [activeQuizHw, setActiveQuizHw] = useState<HomeworkAssignment | null>(null);
@@ -251,8 +251,9 @@ export default function PublicClassHomeworkPortal({
     return [...classEvents]
       .sort((a, b) => a.date.localeCompare(b.date))
       .filter((ev) => {
+        const evType = ev.type || ev.eventType;
         if (eventFilter === 'ALL') return true;
-        return ev.type === eventFilter;
+        return evType === eventFilter;
       });
   }, [classEvents, eventFilter]);
 
@@ -616,7 +617,8 @@ export default function PublicClassHomeworkPortal({
                     { id: 'ALL', label: 'Tất cả sự kiện' },
                     { id: 'EXAM', label: '🏆 Khảo sát & Thi' },
                     { id: 'MEETING', label: '👥 Họp Phụ huynh' },
-                    { id: 'FESTIVAL', label: '🎪 Lễ hội & Khai giảng' },
+                    { id: 'ACTIVITY', label: '🎒 Trải nghiệm' },
+                    { id: 'FESTIVAL', label: '🎪 Lễ hội & Phong trào' },
                   ].map((f) => (
                     <button
                       key={f.id}
@@ -636,10 +638,10 @@ export default function PublicClassHomeworkPortal({
                 {sortedEvents.length > 0 ? (
                   <div className="space-y-2.5">
                     {sortedEvents.map((ev) => {
-                      const evDate = new Date(ev.date);
-                      const dayNum = evDate.getDate();
-                      const monthNum = evDate.getMonth() + 1;
+                      const [evYear, evMonth, evDay] = ev.date.split('-').map(Number);
                       const isTodayEvent = ev.date === todayStr;
+                      const rawType = ev.type || ev.eventType || 'OTHER';
+                      const typeConf = CLASS_EVENT_TYPE_CONFIG[rawType] || CLASS_EVENT_TYPE_CONFIG.OTHER;
 
                       return (
                         <div
@@ -663,15 +665,19 @@ export default function PublicClassHomeworkPortal({
                                   : 'bg-slate-100 text-slate-800 border-slate-200'
                               }`}
                             >
-                              <span className="text-[9px] uppercase font-semibold leading-none">Th.{monthNum}</span>
-                              <span className="text-lg font-black leading-tight">{dayNum}</span>
+                              <span className="text-[9px] uppercase font-semibold leading-none">Th.{evMonth || 1}</span>
+                              <span className="text-lg font-black leading-tight">{evDay || 1}</span>
                             </div>
 
-                            <div className="space-y-0.5 min-w-0">
+                            <div className="space-y-1 min-w-0">
                               <div className="flex flex-wrap items-center gap-1.5">
                                 <h3 className="text-xs sm:text-sm font-bold text-slate-900 break-words">
                                   {ev.title}
                                 </h3>
+                                <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border ${typeConf.badgeColor}`}>
+                                  <span>{typeConf.icon}</span>
+                                  <span>{typeConf.shortLabel}</span>
+                                </span>
                                 {isTodayEvent && (
                                   <span className="bg-amber-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase">
                                     Hôm nay
