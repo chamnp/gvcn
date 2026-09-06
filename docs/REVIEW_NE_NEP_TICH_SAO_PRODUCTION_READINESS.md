@@ -15,7 +15,7 @@
 
 ### Cập nhật triển khai tiếp nối — 06/09/2026
 
-Baseline kiểm tra lại: `7127d63` (`main`). Trạng thái dưới đây là mã local sau khi tiếp tục xử lý, **chưa phải trạng thái đã triển khai production**.
+Baseline kiểm tra lại và triển khai: `8c1f17b` (`main`). Hotfix code và migration transaction đã được triển khai production; các blocker còn lại được ghi rõ bên dưới.
 
 | Hạng mục | Trạng thái | Ghi chú |
 | --- | --- | --- |
@@ -27,13 +27,14 @@ Baseline kiểm tra lại: `7127d63` (`main`). Trạng thái dưới đây là m
 | Đổi/trao/huỷ quà | Đã chuẩn bị local | Migration tạo RPC transaction; server tự xác minh student token, tự tính giá/số dư, khoá tồn kho và kiểm tra quyền giáo viên |
 | Schema class-scoped | Đã áp dụng production | `classId` đã có, 104 StarLog không orphan; migration bổ sung constraint/index và unique index token |
 | Build | PASS | `npm run build` pass trên Next.js 16.3.3 sau thay đổi |
+| Vercel deployment | READY | Commit `8c1f17b`, branch `main`; bundle production đã chứa chữ ký RPC mới |
 | Smoke test browser | PASS | `/rewards/not-a-valid-token`, `/rewards/class-4a1`, `/student/not-a-valid-token` đều trả màn hình không hợp lệ, không có lỗi console |
 | Kết nối Supabase local/production | PASS | Key trong `.env`, fallback và key production đều đọc table endpoint với HTTP 200; endpoint OpenAPI gốc trả 401 theo cấu hình chỉ cho `service_role` |
 | Áp dụng migration production | PASS | Đã áp dụng bằng Supabase MCP OAuth; xác nhận đủ 4 RPC, `SECURITY DEFINER`, `search_path` cố định và overload cũ đã bị loại bỏ |
 | RLS và tối thiểu hoá dữ liệu public | FAIL — P0 | RLS hiện tắt trên `Class`, `Student`, `Teacher`, `StarLog`, `StarCriterion`, `RewardProduct`, `RewardRedemption`; public route vẫn dùng AppStore tải rộng |
 | Dọn seed/mock trên DB | Chưa thực hiện | Cần backup và xác nhận chủ dữ liệu trước khi xoá 25 `sc-*`, 11 `prod-*`, 2 `rd-*` đã phát hiện |
 
-**Kết luận cập nhật:** các lỗi chức năng P0 đã có hotfix local và transaction đã được áp dụng lên database, nhưng release vẫn **NO-GO** cho tới khi RLS/public data API được siết, code local được deploy đồng bộ với RPC mới và dữ liệu seed production được xác nhận/cleanup.
+**Kết luận cập nhật:** hotfix chức năng và transaction đã được deploy đồng bộ, nhưng tính năng tổng thể vẫn **NO-GO** cho tới khi RLS/public data API được siết và dữ liệu seed production được xác nhận/cleanup.
 
 ## 2. Tóm tắt điều hành
 
