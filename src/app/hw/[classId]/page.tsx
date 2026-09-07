@@ -1,1078 +1,221 @@
 'use client';
 
-import React, { useState, useEffect, use, useMemo } from 'react';
+import React, { use, useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
-  BookOpen,
-  Calendar,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  GraduationCap,
-  Sparkles,
-  School,
-  ChevronRight,
-  Sun,
-  Backpack,
-  Smile,
-  CheckSquare,
-  Square,
-  FileText,
-  Eye,
-  MapPin,
-  Phone,
-  Cake,
-  PartyPopper,
-  Gift,
-  Flame,
-  Award,
-  Info,
-  Check,
-  ChevronDown,
-  X,
-  Share2,
-  ShieldCheck,
+  AlertCircle, ArrowRight, Backpack, BookOpen, CalendarDays, Check, ChevronRight,
+  Clock3, ExternalLink, FileCheck2, Image as ImageIcon, Info, LockKeyhole,
+  MapPin, RefreshCw, School, ShieldCheck, Square, UserRoundCheck, X,
 } from 'lucide-react';
-import { useAppStore } from '@/lib/store';
-import { getSubjectTheme, DAYS_OF_WEEK } from '@/lib/timetable-data';
+import { supabase } from '@/lib/supabase';
+import { calculatePeriods, DAYS_OF_WEEK, DEFAULT_SCHEDULE_CONFIG, getSubjectTheme } from '@/lib/timetable-data';
 import { getLocalDateString } from '@/lib/tt27-engine';
-import { DayOfWeek, ClassEvent, ClassEventType, Student, CLASS_EVENT_TYPE_CONFIG } from '@/types';
-import { LeaveRequestModal } from '@/components/parent/leave-request-modal';
-import { MomentsFeedCard } from '@/components/moments/moments-feed-card';
-import { ConferenceSchedulerModal } from '@/components/conference/conference-scheduler-modal';
-import { StudentQuizModal } from '@/components/quiz/student-quiz-modal';
-import { HomeworkAssignment } from '@/types';
-import { toast } from 'sonner';
+import type {
+  ClassEvent, ClassInfo, ClassMoment, ConferenceSlot, CustomSubject, DayOfWeek,
+  HomeworkAssignment, SchoolInfo, TimetableSlot,
+} from '@/types';
 
-// Helper to calculate birthday information
-function getStudentBirthdayInfo(dobStr: string) {
-  if (!dobStr) return null;
-  const today = new Date();
-  const birthDate = new Date(dobStr);
-  if (isNaN(birthDate.getTime())) return null;
-
-  const currentYear = today.getFullYear();
-  const birthMonth = birthDate.getMonth();
-  const birthDay = birthDate.getDate();
-
-  let nextBday = new Date(currentYear, birthMonth, birthDay);
-  const todayZero = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-
-  if (nextBday < todayZero) {
-    nextBday = new Date(currentYear + 1, birthMonth, birthDay);
-  }
-
-  const diffTime = nextBday.getTime() - todayZero.getTime();
-  const daysRemaining = Math.round(diffTime / (1000 * 60 * 60 * 24));
-  const isToday = birthMonth === today.getMonth() && birthDay === today.getDate();
-  const isThisMonth = birthMonth === today.getMonth();
-  const turningAge = currentYear - birthDate.getFullYear() + (nextBday.getFullYear() > currentYear ? 1 : 0);
-
-  return {
-    isToday,
-    isThisMonth,
-    daysRemaining,
-    turningAge,
-    formattedDate: `${birthDay < 10 ? '0' : ''}${birthDay}/${birthMonth + 1 < 10 ? '0' : ''}${birthMonth + 1}`,
-  };
+type PortalTab = 'HOMEWORK' | 'BACKPACK' | 'TIMETABLE' | 'EVENTS' | 'MOMENTS' | 'CONFERENCE';
+interface PublicPortalFlags {
+  homework: boolean; timetable: boolean; attendance: boolean; assessment: boolean;
+  reports: boolean; moments: boolean; parentMeetings: boolean;
+}
+interface PublicClassPortalBundle {
+  success?: boolean; error?: string; school?: Partial<SchoolInfo>; class?: ClassInfo;
+  featureFlags?: Partial<PublicPortalFlags>; homeworks?: HomeworkAssignment[];
+  customSubjects?: CustomSubject[]; timetable?: TimetableSlot[]; events?: ClassEvent[];
+  moments?: ClassMoment[]; conferenceSlots?: ConferenceSlot[];
 }
 
-export default function PublicClassHomeworkPortal({
-  params,
-}: {
-  params: Promise<{ classId: string }>;
-}) {
-  const resolvedParams = use(params);
-  const rawParam = (resolvedParams.classId || '4a1').toLowerCase();
+const DEFAULT_PUBLIC_FLAGS: PublicPortalFlags = {
+  homework: true, timetable: true, attendance: true, assessment: false,
+  reports: false, moments: false, parentMeetings: false,
+};
+const EMPTY_SCHOOL: SchoolInfo = {
+  id: '', name: 'Cổng thông tin lớp học', departmentName: '', schoolYear: '2026-2027', principalName: '',
+};
+const EVENT_LABELS: Record<string, string> = {
+  EXAM: 'Kiểm tra', MEETING: 'Họp phụ huynh', ACTIVITY: 'Hoạt động', FESTIVAL: 'Ngày hội', OTHER: 'Sự kiện',
+};
 
-  const {
-    schoolClasses,
-    allHomeworks,
-    customSubjects,
-    timetable,
-    schoolInfo,
-    allClassEvents,
-    allStudents,
-    starLogs,
-    periods,
-    isLoaded,
-  } = useAppStore();
-
-  // Show loading skeleton while store is hydrating
-  if (!isLoaded) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
-          <p className="text-xs font-bold text-slate-500">Đang tải thông tin lớp học...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Find class strictly matching shareToken or classId
-  const currentClass = schoolClasses.find(
-    (c) =>
-      (c.shareToken && c.shareToken.toLowerCase() === rawParam) ||
-      c.id.toLowerCase() === rawParam ||
-      c.name.toLowerCase() === rawParam ||
-      c.name.toLowerCase().replace(/\s+/g, '') === rawParam
-  );
-
-  // If no class matched the token or param
-  if (!currentClass) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 font-sans">
-        <div className="max-w-md w-full bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-xl text-center space-y-4">
-          <div className="w-16 h-16 rounded-3xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto text-3xl shadow-inner">
-            🔒
-          </div>
-          <h2 className="text-xl font-black text-slate-900">Liên Kết Bảo Mật Hoặc Đã Đổi Mã</h2>
-          <p className="text-xs text-slate-500 leading-relaxed">
-            Để đảm bảo an toàn thông tin cá nhân và kết quả học tập của các em, hệ thống sử dụng liên kết riêng tư ngẫu nhiên cho từng lớp. Vui lòng liên hệ <strong>Giáo viên chủ nhiệm</strong> để nhận đường dẫn chính xác.
-          </p>
-          <div className="pt-3 border-t border-slate-100 flex items-center justify-center gap-2">
-            <Link
-              href="/hw"
-              className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-4 py-2.5 rounded-xl transition-colors"
-            >
-              Nhập mã lớp khác
-            </Link>
-            <Link
-              href="/login"
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition-colors shadow-xs"
-            >
-              Giáo viên đăng nhập →
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Scoped Homework for this class
-  const classHomeworks = allHomeworks.filter(
-    (h) =>
-      h.classId === currentClass.id ||
-      h.className?.toLowerCase() === currentClass.name.toLowerCase() ||
-      h.className?.toLowerCase().replace(/\s+/g, '') === rawParam
-  );
-
-  // Scoped Events for this class
-  const classEvents = allClassEvents.filter(
-    (e) => e.classId === currentClass.id
-  );
-
-  // Scoped Students for this class
-  const classStudents = allStudents.filter(
-    (s) => (s.classId) === currentClass.id
-  );
-
-  // Student Local Checklist (State stored in localStorage)
+export default function PublicClassHomeworkPortal({ params }: { params: Promise<{ classId: string }> }) {
+  const { classId } = use(params);
+  const shareToken = (classId || '').trim();
+  const [bundle, setBundle] = useState<PublicClassPortalBundle | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<PortalTab>('HOMEWORK');
   const [completedHwIds, setCompletedHwIds] = useState<string[]>([]);
   const [packedSubjectCodes, setPackedSubjectCodes] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<'HOMEWORK' | 'MOMENTS' | 'CONFERENCE' | 'EVENTS' | 'BACKPACK' | 'TIMETABLE'>('HOMEWORK');
   const [selectedTimetableDay, setSelectedTimetableDay] = useState<DayOfWeek>('T2');
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
-  const [eventFilter, setEventFilter] = useState<'ALL' | 'EXAM' | 'MEETING' | 'ACTIVITY' | 'FESTIVAL'>('ALL');
-  const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
-  const [isConferenceModalOpen, setIsConferenceModalOpen] = useState(false);
-  const [activeQuizHw, setActiveQuizHw] = useState<HomeworkAssignment | null>(null);
-  const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
-  const [selectedStudentForLeave, setSelectedStudentForLeave] = useState<Student | null>(null);
-
-  const { classMoments, conferenceSlots, quizSubmissions } = useAppStore();
-  const filteredMoments = classMoments.filter((m) => m.classId === currentClass.id || !m.classId);
-  const filteredConferences = conferenceSlots.filter((s) => s.classId === currentClass.id || !s.classId);
-
   const todayStr = getLocalDateString();
+  const tomorrowDayCode = useMemo<DayOfWeek>(() => {
+    const map: Record<number, DayOfWeek> = { 0: 'T2', 1: 'T3', 2: 'T4', 3: 'T5', 4: 'T6', 5: 'T2', 6: 'T2' };
+    return map[new Date().getDay()] || 'T2';
+  }, []);
 
-  useEffect(() => {
-    try {
-      const savedHw = localStorage.getItem(`gvcn_hw_done_${currentClass.id}`);
-      if (savedHw) setCompletedHwIds(JSON.parse(savedHw));
-
-      const savedPack = localStorage.getItem(`gvcn_pack_${currentClass.id}_${todayStr}`);
-      if (savedPack) setPackedSubjectCodes(JSON.parse(savedPack));
-    } catch (e) {}
-  }, [currentClass.id, todayStr]);
-
-  // Determine tomorrow's day of week
-  const todayDayIndex = new Date().getDay(); // 0 = Sun, 1 = Mon...
-  const nextDayMap: Record<number, DayOfWeek> = {
-    0: 'T2',
-    1: 'T3',
-    2: 'T4',
-    3: 'T5',
-    4: 'T6',
-    5: 'T2',
-    6: 'T2',
-  };
-  const tomorrowDayCode: DayOfWeek = nextDayMap[todayDayIndex] || 'T2';
-  const tomorrowDayInfo = DAYS_OF_WEEK.find((d) => d.id === tomorrowDayCode);
-
-  useEffect(() => {
-    setSelectedTimetableDay(tomorrowDayCode);
-  }, [tomorrowDayCode]);
-
-  // Tomorrow slots from timetable
-  const tomorrowSlots = timetable.filter(
-    (s) => s.day === tomorrowDayCode && (s.classId) === currentClass.id
-  );
-
-  const toggleCompleteHw = (hwId: string) => {
-    setCompletedHwIds((prev) => {
-      const isDone = prev.includes(hwId);
-      const updated = isDone ? prev.filter((id) => id !== hwId) : [...prev, hwId];
+  const loadPortal = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError(null);
+    const { data, error } = await supabase.rpc('get_public_class_portal_bundle', { p_class_share_token: shareToken });
+    const next = data as PublicClassPortalBundle | null;
+    if (error) {
+      setBundle(null);
+      setLoadError('Không thể kết nối máy chủ. Vui lòng kiểm tra mạng và thử lại.');
+    } else if (!next?.success || !next.class) {
+      setBundle(null);
+      setLoadError(next?.error || 'Liên kết lớp không hợp lệ hoặc đã hết hạn.');
+    } else {
+      setBundle(next);
       try {
-        localStorage.setItem(`gvcn_hw_done_${currentClass.id}`, JSON.stringify(updated));
-      } catch (e) {}
-      return updated;
+        setCompletedHwIds(JSON.parse(localStorage.getItem(`gvcn_hw_done_${next.class.id}`) || '[]'));
+        setPackedSubjectCodes(JSON.parse(localStorage.getItem(`gvcn_pack_${next.class.id}_${todayStr}`) || '[]'));
+      } catch {
+        setCompletedHwIds([]);
+        setPackedSubjectCodes([]);
+      }
+      setSelectedTimetableDay(tomorrowDayCode);
+    }
+    setIsLoading(false);
+  }, [shareToken, todayStr, tomorrowDayCode]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => void loadPortal(), 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [loadPortal]);
+
+  const currentClass = bundle?.class || null;
+  const schoolInfo = { ...EMPTY_SCHOOL, ...(bundle?.school || {}) };
+  const flags = { ...DEFAULT_PUBLIC_FLAGS, ...(bundle?.featureFlags || {}) };
+  const homeworks = bundle?.homeworks || [];
+  const customSubjects = bundle?.customSubjects || [];
+  const timetable = bundle?.timetable || [];
+  const events = bundle?.events || [];
+  const moments = bundle?.moments || [];
+  const conferenceSlots = bundle?.conferenceSlots || [];
+  const periods = useMemo(() => calculatePeriods(DEFAULT_SCHEDULE_CONFIG), []);
+
+  const tabs: Array<{ id: PortalTab; label: string; icon: React.ReactNode; count?: number }> = [];
+  if (flags.homework) tabs.push({ id: 'HOMEWORK', label: 'Bài tập', icon: <FileCheck2 className="h-4 w-4" />, count: homeworks.length });
+  if (flags.timetable) {
+    tabs.push({ id: 'BACKPACK', label: 'Soạn cặp', icon: <Backpack className="h-4 w-4" /> });
+    tabs.push({ id: 'TIMETABLE', label: 'Thời khóa biểu', icon: <CalendarDays className="h-4 w-4" /> });
+  }
+  tabs.push({ id: 'EVENTS', label: 'Sự kiện', icon: <CalendarDays className="h-4 w-4" />, count: events.length });
+  if (flags.moments) tabs.push({ id: 'MOMENTS', label: 'Khoảnh khắc', icon: <ImageIcon className="h-4 w-4" />, count: moments.length });
+  if (flags.parentMeetings) tabs.push({ id: 'CONFERENCE', label: 'Lịch gặp cô', icon: <UserRoundCheck className="h-4 w-4" />, count: conferenceSlots.filter((slot) => !slot.isBooked).length });
+  const visibleActiveTab = tabs.some((tab) => tab.id === activeTab) ? activeTab : tabs[0]?.id;
+
+  const tomorrowDayInfo = DAYS_OF_WEEK.find((day) => day.id === tomorrowDayCode);
+  const tomorrowSlots = timetable.filter((slot) => slot.day === tomorrowDayCode && slot.classId === currentClass?.id);
+
+  const toggleHomework = (id: string) => {
+    if (!currentClass) return;
+    setCompletedHwIds((current) => {
+      const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id];
+      localStorage.setItem(`gvcn_hw_done_${currentClass.id}`, JSON.stringify(next));
+      return next;
+    });
+  };
+  const togglePacked = (code: string) => {
+    if (!currentClass) return;
+    setPackedSubjectCodes((current) => {
+      const next = current.includes(code) ? current.filter((item) => item !== code) : [...current, code];
+      localStorage.setItem(`gvcn_pack_${currentClass.id}_${todayStr}`, JSON.stringify(next));
+      return next;
     });
   };
 
-  const togglePackSubject = (code: string) => {
-    setPackedSubjectCodes((prev) => {
-      const isPacked = prev.includes(code);
-      const updated = isPacked ? prev.filter((c) => c !== code) : [...prev, code];
-      try {
-        localStorage.setItem(`gvcn_pack_${currentClass.id}_${todayStr}`, JSON.stringify(updated));
-      } catch (e) {}
-      return updated;
-    });
-  };
+  if (isLoading) return <LoadingState />;
+  if (!currentClass || loadError) return <ErrorState message={loadError || 'Liên kết lớp không hợp lệ.'} onRetry={loadPortal} />;
 
-  const doneCount = classHomeworks.filter((h) => completedHwIds.includes(h.id)).length;
-  const isAllDone = classHomeworks.length > 0 && doneCount === classHomeworks.length;
-
-  // Birthday list calculation
-  const studentBirthdayList = useMemo(() => {
-    return classStudents
-      .map((st) => {
-        const bInfo = getStudentBirthdayInfo(st.dateOfBirth);
-        return { student: st, ...bInfo };
-      })
-      .filter((item): item is { student: typeof classStudents[0] } & NonNullable<ReturnType<typeof getStudentBirthdayInfo>> => item !== null)
-      .sort((a, b) => a.daysRemaining - b.daysRemaining);
-  }, [classStudents]);
-
-  const todayBirthdays = studentBirthdayList.filter((b) => b.isToday);
-  const thisMonthBirthdays = studentBirthdayList.filter((b) => b.isThisMonth);
-
-  // Filtered Events
-  const sortedEvents = useMemo(() => {
-    return [...classEvents]
-      .sort((a, b) => a.date.localeCompare(b.date))
-      .filter((ev) => {
-        const evType = ev.type || ev.eventType;
-        if (eventFilter === 'ALL') return true;
-        return evType === eventFilter;
-      });
-  }, [classEvents, eventFilter]);
-
-  // Star leaderboard for praise wall
-  const studentStarMap: { [id: string]: number } = {};
-  starLogs.forEach((log) => {
-    studentStarMap[log.studentId] = (studentStarMap[log.studentId] || 0) + log.points;
-  });
-
-  const topStarStudents = [...classStudents]
-  .map((s) => ({ ...s, stars: studentStarMap[s.id] || 0 }))
-    .sort((a, b) => b.stars - a.stars)
-    .slice(0, 5);
+  const completedCount = homeworks.filter((item) => completedHwIds.includes(item.id)).length;
+  const privateHref = `/lookup?class=${encodeURIComponent(currentClass.id)}&classToken=${encodeURIComponent(shareToken)}`;
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-20 font-sans w-full max-w-full overflow-x-hidden">
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
-        <div className="max-w-6xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2">
-          {/* Logo & School Name */}
-          <div className="flex items-center space-x-2.5 sm:space-x-3 min-w-0 flex-1">
-            {schoolInfo.logoUrl ? (
-              <img
-                src={schoolInfo.logoUrl}
-                alt="Logo"
-                className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl object-cover border border-slate-200 shrink-0"
-              />
-            ) : (
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white text-base sm:text-xl font-bold shrink-0">
-                🏫
-              </div>
-            )}
-
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center space-x-1.5">
-                <span className="font-black text-slate-900 text-xs sm:text-base tracking-tight truncate">
-                  Lớp {currentClass.name}
-                </span>
-                <span className="bg-blue-100 text-blue-800 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shrink-0">
-                  {schoolInfo.schoolYear || '2026-2027'}
-                </span>
-              </div>
-              <p className="text-[10px] sm:text-[11px] text-slate-500 truncate" title={schoolInfo.name}>
-                {schoolInfo.name} • GVCN: {currentClass.teacherName}
-              </p>
-            </div>
+    <div className="min-h-screen bg-slate-50 pb-12 text-slate-950">
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex min-h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            {schoolInfo.logoUrl ? <img src={schoolInfo.logoUrl} alt={`Logo ${schoolInfo.name}`} className="h-10 w-10 shrink-0 rounded-xl border border-slate-200 object-cover" /> : <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white"><School className="h-5 w-5" /></div>}
+            <div className="min-w-0"><p className="truncate text-base font-black">Lớp {currentClass.name}</p><p className="truncate text-xs text-slate-600">{schoolInfo.name} · GVCN: {currentClass.teacherName}</p></div>
           </div>
-
-          {/* Quick Actions: Tra Cứu Điểm Của Con + Link to Teacher Login */}
-          <div className="flex items-center space-x-1.5 shrink-0">
-            <Link
-              href="/lookup"
-              className="text-[10px] sm:text-[11px] font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 px-2.5 py-1.5 rounded-xl border border-amber-300 transition-colors inline-flex items-center gap-1 shadow-2xs"
-            >
-              <span>🌟 Tra Cứu Con</span>
-            </Link>
-
-            <Link
-              href="/login"
-              className="text-[10px] sm:text-[11px] font-bold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-2.5 py-1.5 rounded-xl border border-blue-200 transition-colors inline-flex items-center gap-0.5"
-            >
-              <span>Giáo viên</span>
-              <ChevronRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-            </Link>
-          </div>
+          <Link href={privateHref} className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl bg-blue-50 px-3 text-sm font-bold text-blue-700 hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+            <ShieldCheck className="h-4 w-4" /><span className="hidden sm:inline">Hồ sơ của con</span><ChevronRight className="h-4 w-4 sm:hidden" />
+          </Link>
         </div>
       </header>
 
-      {/* 2. MAIN LAYOUT: RESPONSIVE GRID (DESKTOP 2-COL, MOBILE 1-COL) */}
-      <main className="max-w-6xl mx-auto px-3 sm:px-6 pt-4 sm:pt-5 pb-12">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 sm:gap-6 items-start">
-          {/* LEFT 2 COLUMNS: HERO BANNER, TAB NAVIGATION & MAIN CONTENT */}
-          <div className="lg:col-span-2 space-y-4">
-            {/* HERO GREETING BANNER */}
-            <div className="bg-gradient-to-br from-blue-700 via-indigo-700 to-slate-900 rounded-3xl p-5 sm:p-7 text-white shadow-xl relative overflow-hidden">
-              {/* Background ambient glow */}
-              <div className="absolute top-0 right-0 w-64 h-64 bg-blue-400/10 rounded-full blur-3xl pointer-events-none" />
-              <div className="absolute bottom-0 left-0 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
-
-              <div className="relative z-10 space-y-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center space-x-1.5 bg-white/15 px-3 py-1 rounded-full text-xs font-bold backdrop-blur-md border border-white/10">
-                    <Sun className="w-3.5 h-3.5 text-amber-300" />
-                    <span>Góc Phụ Huynh & Học Sinh</span>
-                  </span>
-                  <span className="bg-yellow-400/20 text-yellow-300 text-xs font-black px-2.5 py-0.5 rounded-full border border-yellow-400/30">
-                    Lớp {currentClass.name}
-                  </span>
-                </div>
-
-                <div>
-                  <h1 className="text-xl sm:text-2xl font-black tracking-tight leading-snug">
-                    Cổng Thông Tin Học Tập Lớp {currentClass.name}
-                  </h1>
-                  <p className="text-xs sm:text-sm text-blue-100/90 max-w-xl leading-relaxed mt-1">
-                    Cập nhật bài tập về nhà, lịch sự kiện, chuẩn bị sách vở ngày mai ({tomorrowDayInfo?.name}) và thông báo mới nhất từ cô giáo.
-                  </p>
-                </div>
-
-                {/* Progress Bar for Homework */}
-                {classHomeworks.length > 0 && (
-                  <div className="pt-1.5 space-y-1.5">
-                    <div className="flex items-center justify-between text-xs font-bold">
-                      <span className="text-blue-200">Tiến độ bài tập hôm nay:</span>
-                      <span className="text-emerald-300 font-mono">
-                        {doneCount}/{classHomeworks.length} bài ({Math.round((doneCount / classHomeworks.length) * 100)}%)
-                      </span>
-                    </div>
-                    <div className="w-full bg-black/30 rounded-full h-2.5 overflow-hidden p-0.5 border border-white/15">
-                      <div
-                        className="bg-gradient-to-r from-emerald-400 to-teal-300 h-full rounded-full transition-all duration-300 shadow-xs"
-                        style={{ width: `${(doneCount / classHomeworks.length) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Quick Action Buttons for Parents */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 w-full sm:w-auto">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedStudentForLeave(classStudents[0] || null);
-                      setIsLeaveModalOpen(true);
-                    }}
-                    className="inline-flex items-center justify-center space-x-1.5 bg-white/20 hover:bg-white/30 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl backdrop-blur-md transition-colors cursor-pointer border border-white/20 w-full"
-                  >
-                    <span>📋 Xin Nghỉ Phép & Dặn Thuốc</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsConferenceModalOpen(true)}
-                    className="inline-flex items-center justify-center space-x-1.5 bg-white/20 hover:bg-white/30 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl backdrop-blur-md transition-colors cursor-pointer border border-white/20 w-full"
-                  >
-                    <span>📅 Đặt Lịch Gặp Cô (1-1)</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* PRIVATE STUDENT LOOKUP CTA BANNER */}
-            <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-3xl p-4 sm:p-5 text-white shadow-lg shadow-orange-500/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 animate-in fade-in">
-              <div className="flex items-center space-x-3.5 min-w-0">
-                <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-2xl shadow-inner shrink-0">
-                  🌟
-                </div>
-                <div className="space-y-0.5 min-w-0">
-                  <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-amber-100">
-                    <ShieldCheck className="w-3.5 h-3.5" />
-                    <span>Tra Cứu Riêng Tư Thông Tư 27</span>
-                  </div>
-                  <h3 className="font-black text-sm sm:text-base truncate">
-                    Bảng Điểm & Lời Nhận Xét Riêng Của Con
-                  </h3>
-                  <p className="text-xs text-amber-100/90 truncate">
-                    Bảo mật tuyệt đối, chỉ phụ huynh có mã mới xem được kết quả của con mình.
-                  </p>
-                </div>
-              </div>
-
-              <Link
-                href="/lookup"
-                className="inline-flex items-center justify-center space-x-1.5 bg-white hover:bg-orange-50 text-orange-950 font-black text-xs px-4 py-2.5 rounded-2xl shadow-md transition-all shrink-0 cursor-pointer"
-              >
-                <span>Tra Cứu Con Ngay</span>
-                <ChevronRight className="w-4 h-4 text-orange-600" />
-              </Link>
-            </div>
-
-            {/* 3. NAVIGATION TABS */}
-            <div className="w-full max-w-full overflow-x-auto no-scrollbar flex items-center gap-1.5 bg-white p-1 rounded-2xl border border-slate-200 shadow-xs text-xs font-bold scroll-smooth">
-              {[
-                { id: 'HOMEWORK', label: '📝 Bài Tập', count: classHomeworks.length },
-                { id: 'MOMENTS', label: '📸 Khoảnh Khắc Lớp', count: filteredMoments.length },
-                { id: 'CONFERENCE', label: '📅 Lịch Họp 1-1', count: filteredConferences.filter(s => !s.isBooked).length },
-                { id: 'BACKPACK', label: '🎒 Soạn Sách Vở', count: null },
-                { id: 'TIMETABLE', label: '🗓️ Thời Khóa Biểu', count: null },
-                { id: 'EVENTS', label: '🎪 Sự Kiện', count: classEvents.length },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id as any)}
-                  className={`h-9 px-3.5 flex items-center justify-center space-x-1.5 rounded-xl transition-all whitespace-nowrap cursor-pointer shrink-0 ${
-                    activeTab === tab.id
-                      ? 'bg-blue-600 text-white shadow-xs font-black'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
-                  }`}
-                >
-                  <span>{tab.label}</span>
-                  {tab.count !== null && (
-                    <span
-                      className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                        activeTab === tab.id ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
-                      }`}
-                    >
-                      {tab.count}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-
-            {/* TAB CONTENT 1: HOMEWORK */}
-            {activeTab === 'HOMEWORK' && (
-              <div className="space-y-3">
-                {isAllDone && (
-                  <div className="bg-emerald-50 border border-emerald-200 rounded-3xl p-4 flex items-center space-x-3 text-emerald-800 animate-in fade-in">
-                    <div className="w-10 h-10 rounded-2xl bg-emerald-500 text-white flex items-center justify-center text-xl shrink-0">
-                      🎉
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-sm">Tuyệt vời! Em đã hoàn thành 100% bài tập hôm nay!</h4>
-                      <p className="text-xs text-emerald-700">Hãy chuyển sang tab <strong>Soạn Sách Vở</strong> để chuẩn bị sách cho ngày mai nhé.</p>
-                    </div>
-                  </div>
-                )}
-
-                {classHomeworks.length === 0 ? (
-                  <div className="bg-white rounded-3xl border border-slate-200 p-8 text-center space-y-2">
-                    <div className="w-14 h-14 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto text-2xl">
-                      ✨
-                    </div>
-                    <h3 className="font-bold text-sm text-slate-800">Hôm nay không có bài tập về nhà!</h3>
-                    <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                      Chúc các em học sinh có một buổi tối nghỉ ngơi vui vẻ bên gia đình.
-                    </p>
-                  </div>
-                ) : (
-                  classHomeworks.map((hw) => {
-                    const theme = getSubjectTheme(hw.subjectCode, customSubjects);
-                    const isDone = completedHwIds.includes(hw.id);
-
-                    return (
-                      <div
-                        key={hw.id}
-                        className={`bg-white rounded-3xl border transition-all duration-200 p-4 sm:p-5 shadow-xs ${
-                          isDone
-                            ? 'border-emerald-200 bg-emerald-50/20'
-                            : 'border-slate-200 hover:border-blue-300'
-                        }`}
-                      >
-                        {/* Header */}
-                        <div className="flex items-start justify-between gap-3 mb-3">
-                          <div className="flex items-start space-x-2.5 min-w-0 flex-1">
-                            <span className="text-2xl shrink-0 mt-0.5">{theme.icon}</span>
-                            <div className="min-w-0 flex-1">
-                              <span
-                                className={`inline-block text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${theme.bgColor} ${theme.textColor}`}
-                              >
-                                {hw.subjectName}
-                              </span>
-                              <h3 className={`font-bold text-xs sm:text-sm text-slate-900 mt-0.5 break-words ${isDone ? 'line-through text-slate-400' : ''}`}>
-                                {hw.title}
-                              </h3>
-                            </div>
-                          </div>
-
-                          {/* Interactive Checkbox Button */}
-                          <button
-                            type="button"
-                            onClick={() => toggleCompleteHw(hw.id)}
-                            className={`w-24 h-8 shrink-0 flex items-center justify-center space-x-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                              isDone
-                                ? 'bg-emerald-600 text-white shadow-xs'
-                                : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                            }`}
-                          >
-                            {isDone ? <Check className="w-3.5 h-3.5 shrink-0" /> : <Square className="w-3.5 h-3.5 shrink-0" />}
-                            <span>{isDone ? 'Đã Xong' : 'Chưa Xong'}</span>
-                          </button>
-                        </div>
-
-                        {/* Description */}
-                        <div className="bg-slate-50 rounded-2xl p-3 border border-slate-100 text-xs text-slate-700 whitespace-pre-line leading-relaxed break-words">
-                          {hw.description}
-                        </div>
-
-                        {/* Teacher Reminder */}
-                        {hw.reminderNotes && (
-                          <div className="mt-2.5 bg-amber-50 border border-amber-200 rounded-xl p-2.5 flex items-start space-x-2 text-amber-900 text-xs">
-                            <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
-                            <span><strong>Cô dặn dò:</strong> {hw.reminderNotes}</span>
-                          </div>
-                        )}
-
-                        {/* Attachment / Preview */}
-                        {hw.attachmentUrl && (
-                          <div className="mt-3 flex items-center space-x-2">
-                            <button
-                              type="button"
-                              onClick={() => setPreviewImageUrl(hw.attachmentUrl!)}
-                              className="inline-flex items-center space-x-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-3 py-1.5 rounded-xl font-bold text-xs transition-colors cursor-pointer"
-                            >
-                              <Eye className="w-3.5 h-3.5" />
-                              <span>Xem ảnh phiếu bài tập</span>
-                            </button>
-                          </div>
-                        )}
-
-                        {/* Interactive Online Quiz Section */}
-                        {Boolean(hw.isQuiz || (hw.quizQuestions && hw.quizQuestions.length > 0)) && (() => {
-                          const sub = quizSubmissions.find((s) => s.homeworkId === hw.id);
-                          const qCount = hw.quizQuestions?.length || 0;
-                          return (
-                            <div className="mt-3 p-3.5 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                              <div className="space-y-0.5">
-                                <div className="flex items-center space-x-1.5">
-                                  <span className="text-xs font-black text-indigo-950 flex items-center gap-1">
-                                    <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-                                    <span>Đề Trắc Nghiệm Trực Tuyến ({qCount} câu)</span>
-                                  </span>
-                                  {hw.timeLimitMinutes ? (
-                                    <span className="text-[10px] font-bold px-2 py-0.5 bg-indigo-100 text-indigo-800 rounded-full">
-                                      ⏱️ {hw.timeLimitMinutes} phút
-                                    </span>
-                                  ) : null}
-                                </div>
-                                <p className="text-[11px] text-indigo-700">
-                                  {sub
-                                    ? `Em đã hoàn thành bài thi! Đạt ${sub.score}/10đ (Đúng ${sub.correctCount}/${sub.totalCount} câu).`
-                                    : 'Làm bài và nhận điểm số + lời giải chi tiết ngay sau khi nộp.'}
-                                </p>
-                              </div>
-
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setActiveQuizHw(hw);
-                                  setIsQuizModalOpen(true);
-                                }}
-                                className={`inline-flex items-center justify-center space-x-1.5 px-4 py-2 rounded-xl text-xs font-black shadow-md transition-all shrink-0 cursor-pointer ${
-                                  sub
-                                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                                    : 'bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white'
-                                }`}
-                              >
-                                <span>{sub ? `📊 Xem Kết Quả: ${sub.score}đ` : '🚀 Bắt Đầu Làm Bài'}</span>
-                              </button>
-                            </div>
-                          );
-                        })()}
-
-                        {/* Footer Due */}
-                        <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-                          <span>Ngày giao: {hw.assignedDate}</span>
-                          <span className="font-semibold text-slate-600">Hạn nộp: {hw.dueDate}</span>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            )}
-
-            {/* TAB CONTENT 2: CLASS & SCHOOL EVENTS */}
-            {activeTab === 'EVENTS' && (
-              <div className="space-y-4">
-                {/* Event Category Filter */}
-                <div className="flex flex-wrap gap-1.5">
-                  {[
-                    { id: 'ALL', label: 'Tất cả sự kiện' },
-                    { id: 'EXAM', label: '🏆 Khảo sát & Thi' },
-                    { id: 'MEETING', label: '👥 Họp Phụ huynh' },
-                    { id: 'ACTIVITY', label: '🎒 Trải nghiệm' },
-                    { id: 'FESTIVAL', label: '🎪 Lễ hội & Phong trào' },
-                  ].map((f) => (
-                    <button
-                      key={f.id}
-                      type="button"
-                      onClick={() => setEventFilter(f.id as any)}
-                      className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                        eventFilter === f.id
-                          ? 'bg-indigo-600 text-white shadow-xs'
-                          : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'
-                      }`}
-                    >
-                      {f.label}
-                    </button>
-                  ))}
-                </div>
-
-                {sortedEvents.length > 0 ? (
-                  <div className="space-y-2.5">
-                    {sortedEvents.map((ev) => {
-                      const [evYear, evMonth, evDay] = ev.date.split('-').map(Number);
-                      const isTodayEvent = ev.date === todayStr;
-                      const rawType = ev.type || ev.eventType || 'OTHER';
-                      const typeConf = CLASS_EVENT_TYPE_CONFIG[rawType] || CLASS_EVENT_TYPE_CONFIG.OTHER;
-
-                      return (
-                        <div
-                          key={ev.id}
-                          className={`bg-white rounded-3xl border p-3.5 sm:p-5 transition-all shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
-                            isTodayEvent
-                              ? 'border-amber-400 bg-amber-50/40 ring-2 ring-amber-200'
-                              : ev.isImportant
-                              ? 'border-indigo-200 bg-indigo-50/30'
-                              : 'border-slate-200 hover:border-slate-300'
-                          }`}
-                        >
-                          <div className="flex items-start space-x-3 min-w-0">
-                            {/* Date Badge */}
-                            <div
-                              className={`w-12 h-12 rounded-2xl flex flex-col items-center justify-center shrink-0 font-bold border shadow-xs ${
-                                isTodayEvent
-                                  ? 'bg-amber-500 text-white border-amber-600'
-                                  : ev.isImportant
-                                  ? 'bg-indigo-600 text-white border-indigo-700'
-                                  : 'bg-slate-100 text-slate-800 border-slate-200'
-                              }`}
-                            >
-                              <span className="text-[9px] uppercase font-semibold leading-none">Th.{evMonth || 1}</span>
-                              <span className="text-lg font-black leading-tight">{evDay || 1}</span>
-                            </div>
-
-                            <div className="space-y-1 min-w-0">
-                              <div className="flex flex-wrap items-center gap-1.5">
-                                <h3 className="text-xs sm:text-sm font-bold text-slate-900 break-words">
-                                  {ev.title}
-                                </h3>
-                                <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border ${typeConf.badgeColor}`}>
-                                  <span>{typeConf.icon}</span>
-                                  <span>{typeConf.shortLabel}</span>
-                                </span>
-                                {isTodayEvent && (
-                                  <span className="bg-amber-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase">
-                                    Hôm nay
-                                  </span>
-                                )}
-                                {ev.isImportant && !isTodayEvent && (
-                                  <span className="bg-rose-100 text-rose-700 text-[9px] font-bold px-2 py-0.5 rounded-full">
-                                    Quan trọng
-                                  </span>
-                                )}
-                              </div>
-
-                              <div className="flex flex-wrap items-center gap-2.5 text-[11px] text-slate-500">
-                                {ev.time && (
-                                  <span className="flex items-center gap-1">
-                                    <Clock className="w-3 h-3 text-slate-400" />
-                                    <span>{ev.time}</span>
-                                  </span>
-                                )}
-                                {ev.location && (
-                                  <span className="flex items-center gap-1">
-                                    <MapPin className="w-3 h-3 text-slate-400" />
-                                    <span>{ev.location}</span>
-                                  </span>
-                                )}
-                              </div>
-
-                              {ev.description && (
-                                <p className="text-xs text-slate-600 leading-relaxed pt-1 bg-slate-50 p-2 rounded-xl border border-slate-100 mt-1 break-words">
-                                  <strong>Dặn dò:</strong> {ev.description}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="bg-white rounded-3xl border border-slate-200 p-8 text-center text-xs text-slate-400 space-y-2">
-                    <Calendar className="w-8 h-8 mx-auto opacity-40" />
-                    <p>Chưa có sự kiện nào trong danh mục này.</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* TAB CONTENT 3: SOẠN SÁCH VỞ CHO NGÀY MAI */}
-            {activeTab === 'BACKPACK' && (
-              <div className="space-y-4">
-                <div className="bg-white rounded-3xl border border-slate-200 p-4 sm:p-5 space-y-3 shadow-xs">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <div>
-                      <h3 className="font-bold text-xs sm:text-base text-slate-900 flex items-center gap-2">
-                        <Backpack className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 shrink-0" />
-                        <span>Soạn Sách Vở Ngày Mai ({tomorrowDayInfo?.name})</span>
-                      </h3>
-                      <p className="text-[11px] sm:text-xs text-slate-500">
-                        Tích chọn từng môn sau khi em đã bỏ sách vở và đồ dùng vào cặp.
-                      </p>
-                    </div>
-
-                    <span className="bg-blue-100 text-blue-800 text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0">
-                      {tomorrowSlots.length} Tiết
-                    </span>
-                  </div>
-
-                  <div className="space-y-2">
-                    {tomorrowSlots.length === 0 ? (
-                      <p className="text-xs text-slate-400 text-center py-4">Ngày mai không có tiết học hoặc là ngày nghỉ.</p>
-                    ) : (
-                      tomorrowSlots.map((slot) => {
-                        const theme = getSubjectTheme(slot.subjectCode, customSubjects);
-                        const isPacked = packedSubjectCodes.includes(slot.subjectCode);
-
-                        return (
-                          <div
-                            key={slot.id}
-                            className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-2.5 ${
-                              isPacked
-                                ? 'bg-emerald-50/40 border-emerald-200'
-                                : 'bg-slate-50 border-slate-200'
-                            }`}
-                          >
-                            <div className="flex items-center space-x-2.5 min-w-0 flex-1">
-                              <span className="text-xl shrink-0">{theme.icon}</span>
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="font-bold text-xs text-slate-900 truncate">{slot.subjectName}</span>
-                                  <span className="text-[10px] font-mono text-slate-500 bg-white px-1.5 py-0.2 rounded border border-slate-200 shrink-0">
-                                    Tiết {slot.period}
-                                  </span>
-                                </div>
-                                <p className="text-[11px] text-slate-500 mt-0.5 truncate">
-                                  {slot.note ? `Mang theo: ${slot.note}` : `Sách giáo khoa & Vở bài tập ${slot.subjectName}`}
-                                </p>
-                              </div>
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={() => togglePackSubject(slot.subjectCode)}
-                              className={`w-24 h-8 shrink-0 flex items-center justify-center space-x-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                                isPacked
-                                  ? 'bg-emerald-600 text-white shadow-xs'
-                                  : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
-                              }`}
-                            >
-                              {isPacked ? <Check className="w-3.5 h-3.5 shrink-0" /> : <Square className="w-3.5 h-3.5 shrink-0" />}
-                              <span>{isPacked ? 'Đã Xếp' : 'Chưa Xếp'}</span>
-                            </button>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* TAB CONTENT 4: THỜI KHÓA BIỂU TUẦN */}
-            {activeTab === 'TIMETABLE' && (
-              <div className="bg-white rounded-3xl border border-slate-200 p-4 sm:p-5 space-y-3 shadow-xs">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                  <div>
-                    <h3 className="font-bold text-xs sm:text-base text-slate-900 flex items-center gap-2">
-                      <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 shrink-0" />
-                      <span>Thời Khóa Biểu Lớp {currentClass.name}</span>
-                    </h3>
-                    <p className="text-[11px] sm:text-xs text-slate-500">Chương trình học chuẩn 2 buổi/ngày kèm ăn bán trú.</p>
-                  </div>
-
-                  {/* Day Picker Grid for Mobile/Tablet */}
-                  <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-1 sm:py-0 sm:grid sm:grid-cols-5">
-                    {DAYS_OF_WEEK.map((d) => (
-                      <button
-                        key={d.id}
-                        type="button"
-                        onClick={() => setSelectedTimetableDay(d.id)}
-                        className={`h-8 px-2.5 sm:px-2 flex items-center justify-center rounded-xl text-xs font-bold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
-                          selectedTimetableDay === d.id
-                            ? 'bg-blue-600 text-white shadow-xs font-black'
-                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                        }`}
-                      >
-                        {d.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Day Schedule List */}
-                <div className="space-y-2">
-                  {periods.map((p) => {
-                    const slot = timetable.find(
-                      (s) => s.day === selectedTimetableDay && s.period === p.period && (s.classId) === currentClass.id
-                    );
-                    const theme = slot ? getSubjectTheme(slot.subjectCode, customSubjects) : null;
-
-                    return (
-                      <div
-                        key={p.period}
-                        className={`flex items-center justify-between p-3 rounded-2xl border transition-colors ${
-                          theme ? `${theme.bgColor} ${theme.borderColor}` : 'bg-slate-50 border-slate-200'
-                        }`}
-                      >
-                        <div className="flex items-center space-x-3">
-                          <span className="font-mono text-xs font-bold text-slate-500 w-12 shrink-0">
-                            {p.name}
-                          </span>
-                          <span className="text-xl">{theme?.icon || '📚'}</span>
-                          <div>
-                            <h4 className="font-bold text-xs sm:text-sm text-slate-900">
-                              {slot?.subjectName || 'Tự học / Nghỉ'}
-                            </h4>
-                            {slot?.note && (
-                              <p className="text-[11px] text-slate-600 mt-0.5">{slot.note}</p>
-                            )}
-                          </div>
-                        </div>
-                        <span className="text-xs font-mono text-slate-500 font-semibold">{p.time}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* TAB CONTENT 5: CLASSROOM MOMENTS */}
-            {activeTab === 'MOMENTS' && (
-              <div className="space-y-4 animate-in fade-in">
-                {filteredMoments.length === 0 ? (
-                  <div className="bg-white rounded-3xl border border-slate-200 p-8 text-center space-y-2">
-                    <div className="w-14 h-14 rounded-full bg-pink-50 text-pink-600 flex items-center justify-center mx-auto text-2xl">
-                      📸
-                    </div>
-                    <h3 className="font-bold text-sm text-slate-800">Chưa Có Bài Viết Khoảnh Khắc Lớp</h3>
-                    <p className="text-xs text-slate-500">Cô giáo sẽ sớm chia sẻ những bức ảnh và câu chuyện học tập vui vẻ của lớp tại đây!</p>
-                  </div>
-                ) : (
-                  filteredMoments.map((m) => (
-                    <MomentsFeedCard key={m.id} moment={m} isTeacher={false} />
-                  ))
-                )}
-              </div>
-            )}
-
-            {/* TAB CONTENT 6: PARENT CONFERENCE SCHEDULER */}
-            {activeTab === 'CONFERENCE' && (
-              <div className="bg-white rounded-3xl border border-slate-200 p-5 sm:p-6 space-y-4 animate-in fade-in">
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                  <div>
-                    <h3 className="font-black text-slate-900 text-sm sm:text-base">
-                      Lịch Hẹn Họp & Trao Đổi 1-1 Với Cô Giáo
-                    </h3>
-                    <p className="text-xs text-slate-500">
-                      Chọn khung giờ thuận tiện để trao đổi riêng về sự tiến bộ của con
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  {filteredConferences.length === 0 ? (
-                    <div className="py-8 text-center text-slate-400">
-                      Hiện chưa có đợt hẹn trao đổi nào được mở.
-                    </div>
-                  ) : (
-                    filteredConferences.map((slot) => (
-                      <div
-                        key={slot.id}
-                        className="p-4 rounded-2xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50"
-                      >
-                        <div className="space-y-1">
-                          <div className="flex items-center space-x-2">
-                            <span className="font-black text-slate-900 text-xs sm:text-sm">
-                              📅 {slot.date} ({slot.startTime} - {slot.endTime})
-                            </span>
-                            <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded-md">
-                              {slot.type === 'IN_PERSON' ? 'Trực tiếp' : 'Trực tuyến'}
-                            </span>
-                          </div>
-                          <p className="text-xs text-slate-600">{slot.title}</p>
-                          {slot.location && (
-                            <p className="text-[11px] text-slate-400">📍 {slot.location}</p>
-                          )}
-                        </div>
-
-                        <div>
-                          {slot.isBooked ? (
-                            <span className="bg-slate-200 text-slate-600 text-xs font-bold px-3 py-1.5 rounded-xl inline-block">
-                              Đã kín lịch
-                            </span>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => setIsConferenceModalOpen(true)}
-                              className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition-colors cursor-pointer shadow-xs"
-                            >
-                              Đăng Ký Khung Giờ Này
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
+      <main className="mx-auto max-w-6xl space-y-5 px-4 py-5 sm:px-6 sm:py-7">
+        <section className="rounded-3xl bg-gradient-to-br from-blue-700 via-indigo-700 to-slate-900 p-5 text-white shadow-xl sm:p-7">
+          <p className="text-sm font-bold text-blue-100">Góc phụ huynh và học sinh</p>
+          <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">Thông tin học tập lớp {currentClass.name}</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-blue-100 sm:text-base">Bài tập, lịch học và thông báo mới nhất từ giáo viên chủ nhiệm.</p>
+          <div className="mt-5 flex flex-wrap gap-3">
+            {flags.attendance && <Link href={`${privateHref}&next=leave`} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-white px-4 text-sm font-bold text-blue-800 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"><UserRoundCheck className="h-4 w-4" /> Xin nghỉ phép</Link>}
+            {flags.parentMeetings && <Link href={`${privateHref}&next=conference`} className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-4 text-sm font-bold text-white hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"><CalendarDays className="h-4 w-4" /> Đặt lịch gặp cô</Link>}
           </div>
+          {flags.homework && homeworks.length > 0 && <div className="mt-6 max-w-2xl"><div className="mb-2 flex justify-between text-sm font-semibold text-blue-100"><span>Tiến độ trên thiết bị này</span><span>{completedCount}/{homeworks.length}</span></div><div className="h-2 overflow-hidden rounded-full bg-black/30"><div className="h-full rounded-full bg-emerald-400 transition-[width] duration-300 motion-reduce:transition-none" style={{ width: `${Math.round((completedCount / homeworks.length) * 100)}%` }} /></div></div>}
+        </section>
 
-          {/* RIGHT 1 COLUMN: SIDE CONTACT & SCHOOL INFO PANEL */}
-          <div className="space-y-4">
-            {/* TEACHER PROFILE CARD */}
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-5 space-y-3.5">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-md shrink-0">
-                  👩‍🏫
-                </div>
-                <div className="min-w-0">
-                  <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">
-                    Giáo Viên Chủ Nhiệm
-                  </span>
-                  <h3 className="font-bold text-base text-slate-900 truncate">
-                    {currentClass.teacherName || 'Cô Nguyễn Thị Minh Hằng'}
-                  </h3>
-                  <p className="text-xs text-blue-600 font-semibold">Chủ nhiệm Lớp {currentClass.name}</p>
-                </div>
-              </div>
+        {(flags.assessment || flags.reports) && <section className="flex flex-col gap-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-start gap-3"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" /><div><h2 className="font-bold text-amber-950">Kết quả riêng của con</h2><p className="mt-1 text-sm leading-5 text-amber-800">Cần mã học sinh và PIN để xem đánh giá, nhận xét.</p></div></div><Link href={privateHref} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-amber-700 px-4 text-sm font-bold text-white hover:bg-amber-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600">Tra cứu an toàn <ArrowRight className="h-4 w-4" /></Link></section>}
 
-              <div className="pt-3 border-t border-slate-100 space-y-2 text-xs text-slate-600">
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-400">Trường:</span>
-                  <strong className="text-slate-800 text-right truncate max-w-[170px]">{schoolInfo.name}</strong>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-400">Năm học:</span>
-                  <strong className="font-mono text-slate-800">{schoolInfo.schoolYear || '2026-2027'}</strong>
-                </div>
-                {schoolInfo.phone && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-400">Hotline trường:</span>
-                    <a href={`tel:${schoolInfo.phone}`} className="font-mono font-bold text-blue-600 hover:underline">
-                      {schoolInfo.phone}
-                    </a>
-                  </div>
-                )}
-              </div>
-            </div>
+        <nav aria-label="Nội dung cổng lớp học" className="grid grid-cols-2 gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm sm:flex sm:flex-wrap">
+          {tabs.map((tab) => <button key={tab.id} type="button" onClick={() => setActiveTab(tab.id)} aria-current={visibleActiveTab === tab.id ? 'page' : undefined} className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${visibleActiveTab === tab.id ? 'bg-blue-600 text-white' : 'bg-slate-50 text-slate-700 hover:bg-slate-100'}`}>{tab.icon}<span>{tab.label}</span>{tab.count !== undefined && <span className={`rounded-full px-2 py-0.5 text-xs ${visibleActiveTab === tab.id ? 'bg-white/20' : 'bg-slate-200'}`}>{tab.count}</span>}</button>)}
+        </nav>
 
-            {/* CLASS GENERAL RULES / PARENT NOTICE CARD */}
-            <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-3xl border border-indigo-100 p-5 space-y-3 text-xs">
-              <h4 className="font-bold text-indigo-950 flex items-center gap-1.5 text-sm">
-                <Info className="w-4 h-4 text-indigo-600" />
-                <span>Quy Định & Dặn Dò Đầu Năm</span>
-              </h4>
-              <ul className="space-y-1.5 text-indigo-900/90 leading-relaxed list-disc list-inside">
-                <li>Học sinh có mặt tại lớp trước <strong>07:45</strong> sáng.</li>
-                <li>Đồng phục chỉnh tề, đeo khăn quàng đỏ (với Đội viên).</li>
-                <li>Học sinh bán trú chuẩn bị gối ngủ cá nhân.</li>
-                <li>Nghỉ học phụ huynh vui lòng nhắn tin báo cô trước 07:30.</li>
-              </ul>
-            </div>
-          </div>
-        </div>
+        {visibleActiveTab === 'HOMEWORK' && flags.homework && <HomeworkSection homeworks={homeworks} customSubjects={customSubjects} completedIds={completedHwIds} privateHref={privateHref} onToggle={toggleHomework} onPreview={setPreviewImageUrl} />}
+        {visibleActiveTab === 'BACKPACK' && flags.timetable && <BackpackSection dayName={tomorrowDayInfo?.name || 'ngày mai'} slots={tomorrowSlots} packedCodes={packedSubjectCodes} onToggle={togglePacked} />}
+        {visibleActiveTab === 'TIMETABLE' && flags.timetable && <TimetableSection classId={currentClass.id} className={currentClass.name} timetable={timetable} periods={periods} selectedDay={selectedTimetableDay} onSelectDay={setSelectedTimetableDay} />}
+        {visibleActiveTab === 'EVENTS' && <EventsSection events={events} />}
+        {visibleActiveTab === 'MOMENTS' && flags.moments && <MomentsSection moments={moments} onPreview={setPreviewImageUrl} />}
+        {visibleActiveTab === 'CONFERENCE' && flags.parentMeetings && <ConferenceSection slots={conferenceSlots} privateHref={privateHref} />}
+
+        <aside className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 sm:grid-cols-2 sm:p-5"><div><p className="text-sm font-semibold text-slate-600">Giáo viên chủ nhiệm</p><p className="mt-1 font-black">{currentClass.teacherName}</p></div><div><p className="text-sm font-semibold text-slate-600">Năm học</p><p className="mt-1 font-black">{schoolInfo.schoolYear || currentClass.schoolYear}</p></div></aside>
       </main>
 
-      {/* MODAL PREVIEW IMAGE OF HOMEWORK */}
-      {previewImageUrl && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-in fade-in"
-          onClick={() => setPreviewImageUrl(null)}
-        >
-          <div className="bg-white max-w-2xl w-full rounded-3xl overflow-hidden shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="font-bold text-sm text-slate-800">Ảnh Phiếu Bài Tập Về Nhà</h3>
-              <button
-                type="button"
-                onClick={() => setPreviewImageUrl(null)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="p-4 max-h-[75vh] overflow-auto flex items-center justify-center bg-slate-50">
-              <img
-                src={previewImageUrl}
-                alt="Phiếu bài tập"
-                className="max-h-[70vh] object-contain rounded-xl border border-slate-200"
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Leave Request & Health Modal */}
-      <LeaveRequestModal
-        student={selectedStudentForLeave}
-        isOpen={isLeaveModalOpen}
-        onClose={() => setIsLeaveModalOpen(false)}
-      />
-
-      {/* Conference Scheduler Modal */}
-      <ConferenceSchedulerModal
-        isOpen={isConferenceModalOpen}
-        onClose={() => setIsConferenceModalOpen(false)}
-        isTeacher={false}
-        currentStudent={null}
-      />
-
-      {/* Student Online Quiz Modal */}
-      {activeQuizHw && (
-        <StudentQuizModal
-          isOpen={isQuizModalOpen}
-          onClose={() => {
-            setIsQuizModalOpen(false);
-            setActiveQuizHw(null);
-          }}
-          homework={activeQuizHw}
-          students={classStudents}
-          initialSubmission={quizSubmissions.find((s) => s.homeworkId === activeQuizHw.id)}
-        />
-      )}
+      {previewImageUrl && <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4" role="dialog" aria-modal="true" aria-label="Xem ảnh"><button type="button" onClick={() => setPreviewImageUrl(null)} aria-label="Đóng ảnh" className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-white text-slate-900 focus-visible:ring-2 focus-visible:ring-white"><X className="h-5 w-5" /></button><img src={previewImageUrl} alt="Nội dung đính kèm" className="max-h-[85vh] max-w-full rounded-2xl object-contain" /></div>}
     </div>
   );
+}
+
+function LoadingState() {
+  return <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6" role="status" aria-live="polite"><div className="text-center"><RefreshCw className="mx-auto h-9 w-9 animate-spin text-blue-600 motion-reduce:animate-none" /><p className="mt-4 text-base font-bold">Đang mở cổng lớp học</p><p className="mt-1 text-sm text-slate-600">Vui lòng chờ trong giây lát…</p></div></div>;
+}
+
+function ErrorState({ message, onRetry }: { message: string; onRetry: () => Promise<void> }) {
+  const network = message.startsWith('Không thể kết nối');
+  return <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4"><div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 text-center shadow-xl sm:p-8"><div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-50 text-rose-600">{network ? <AlertCircle className="h-8 w-8" /> : <LockKeyhole className="h-8 w-8" />}</div><h1 className="mt-5 text-xl font-black">{network ? 'Chưa thể kết nối' : 'Không mở được lớp học'}</h1><p className="mt-3 text-sm leading-6 text-slate-600">{message}</p><div className="mt-6 grid gap-3 sm:grid-cols-2"><Link href="/hw" className="inline-flex min-h-12 items-center justify-center rounded-xl bg-slate-100 px-4 text-sm font-bold text-slate-800 hover:bg-slate-200">Nhập mã khác</Link><button type="button" onClick={() => void onRetry()} className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-bold text-white hover:bg-blue-700"><RefreshCw className="h-4 w-4" /> Thử lại</button></div></div></div>;
+}
+
+function EmptyState({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
+  return <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm"><div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">{icon}</div><h2 className="mt-4 text-base font-black">{title}</h2><p className="mt-1 text-sm leading-6 text-slate-600">{description}</p></div>;
+}
+
+function HomeworkSection({ homeworks, customSubjects, completedIds, privateHref, onToggle, onPreview }: { homeworks: HomeworkAssignment[]; customSubjects: CustomSubject[]; completedIds: string[]; privateHref: string; onToggle: (id: string) => void; onPreview: (url: string | null) => void }) {
+  if (!homeworks.length) return <EmptyState icon={<BookOpen className="h-7 w-7" />} title="Hôm nay chưa có bài tập" description="Giáo viên sẽ cập nhật bài tập mới tại đây." />;
+  return <section className="space-y-3" aria-label="Bài tập về nhà">{homeworks.map((homework) => { const theme = getSubjectTheme(homework.subjectCode, customSubjects); const done = completedIds.includes(homework.id); const hasQuiz = Boolean(homework.isQuiz || homework.quizQuestions?.length); return <article key={homework.id} className={`rounded-2xl border bg-white p-4 shadow-sm sm:p-5 ${done ? 'border-emerald-300' : 'border-slate-200'}`}><div className="flex items-start justify-between gap-3"><div className="min-w-0"><p className={`text-xs font-bold uppercase tracking-wide ${theme.textColor}`}>{homework.subjectName}</p><h2 className={`mt-1 text-base font-bold leading-6 ${done ? 'text-slate-500 line-through' : ''}`}>{homework.title}</h2></div><button type="button" onClick={() => onToggle(homework.id)} aria-pressed={done} className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl px-3 text-sm font-bold focus-visible:ring-2 focus-visible:ring-emerald-500 ${done ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-700'}`}>{done ? <Check className="h-4 w-4" /> : <Square className="h-4 w-4" />}{done ? 'Đã xong' : 'Đánh dấu'}</button></div><p className="mt-3 whitespace-pre-line rounded-xl bg-slate-50 p-3 text-sm leading-6 text-slate-700">{homework.description}</p>{homework.reminderNotes && <p className="mt-3 flex gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm leading-5 text-amber-900"><Info className="mt-0.5 h-4 w-4 shrink-0" /><span><strong>Cô dặn:</strong> {homework.reminderNotes}</span></p>}<div className="mt-3 flex flex-wrap gap-2">{homework.attachmentUrl && <button type="button" onClick={() => onPreview(homework.attachmentUrl || null)} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-indigo-50 px-3 text-sm font-bold text-indigo-700"><ExternalLink className="h-4 w-4" /> Xem phiếu bài tập</button>}{hasQuiz && <Link href={`${privateHref}&next=quiz&homework=${encodeURIComponent(homework.id)}`} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-blue-600 px-3 text-sm font-bold text-white"><LockKeyhole className="h-4 w-4" /> Xác thực để làm bài</Link>}</div></article>; })}</section>;
+}
+
+function BackpackSection({ dayName, slots, packedCodes, onToggle }: { dayName: string; slots: TimetableSlot[]; packedCodes: string[]; onToggle: (code: string) => void }) {
+  return <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"><h2 className="text-lg font-black">Soạn cặp cho {dayName}</h2><p className="mt-1 text-sm text-slate-600">Đánh dấu sau khi đã chuẩn bị sách vở và đồ dùng.</p><div className="mt-4 space-y-2">{!slots.length ? <p className="py-6 text-center text-sm text-slate-600">Ngày mai chưa có tiết học.</p> : slots.map((slot) => { const packed = packedCodes.includes(slot.subjectCode); return <div key={slot.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3"><div><p className="font-bold">{slot.subjectName} · Tiết {slot.period}</p><p className="mt-1 text-sm text-slate-600">{slot.note || `Sách giáo khoa và vở ${slot.subjectName}`}</p></div><button type="button" onClick={() => onToggle(slot.subjectCode)} aria-pressed={packed} className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl px-3 text-sm font-bold ${packed ? 'bg-emerald-600 text-white' : 'bg-white text-slate-700 shadow-sm'}`}>{packed ? <Check className="h-4 w-4" /> : <Square className="h-4 w-4" />}{packed ? 'Đã xếp' : 'Đánh dấu'}</button></div>; })}</div></section>;
+}
+
+function TimetableSection({ classId, className, timetable, periods, selectedDay, onSelectDay }: { classId: string; className: string; timetable: TimetableSlot[]; periods: ReturnType<typeof calculatePeriods>; selectedDay: DayOfWeek; onSelectDay: (day: DayOfWeek) => void }) {
+  return <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"><div className="flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between"><div><h2 className="text-lg font-black">Thời khóa biểu lớp {className}</h2><p className="mt-1 text-sm text-slate-600">Chọn ngày để xem lịch học.</p></div><div className="grid grid-cols-5 gap-1">{DAYS_OF_WEEK.map((day) => <button key={day.id} type="button" onClick={() => onSelectDay(day.id)} className={`min-h-11 rounded-xl px-2 text-sm font-bold ${selectedDay === day.id ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700'}`}>{day.name.replace('Thứ ', 'T')}</button>)}</div></div><div className="mt-4 space-y-2">{periods.map((period) => { const slot = timetable.find((item) => item.classId === classId && item.day === selectedDay && item.period === period.period); return <div key={period.period} className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 p-3"><div><p className="font-bold">{period.name}: {slot?.subjectName || 'Trống'}</p>{slot?.note && <p className="mt-1 text-sm text-slate-600">{slot.note}</p>}</div><span className="shrink-0 text-sm font-semibold text-slate-600">{period.time}</span></div>; })}</div></section>;
+}
+
+function EventsSection({ events }: { events: ClassEvent[] }) {
+  if (!events.length) return <EmptyState icon={<CalendarDays className="h-7 w-7" />} title="Chưa có sự kiện" description="Các mốc kiểm tra và hoạt động của lớp sẽ xuất hiện tại đây." />;
+  return <section className="space-y-3">{events.map((event) => <article key={event.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"><div className="flex flex-wrap items-center gap-2"><span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-700">{EVENT_LABELS[event.type || event.eventType || 'OTHER'] || 'Sự kiện'}</span><span className="text-sm font-semibold text-slate-600">{event.date}</span></div><h2 className="mt-2 text-base font-black">{event.title}</h2><div className="mt-2 flex flex-wrap gap-4 text-sm text-slate-600">{event.time && <span className="inline-flex items-center gap-1"><Clock3 className="h-4 w-4" />{event.time}</span>}{event.location && <span className="inline-flex items-center gap-1"><MapPin className="h-4 w-4" />{event.location}</span>}</div>{event.description && <p className="mt-3 text-sm leading-6 text-slate-700">{event.description}</p>}</article>)}</section>;
+}
+
+function MomentsSection({ moments, onPreview }: { moments: ClassMoment[]; onPreview: (url: string) => void }) {
+  if (!moments.length) return <EmptyState icon={<ImageIcon className="h-7 w-7" />} title="Chưa có khoảnh khắc" description="Giáo viên sẽ chia sẻ hoạt động của lớp tại đây." />;
+  return <section className="space-y-3">{moments.map((moment) => <article key={moment.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5"><p className="text-sm font-semibold text-slate-600">{moment.teacherName} · {new Date(moment.createdAt).toLocaleDateString('vi-VN')}</p><h2 className="mt-2 text-lg font-black">{moment.title}</h2><p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-700">{moment.content}</p>{moment.imageUrls?.length > 0 && <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">{moment.imageUrls.map((url, index) => <button key={`${moment.id}-${index}`} type="button" onClick={() => onPreview(url)} className="aspect-4/3 overflow-hidden rounded-xl focus-visible:ring-2 focus-visible:ring-blue-500"><img src={url} alt={`Ảnh ${index + 1} của ${moment.title}`} loading="lazy" className="h-full w-full object-cover" /></button>)}</div>}</article>)}</section>;
+}
+
+function ConferenceSection({ slots, privateHref }: { slots: ConferenceSlot[]; privateHref: string }) {
+  return <section className="space-y-3"><div className="rounded-2xl border border-purple-200 bg-purple-50 p-4"><h2 className="font-black text-purple-950">Lịch trao đổi riêng với giáo viên</h2><p className="mt-1 text-sm leading-5 text-purple-800">Cổng lớp chỉ hiển thị thời gian. Đăng ký cần xác thực hồ sơ của con.</p></div>{!slots.length ? <EmptyState icon={<UserRoundCheck className="h-7 w-7" />} title="Chưa mở lịch hẹn" description="Giáo viên chưa công bố khung giờ trao đổi." /> : slots.map((slot) => <article key={slot.id} className="flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"><div><h2 className="font-black">{slot.date} · {slot.startTime}–{slot.endTime}</h2><p className="mt-1 text-sm text-slate-600">{slot.title}{slot.location ? ` · ${slot.location}` : ''}</p></div>{slot.isBooked ? <span className="rounded-full bg-slate-100 px-3 py-2 text-sm font-bold text-slate-600">Đã có người đăng ký</span> : <Link href={`${privateHref}&next=conference&slot=${encodeURIComponent(slot.id)}`} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-purple-700 px-4 text-sm font-bold text-white"><LockKeyhole className="h-4 w-4" /> Xác thực để đăng ký</Link>}</article>)}</section>;
 }

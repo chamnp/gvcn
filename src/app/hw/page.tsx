@@ -1,16 +1,37 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useAppStore } from '@/lib/store';
-import { Lock, ArrowRight, ShieldCheck, HelpCircle } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import type { SchoolInfo } from '@/types';
+import { Lock, ArrowRight, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function HomeworkPortalIndex() {
   const router = useRouter();
-  const { schoolInfo, schoolClasses } = useAppStore();
+  const [schoolInfo, setSchoolInfo] = useState<SchoolInfo>({
+    id: '',
+    name: 'Cổng thông tin lớp học',
+    departmentName: '',
+    schoolYear: '2026-2027',
+    principalName: '',
+  });
+  const [isLoading, setIsLoading] = useState(true);
   const [accessCode, setAccessCode] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    void supabase.rpc('get_public_portal_index_context').then(({ data, error }) => {
+      if (!active) return;
+      const bundle = data as { success?: boolean; school?: Partial<SchoolInfo> } | null;
+      if (!error && bundle?.success && bundle.school) {
+        setSchoolInfo((current) => ({ ...current, ...bundle.school }));
+      }
+      setIsLoading(false);
+    });
+    return () => { active = false; };
+  }, []);
 
   const handleAccessClass = (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,7 +72,7 @@ export default function HomeworkPortalIndex() {
               {schoolInfo.schoolYear || '2026-2027'}
             </span>
             <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-              {schoolInfo.name}
+              {isLoading ? 'Đang tải thông tin trường…' : schoolInfo.name}
             </h1>
             <p className="text-xs text-slate-500">
               Cổng Tra Cứu Thông Tin Học Tập & Lịch Học Dành Cho Phụ Huynh & Học Sinh.
@@ -74,12 +95,14 @@ export default function HomeworkPortalIndex() {
                 placeholder="VD: c4a1-8f92a4 hoặc dán link lớp..."
                 value={accessCode}
                 onChange={(e) => setAccessCode(e.target.value)}
-                className="w-full p-3 rounded-xl border border-slate-200 text-xs font-semibold focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white text-slate-900"
+                autoComplete="off"
+                aria-label="Mã lớp học hoặc liên kết chia sẻ"
+                className="w-full min-h-12 p-3 rounded-xl border border-slate-300 text-base sm:text-sm font-semibold focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white text-slate-900"
               />
 
               <button
                 type="submit"
-                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md transition-colors flex items-center justify-center space-x-1.5 cursor-pointer"
+                className="w-full min-h-12 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl shadow-md transition-colors flex items-center justify-center space-x-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
               >
                 <span>Truy Cập Góc Học Tập Của Con</span>
                 <ArrowRight className="w-3.5 h-3.5" />

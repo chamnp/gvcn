@@ -23,6 +23,7 @@ interface LeaveRequestModalProps {
   student: Student | null;
   isOpen: boolean;
   onClose: () => void;
+  onVerifiedSubmit?: (payload: Record<string, unknown>) => Promise<boolean>;
 }
 
 const REASON_OPTIONS: { id: LeaveRequestReason; label: string; icon: string }[] = [
@@ -33,7 +34,7 @@ const REASON_OPTIONS: { id: LeaveRequestReason; label: string; icon: string }[] 
   { id: 'KHAC', label: 'Lý do khác', icon: '📝' },
 ];
 
-export function LeaveRequestModal({ student, isOpen, onClose }: LeaveRequestModalProps) {
+export function LeaveRequestModal({ student, isOpen, onClose, onVerifiedSubmit }: LeaveRequestModalProps) {
   const { createLeaveRequest, classInfo } = useAppStore();
 
   const todayStr = new Date().toISOString().split('T')[0];
@@ -47,17 +48,18 @@ export function LeaveRequestModal({ student, isOpen, onClose }: LeaveRequestModa
   const [pickupPersonName, setPickupPersonName] = useState('');
   const [pickupPersonPhone, setPickupPersonPhone] = useState('');
   const [hasPickupPerson, setHasPickupPerson] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen || !student) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!reasonDetail.trim()) {
       toast.error('Vui lòng mô tả cụ thể lý do xin nghỉ!');
       return;
     }
 
-    createLeaveRequest({
+    const payload = {
       classId: student.classId || classInfo.id,
       studentId: student.id,
       studentName: student.fullName,
@@ -76,8 +78,16 @@ export function LeaveRequestModal({ student, isOpen, onClose }: LeaveRequestModa
             relationship: 'Người thân được ủy quyền',
           }
         : undefined,
-    });
+    };
 
+    if (onVerifiedSubmit) {
+      setIsSubmitting(true);
+      const success = await onVerifiedSubmit(payload);
+      setIsSubmitting(false);
+      if (success) onClose();
+      return;
+    }
+    createLeaveRequest(payload);
     onClose();
   };
 
@@ -278,10 +288,11 @@ export function LeaveRequestModal({ student, isOpen, onClose }: LeaveRequestModa
 
             <button
               type="submit"
-              className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-black shadow-md transition-all cursor-pointer flex items-center justify-center space-x-1.5 text-center"
+              disabled={isSubmitting}
+              className="w-full sm:w-auto min-h-11 px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white font-black shadow-md transition-all cursor-pointer flex items-center justify-center space-x-1.5 text-center"
             >
               <CheckCircle2 className="w-4 h-4" />
-              <span>Gửi Đơn Đến Giáo Viên</span>
+              <span>{isSubmitting ? 'Đang gửi…' : 'Gửi Đơn Đến Giáo Viên'}</span>
             </button>
           </div>
         </form>

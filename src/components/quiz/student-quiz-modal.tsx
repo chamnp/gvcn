@@ -29,6 +29,7 @@ interface StudentQuizModalProps {
   homework: HomeworkAssignment;
   students: Student[];
   initialSubmission?: QuizSubmission;
+  onVerifiedSubmit?: (data: { answers: Record<string, string>; timeSpentSeconds: number }) => Promise<{ score: number; correctCount: number; totalCount: number; requiresReview?: boolean } | null>;
 }
 
 export function StudentQuizModal({
@@ -37,6 +38,7 @@ export function StudentQuizModal({
   homework,
   students,
   initialSubmission,
+  onVerifiedSubmit,
 }: StudentQuizModalProps) {
   const { submitQuiz } = useAppStore();
 
@@ -59,6 +61,7 @@ export function StudentQuizModal({
   const totalSeconds = (homework.timeLimitMinutes || 15) * 60;
   const [secondsRemaining, setSecondsRemaining] = useState<number>(totalSeconds);
   const [isTimerActive, setIsTimerActive] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (isOpen && !isSubmitted && homework.timeLimitMinutes && homework.timeLimitMinutes > 0) {
@@ -74,7 +77,7 @@ export function StudentQuizModal({
       setSecondsRemaining((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          handleSubmit();
+          void handleSubmit();
           return 0;
         }
         return prev - 1;
@@ -98,12 +101,39 @@ export function StudentQuizModal({
     setAnswers((prev) => ({ ...prev, [questionId]: text }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (questions.length === 0) return;
 
     // Check unanswered questions
     const answeredCount = Object.keys(answers).length;
     if (answeredCount < questions.length && !confirm(`Em mới làm ${answeredCount}/${questions.length} câu. Em có chắc chắn muốn nộp bài luôn không?`)) {
+      return;
+    }
+
+    if (onVerifiedSubmit) {
+      setIsSubmitting(true);
+      const verified = await onVerifiedSubmit({ answers, timeSpentSeconds: totalSeconds - secondsRemaining });
+      setIsSubmitting(false);
+      if (!verified) return;
+      const sub: QuizSubmission = {
+        id: `verified-${homework.id}`,
+        homeworkId: homework.id,
+        classId: homework.classId,
+        studentId: selectedStudentId,
+        studentName: currentStudent?.fullName || 'Học sinh',
+        answers,
+        score: verified.score,
+        totalPoints: 10,
+        correctCount: verified.correctCount,
+        totalCount: verified.totalCount,
+        timeSpentSeconds: totalSeconds - secondsRemaining,
+        submittedAt: new Date().toISOString(),
+      };
+      setSubmissionResult(sub);
+      setIsSubmitted(true);
+      setIsTimerActive(false);
+      confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+      toast.success(verified.requiresReview ? 'Đã nộp bài. Câu tự luận sẽ được giáo viên chấm thêm.' : `Đã nộp bài thành công! Điểm của em là ${verified.score}/10.`);
       return;
     }
 
@@ -229,7 +259,7 @@ export function StudentQuizModal({
         <div className="p-3 sm:p-4 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 shrink-0 text-xs">
           <div className="flex items-center space-x-2">
             <span className="font-bold text-slate-600">Học sinh làm bài:</span>
-            <select
+            {students.length > 1 ? <select
               value={selectedStudentId}
               onChange={(e) => setSelectedStudentId(e.target.value)}
               disabled={isSubmitted}
@@ -240,7 +270,7 @@ export function StudentQuizModal({
                   {st.fullName} ({st.studentCode})
                 </option>
               ))}
-            </select>
+            </select> : <span className="rounded-xl border border-slate-200 bg-white px-3 py-2 font-bold text-slate-800">{currentStudent?.fullName}</span>}
           </div>
 
           <div className="flex items-center space-x-2">
@@ -416,11 +446,12 @@ export function StudentQuizModal({
 
             <button
               type="button"
-              onClick={handleSubmit}
-              className="w-full sm:w-auto inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-xs px-6 py-2.5 rounded-2xl shadow-lg transition-all cursor-pointer"
+              onClick={() => void handleSubmit()}
+              disabled={isSubmitting}
+              className="w-full sm:w-auto min-h-11 inline-flex items-center justify-center space-x-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 disabled:opacity-60 text-white font-black text-xs px-6 py-2.5 rounded-2xl shadow-lg transition-all cursor-pointer"
             >
               <Send className="w-4 h-4" />
-              <span>Nộp Bài Thi Ngay</span>
+              <span>{isSubmitting ? 'Đang nộp bài…' : 'Nộp Bài Thi Ngay'}</span>
             </button>
           </div>
         )}

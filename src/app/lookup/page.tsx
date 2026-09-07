@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Lock,
   ArrowRight,
@@ -27,8 +27,9 @@ import { supabase } from '@/lib/supabase';
 import type { ClassInfo, SchoolInfo } from '@/types';
 import { toast } from 'sonner';
 
-export default function StudentLookupPortal() {
+function StudentLookupPortalContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [schoolClasses, setSchoolClasses] = useState<ClassInfo[]>([]);
   const [schoolInfo, setSchoolInfo] = useState<SchoolInfo>({ id: '', name: '', schoolYear: '', departmentName: '', principalName: '' });
 
@@ -46,16 +47,13 @@ export default function StudentLookupPortal() {
   }, []);
 
   // Selected Class
-  const [selectedClassId, setSelectedClassId] = useState<string>(() => {
-    return schoolClasses[0]?.id || '';
-  });
-
-  // Sync selectedClassId if schoolClasses loads later
-  React.useEffect(() => {
-    if (!selectedClassId && schoolClasses.length > 0) {
-      setSelectedClassId(schoolClasses[0].id);
-    }
-  }, [schoolClasses, selectedClassId]);
+  const [selectedClassId, setSelectedClassId] = useState<string>(() => searchParams.get('class') || '');
+  const requestedClassId = searchParams.get('class') || '';
+  const effectiveSelectedClassId = schoolClasses.some((item) => item.id === selectedClassId)
+    ? selectedClassId
+    : schoolClasses.some((item) => item.id === requestedClassId)
+      ? requestedClassId
+      : schoolClasses[0]?.id || '';
 
   const [studentIdentifierInput, setStudentIdentifierInput] = useState('');
   const [pinInput, setPinInput] = useState('');
@@ -81,7 +79,7 @@ export default function StudentLookupPortal() {
     setIsVerifying(true);
 
     const { data, error } = await supabase.rpc('lookup_student_portal', {
-      p_class_id: selectedClassId,
+      p_class_id: effectiveSelectedClassId,
       p_identifier: query,
       p_pin: pin,
     });
@@ -89,8 +87,17 @@ export default function StudentLookupPortal() {
 
     if (!error && result?.success && result.studentToken) {
       toast.success(`Xác thực thành công! Đang mở phiếu báo điểm em ${result.studentName || ''}...`);
+      sessionStorage.setItem(`gvcn_student_portal_pin_${result.studentToken}`, pin);
+      const next = searchParams.get('next');
+      const homework = searchParams.get('homework');
+      const slot = searchParams.get('slot');
+      const destinationParams = new URLSearchParams();
+      if (next) destinationParams.set('next', next);
+      if (homework) destinationParams.set('homework', homework);
+      if (slot) destinationParams.set('slot', slot);
       setTimeout(() => {
-        router.push(`/student/${result.studentToken}`);
+        const suffix = destinationParams.toString();
+        router.push(`/student/${result.studentToken}${suffix ? `?${suffix}` : ''}`);
       }, 400);
     } else {
       toast.error(result?.error || error?.message || 'Thông tin xác thực không chính xác.');
@@ -98,7 +105,7 @@ export default function StudentLookupPortal() {
     }
   };
 
-  const selectedClass = schoolClasses.find((c) => c.id === selectedClassId) || schoolClasses[0];
+  const selectedClass = schoolClasses.find((c) => c.id === effectiveSelectedClassId) || schoolClasses[0];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-50/50 text-slate-900 flex flex-col justify-between p-3.5 sm:p-6 font-sans w-full max-w-full overflow-x-hidden">
@@ -122,8 +129,8 @@ export default function StudentLookupPortal() {
         </div>
 
         {(() => {
-          const selectedClassObj = schoolClasses.find((c) => c.id === selectedClassId);
-          const targetToken = selectedClassObj?.shareToken || selectedClassId;
+          const targetToken = searchParams.get('classToken');
+          if (!targetToken) return null;
           return (
             <Link
               href={`/hw/${targetToken}`}
@@ -168,7 +175,7 @@ export default function StudentLookupPortal() {
               </label>
               <div className="relative">
                 <select
-                  value={selectedClassId}
+                  value={effectiveSelectedClassId}
                   onChange={(e) => setSelectedClassId(e.target.value)}
                   className="w-full h-11 px-3.5 pr-9 rounded-2xl border border-slate-200 font-bold text-slate-900 bg-slate-50/50 hover:bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all appearance-none cursor-pointer text-xs"
                 >
@@ -257,7 +264,7 @@ export default function StudentLookupPortal() {
           {[
             {
               q: 'Dữ liệu của con có bị người khác xem không?',
-              a: 'Hệ thống bảo mật tuyệt đối. Mỗi học sinh có một mã định danh và mã PIN bí mật riêng. Người ngoài không thể xem trộm danh sách lớp hay bảng điểm của bạn khác.',
+              a: 'Mỗi học sinh có liên kết riêng và mã PIN bí mật. Hệ thống chỉ trả về hồ sơ của học sinh sau khi xác thực đúng; phụ huynh nên giữ kín liên kết và mã PIN.',
             },
             {
               q: 'Nếu tôi quên mã PIN thì phải làm thế nào?',
@@ -293,5 +300,13 @@ export default function StudentLookupPortal() {
         </Link>
       </footer>
     </div>
+  );
+}
+
+export default function StudentLookupPortal() {
+  return (
+    <React.Suspense fallback={<div className="min-h-screen bg-slate-50" aria-busy="true" />}>
+      <StudentLookupPortalContent />
+    </React.Suspense>
   );
 }

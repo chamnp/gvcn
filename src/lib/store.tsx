@@ -899,19 +899,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setFeatureFlagsState((prev) => {
       const next = { ...prev, [key]: enabled };
       saveFeatureFlags(next);
+      if (activeClassId) {
+        setSchoolClasses((classes) => classes.map((item) => (
+          item.id === activeClassId ? { ...item, publicFeatureFlags: { ...next } as Record<string, boolean> } : item
+        )));
+        void handleDbMutation(
+          supabase.from('Class').update({ publicFeatureFlags: next }).eq('id', activeClassId),
+          undefined,
+          'Không thể đồng bộ tính năng cổng phụ huynh'
+        );
+      }
       return next;
     });
-  }, []);
+  }, [activeClassId]);
 
   const resetFeatureFlags = useCallback(() => {
     const next = resetStoredFeatureFlags();
     setFeatureFlagsState(next);
-  }, []);
+    if (activeClassId) {
+      setSchoolClasses((classes) => classes.map((item) => (
+        item.id === activeClassId ? { ...item, publicFeatureFlags: { ...next } as Record<string, boolean> } : item
+      )));
+      void handleDbMutation(
+        supabase.from('Class').update({ publicFeatureFlags: next }).eq('id', activeClassId),
+        undefined,
+        'Không thể đồng bộ tính năng cổng phụ huynh'
+      );
+    }
+  }, [activeClassId]);
 
   // Active Class Info
   const classInfo = useMemo(() => {
     return schoolClasses.find((c) => c.id === activeClassId) || schoolClasses[0] || EMPTY_CLASS;
   }, [schoolClasses, activeClassId]);
+
+  useEffect(() => {
+    if (!classInfo.id || !classInfo.publicFeatureFlags) return;
+    const next = {
+      ...DEFAULT_FEATURE_FLAGS,
+      ...classInfo.publicFeatureFlags,
+    } as FeatureFlags;
+    setFeatureFlagsState(next);
+    saveFeatureFlags(next);
+  }, [classInfo.id, classInfo.publicFeatureFlags]);
 
   // Scoped Students for active class
   const students = useMemo(() => {
@@ -1035,7 +1065,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // 100% Live API Connection: Đồng bộ dữ liệu 2 chiều thời gian thực với Supabase
   useEffect(() => {
     const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
-    if (/^\/(student|rewards)\//.test(pathname) || pathname === '/lookup') {
+    if (/^\/(student|rewards)\//.test(pathname) || pathname === '/lookup' || /^\/hw(?:\/|$)/.test(pathname)) {
       // Public portals fetch only narrow RPC bundles after token/PIN verification.
       // Never hydrate the global school store for an anonymous browser.
       setIsLoaded(true);

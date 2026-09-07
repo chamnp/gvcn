@@ -1,6 +1,7 @@
 'use client';
 
-import React, { use, useState, useMemo, useEffect } from 'react';
+import React, { use, useState, useMemo, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   Award,
   Star,
@@ -55,6 +56,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { LeaveRequestModal } from '@/components/parent/leave-request-modal';
 import { ConferenceSchedulerModal } from '@/components/conference/conference-scheduler-modal';
+import { StudentQuizModal } from '@/components/quiz/student-quiz-modal';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
 import { DEFAULT_FALLBACK_PRODUCT_IMAGE } from '@/lib/image-utils';
@@ -93,13 +95,14 @@ function getStudentBirthdayStatus(dobStr: string) {
   };
 }
 
-export default function StudentPrivateReportPage({
+function StudentPrivateReportPageContent({
   params,
 }: {
   params: Promise<{ token: string }>;
 }) {
   const resolvedParams = use(params);
   const rawToken = (resolvedParams.token || '').trim();
+  const searchParams = useSearchParams();
 
   const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [schoolClasses, setSchoolClasses] = useState<ClassInfo[]>([]);
@@ -122,10 +125,14 @@ export default function StudentPrivateReportPage({
   const [accessPin, setAccessPin] = useState('');
   const [pinLoginInput, setPinLoginInput] = useState('');
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [studentNotes, setStudentNotes] = useState<FormativeNote[]>([]);
+  const [completedHwIds, setCompletedHwIds] = useState<string[]>([]);
+  const [packedSubjectCodes, setPackedSubjectCodes] = useState<string[]>([]);
+  const [selectedTimetableDay, setSelectedTimetableDay] = useState<DayOfWeek>('T2');
   const globalTerm: TermType = 'GIUA_HK1';
   const periods = useMemo(() => calculatePeriods(DEFAULT_SCHEDULE_CONFIG), []);
 
-  const loadPortal = async (pin: string) => {
+  const loadPortal = useCallback(async (pin: string) => {
     setIsAuthenticating(true);
     const { data, error } = await supabase.rpc('get_student_portal_bundle', {
       p_student_share_token: rawToken,
@@ -139,9 +146,11 @@ export default function StudentPrivateReportPage({
       homeworks?: HomeworkAssignment[]; customSubjects?: CustomSubject[]; timetable?: TimetableSlot[];
       events?: ClassEvent[]; leaveRequests?: LeaveRequest[]; conferenceSlots?: ConferenceSlot[];
       formativeNotes?: FormativeNote[];
+      progress?: Array<{ type: 'HW_DONE' | 'PACK_DONE'; referenceId: string; isDone: boolean }>;
     } | null;
     if (error || !bundle?.success || !bundle.student || !bundle.class) {
       toast.error(bundle?.error || error?.message || 'Không thể xác thực hồ sơ học sinh.');
+      sessionStorage.removeItem(`gvcn_student_portal_pin_${rawToken}`);
       setIsAuthenticating(false);
       return;
     }
@@ -160,7 +169,7 @@ export default function StudentPrivateReportPage({
     setCustomSubjects(bundle.customSubjects || []);
     setTimetable(bundle.timetable || []);
     setAllClassEvents(
-      (bundle.events || []).map((e: any) => ({
+      (bundle.events || []).map((e) => ({
         ...e,
         type: e.type || e.eventType || 'OTHER',
       }))
@@ -168,10 +177,15 @@ export default function StudentPrivateReportPage({
     setLeaveRequests(bundle.leaveRequests || []);
     setConferenceSlots(bundle.conferenceSlots || []);
     setStudentNotes(bundle.formativeNotes || []);
+    const portalProgress = bundle.progress || [];
+    const progressDate = getLocalDateString();
+    setCompletedHwIds(portalProgress.filter((item) => item.type === 'HW_DONE' && item.isDone).map((item) => item.referenceId));
+    setPackedSubjectCodes(portalProgress.filter((item) => item.type === 'PACK_DONE' && item.isDone && item.referenceId.startsWith(progressDate)).map((item) => item.referenceId.replace(`${progressDate}_`, '')));
     setAccessPin(pin);
+    sessionStorage.setItem(`gvcn_student_portal_pin_${rawToken}`, pin);
     setIsLoaded(true);
     setIsAuthenticating(false);
-  };
+  }, [rawToken]);
 
   // The RPC has already resolved the opaque share token after PIN verification.
   const student = useMemo(() => {
@@ -184,68 +198,32 @@ export default function StudentPrivateReportPage({
     return schoolClasses.find((c) => c.id === student.classId) || null;
   }, [student, schoolClasses]);
 
-  const [studentNotes, setStudentNotes] = useState<FormativeNote[]>([]);
-
   useEffect(() => {
-    if (!student?.id) return;
-    const fetchNotes = async () => {
-      try {
-        const { data } = await supabase
-          .from('FormativeNote')
-          .select('*')
-          .eq('studentId', student.id)
-          .neq('visibility', 'PRIVATE_TEACHER')
-          .order('date', { ascending: false });
-        if (data) {
-          setStudentNotes(data as FormativeNote[]);
-        }
-      } catch (err) {
-        console.warn('Error fetching formative notes:', err);
-      }
-    };
-    fetchNotes();
-
-    const channel = supabase
-      .channel(`student_notes_${student.id}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'FormativeNote', filter: `studentId=eq.${student.id}` },
-        (payload) => {
-          if (payload.eventType === 'INSERT') {
-            const newNote = payload.new as FormativeNote;
-            if (newNote.visibility !== 'PRIVATE_TEACHER') {
-              setStudentNotes((prev) => [newNote, ...prev]);
-            }
-          } else if (payload.eventType === 'UPDATE') {
-            const updated = payload.new as FormativeNote;
-            setStudentNotes((prev) => prev.map((n) => (n.id === updated.id ? updated : n)));
-          } else if (payload.eventType === 'DELETE') {
-            setStudentNotes((prev) => prev.filter((n) => n.id !== (payload.old as any).id));
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [student?.id]);
+    const savedPin = sessionStorage.getItem(`gvcn_student_portal_pin_${rawToken}`);
+    if (!savedPin) return;
+    const timeoutId = window.setTimeout(() => void loadPortal(savedPin), 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [loadPortal, rawToken]);
 
   const handleAcknowledgeNote = async (noteId: string) => {
     const timestamp = new Date().toISOString();
+    const previousNotes = studentNotes;
     setStudentNotes((prev) =>
       prev.map((n) => (n.id === noteId ? { ...n, parentAcknowledged: true, parentAcknowledgedAt: timestamp } : n))
     );
+    const { data, error } = await supabase.rpc('acknowledge_student_note', {
+      p_student_share_token: rawToken,
+      p_pin: accessPin,
+      p_note_id: noteId,
+    });
+    const result = data as { success?: boolean; error?: string } | null;
+    if (error || !result?.success) {
+      setStudentNotes(previousNotes);
+      toast.error(result?.error || error?.message || 'Không thể xác nhận nhận xét. Vui lòng thử lại.');
+      return;
+    }
     confetti({ particleCount: 50, spread: 70, origin: { y: 0.7 } });
     toast.success('Cô giáo đã nhận được lời cảm ơn từ Gia đình!');
-    try {
-      await supabase
-        .from('FormativeNote')
-        .update({ parentAcknowledged: true, parentAcknowledgedAt: timestamp })
-        .eq('id', noteId);
-    } catch (e) {
-      console.error('Error acknowledging note:', e);
-    }
   };
 
   // Main Active Tab for Child Hub
@@ -258,20 +236,32 @@ export default function StudentPrivateReportPage({
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
   const [isConferenceModalOpen, setIsConferenceModalOpen] = useState(false);
+  const [activeQuizHomework, setActiveQuizHomework] = useState<HomeworkAssignment | null>(null);
   const [newPin, setNewPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [parentPhoneInput, setParentPhoneInput] = useState(student?.parentPhone || '');
-
-  // Local Checklist State for Homework & Backpack (Saved per student)
-  const [completedHwIds, setCompletedHwIds] = useState<string[]>([]);
-  const [packedSubjectCodes, setPackedSubjectCodes] = useState<string[]>([]);
-  const [selectedTimetableDay, setSelectedTimetableDay] = useState<DayOfWeek>('T2');
 
   // Cart State for Reward Shop
   const [cartItems, setCartItems] = useState<{ product: RewardProduct; quantity: number }[]>([]);
   const [studentNoteInput, setStudentNoteInput] = useState('');
   const [isCriteriaModalOpen, setIsCriteriaModalOpen] = useState(false);
   const [shopCategoryFilter, setShopCategoryFilter] = useState('ALL');
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    const timeoutId = window.setTimeout(() => {
+      const next = searchParams.get('next');
+      if (next === 'leave') setIsLeaveModalOpen(true);
+      if (next === 'conference') setIsConferenceModalOpen(true);
+      if (next === 'quiz') {
+        const homeworkId = searchParams.get('homework');
+        const homework = allHomeworks.find((item) => item.id === homeworkId && Boolean(item.isQuiz || item.quizQuestions?.length));
+        setActiveTab('HOMEWORK');
+        if (homework) setActiveQuizHomework(homework);
+      }
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [allHomeworks, isLoaded, searchParams]);
 
   const todayStr = getLocalDateString();
   const currentMonthKey = todayStr.substring(0, 7); // 'YYYY-MM'
@@ -286,32 +276,6 @@ export default function StudentPrivateReportPage({
     const spent = summary.rewardSpent + summary.closedBalance;
     return { ...summary, earned, spent, available: Math.max(0, earned - spent) };
   };
-
-  useEffect(() => {
-    if (!student) return;
-    try {
-      const savedHw = localStorage.getItem(`gvcn_hw_done_student_${student.id}`);
-      if (savedHw) setCompletedHwIds(JSON.parse(savedHw));
-
-      const savedPack = localStorage.getItem(`gvcn_pack_student_${student.id}_${todayStr}`);
-      if (savedPack) setPackedSubjectCodes(JSON.parse(savedPack));
-    } catch (e) {}
-
-    supabase
-      .from('StudentHomeworkProgress')
-      .select('*')
-      .eq('studentId', student.id)
-      .then(({ data }) => {
-        if (data && data.length > 0) {
-          const hwDone = data.filter((d: any) => d.type === 'HW_DONE' && d.isDone).map((d: any) => d.referenceId);
-          const packDone = data
-            .filter((d: any) => d.type === 'PACK_DONE' && d.isDone && d.referenceId.startsWith(todayStr))
-            .map((d: any) => d.referenceId.replace(`${todayStr}_`, ''));
-          if (hwDone.length > 0) setCompletedHwIds(hwDone);
-          if (packDone.length > 0) setPackedSubjectCodes(packDone);
-        }
-      });
-  }, [student, todayStr]);
 
   // Determine tomorrow's day of week
   const todayDayIndex = new Date().getDay();
@@ -328,7 +292,8 @@ export default function StudentPrivateReportPage({
   const tomorrowDayInfo = DAYS_OF_WEEK.find((d) => d.id === tomorrowDayCode);
 
   useEffect(() => {
-    setSelectedTimetableDay(tomorrowDayCode);
+    const timeoutId = window.setTimeout(() => setSelectedTimetableDay(tomorrowDayCode), 0);
+    return () => window.clearTimeout(timeoutId);
   }, [tomorrowDayCode]);
 
   // Student monthly stars balance & class rank
@@ -482,6 +447,62 @@ export default function StudentPrivateReportPage({
     }
   };
 
+  const handleVerifiedLeave = async (payload: Record<string, unknown>) => {
+    const { data, error } = await supabase.rpc('submit_student_leave_request', {
+      p_student_share_token: rawToken,
+      p_pin: accessPin,
+      p_payload: payload,
+    });
+    const result = data as { success?: boolean; error?: string } | null;
+    if (error || !result?.success) {
+      toast.error(result?.error || error?.message || 'Không thể gửi đơn xin nghỉ.');
+      return false;
+    }
+    toast.success('Đã gửi đơn xin nghỉ đến giáo viên chủ nhiệm.');
+    await loadPortal(accessPin);
+    return true;
+  };
+
+  const handleVerifiedConferenceBook = async (slotId: string, bookingData: { parentName: string; parentPhone: string; discussionTopics?: string }) => {
+    const { data, error } = await supabase.rpc('book_student_conference_slot', {
+      p_student_share_token: rawToken,
+      p_pin: accessPin,
+      p_slot_id: slotId,
+      p_parent_name: bookingData.parentName,
+      p_parent_phone: bookingData.parentPhone,
+      p_topics: bookingData.discussionTopics || null,
+    });
+    const result = data as { success?: boolean; error?: string } | null;
+    if (error || !result?.success) {
+      toast.error(result?.error || error?.message || 'Không thể đặt lịch hẹn.');
+      return false;
+    }
+    toast.success('Đã đăng ký lịch hẹn với giáo viên chủ nhiệm.');
+    await loadPortal(accessPin);
+    return true;
+  };
+
+  const handleVerifiedQuizSubmit = async (homeworkId: string, data: { answers: Record<string, string>; timeSpentSeconds: number }) => {
+    const { data: rpcData, error } = await supabase.rpc('submit_student_quiz', {
+      p_student_share_token: rawToken,
+      p_pin: accessPin,
+      p_homework_id: homeworkId,
+      p_answers: data.answers,
+      p_time_spent_seconds: data.timeSpentSeconds,
+    });
+    const result = rpcData as { success?: boolean; error?: string; score?: number; correctCount?: number; totalCount?: number; requiresReview?: boolean } | null;
+    if (error || !result?.success) {
+      toast.error(result?.error || error?.message || 'Không thể nộp bài.');
+      return null;
+    }
+    return {
+      score: result.score || 0,
+      correctCount: result.correctCount || 0,
+      totalCount: result.totalCount || 0,
+      requiresReview: result.requiresReview,
+    };
+  };
+
   if (!accessPin) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
@@ -596,8 +617,9 @@ export default function StudentPrivateReportPage({
     (s) => s.day === tomorrowDayCode && s.classId === studentClass.id
   );
 
-  const toggleCompleteHw = (hwId: string) => {
+  const toggleCompleteHw = async (hwId: string) => {
     const isDone = completedHwIds.includes(hwId);
+    const previous = completedHwIds;
     setCompletedHwIds((prev) => {
       const updated = isDone ? prev.filter((id) => id !== hwId) : [...prev, hwId];
       try {
@@ -606,22 +628,24 @@ export default function StudentPrivateReportPage({
       return updated;
     });
 
-    supabase
-      .from('StudentHomeworkProgress')
-      .upsert({
-        id: `${student.id}_hw_${hwId}`,
-        studentId: student.id,
-        classId: student.classId || 'class-4a1',
-        type: 'HW_DONE',
-        referenceId: hwId,
-        isDone: !isDone,
-        updatedAt: new Date().toISOString(),
-      })
-      .then();
+    const { data, error } = await supabase.rpc('set_student_portal_progress', {
+      p_student_share_token: rawToken,
+      p_pin: accessPin,
+      p_type: 'HW_DONE',
+      p_reference_id: hwId,
+      p_is_done: !isDone,
+    });
+    const result = data as { success?: boolean; error?: string } | null;
+    if (error || !result?.success) {
+      setCompletedHwIds(previous);
+      localStorage.setItem(`gvcn_hw_done_student_${student.id}`, JSON.stringify(previous));
+      toast.error(result?.error || error?.message || 'Không thể lưu tiến độ bài tập.');
+    }
   };
 
-  const togglePackSubject = (subjectCode: string) => {
+  const togglePackSubject = async (subjectCode: string) => {
     const isPacked = packedSubjectCodes.includes(subjectCode);
+    const previous = packedSubjectCodes;
     setPackedSubjectCodes((prev) => {
       const updated = isPacked ? prev.filter((c) => c !== subjectCode) : [...prev, subjectCode];
       try {
@@ -630,18 +654,20 @@ export default function StudentPrivateReportPage({
       return updated;
     });
 
-    supabase
-      .from('StudentHomeworkProgress')
-      .upsert({
-        id: `${student.id}_pack_${todayStr}_${subjectCode}`,
-        studentId: student.id,
-        classId: student.classId || 'class-4a1',
-        type: 'PACK_DONE',
-        referenceId: `${todayStr}_${subjectCode}`,
-        isDone: !isPacked,
-        updatedAt: new Date().toISOString(),
-      })
-      .then();
+    const referenceId = `${todayStr}_${subjectCode}`;
+    const { data, error } = await supabase.rpc('set_student_portal_progress', {
+      p_student_share_token: rawToken,
+      p_pin: accessPin,
+      p_type: 'PACK_DONE',
+      p_reference_id: referenceId,
+      p_is_done: !isPacked,
+    });
+    const result = data as { success?: boolean; error?: string } | null;
+    if (error || !result?.success) {
+      setPackedSubjectCodes(previous);
+      localStorage.setItem(`gvcn_pack_student_${student.id}_${todayStr}`, JSON.stringify(previous));
+      toast.error(result?.error || error?.message || 'Không thể lưu danh sách chuẩn bị sách vở.');
+    }
   };
 
   const handleSavePin = async (e: React.FormEvent) => {
@@ -670,6 +696,7 @@ export default function StudentPrivateReportPage({
       ? { ...item, isActivated: true, parentPhone: parentPhoneInput.trim() || item.parentPhone }
       : item));
     setAccessPin(newPin);
+    sessionStorage.setItem(`gvcn_student_portal_pin_${rawToken}`, newPin);
 
     toast.success('Đã lưu Mã PIN bảo mật thành công! Từ lần sau bố mẹ dùng mã này để tra cứu.');
     setIsPinModalOpen(false);
@@ -885,7 +912,7 @@ export default function StudentPrivateReportPage({
 
         {/* 5. MAIN NAVIGATION TABS FOR THIS CHILD */}
         <div className="w-full max-w-full overflow-x-auto no-scrollbar flex items-center gap-1.5 bg-white p-1 rounded-2xl border border-slate-200 shadow-xs text-xs font-bold scroll-smooth">
-          {[
+          {([
             {
               id: 'DAILY_LOG',
               label: `💌 Sổ Nhật Ký (${todayNotes.length > 0 ? `${todayNotes.length} mới` : 'Hôm nay'})`,
@@ -896,11 +923,11 @@ export default function StudentPrivateReportPage({
             { id: 'BACKPACK', label: '🎒 Soạn Sách Vở' },
             { id: 'TIMETABLE', label: '🗓️ Thời Khóa Biểu' },
             { id: 'EVENTS', label: `📅 Sự Kiện (${classEvents.length})` },
-          ].map((tab) => (
+          ] as const).map((tab) => (
             <button
               key={tab.id}
               type="button"
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id)}
               className={`h-9 px-3.5 flex items-center justify-center rounded-xl transition-all whitespace-nowrap cursor-pointer shrink-0 ${
                 activeTab === tab.id
                   ? 'bg-blue-600 text-white shadow-xs font-black'
@@ -1669,6 +1696,15 @@ export default function StudentPrivateReportPage({
                     <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100 text-xs text-slate-700 leading-relaxed whitespace-pre-line break-words">
                       {hw.description}
                     </div>
+                    {Boolean(hw.isQuiz || hw.quizQuestions?.length) && (
+                      <button
+                        type="button"
+                        onClick={() => setActiveQuizHomework(hw)}
+                        className="min-h-11 inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-bold text-white hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+                      >
+                        <Lock className="h-4 w-4" /> Làm bài trực tuyến
+                      </button>
+                    )}
                   </div>
                 );
               })
@@ -1819,7 +1855,7 @@ export default function StudentPrivateReportPage({
                 <p className="text-xs text-slate-400 py-6 text-center">Chưa có sự kiện nào được lên lịch trong thời gian tới.</p>
               ) : (
                 classEvents.map((evt) => {
-                  const rawType = evt.type || (evt as any).eventType || 'OTHER';
+                  const rawType = evt.type || evt.eventType || 'OTHER';
                   const conf = CLASS_EVENT_TYPE_CONFIG[rawType as keyof typeof CLASS_EVENT_TYPE_CONFIG] || CLASS_EVENT_TYPE_CONFIG.OTHER;
                   return (
                     <div key={evt.id} className="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/60 space-y-1.5">
@@ -2021,6 +2057,7 @@ export default function StudentPrivateReportPage({
         student={student}
         isOpen={isLeaveModalOpen}
         onClose={() => setIsLeaveModalOpen(false)}
+        onVerifiedSubmit={handleVerifiedLeave}
       />
 
       {/* Conference Scheduler Modal */}
@@ -2029,7 +2066,28 @@ export default function StudentPrivateReportPage({
         onClose={() => setIsConferenceModalOpen(false)}
         isTeacher={false}
         currentStudent={student}
+        publicShareToken={studentClass.shareToken}
+        initialSlotId={searchParams.get('slot')}
+        onVerifiedBook={handleVerifiedConferenceBook}
       />
+
+      {activeQuizHomework && (
+        <StudentQuizModal
+          isOpen
+          onClose={() => setActiveQuizHomework(null)}
+          homework={activeQuizHomework}
+          students={[student]}
+          onVerifiedSubmit={(data) => handleVerifiedQuizSubmit(activeQuizHomework.id, data)}
+        />
+      )}
     </div>
+  );
+}
+
+export default function StudentPrivateReportPage(props: { params: Promise<{ token: string }> }) {
+  return (
+    <React.Suspense fallback={<div className="min-h-screen bg-slate-50" aria-busy="true" />}>
+      <StudentPrivateReportPageContent {...props} />
+    </React.Suspense>
   );
 }

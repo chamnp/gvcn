@@ -31,6 +31,9 @@ interface ConferenceSchedulerModalProps {
   onClose: () => void;
   isTeacher?: boolean;
   currentStudent?: Student | null;
+  publicShareToken?: string;
+  initialSlotId?: string | null;
+  onVerifiedBook?: (slotId: string, bookingData: { parentName: string; parentPhone: string; discussionTopics?: string }) => Promise<boolean>;
 }
 
 const TYPE_CONFIG: Record<ConferenceType, { label: string; icon: string; color: string }> = {
@@ -45,6 +48,9 @@ export function ConferenceSchedulerModal({
   onClose,
   isTeacher = false,
   currentStudent,
+  publicShareToken,
+  initialSlotId,
+  onVerifiedBook,
 }: ConferenceSchedulerModalProps) {
   const {
     conferenceSlots,
@@ -88,6 +94,16 @@ export function ConferenceSchedulerModal({
   const [parentName, setParentName] = useState(currentStudent?.parentName || '');
   const [parentPhone, setParentPhone] = useState(currentStudent?.parentPhone || '');
   const [discussionTopics, setDiscussionTopics] = useState('');
+  const [isBooking, setIsBooking] = useState(false);
+
+  React.useEffect(() => {
+    if (!isOpen || !initialSlotId) return;
+    const timeoutId = window.setTimeout(() => {
+      const requestedSlot = conferenceSlots.find((slot) => slot.id === initialSlotId && !slot.isBooked);
+      if (requestedSlot) setSelectedSlotForBooking(requestedSlot);
+    }, 0);
+    return () => window.clearTimeout(timeoutId);
+  }, [conferenceSlots, initialSlotId, isOpen]);
 
   // Active student being booked for
   const effectiveStudent = useMemo(() => {
@@ -179,7 +195,7 @@ export function ConferenceSchedulerModal({
   };
 
   // Booking submit handler
-  const handleBook = (e: React.FormEvent) => {
+  const handleBook = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedSlotForBooking) return;
 
@@ -193,13 +209,22 @@ export function ConferenceSchedulerModal({
       return;
     }
 
-    bookConferenceSlot(selectedSlotForBooking.id, {
+    const bookingData = {
       studentId: effectiveStudent.id,
       studentName: effectiveStudent.fullName,
       parentName: parentName.trim(),
       parentPhone: parentPhone.trim(),
       discussionTopics: discussionTopics.trim(),
-    });
+    };
+
+    if (onVerifiedBook) {
+      setIsBooking(true);
+      const success = await onVerifiedBook(selectedSlotForBooking.id, bookingData);
+      setIsBooking(false);
+      if (!success) return;
+    } else {
+      bookConferenceSlot(selectedSlotForBooking.id, bookingData);
+    }
 
     setSelectedSlotForBooking(null);
     setDiscussionTopics('');
@@ -208,7 +233,7 @@ export function ConferenceSchedulerModal({
   // Copy shareable booking link
   const handleCopyShareLink = () => {
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    const shareUrl = `${origin}/hw/${classInfo.id || 'class-4a1'}`;
+    const shareUrl = `${origin}/hw/${publicShareToken || classInfo.shareToken || ''}`;
     navigator.clipboard.writeText(shareUrl);
     toast.success('Đã sao chép link Cổng Trao Đổi Lớp gửi Zalo Phụ huynh!');
   };
@@ -600,9 +625,10 @@ export function ConferenceSchedulerModal({
 
               <button
                 type="submit"
-                className="w-full py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-black text-xs shadow-md transition-all cursor-pointer transform active:scale-98"
+                disabled={isBooking}
+                className="w-full min-h-11 py-3 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 disabled:opacity-60 text-white font-black text-xs shadow-md transition-all cursor-pointer"
               >
-                ✓ Xác Nhận Đặt Lịch Hẹn Với Cô Giáo
+                {isBooking ? 'Đang đặt lịch…' : '✓ Xác Nhận Đặt Lịch Hẹn Với Cô Giáo'}
               </button>
             </form>
           )}
@@ -622,15 +648,15 @@ export function ConferenceSchedulerModal({
               {/* Filter Tabs */}
               <div className="flex items-center gap-1.5 flex-wrap">
                 <div className="flex items-center bg-slate-100 p-1 rounded-xl text-[10px] font-bold">
-                  {[
+                  {([
                     { id: 'ALL', label: 'Tất cả' },
                     { id: 'BOOKED', label: `Đã đặt (${bookedCount})` },
                     { id: 'AVAILABLE', label: `Còn trống (${availableCount})` },
-                  ].map((tab) => (
+                  ] as const).map((tab) => (
                     <button
                       key={tab.id}
                       type="button"
-                      onClick={() => setStatusFilter(tab.id as any)}
+                      onClick={() => setStatusFilter(tab.id)}
                       className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
                         statusFilter === tab.id
                           ? 'bg-white text-slate-900 shadow-2xs font-black'

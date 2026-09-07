@@ -181,6 +181,7 @@ export interface ClassInfo {
   seatsPerDesk?: number; // Số học sinh mỗi bàn (1: Bàn đơn, 2: Bàn đôi, 3: Bàn 3 chỗ, 4: Bàn 4 chỗ, mặc định: 2)
   starResetDay?: number; // Ngày nhắc chốt số dư sao định kỳ hằng tháng (1-28)
   shareToken?: string; // Mã ngẫu nhiên bảo mật cho link public phụ huynh (VD: c4a1-8f92a4)
+  publicFeatureFlags?: Record<string, boolean>; // Các phân hệ được phép xuất hiện trên cổng phụ huynh của lớp
 }
 
 export type DayOfWeek = 'T2' | 'T3' | 'T4' | 'T5' | 'T6';
